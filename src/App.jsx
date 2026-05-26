@@ -587,16 +587,19 @@ export default function App() {
         /* EMBEDDED SOCIAL MEDIA NEWS AND UPDATES AUTOMATIC STREAM SCREEN */
         .social-news-stream-section {
           width: 100% !important; background-color: var(--bg-main); border-bottom: 1px solid var(--border-color);
-          padding: 6rem 4rem; box-sizing: border-box;
+          padding: 6rem 4rem; box-sizing: border-box; overflow-x: hidden;
         }
         .social-news-layout-wrapper { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 3rem; }
+        @media (max-width: 768px) { .social-news-layout-wrapper { gap: 1.5rem; padding: 0 1rem; box-sizing: border-box; } }
         .social-news-header-zone { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1.5rem; }
         @media (max-width: 768px) { .social-news-header-zone { flex-direction: column; align-items: flex-start; gap: 1rem; } }
         .social-news-title-stack h2 { font-size: 2.6rem; font-weight: 800; color: var(--text-primary); margin: 0 0 0.5rem 0; letter-spacing: -0.5px; }
         @media (max-width: 768px) { .social-news-title-stack h2 { font-size: 1.8rem; } }
         .social-news-title-stack p { font-size: 1.15rem; color: var(--text-muted); margin: 0; }
         .social-platform-indicator-badges { display: flex; gap: 0.75rem; }
+        @media (max-width: 768px) { .social-platform-indicator-badges { flex-wrap: wrap; gap: 0.5rem; } }
         .platform-badge-nav { background-color: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-muted); padding: 0.6rem 1.2rem; border-radius: 20px; font-weight: 700; font-size: 0.9rem; cursor: pointer; transition: all 0.2s ease; display: flex; align-items: center; gap: 0.5rem; }
+        @media (max-width: 768px) { .platform-badge-nav { padding: 0.5rem 0.8rem; font-size: 0.8rem; } }
         .platform-badge-nav.active-facebook { border-color: #1877F2; color: #1877F2; background-color: rgba(24,119,242,0.08); }
         .platform-badge-nav.active-instagram { border-color: #E1306C; color: #E1306C; background-color: rgba(225,48,108,0.08); }
         .platform-badge-nav.active-youtube { border-color: #FF0000; color: #FF0000; background-color: rgba(255,0,0,0.08); }
@@ -609,11 +612,13 @@ export default function App() {
         .social-news-broadcast-anchor-card:hover { transform: translateY(-2px); }
         .social-slide-screen-viewport { animation: newsScreenFadeIn 0.7s cubic-bezier(0.25, 1, 0.5, 1) both; }
         @keyframes newsScreenFadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-        @media (max-width: 768px) { .social-slide-screen-viewport { animation: none; } .social-news-broadcast-anchor-card { padding: 1.5rem; display: none; } .social-news-broadcast-anchor-card:nth-child(1) { display: block; } }
+        @media (max-width: 768px) { .social-slide-screen-viewport { animation: none; } .social-news-broadcast-anchor-card { padding: 1.5rem; } }
         
         .broadcast-meta-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1.25rem; }
+        @media (max-width: 768px) { .broadcast-meta-row { flex-direction: column; align-items: flex-start; gap: 0.75rem; margin-bottom: 1rem; padding-bottom: 0.75rem; } }
         .meta-platform-identity { display: flex; align-items: center; gap: 0.75rem; font-size: 1.2rem; font-weight: 800; }
         .meta-type-badge { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; padding: 0.35rem 0.85rem; border-radius: 6px; color: white; }
+        @media (max-width: 768px) { .meta-type-badge { font-size: 0.75rem; padding: 0.25rem 0.6rem; } }
         .broadcast-content-body h3 { font-size: 2.2rem; font-weight: 800; color: var(--text-primary); margin: 0 0 1.25rem 0; line-height: 1.3; }
         .broadcast-content-body p { font-size: 1.25rem; line-height: 1.7; color: var(--text-muted); margin: 0 0 2rem 0; }
         @media (max-width: 768px) { .broadcast-content-body h3 { font-size: 1.5rem; margin: 0 0 0.75rem 0; } .broadcast-content-body p { font-size: 1rem; margin: 0 0 1rem 0; } }
