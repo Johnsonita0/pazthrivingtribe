@@ -154,6 +154,24 @@ export default function App() {
   const [formDesc, setFormDesc] = useState('');
   const [formMetric, setFormMetric] = useState('');
   const [cmsSuccessMessage, setCmsSuccessMessage] = useState(null);
+  const [selectedAdminTab, setSelectedAdminTab] = useState('content');
+  const [programs, setPrograms] = useState([
+    { id: 'fam-101', service: 'family', name: 'Family Communication Foundations', duration: '8 weeks', level: 'Beginner', schedule: 'Saturdays 10:00 AM', description: 'Build family communication patterns with practical exercises for every household.' },
+    { id: 'fam-102', service: 'family', name: 'Conflict Resolution Mastery', duration: '6 weeks', level: 'Intermediate', schedule: 'Wednesdays 6:00 PM', description: 'Develop the skills needed to de-escalate conflict, rebuild trust, and create healthy family rhythms.' },
+    { id: 'fam-103', service: 'family', name: 'Generational Healing Blueprint', duration: '10 weeks', level: 'Advanced', schedule: 'Sundays 3:00 PM', description: 'A deep exploration of intergenerational patterns and how to intentionally transform them.' },
+    { id: 'fam-104', service: 'family', name: 'Parenting Strategies & Emotional Resilience', duration: '8 weeks', level: 'Beginner', schedule: 'Thursdays 7:00 PM', description: 'Practical parenting modules for emotional resilience and positive discipline.' },
+    { id: 'mar-101', service: 'marriage', name: 'Couple Communication Deep Dive', duration: '6 weeks', level: 'Beginner', schedule: 'Saturdays 2:00 PM', description: 'Explore communication systems that foster emotional safety and honest connection.' },
+    { id: 'mar-102', service: 'marriage', name: 'Relationship Alignment Framework', duration: '8 weeks', level: 'Intermediate', schedule: 'Tuesdays 6:30 PM', description: 'Align your values, expectations, and long-term vision with your partner in a structured format.' },
+    { id: 'mar-103', service: 'marriage', name: 'Financial & Emotional Harmony', duration: '6 weeks', level: 'Intermediate', schedule: 'Fridays 7:00 PM', description: 'Build a shared plan for financial planning, emotional connection, and goal progress.' },
+    { id: 'mar-104', service: 'marriage', name: 'Advanced Intimacy & Connection', duration: '10 weeks', level: 'Advanced', schedule: 'Sundays 6:00 PM', description: 'Deep practice for restoring intimacy, trust, and intentional relational growth.' },
+    { id: 'kid-101', service: 'children', name: 'Cognitive Stability & Emotional Intelligence', duration: '8 weeks', level: 'Ages 10-13', schedule: 'Saturdays 11:00 AM', description: 'Young people learn tools for emotional awareness, decision-making, and resilience.' },
+    { id: 'kid-102', service: 'children', name: 'Teen Leadership & Self-Reliance', duration: '10 weeks', level: 'Ages 14-17', schedule: 'Wednesdays 4:00 PM', description: 'Develop leadership skills, personal responsibility, and healthy self-confidence.' },
+    { id: 'kid-103', service: 'children', name: 'Social Skills & Confidence Building', duration: '6 weeks', level: 'Ages 10-13', schedule: 'Mondays 5:00 PM', description: 'Support young learners in connecting well, managing emotions, and building confidence.' },
+    { id: 'kid-104', service: 'children', name: 'Mentorship & Life Planning', duration: '8 weeks', level: 'Ages 14-17', schedule: 'Thursdays 5:30 PM', description: 'Goal-setting, mentorship guidance, and planning for the next stage of life.' }
+  ]);
+  const [applicants, setApplicants] = useState([]);
+  const [programForm, setProgramForm] = useState({ service: 'family', title: '', description: '', duration: '', schedule: '', level: '' });
+  const [dashboardMessage, setDashboardMessage] = useState(null);
 
   const emailInputRef = useRef(null);
 
@@ -262,12 +280,16 @@ export default function App() {
 
   const fetchDynamicWebsiteContent = async () => {
     try {
-      const { data, error } = await supabase.from('tribe_services').select('*');
-      if (error) throw error;
-      
-      if (data && data.length > 0) {
+      const [{ data: serviceData, error: serviceError }, { data: programData, error: programError }, { data: applicantData, error: applicantError }] = await Promise.all([
+        supabase.from('tribe_services').select('*'),
+        supabase.from('tribe_programs').select('*'),
+        supabase.from('tribe_applicants').select('*').order('created_at', { ascending: false }).limit(20)
+      ]);
+
+      if (serviceError) throw serviceError;
+      if (serviceData && serviceData.length > 0) {
         const formattedServices = { ...services };
-        data.forEach(item => {
+        serviceData.forEach(item => {
           if (formattedServices[item.slug]) {
             formattedServices[item.slug] = {
               slug: item.slug,
@@ -279,6 +301,30 @@ export default function App() {
           }
         });
         setServices(formattedServices);
+      }
+
+      if (!programError && programData) {
+        setPrograms(programData.map((program) => ({
+          id: program.id?.toString() || `${program.service}-${program.title}`,
+          service: program.service,
+          name: program.title,
+          description: program.description,
+          duration: program.duration,
+          schedule: program.schedule,
+          level: program.level || 'General'
+        })));
+      }
+
+      if (!applicantError && applicantData) {
+        setApplicants(applicantData.map((item) => ({
+          id: item.id?.toString() || `${item.full_name}-${item.created_at}`,
+          fullName: item.full_name,
+          email: item.email,
+          phone: item.phone,
+          track: item.track,
+          message: item.message || '',
+          submittedAt: item.created_at
+        })));
       }
     } catch (err) {
       console.log("Using baseline presentation values while tables initialize.");
@@ -331,6 +377,84 @@ export default function App() {
     } catch (err) {
       setCmsSuccessMessage("Preview saved successfully to layout local view state!");
     }
+  };
+
+  const handleCreateProgram = async (e) => {
+    e.preventDefault();
+    setDashboardMessage(null);
+
+    const newProgram = {
+      id: `${programForm.service}-${programForm.title}-${Date.now()}`,
+      service: programForm.service,
+      name: programForm.title,
+      description: programForm.description,
+      duration: programForm.duration,
+      schedule: programForm.schedule,
+      level: programForm.level
+    };
+
+    setPrograms((prev) => [newProgram, ...prev]);
+
+    try {
+      const { error } = await supabase.from('tribe_programs').insert([{
+        service: programForm.service,
+        title: programForm.title,
+        description: programForm.description,
+        duration: programForm.duration,
+        schedule: programForm.schedule,
+        level: programForm.level
+      }]);//.select();
+      if (error) throw error;
+      setDashboardMessage('Program created successfully and available in menu pages.');
+    } catch (err) {
+      setDashboardMessage('Program saved locally. Supabase connection not available or table not initialized.');
+    }
+
+    setProgramForm({ service: 'family', title: '', description: '', duration: '', schedule: '', level: '' });
+  };
+
+  const handleRemoveProgram = async (programId) => {
+    setPrograms((prev) => prev.filter((p) => p.id !== programId));
+    try {
+      const programToRemove = programs.find((p) => p.id === programId);
+      if (programToRemove && programToRemove.id) {
+        const { error } = await supabase.from('tribe_programs').delete().eq('id', programToRemove.id);
+        if (error) throw error;
+      }
+    } catch (err) {
+      // No-op fallback for local state only
+    }
+  };
+
+  const addApplicant = async (applicant) => {
+    const newApplicant = {
+      id: `app-${Date.now()}`,
+      fullName: applicant.fullName,
+      email: applicant.email,
+      phone: applicant.phone,
+      track: applicant.track,
+      message: applicant.message || '',
+      submittedAt: new Date().toISOString()
+    };
+    setApplicants((prev) => [newApplicant, ...prev]);
+
+    try {
+      const { error } = await supabase.from('tribe_applicants').insert([{
+        full_name: newApplicant.fullName,
+        email: newApplicant.email,
+        phone: newApplicant.phone,
+        track: newApplicant.track,
+        message: newApplicant.message
+      }]);//.select();
+      if (error) throw error;
+    } catch (err) {
+      console.log('Applicant captured locally; Supabase insert unavailable.');
+    }
+  };
+
+  const handleServiceIntakeSubmit = async (serviceApplicant) => {
+    setCmsSuccessMessage(null);
+    await addApplicant(serviceApplicant);
   };
 
   return (
@@ -1035,7 +1159,7 @@ export default function App() {
                   <div className="intake-form-wrapper">
                     <h3>Ecosystem Client Intake</h3>
                     <p>Register as a new client within our global framework to begin onboarding your personal track strategy.</p>
-                    <HomeIntakeForm />
+                    <HomeIntakeForm onSubmitApplicant={addApplicant} />
                   </div>
                 </section>
               </div>
@@ -1045,7 +1169,7 @@ export default function App() {
           {/* =========================================================================
              DEDICATED ROUTE PATTERNS FOR INDIVIDUAL PAGE VIEWS
              ========================================================================= */}
-          <Route path="/services/:serviceSlug" element={<ServicePageWrapper services={services} />} />
+          <Route path="/services/:serviceSlug" element={<ServicePageWrapper services={services} programs={programs} onIntakeSubmit={handleServiceIntakeSubmit} />} />
 
           {/* Administrative Gateway Login */}
           <Route 
@@ -1098,45 +1222,167 @@ export default function App() {
                     </header>
 
                     <main className="portal-workspace-body-content">
-                      <section className="dashboard-editor-card">
-                        <h3 style={{margin: '0 0 0.5rem 0', color: 'var(--text-primary)'}}>Modify Core Specialty Menus Content</h3>
-                        <p style={{color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0}}>Select your menu configuration channel to synchronize text details onto deep pages dynamically.</p>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
+                        {['content', 'programs', 'applicants'].map((tab) => (
+                          <button
+                            key={tab}
+                            onClick={() => setSelectedAdminTab(tab)}
+                            style={{
+                              padding: '0.85rem 1.25rem',
+                              borderRadius: '999px',
+                              border: selectedAdminTab === tab ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
+                              background: selectedAdminTab === tab ? 'var(--accent-primary)' : 'var(--bg-card)',
+                              color: selectedAdminTab === tab ? '#ffffff' : 'var(--text-primary)',
+                              cursor: 'pointer',
+                              fontWeight: '700'
+                            }}
+                          >
+                            {tab === 'content' ? 'Page Content' : tab === 'programs' ? 'Programs' : 'Applicants'}
+                          </button>
+                        ))}
+                      </div>
 
-                        {cmsSuccessMessage && <div className="status-feedback-banner" style={{marginTop: '1.5rem'}}>{cmsSuccessMessage}</div>}
+                      {dashboardMessage && <div className="status-feedback-banner" style={{marginBottom: '1.5rem'}}>{dashboardMessage}</div>}
 
-                        <form onSubmit={handleUpdateContentCMS} className="cms-creation-form-layout">
-                          <div className="form-input-container">
-                            <label style={{ color: 'var(--brand-blue)', fontWeight: '600' }}>Select Targeted Menu Category to Update</label>
-                            <select value={editTarget} onChange={(e) => setEditTarget(e.target.value)} className="plain-text-input" style={{ height: '46px', border: '1px solid var(--brand-blue)' }}>
-                              <option value="family">Family Life Coaching</option>
-                              <option value="marriage">Marriage & Relationship Counseling</option>
-                              <option value="children">Children & Teenagers Coaching</option>
-                            </select>
+                      {selectedAdminTab === 'content' && (
+                        <section className="dashboard-editor-card">
+                          <h3 style={{margin: '0 0 0.5rem 0', color: 'var(--text-primary)'}}>Modify Core Specialty Menus Content</h3>
+                          <p style={{color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0}}>Select your menu configuration channel to synchronize text details onto deep pages dynamically.</p>
+
+                          {cmsSuccessMessage && <div className="status-feedback-banner" style={{marginTop: '1.5rem'}}>{cmsSuccessMessage}</div>}
+
+                          <form onSubmit={handleUpdateContentCMS} className="cms-creation-form-layout">
+                            <div className="form-input-container">
+                              <label style={{ color: 'var(--brand-blue)', fontWeight: '600' }}>Select Targeted Menu Category to Update</label>
+                              <select value={editTarget} onChange={(e) => setEditTarget(e.target.value)} className="plain-text-input" style={{ height: '46px', border: '1px solid var(--brand-blue)' }}>
+                                <option value="family">Family Life Coaching</option>
+                                <option value="marriage">Marriage & Relationship Counseling</option>
+                                <option value="children">Children & Teenagers Coaching</option>
+                              </select>
+                            </div>
+
+                            <div className="form-input-container">
+                              <label style={{fontWeight: '600'}}>Display Heading Title</label>
+                              <input type="text" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} className="plain-text-input" required />
+                            </div>
+
+                            <div className="form-input-container">
+                              <label style={{fontWeight: '600'}}>Subtitle & Specialist Roles</label>
+                              <input type="text" value={formSubtitle} onChange={(e) => setFormSubtitle(e.target.value)} className="plain-text-input" required />
+                            </div>
+
+                            <div className="form-input-container">
+                              <label style={{fontWeight: '600'}}>Impact Score / Metric Total Text</label>
+                              <input type="text" value={formMetric} onChange={(e) => setFormMetric(e.target.value)} className="plain-text-input" required />
+                            </div>
+
+                            <div className="form-input-container">
+                              <label style={{fontWeight: '600'}}>Detailed Menu Context Description</label>
+                              <textarea value={formDesc} onChange={(e) => setFormDesc(e.target.value)} rows="5" className="plain-text-input" style={{ resize: 'vertical', fontFamily: 'inherit' }} required></textarea>
+                            </div>
+
+                            <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Publish Dynamic Update</button>
+                          </form>
+                        </section>
+                      )}
+
+                      {selectedAdminTab === 'programs' && (
+                        <section className="dashboard-editor-card">
+                          <h3 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Create Programs</h3>
+                          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Add new curriculum offerings for any service category and make them available on the customer-facing pages.</p>
+
+                          <form onSubmit={handleCreateProgram} className="cms-creation-form-layout" style={{ marginTop: '1.5rem' }}>
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>Service Category</label>
+                              <select value={programForm.service} onChange={(e) => setProgramForm((prev) => ({ ...prev, service: e.target.value }))} className="plain-text-input" style={{ height: '46px' }}>
+                                <option value="family">Family Life Coaching</option>
+                                <option value="marriage">Marriage & Relationship Counseling</option>
+                                <option value="children">Children & Teenagers Coaching</option>
+                              </select>
+                            </div>
+
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>Program Name</label>
+                              <input type="text" value={programForm.title} onChange={(e) => setProgramForm((prev) => ({ ...prev, title: e.target.value }))} className="plain-text-input" required />
+                            </div>
+
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>Program Level / Age Group</label>
+                              <input type="text" value={programForm.level} onChange={(e) => setProgramForm((prev) => ({ ...prev, level: e.target.value }))} className="plain-text-input" required />
+                            </div>
+
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>Duration</label>
+                              <input type="text" value={programForm.duration} onChange={(e) => setProgramForm((prev) => ({ ...prev, duration: e.target.value }))} className="plain-text-input" required />
+                            </div>
+
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>Schedule</label>
+                              <input type="text" value={programForm.schedule} onChange={(e) => setProgramForm((prev) => ({ ...prev, schedule: e.target.value }))} className="plain-text-input" required />
+                            </div>
+
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>Program Overview</label>
+                              <textarea value={programForm.description} onChange={(e) => setProgramForm((prev) => ({ ...prev, description: e.target.value }))} rows="4" className="plain-text-input" style={{ resize: 'vertical', fontFamily: 'inherit' }} required></textarea>
+                            </div>
+
+                            <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Create Program</button>
+                          </form>
+
+                          <div style={{ marginTop: '2rem' }}>
+                            <h4 style={{ marginBottom: '1rem' }}>Programs by Category</h4>
+                            <div style={{ display: 'grid', gap: '1rem' }}>
+                              {programs.map((program) => (
+                                <div key={program.id} style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1rem' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem' }}>
+                                    <div>
+                                      <strong>{program.name}</strong>
+                                      <div style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>{program.service.toUpperCase()}</div>
+                                    </div>
+                                    <button type="button" onClick={() => handleRemoveProgram(program.id)} style={{ background: '#ff4757', color: '#fff', border: 'none', borderRadius: '8px', padding: '0.55rem 0.85rem', cursor: 'pointer' }}>Remove</button>
+                                  </div>
+                                  <p style={{ margin: '0.85rem 0 0 0', color: 'var(--text-muted)' }}>{program.description}</p>
+                                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.92rem' }}>
+                                    <span>{program.duration}</span>
+                                    <span>{program.level}</span>
+                                    <span>{program.schedule}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
+                        </section>
+                      )}
 
-                          <div className="form-input-container">
-                            <label style={{fontWeight: '600'}}>Display Heading Title</label>
-                            <input type="text" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} className="plain-text-input" required />
+                      {selectedAdminTab === 'applicants' && (
+                        <section className="dashboard-editor-card">
+                          <h3 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Recent Applicants</h3>
+                          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Review the latest intake submissions and track their requested service path.</p>
+
+                          <div style={{ marginTop: '1.5rem', display: 'grid', gap: '1rem' }}>
+                            {applicants.length === 0 ? (
+                              <div style={{ padding: '1.5rem', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                                <p style={{ margin: 0, color: 'var(--text-muted)' }}>No applicants have submitted yet.</p>
+                              </div>
+                            ) : applicants.slice(0, 20).map((applicant) => (
+                              <div key={applicant.id} style={{ backgroundColor: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)', padding: '1rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+                                  <div>
+                                    <h4 style={{ margin: 0 }}>{applicant.fullName}</h4>
+                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>{applicant.track} intake request</span>
+                                  </div>
+                                  <span style={{ color: 'var(--accent-primary)', fontSize: '0.85rem', fontWeight: '700' }}>{new Date(applicant.submittedAt).toLocaleString()}</span>
+                                </div>
+                                <div style={{ marginTop: '0.75rem', display: 'grid', gap: '0.5rem' }}>
+                                  <span style={{ color: 'var(--text-muted)' }}><strong>Email:</strong> {applicant.email}</span>
+                                  <span style={{ color: 'var(--text-muted)' }}><strong>Phone:</strong> {applicant.phone}</span>
+                                  {applicant.message && <p style={{ margin: '0.5rem 0 0 0', color: 'var(--text-muted)' }}>{applicant.message}</p>}
+                                </div>
+                              </div>
+                            ))}
                           </div>
-
-                          <div className="form-input-container">
-                            <label style={{fontWeight: '600'}}>Subtitle & Specialist Roles</label>
-                            <input type="text" value={formSubtitle} onChange={(e) => setFormSubtitle(e.target.value)} className="plain-text-input" required />
-                          </div>
-
-                          <div className="form-input-container">
-                            <label style={{fontWeight: '600'}}>Impact Score / Metric Total Text</label>
-                            <input type="text" value={formMetric} onChange={(e) => setFormMetric(e.target.value)} className="plain-text-input" required />
-                          </div>
-
-                          <div className="form-input-container">
-                            <label style={{fontWeight: '600'}}>Detailed Menu Context Description</label>
-                            <textarea value={formDesc} onChange={(e) => setFormDesc(e.target.value)} rows="5" className="plain-text-input" style={{ resize: 'vertical', fontFamily: 'inherit' }} required></textarea>
-                          </div>
-
-                          <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Publish Dynamic Update</button>
-                        </form>
-                      </section>
+                        </section>
+                      )}
                     </main>
                   </div>
                 </div>
@@ -1201,43 +1447,28 @@ export default function App() {
 // =========================================================================
 // SERVICE ROUTE VIEWS CONTROLLER (WITH INNER TOPIC SLIDER BANNER)
 // =========================================================================
-function ServicePageWrapper({ services }) {
+function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
   const { serviceSlug } = useParams();
   const [success, setSuccess] = useState(false);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const [enrolledClasses, setEnrolledClasses] = useState([]);
+  const [formName, setFormName] = useState('');
+  const [formEmail, setFormEmail] = useState('');
+  const [formConcern, setFormConcern] = useState('');
   const activeService = services[serviceSlug];
 
-  // Service-specific class programs
+  const availablePrograms = programs.filter((program) => program.service === serviceSlug);
   const servicePrograms = {
-    family: {
-      title: "Family Coaching Programs",
-      classes: [
-        { id: 'fam-101', name: 'Family Communication Foundations', duration: '8 weeks', level: 'Beginner', time: 'Saturdays 10:00 AM' },
-        { id: 'fam-102', name: 'Conflict Resolution Mastery', duration: '6 weeks', level: 'Intermediate', time: 'Wednesdays 6:00 PM' },
-        { id: 'fam-103', name: 'Generational Healing Blueprint', duration: '10 weeks', level: 'Advanced', time: 'Sundays 3:00 PM' },
-        { id: 'fam-104', name: 'Parenting Strategies & Emotional Resilience', duration: '8 weeks', level: 'Beginner', time: 'Thursdays 7:00 PM' }
-      ]
-    },
-    marriage: {
-      title: "Couples Programs & Alignment Sessions",
-      classes: [
-        { id: 'mar-101', name: 'Couple Communication Deep Dive', duration: '6 weeks', level: 'Beginner', time: 'Saturdays 2:00 PM' },
-        { id: 'mar-102', name: 'Relationship Alignment Framework', duration: '8 weeks', level: 'Intermediate', time: 'Tuesdays 6:30 PM' },
-        { id: 'mar-103', name: 'Financial & Emotional Harmony', duration: '6 weeks', level: 'Intermediate', time: 'Fridays 7:00 PM' },
-        { id: 'mar-104', name: 'Advanced Intimacy & Connection', duration: '10 weeks', level: 'Advanced', time: 'Sundays 6:00 PM' }
-      ]
-    },
-    children: {
-      title: "Youth Mentorship & Development Programs",
-      classes: [
-        { id: 'kid-101', name: 'Cognitive Stability & Emotional Intelligence', duration: '8 weeks', level: 'Ages 10-13', time: 'Saturdays 11:00 AM' },
-        { id: 'kid-102', name: 'Teen Leadership & Self-Reliance', duration: '10 weeks', level: 'Ages 14-17', time: 'Wednesdays 4:00 PM' },
-        { id: 'kid-103', name: 'Social Skills & Confidence Building', duration: '6 weeks', level: 'Ages 10-13', time: 'Mondays 5:00 PM' },
-        { id: 'kid-104', name: 'Mentorship & Life Planning', duration: '8 weeks', level: 'Ages 14-17', time: 'Thursdays 5:30 PM' }
-      ]
-    }
-  }[serviceSlug] || { title: 'Programs', classes: [] };
+    title: availablePrograms.length > 0 ? `${activeService.title} Programs` : "Available Programs",
+    classes: availablePrograms.length > 0 ? availablePrograms.map((program) => ({
+      id: program.id,
+      name: program.name,
+      duration: program.duration,
+      level: program.level,
+      time: program.schedule,
+      description: program.description
+    })) : []
+  };
 
   // Specific image portfolios for sub-page banners to loop through dynamically
   const subPageBannerPortfolios = {
@@ -1305,9 +1536,21 @@ function ServicePageWrapper({ services }) {
     }
   }[serviceSlug];
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
+    if (onIntakeSubmit) {
+      await onIntakeSubmit({
+        fullName: formName,
+        email: formEmail,
+        phone: '',
+        track: serviceSlug,
+        message: formConcern
+      });
+    }
     setSuccess(true);
+    setFormName('');
+    setFormEmail('');
+    setFormConcern('');
     setTimeout(() => setSuccess(false), 5000);
   };
 
@@ -1343,16 +1586,16 @@ function ServicePageWrapper({ services }) {
                 <div className="registration-fields-grid">
                   <div className="form-input-container">
                     <label style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Full Name</label>
-                    <input type="text" required placeholder="John Doe" className="plain-text-input" />
+                    <input type="text" required placeholder="John Doe" value={formName} onChange={(e) => setFormName(e.target.value)} className="plain-text-input" />
                   </div>
                   <div className="form-input-container">
                     <label style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Email Address</label>
-                    <input type="email" required placeholder="johndoe@example.com" className="plain-text-input" />
+                    <input type="email" required placeholder="johndoe@example.com" value={formEmail} onChange={(e) => setFormEmail(e.target.value)} className="plain-text-input" />
                   </div>
                 </div>
                 <div className="form-input-container">
                   <label style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Specific Primary Concern Context / Program Interest</label>
-                  <textarea rows="4" required placeholder="Provide brief summary details..." className="plain-text-input" style={{ resize: 'vertical' }}></textarea>
+                  <textarea rows="4" required placeholder="Provide brief summary details..." value={formConcern} onChange={(e) => setFormConcern(e.target.value)} className="plain-text-input" style={{ resize: 'vertical' }}></textarea>
                 </div>
                 <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '280px' }}><i className="fa-solid fa-paper-plane"></i> Submit Intake Request</button>
               </form>
@@ -1587,12 +1830,25 @@ function ServicePageWrapper({ services }) {
 // =========================================================================
 // HOMEPAGE CLIENT REGISTRATION INTAKE COMPONENT
 // =========================================================================
-function HomeIntakeForm() {
+function HomeIntakeForm({ onSubmitApplicant }) {
   const [submitted, setSubmitted] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [emailAddress, setEmailAddress] = useState('');
+  const [phone, setPhone] = useState('');
+  const [track, setTrack] = useState('family');
+  const [message, setMessage] = useState('');
   
-  const submitForm = (e) => {
+  const submitForm = async (e) => {
     e.preventDefault();
+    if (onSubmitApplicant) {
+      await onSubmitApplicant({ fullName, email: emailAddress, phone, track, message });
+    }
     setSubmitted(true);
+    setFullName('');
+    setEmailAddress('');
+    setPhone('');
+    setTrack('family');
+    setMessage('');
   };
 
   if (submitted) {
@@ -1608,28 +1864,32 @@ function HomeIntakeForm() {
       <div className="registration-fields-grid">
         <div className="form-input-container">
           <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Your Full Name</label>
-          <input type="text" required placeholder="Enter name" className="plain-text-input" />
+          <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} required placeholder="Enter name" className="plain-text-input" />
         </div>
         <div className="form-input-container">
           <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Contact Email Address</label>
-          <input type="email" required placeholder="name@domain.com" className="plain-text-input" />
+          <input type="email" value={emailAddress} onChange={(e) => setEmailAddress(e.target.value)} required placeholder="name@domain.com" className="plain-text-input" />
         </div>
       </div>
 
       <div className="registration-fields-grid">
         <div className="form-input-container">
           <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Mobile Phone Line</label>
-          <input type="tel" required placeholder="+234..." className="plain-text-input" />
+          <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required placeholder="+234..." className="plain-text-input" />
         </div>
         <div className="form-input-container">
           <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Targeted Intake Track Selection</label>
-          <select required className="plain-text-input" style={{ height: '46px' }}>
-            <option value="">-- Choose a Track Menu --</option>
+          <select required value={track} onChange={(e) => setTrack(e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
             <option value="family">Family Life Coaching Framework</option>
             <option value="marriage">Marriage & Relationship Counseling Framework</option>
             <option value="children">Children & Teenagers Coaching Framework</option>
           </select>
         </div>
+      </div>
+
+      <div className="form-input-container">
+        <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Tell us briefly about your goal</label>
+        <textarea rows="3" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="What are you hoping to achieve?" className="plain-text-input" style={{ resize: 'vertical' }} />
       </div>
 
       <button type="submit" className="form-submit-action-btn">
