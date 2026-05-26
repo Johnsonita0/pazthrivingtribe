@@ -455,15 +455,16 @@ export default function App() {
         /* Promo slider (replaces synchronized-promo-banner) */
         .synchronized-promo-banner { width: 100% !important; padding: 2.5rem 4rem; box-sizing: border-box; }
         .banner-slider { position: relative; width: 100%; height: 380px; }
-        .banner-slide { position: absolute; inset: 0; display: flex; gap: 4rem; align-items: center; padding: 2rem; box-sizing: border-box; opacity: 0; transform: translateX(30px); transition: opacity 0.6s ease, transform 0.6s ease; }
-        .banner-slide.active { opacity: 1; transform: translateX(0); }
+        .banner-slide { position: absolute; inset: 0; display: flex; gap: 4rem; align-items: center; padding: 2rem; box-sizing: border-box; opacity: 0; transform: translateX(30px); transition: opacity 0.6s ease, transform 0.6s ease; pointer-events: none; }
+        .banner-slide.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
         .banner-text-package { display: flex; flex-direction: column; gap: 1rem; width: 55%; max-width: 800px; }
         .banner-badge { align-self: flex-start; background-color: rgba(35, 134, 54, 0.15); color: var(--accent-green); padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; display: flex; align-items: center; gap: 0.4rem; }
         .banner-text-package h2 { font-size: 2.4rem; font-weight: 800; color: var(--text-primary); margin: 0; line-height: 1.1; }
         .banner-text-package p { font-size: 1.05rem; line-height: 1.6; color: var(--text-muted); margin: 0; }
         .slide-graphic { width: 45%; height: 100%; border-radius: 12px; background-position: center; background-size: cover; box-shadow: var(--shadow-lg); border: 1px solid var(--border-color); }
-        @media (max-width: 768px) { .banner-slider { height: auto; } .banner-slide { position: relative; gap: 1.5rem; padding: 1.5rem; flex-direction: column; } .banner-text-package { width: 100%; } .slide-graphic { width: 100%; height: 250px; } }
+        @media (max-width: 768px) { .synchronized-promo-banner { padding: 1.5rem; } .banner-slider { height: auto; min-height: 400px; position: relative; } .banner-slide { position: static !important; display: none; opacity: 1 !important; transform: none !important; transition: none; flex-direction: column; gap: 1.5rem; padding: 1.5rem 0; align-items: stretch; } .banner-slide.active { display: flex; } .banner-text-package { width: 100%; } .slide-graphic { width: 100%; height: 250px; } }
         .banner-controls { position: absolute; right: 18px; bottom: 12px; display: flex; gap: 0.6rem; }
+        @media (max-width: 768px) { .banner-controls { position: relative; right: auto; bottom: auto; justify-content: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); } }
         .banner-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border-color); cursor: pointer; border: none; }
         .banner-dot.active { background: var(--brand-green); width: 28px; border-radius: 5px; }
 
