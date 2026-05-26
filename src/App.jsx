@@ -115,7 +115,7 @@ export default function App() {
 
   // --- State for Auto-Sliding Social Media News Updates Screen ---
   const [activeNewsIndex, setActiveNewsIndex] = useState(0);
-  const socialNewsFeed = [
+  const [socialNewsFeed, setSocialNewsFeed] = useState([
     {
       platform: "Facebook",
       icon: "fa-brands fa-facebook",
@@ -146,7 +146,14 @@ export default function App() {
       timestamp: "Streamed 3 days ago",
       targetUrl: "https://youtube.com/paztribe"
     }
-  ];
+  ]);
+  const [socialEditTarget, setSocialEditTarget] = useState('YouTube');
+  const [socialPreviewTitle, setSocialPreviewTitle] = useState('');
+  const [socialPreviewSummary, setSocialPreviewSummary] = useState('');
+  const [socialPreviewBadgeText, setSocialPreviewBadgeText] = useState('');
+  const [socialPreviewUrl, setSocialPreviewUrl] = useState('https://youtube.com/paztribe');
+  const [socialPreviewEmbedUrl, setSocialPreviewEmbedUrl] = useState('https://www.youtube.com/embed/pA2IkbBzC_M');
+  const [youtubeEmbedUrl, setYoutubeEmbedUrl] = useState('https://www.youtube.com/embed/pA2IkbBzC_M');
 
   // --- CMS Admin Form Inputs ---
   const [editTarget, setEditTarget] = useState('family');
@@ -175,6 +182,16 @@ export default function App() {
   const [dashboardMessage, setDashboardMessage] = useState(null);
 
   const emailInputRef = useRef(null);
+
+  useEffect(() => {
+    const selected = socialNewsFeed.find((item) => item.platform === socialEditTarget);
+    if (selected) {
+      setSocialPreviewTitle(selected.title);
+      setSocialPreviewSummary(selected.summary);
+      setSocialPreviewBadgeText(selected.badgeText);
+      setSocialPreviewUrl(selected.targetUrl);
+    }
+  }, [socialEditTarget, socialNewsFeed]);
 
   // --- Initialization Lifecycle Hook ---
   useEffect(() => {
@@ -348,6 +365,20 @@ export default function App() {
     navigate('/admin');
   };
 
+  const normalizeYoutubeEmbed = (url) => {
+    if (!url) return '';
+    let normalized = url.trim();
+    if (normalized.includes('youtu.be/')) {
+      normalized = normalized.replace('https://youtu.be/', 'https://www.youtube.com/embed/').split('?')[0];
+    } else if (normalized.includes('watch?v=')) {
+      normalized = normalized.replace('watch?v=', 'embed/').split('&')[0];
+    }
+    if (!normalized.startsWith('https://www.youtube.com/embed/')) {
+      return url;
+    }
+    return normalized;
+  };
+
   const handleUpdateContentCMS = async (e) => {
     e.preventDefault();
     setCmsSuccessMessage(null);
@@ -379,6 +410,28 @@ export default function App() {
     } catch (err) {
       setCmsSuccessMessage("Preview saved successfully to layout local view state!");
     }
+  };
+
+  const handleUpdateSocialPreview = (e) => {
+    e.preventDefault();
+    setCmsSuccessMessage(null);
+
+    setSocialNewsFeed((prev) => prev.map((item) => {
+      if (item.platform !== socialEditTarget) return item;
+      return {
+        ...item,
+        title: socialPreviewTitle,
+        summary: socialPreviewSummary,
+        badgeText: socialPreviewBadgeText,
+        targetUrl: socialPreviewUrl
+      };
+    }));
+
+    if (socialEditTarget === 'YouTube') {
+      setYoutubeEmbedUrl(normalizeYoutubeEmbed(socialPreviewEmbedUrl));
+    }
+
+    setCmsSuccessMessage(`Social preview for ${socialEditTarget} has been updated successfully.`);
   };
 
   const handleCreateProgram = async (e) => {
@@ -778,6 +831,14 @@ export default function App() {
         .broadcast-action-footer i { transition: transform 0.2s; }
         .social-news-broadcast-anchor-card:hover .broadcast-action-footer i { transform: translateX(5px); }
 
+        .youtube-video-feature-section { width: 100% !important; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 24px; padding: 3rem 4rem; box-sizing: border-box; margin: 2rem 0; }
+        .video-feature-grid { display: grid; grid-template-columns: 1.2fr 1.8fr; gap: 2rem; align-items: center; }
+        .video-feature-copy h2 { margin: 0 0 1rem 0; font-size: 2.4rem; line-height: 1.1; color: var(--text-primary); }
+        .video-feature-copy p { margin: 0; color: var(--text-muted); font-size: 1.05rem; line-height: 1.75; }
+        .video-embed-wrap { width: 100%; min-height: 340px; border-radius: 18px; overflow: hidden; background-color: #000; box-shadow: var(--shadow-sm); }
+        .video-embed-wrap iframe { width: 100%; height: 100%; min-height: 340px; border: none; }
+        @media (max-width: 768px) { .video-feature-grid { grid-template-columns: 1fr; } }
+
         /* Specialty Grid Dashboard Links Layout Section */
         .interactive-tabs-section { padding: 7rem 4rem; width: 100% !important; box-sizing: border-box; }
         .section-title-heading { text-align: center; font-size: 2.8rem; color: var(--text-primary); margin-bottom: 0.5rem; font-weight: 800; letter-spacing: -0.5px; }
@@ -1141,6 +1202,29 @@ export default function App() {
                   </div>
                 </section>
 
+                <section id="video-feature" className="youtube-video-feature-section" data-aos="fade-up">
+                  <div className="video-feature-grid">
+                    <div className="video-feature-copy">
+                      <h2>Featured YouTube Playback</h2>
+                      <p>Play a highlighted video directly on the homepage without leaving the site. Update the featured YouTube video from the admin dashboard.</p>
+                    </div>
+                    <div className="video-embed-wrap">
+                      {youtubeEmbedUrl ? (
+                        <iframe
+                          title="Featured YouTube Playback"
+                          src={normalizeYoutubeEmbed(youtubeEmbedUrl)}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <div style={{ padding: '2rem', color: 'var(--text-muted)', minHeight: '240px' }}>
+                          A featured YouTube video will appear here once a valid embed URL is configured in the CMS.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </section>
+
                 <section id="mission-vision-marquee" className="marquee-statements-section" data-aos="fade-up">
                   <div className="marquee-viewport-container">
                     <div className="sliding-statement-card" key={activeStatementIndex}>
@@ -1234,13 +1318,13 @@ export default function App() {
 
                     <main className="portal-workspace-body-content">
                       <div className="dashboard-tab-buttons">
-                        {['content', 'programs', 'applicants'].map((tab) => (
+                        {['content', 'social', 'programs', 'applicants'].map((tab) => (
                           <button
                             key={tab}
                             onClick={() => setSelectedAdminTab(tab)}
                             className={`dashboard-tab-button ${selectedAdminTab === tab ? 'active' : ''}`}
                           >
-                            {tab === 'content' ? 'Page Content' : tab === 'programs' ? 'Programs' : 'Applicants'}
+                            {tab === 'content' ? 'Page Content' : tab === 'social' ? 'Social Preview' : tab === 'programs' ? 'Programs' : 'Applicants'}
                           </button>
                         ))}
                       </div>
@@ -1285,6 +1369,54 @@ export default function App() {
                             </div>
 
                             <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Publish Dynamic Update</button>
+                          </form>
+                        </section>
+                      )}
+
+                      {selectedAdminTab === 'social' && (
+                        <section className="dashboard-editor-card">
+                          <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Social Media Preview Editor</h3>
+                          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Update the featured social card content and YouTube playback URL displayed on the homepage.</p>
+
+                          {cmsSuccessMessage && <div className="status-feedback-banner" style={{marginTop: '1.5rem'}}>{cmsSuccessMessage}</div>}
+
+                          <form onSubmit={handleUpdateSocialPreview} className="cms-creation-form-layout" style={{ marginTop: '1.5rem' }}>
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>Select Social Platform</label>
+                              <select value={socialEditTarget} onChange={(e) => setSocialEditTarget(e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
+                                {socialNewsFeed.map((item) => (
+                                  <option key={item.platform} value={item.platform}>{item.platform}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>Social Preview Headline</label>
+                              <input type="text" value={socialPreviewTitle} onChange={(e) => setSocialPreviewTitle(e.target.value)} className="plain-text-input" required />
+                            </div>
+
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>Preview Description</label>
+                              <textarea value={socialPreviewSummary} onChange={(e) => setSocialPreviewSummary(e.target.value)} rows="4" className="plain-text-input" style={{ resize: 'vertical', fontFamily: 'inherit' }} required />
+                            </div>
+
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>Action Link URL</label>
+                              <input type="url" value={socialPreviewUrl} onChange={(e) => setSocialPreviewUrl(e.target.value)} className="plain-text-input" required />
+                            </div>
+
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>Badge Label</label>
+                              <input type="text" value={socialPreviewBadgeText} onChange={(e) => setSocialPreviewBadgeText(e.target.value)} className="plain-text-input" required />
+                            </div>
+
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>YouTube Embed URL</label>
+                              <input type="url" value={socialPreviewEmbedUrl} onChange={(e) => setSocialPreviewEmbedUrl(e.target.value)} className="plain-text-input" placeholder="https://www.youtube.com/watch?v=..." />
+                              <small style={{ color: 'var(--text-muted)' }}>This URL will be used for the homepage video player when YouTube is selected.</small>
+                            </div>
+
+                            <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Update Social Preview</button>
                           </form>
                         </section>
                       )}
