@@ -12,7 +12,6 @@ export default function App() {
   const [theme, setTheme] = useState('dark'); 
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
-  const externalPortalUrl = 'https://your-external-portal-url.com';
   const logoImageUrl = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"%3E%3Crect width="48" height="48" rx="12" fill="%23238636"/%3E%3Ctext x="50%" y="55%" font-size="26" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-weight="700"%3EP%3C/text%3E%3C/svg%3E';
 
   // --- Auth & System Loading States ---
@@ -929,15 +928,9 @@ export default function App() {
             <Link to="/services/children" className="nav-link-item" onClick={() => setNavOpen(false)}>
               <i className="fa-solid fa-child-reaching"></i> Teens & Kids
             </Link>
-            <a
-              href={externalPortalUrl}
-              className="nav-cta-btn"
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setNavOpen(false)}
-            >
-              <i className="fa-solid fa-right-to-bracket"></i> Portal
-            </a>
+            <Link to="/admin" className="nav-cta-btn" onClick={() => setNavOpen(false)}>
+              <i className="fa-solid fa-right-to-bracket"></i> Admin Portal
+            </Link>
           </nav>
         </header>
 
