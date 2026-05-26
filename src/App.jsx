@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, Navigate, useParams, useNavigate } from 'react-router-dom';
+import { Routes, Route, Link, Navigate, useParams, useNavigate } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
@@ -460,7 +460,7 @@ export default function App() {
   };
 
   return (
-    <Router>
+    <>
       <style>{`
         :root {
           --bg-main: ${theme === 'dark' ? '#0d1117' : '#f6f8fa'};
@@ -1446,7 +1446,7 @@ export default function App() {
           </div>
         </footer>
       </div>
-    </Router>
+    </>
   );
 }
 
