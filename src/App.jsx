@@ -398,6 +398,7 @@ export default function App() {
           display: flex; align-items: center; gap: 0.6rem; cursor: pointer;
           background-color: var(--bg-card); border: 1px solid var(--border-color);
           padding: 0.75rem 1.2rem; border-radius: 30px; box-shadow: var(--shadow-lg);
+          animation: bounce-default 2s infinite ease-in-out;
         }
         .float-whatsapp-container { position: fixed; bottom: 25px; right: 25px; z-index: 9999; }
         .whatsapp-float-btn {
@@ -461,6 +462,7 @@ export default function App() {
         .banner-text-package h2 { font-size: 2.4rem; font-weight: 800; color: var(--text-primary); margin: 0; line-height: 1.1; }
         .banner-text-package p { font-size: 1.05rem; line-height: 1.6; color: var(--text-muted); margin: 0; }
         .slide-graphic { width: 45%; height: 100%; border-radius: 12px; background-position: center; background-size: cover; box-shadow: var(--shadow-lg); border: 1px solid var(--border-color); }
+        @media (max-width: 768px) { .banner-slider { height: auto; } .banner-slide { position: relative; gap: 1.5rem; padding: 1.5rem; flex-direction: column; } .banner-text-package { width: 100%; } .slide-graphic { width: 100%; height: 250px; } }
         .banner-controls { position: absolute; right: 18px; bottom: 12px; display: flex; gap: 0.6rem; }
         .banner-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border-color); cursor: pointer; border: none; }
         .banner-dot.active { background: var(--brand-green); width: 28px; border-radius: 5px; }
