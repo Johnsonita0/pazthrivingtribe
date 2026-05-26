@@ -1424,7 +1424,7 @@ export default function App() {
             <div className="footer-links-column">
               <h4>Portals</h4>
               <div className="footer-interactive-links">
-                <Link to="https://pazthrivingtribe.schoolsfocus.net/" className="footer-nav-anchor">Main Portal</Link>
+                <Link to="https://pazthrivingtribe.schoolsfocus.net/signin" className="footer-nav-anchor">Main Portal</Link>
               </div>
             </div>
 
