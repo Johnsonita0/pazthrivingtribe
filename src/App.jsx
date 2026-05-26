@@ -824,6 +824,11 @@ export default function App() {
         .portal-workspace-header { background-color: var(--bg-card); border-bottom: 1px solid var(--border-color); padding: 1.5rem 4rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; box-sizing: border-box; border-radius: 0 0 20px 20px; }
         .dashboard-logout-btn { background: transparent; border: 1px solid var(--brand-green); color: var(--brand-green); padding: 0.75rem 1.25rem; border-radius: 999px; cursor: pointer; font-weight: 700; transition: background-color 0.2s ease, color 0.2s ease; }
         .dashboard-logout-btn:hover { background: var(--brand-green); color: #ffffff; }
+        .dashboard-tab-buttons { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; }
+        .dashboard-tab-button { padding: 0.95rem 1.4rem; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-weight: 700; cursor: pointer; transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease; }
+        .dashboard-tab-button:hover { background: rgba(35,134,54,0.12); border-color: var(--brand-green); color: var(--text-primary); transform: translateY(-1px); }
+        .dashboard-tab-button.active { background: var(--accent-primary); border-color: var(--accent-primary); color: #ffffff; }
+        .dashboard-tab-button.active:hover { background: #36b560; border-color: #36b560; }
         .portal-workspace-body-content { padding: 3rem 4rem; width: 100%; box-sizing: border-box; display: grid; gap: 2rem; }
         .dashboard-editor-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 18px; padding: 3.5rem; box-shadow: var(--shadow-sm); width: 100%; box-sizing: border-box; }
         .cms-creation-form-layout { display: flex; flex-direction: column; gap: 1.75rem; margin-top: 2rem; }
@@ -1228,20 +1233,12 @@ export default function App() {
                     </header>
 
                     <main className="portal-workspace-body-content">
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
+                      <div className="dashboard-tab-buttons">
                         {['content', 'programs', 'applicants'].map((tab) => (
                           <button
                             key={tab}
                             onClick={() => setSelectedAdminTab(tab)}
-                            style={{
-                              padding: '0.85rem 1.25rem',
-                              borderRadius: '999px',
-                              border: selectedAdminTab === tab ? '2px solid var(--accent-primary)' : '1px solid var(--border-color)',
-                              background: selectedAdminTab === tab ? 'var(--accent-primary)' : 'var(--bg-card)',
-                              color: selectedAdminTab === tab ? '#ffffff' : 'var(--text-primary)',
-                              cursor: 'pointer',
-                              fontWeight: '700'
-                            }}
+                            className={`dashboard-tab-button ${selectedAdminTab === tab ? 'active' : ''}`}
                           >
                             {tab === 'content' ? 'Page Content' : tab === 'programs' ? 'Programs' : 'Applicants'}
                           </button>
