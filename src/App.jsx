@@ -332,15 +332,6 @@ export default function App() {
     }
   };
 
-  if (loading && !session) {
-    return (
-      <div className="system-loading-splash">
-        <div className="loading-spinner-element"></div>
-        <h3 style={{fontFamily: 'system-ui', color: '#8b949e'}}>Loading Paz Tribe Ecosystem...</h3>
-      </div>
-    );
-  }
-
   return (
     <Router>
       <style>{`
