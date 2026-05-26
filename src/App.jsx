@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, Navigate, useParams } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate, useParams, useNavigate } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
@@ -17,6 +17,7 @@ export default function App() {
   // --- Auth & System Loading States ---
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState(null);
@@ -344,6 +345,7 @@ export default function App() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    navigate('/admin');
   };
 
   const handleUpdateContentCMS = async (e) => {
@@ -810,19 +812,23 @@ export default function App() {
 
         /* Secure Dashboard Context Panels */
         .portal-workspace-grid { display: grid; grid-template-columns: 300px 1fr; min-height: 100vh; background-color: var(--bg-main); width: 100% !important; }
-        .portal-sidebar-panel { background-color: var(--bg-card); border-right: 1px solid var(--border-color); padding: 2.5rem 1.75rem; display: flex; flex-direction: column; }
-        .portal-sidebar-title { font-size: 1.35rem; color: var(--text-primary); font-weight: 700; margin-bottom: 3rem; border-left: 4px solid var(--brand-green); padding-left: 0.6rem; }
+        .portal-sidebar-panel { background-color: var(--bg-card); border-right: 1px solid var(--border-color); padding: 2.5rem 1.75rem; display: flex; flex-direction: column; gap: 1.5rem; }
+        .portal-sidebar-title { font-size: 1.35rem; color: var(--text-primary); font-weight: 700; margin-bottom: 1.5rem; border-left: 4px solid var(--brand-green); padding-left: 0.8rem; }
         .portal-sidebar-links { display: flex; flex-direction: column; gap: 0.6rem; flex-grow: 1; }
-        .sidebar-link-item { color: var(--text-muted); text-decoration: none; padding: 0.85rem 1.1rem; border-radius: 8px; font-size: 1rem; font-weight: 600; }
+        .sidebar-link-item { color: var(--text-muted); text-decoration: none; padding: 0.95rem 1.1rem; border-radius: 12px; font-size: 1rem; font-weight: 600; transition: background-color 0.2s ease, color 0.2s ease; }
+        .sidebar-link-item:hover { background-color: rgba(46,164,79,0.08); color: var(--text-primary); }
         .sidebar-link-item.active { background-color: var(--bg-input); color: var(--text-primary); font-weight: 700; border: 1px solid var(--border-color); }
-        .sidebar-disconnect-btn { background-color: transparent; border: 1px solid #f85149; color: #f85149; padding: 0.75rem; border-radius: 8px; cursor: pointer; font-weight: 600; }
+        .sidebar-disconnect-btn { background-color: #f85149; border: none; color: #fff; padding: 0.85rem 1rem; border-radius: 12px; cursor: pointer; font-weight: 700; transition: background-color 0.2s ease, transform 0.2s ease; }
+        .sidebar-disconnect-btn:hover { background-color: #dc3545; transform: translateY(-1px); }
         .portal-main-workspace { display: flex; flex-direction: column; width: 100%; }
-        .portal-workspace-header { background-color: var(--bg-card); border-bottom: 1px solid var(--border-color); padding: 1.5rem 4rem; display: flex; justify-content: space-between; align-items: center; box-sizing: border-box; }
-        .portal-workspace-body-content { padding: 3rem 4rem; width: 100%; box-sizing: border-box; }
-        .dashboard-editor-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 3.5rem; box-shadow: var(--shadow-sm); width: 100%; box-sizing: border-box; }
-        .cms-creation-form-layout { display: flex; flex-direction: column; gap: 1.75rem; margin-top: 2.5rem; }
-        .form-input-container { display: flex; flex-direction: column; gap: 0.6rem; }
-        .plain-text-input { background-color: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.85rem 1.1rem; border-radius: 8px; font-size: 1rem; width: 100%; box-sizing: border-box; }
+        .portal-workspace-header { background-color: var(--bg-card); border-bottom: 1px solid var(--border-color); padding: 1.5rem 4rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; box-sizing: border-box; border-radius: 0 0 20px 20px; }
+        .dashboard-logout-btn { background: transparent; border: 1px solid var(--brand-green); color: var(--brand-green); padding: 0.75rem 1.25rem; border-radius: 999px; cursor: pointer; font-weight: 700; transition: background-color 0.2s ease, color 0.2s ease; }
+        .dashboard-logout-btn:hover { background: var(--brand-green); color: #ffffff; }
+        .portal-workspace-body-content { padding: 3rem 4rem; width: 100%; box-sizing: border-box; display: grid; gap: 2rem; }
+        .dashboard-editor-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 18px; padding: 3.5rem; box-shadow: var(--shadow-sm); width: 100%; box-sizing: border-box; }
+        .cms-creation-form-layout { display: flex; flex-direction: column; gap: 1.75rem; margin-top: 2rem; }
+        .form-input-container { display: flex; flex-direction: column; gap: 0.75rem; }
+        .plain-text-input { background-color: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.95rem 1.2rem; border-radius: 12px; font-size: 1rem; width: 100%; box-sizing: border-box; }
         .form-submit-action-btn { background-color: var(--brand-green); color: white; padding: 0.9rem 2rem; border-radius: 6px; border: none; font-weight: 700; font-size: 1rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; }
         .form-submit-action-btn:hover { background-color: var(--brand-green-hover); }
         .status-feedback-banner { padding: 1.1rem; background-color: rgba(46,164,79,0.12); border: 1px solid var(--accent-green); color: var(--accent-green); border-radius: 8px; font-weight: 600; text-align: center; }
@@ -929,7 +935,7 @@ export default function App() {
               <i className="fa-solid fa-child-reaching"></i> Teens & Kids
             </Link>
             <Link to="/admin" className="nav-cta-btn" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-right-to-bracket"></i> Admin Portal
+              <i className="fa-solid fa-right-to-bracket"></i> Portal
             </Link>
           </nav>
         </header>
@@ -1206,13 +1212,19 @@ export default function App() {
                       <Link to="/" className="sidebar-link-item" style={{textDecoration: 'none'}}>← Exit to Live Website</Link>
                       <div className="sidebar-link-item active">Core Studio Engine</div>
                     </nav>
-                    <button onClick={handleSignOut} className="sidebar-disconnect-btn">Disconnect Console</button>
+                    <button onClick={handleSignOut} className="sidebar-disconnect-btn">Logout to Sign In</button>
                   </aside>
 
                   <div className="portal-main-workspace">
                     <header className="portal-workspace-header">
-                      <h2 style={{margin: 0, fontSize: '1.4rem', color: 'var(--text-primary)'}}>Paz Tribe Dynamic Website CMS Engine</h2>
-                      <div style={{background: 'var(--bg-main)', padding: '0.5rem 1rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', border: '1px solid var(--border-color)'}}>{session.user.email}</div>
+                      <div>
+                        <h2 style={{margin: 0, fontSize: '1.4rem', color: 'var(--text-primary)'}}>Paz Tribe Dynamic Website CMS Engine</h2>
+                        <p style={{margin: '0.5rem 0 0 0', color: 'var(--text-muted)', fontSize: '0.95rem'}}>Secure admin console for content, applicants, and programs.</p>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                        <div style={{background: 'var(--bg-main)', padding: '0.5rem 1rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', border: '1px solid var(--border-color)'}}>{session.user.email}</div>
+                        <button onClick={handleSignOut} className="dashboard-logout-btn">Logout</button>
+                      </div>
                     </header>
 
                     <main className="portal-workspace-body-content">
