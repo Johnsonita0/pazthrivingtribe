@@ -20,6 +20,7 @@ export default function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState(null);
+  const [enrollments, setEnrollments] = useState({});
 
   // --- Sliding Hero Banner States (Main Page) ---
   const [currentHomeSlide, setCurrentHomeSlide] = useState(0);
@@ -529,6 +530,31 @@ export default function App() {
         .topic-news-card h5 { font-size: 1.1rem; font-weight: 700; color: var(--brand-blue); margin: 0 0 0.75rem 0; display: flex; align-items: center; gap: 0.5rem; }
         .topic-news-card h3 { font-size: 1.4rem; font-weight: 800; color: var(--text-primary); margin: 0 0 1rem 0; }
         .topic-news-card p { font-size: 1rem; line-height: 1.6; color: var(--text-muted); margin: 0; }
+
+        /* ENROLLMENT CLASS CARDS & PROGRAM SECTIONS */
+        .enrollment-class-card { 
+          position: relative; 
+          overflow: hidden; 
+          background-clip: border-box;
+        }
+        .enrollment-class-card button {
+          width: 100%;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        @media (max-width: 768px) {
+          .enrollment-class-card {
+            padding: 1.25rem !important;
+          }
+          .enrollment-class-card h4 {
+            font-size: 1rem;
+          }
+          .enrollment-class-card button {
+            padding: 0.7rem 1rem !important;
+            font-size: 0.9rem;
+          }
+        }
 
         /* FOUNDER / CEO MULTI-MESSAGE INTERACTIVE EXECUTIVE SUITE */
         .founder-executive-suite {
@@ -1179,7 +1205,39 @@ function ServicePageWrapper({ services }) {
   const { serviceSlug } = useParams();
   const [success, setSuccess] = useState(false);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+  const [enrolledClasses, setEnrolledClasses] = useState([]);
   const activeService = services[serviceSlug];
+
+  // Service-specific class programs
+  const servicePrograms = {
+    family: {
+      title: "Family Coaching Programs",
+      classes: [
+        { id: 'fam-101', name: 'Family Communication Foundations', duration: '8 weeks', level: 'Beginner', time: 'Saturdays 10:00 AM' },
+        { id: 'fam-102', name: 'Conflict Resolution Mastery', duration: '6 weeks', level: 'Intermediate', time: 'Wednesdays 6:00 PM' },
+        { id: 'fam-103', name: 'Generational Healing Blueprint', duration: '10 weeks', level: 'Advanced', time: 'Sundays 3:00 PM' },
+        { id: 'fam-104', name: 'Parenting Strategies & Emotional Resilience', duration: '8 weeks', level: 'Beginner', time: 'Thursdays 7:00 PM' }
+      ]
+    },
+    marriage: {
+      title: "Couples Programs & Alignment Sessions",
+      classes: [
+        { id: 'mar-101', name: 'Couple Communication Deep Dive', duration: '6 weeks', level: 'Beginner', time: 'Saturdays 2:00 PM' },
+        { id: 'mar-102', name: 'Relationship Alignment Framework', duration: '8 weeks', level: 'Intermediate', time: 'Tuesdays 6:30 PM' },
+        { id: 'mar-103', name: 'Financial & Emotional Harmony', duration: '6 weeks', level: 'Intermediate', time: 'Fridays 7:00 PM' },
+        { id: 'mar-104', name: 'Advanced Intimacy & Connection', duration: '10 weeks', level: 'Advanced', time: 'Sundays 6:00 PM' }
+      ]
+    },
+    children: {
+      title: "Youth Mentorship & Development Programs",
+      classes: [
+        { id: 'kid-101', name: 'Cognitive Stability & Emotional Intelligence', duration: '8 weeks', level: 'Ages 10-13', time: 'Saturdays 11:00 AM' },
+        { id: 'kid-102', name: 'Teen Leadership & Self-Reliance', duration: '10 weeks', level: 'Ages 14-17', time: 'Wednesdays 4:00 PM' },
+        { id: 'kid-103', name: 'Social Skills & Confidence Building', duration: '6 weeks', level: 'Ages 10-13', time: 'Mondays 5:00 PM' },
+        { id: 'kid-104', name: 'Mentorship & Life Planning', duration: '8 weeks', level: 'Ages 14-17', time: 'Thursdays 5:30 PM' }
+      ]
+    }
+  }[serviceSlug] || { title: 'Programs', classes: [] };
 
   // Specific image portfolios for sub-page banners to loop through dynamically
   const subPageBannerPortfolios = {
@@ -1215,6 +1273,16 @@ function ServicePageWrapper({ services }) {
     return () => clearInterval(serviceBannerInterval);
   }, [subPageBannerPortfolios]);
 
+  const handleEnrollClass = (classItem) => {
+    if (!enrolledClasses.find(c => c.id === classItem.id)) {
+      setEnrolledClasses([...enrolledClasses, classItem]);
+    }
+  };
+
+  const handleRemoveEnrollment = (classId) => {
+    setEnrolledClasses(enrolledClasses.filter(c => c.id !== classId));
+  };
+
   if (!activeService) {
     return <Navigate to="/" replace />;
   }
@@ -1240,6 +1308,7 @@ function ServicePageWrapper({ services }) {
   const handleFormSubmit = (e) => {
     e.preventDefault();
     setSuccess(true);
+    setTimeout(() => setSuccess(false), 5000);
   };
 
   return (
@@ -1309,6 +1378,208 @@ function ServicePageWrapper({ services }) {
           </div>
         </div>
       </div>
+
+      {/* AVAILABLE CLASSES & ENROLLMENT SECTION */}
+      <section style={{ padding: '4rem 2rem', backgroundColor: 'var(--bg-secondary)', marginTop: '3rem' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <h2 style={{ marginBottom: '1rem', fontSize: '2.2rem', fontWeight: '800', textAlign: 'center' }} data-aos="fade-down">
+            <i className="fa-solid fa-graduation-cap" style={{ marginRight: '0.5rem', color: 'var(--accent-primary)' }}></i>
+            {servicePrograms.title}
+          </h2>
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '3rem', fontSize: '1.1rem' }} data-aos="fade-up">
+            Explore our comprehensive curriculum designed specifically for {activeService.title.toLowerCase()}
+          </p>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+            gap: '2rem',
+            marginBottom: '3rem'
+          }}>
+            {servicePrograms.classes.map((classItem, idx) => (
+              <div
+                key={classItem.id}
+                className="enrollment-class-card"
+                data-aos="fade-up"
+                data-aos-delay={idx * 100}
+                style={{
+                  backgroundColor: 'var(--bg-main)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '12px',
+                  padding: '1.5rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  transition: 'all 0.3s ease',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)';
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = 'none';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                  <span style={{
+                    display: 'inline-block',
+                    backgroundColor: 'var(--accent-primary)',
+                    color: 'white',
+                    padding: '0.4rem 0.8rem',
+                    borderRadius: '20px',
+                    fontSize: '0.75rem',
+                    fontWeight: '700'
+                  }}>
+                    {classItem.level}
+                  </span>
+                </div>
+
+                <h4 style={{ marginBottom: '0.8rem', fontWeight: '700', fontSize: '1.1rem', lineHeight: '1.4' }}>
+                  {classItem.name}
+                </h4>
+
+                <div style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.6rem',
+                  marginBottom: '1.5rem',
+                  fontSize: '0.9rem',
+                  color: 'var(--text-muted)',
+                  flexGrow: 1
+                }}>
+                  <div><i className="fa-solid fa-calendar" style={{ marginRight: '0.5rem', color: 'var(--accent-primary)' }}></i> {classItem.duration}</div>
+                  <div><i className="fa-solid fa-clock" style={{ marginRight: '0.5rem', color: 'var(--accent-primary)' }}></i> {classItem.time}</div>
+                </div>
+
+                <button
+                  onClick={() => handleEnrollClass(classItem)}
+                  disabled={enrolledClasses.some(c => c.id === classItem.id)}
+                  style={{
+                    padding: '0.8rem 1.2rem',
+                    backgroundColor: enrolledClasses.some(c => c.id === classItem.id) ? 'var(--text-muted)' : 'var(--accent-primary)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: '700',
+                    cursor: enrolledClasses.some(c => c.id === classItem.id) ? 'default' : 'pointer',
+                    transition: 'all 0.3s ease',
+                    opacity: enrolledClasses.some(c => c.id === classItem.id) ? 0.6 : 1
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!enrolledClasses.some(c => c.id === classItem.id)) {
+                      e.currentTarget.style.opacity = '0.9';
+                      e.currentTarget.style.transform = 'scale(1.05)';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.opacity = enrolledClasses.some(c => c.id === classItem.id) ? '0.6' : '1';
+                    e.currentTarget.style.transform = 'scale(1)';
+                  }}
+                >
+                  <i className={`fa-solid ${enrolledClasses.some(c => c.id === classItem.id) ? 'fa-check' : 'fa-plus'}`} style={{ marginRight: '0.5rem' }}></i>
+                  {enrolledClasses.some(c => c.id === classItem.id) ? 'Enrolled' : 'Enroll Now'}
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* ENROLLMENT SUMMARY SECTION */}
+          {enrolledClasses.length > 0 && (
+            <div
+              style={{
+                backgroundColor: 'var(--bg-main)',
+                border: '2px solid var(--accent-primary)',
+                borderRadius: '12px',
+                padding: '2rem',
+                marginTop: '2rem'
+              }}
+              data-aos="zoom-in"
+            >
+              <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center' }}>
+                <i className="fa-solid fa-bookmark" style={{ marginRight: '0.8rem', color: 'var(--accent-primary)', fontSize: '1.4rem' }}></i>
+                Your Enrollment Summary ({enrolledClasses.length} classe{enrolledClasses.length !== 1 ? 's' : ''})
+              </h3>
+
+              <div style={{ display: 'grid', gap: '1rem', marginBottom: '1.5rem' }}>
+                {enrolledClasses.map((enrolled) => (
+                  <div
+                    key={enrolled.id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '1rem',
+                      backgroundColor: 'var(--bg-secondary)',
+                      borderRadius: '8px',
+                      borderLeft: '4px solid var(--accent-primary)'
+                    }}
+                  >
+                    <div>
+                      <h5 style={{ marginBottom: '0.3rem', fontWeight: '700' }}>{enrolled.name}</h5>
+                      <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                        <i className="fa-solid fa-calendar-check" style={{ marginRight: '0.4rem' }}></i>
+                        {enrolled.time}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleRemoveEnrollment(enrolled.id)}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#ff4757',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontWeight: '700',
+                        transition: 'all 0.3s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.opacity = '0.9';
+                        e.currentTarget.style.transform = 'scale(1.05)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.opacity = '1';
+                        e.currentTarget.style.transform = 'scale(1)';
+                      }}
+                    >
+                      <i className="fa-solid fa-trash"></i> Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => {
+                  alert(`Enrolled in ${enrolledClasses.length} classe${enrolledClasses.length !== 1 ? 's' : ''}:\n\n${enrolledClasses.map(c => c.name).join('\n')}\n\nPlease check your email for confirmation details.`);
+                  setEnrolledClasses([]);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '1rem',
+                  backgroundColor: 'var(--accent-primary)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '1.1rem',
+                  fontWeight: '800',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.opacity = '0.9';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.opacity = '1';
+                }}
+              >
+                <i className="fa-solid fa-paper-plane" style={{ marginRight: '0.8rem' }}></i>
+                Confirm & Submit Enrollments
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
