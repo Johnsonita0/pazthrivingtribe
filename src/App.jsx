@@ -537,9 +537,17 @@ export default function App() {
           padding: 5rem 4rem; box-sizing: border-box; display: grid; grid-template-columns: 1fr 1.5fr; gap: 3rem; align-items: center; z-index: 3;
         }
         .founder-portrait-frame { width: 100%; height: 520px; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-lg); border: 1px solid var(--border-color); position: relative; display: block; }
-        .founder-portraits { display: flex; width: 100%; height: 100%; gap: 0.5rem; }
-        .founder-img { width: 50%; height: 100%; object-fit: cover; display: block; }
-        @media (max-width: 768px) { .founder-portraits { flex-direction: column; } .founder-img { width: 100%; height: 50%; } }
+        .founder-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        @media (max-width: 768px) { .founder-portrait-frame { height: 400px; } }
+
+        /* THEME SELECTION MODAL */
+        .theme-modal-dimmed-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); z-index: 20000; }
+        .theme-selection-card-frame { background: var(--bg-card); color: var(--text-primary); border-radius: 12px; padding: 2.25rem; width: 520px; max-width: calc(100% - 40px); box-shadow: 0 18px 50px rgba(0,0,0,0.45); border: 1px solid var(--border-color); }
+        .theme-selection-card-frame h2 { margin: 0 0 0.5rem 0; }
+        .theme-selection-card-frame p { margin: 0 0 1.25rem 0; color: var(--text-muted); }
+        .theme-options-grid { display: flex; gap: 1rem; }
+        .choice-option-tile { flex: 1; text-align: center; padding: 1rem 1.25rem; border-radius: 8px; cursor: pointer; border: 1px solid var(--border-color); background: var(--bg-main); transition: transform 0.12s ease, box-shadow 0.12s ease; }
+        .choice-option-tile:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.25); }
         .founder-title-tag-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.85)); padding: 2rem 1.5rem 1.5rem 1.5rem; color: white; }
         .founder-title-tag-overlay h4 { margin: 0; font-size: 1.3rem; font-weight: 700; color: #ffffff; }
         .founder-title-tag-overlay span { font-size: 0.9rem; color: var(--brand-blue); font-weight: 600; }
@@ -720,14 +728,16 @@ export default function App() {
           <Route path="/dashboard" element={null} />
           <Route path="*" element={
             <>
-              <div className="float-theme-toggle-container">
-                <div className="theme-toggle-switch-shell" onClick={toggleThemeModeSwitch}>
-                  <span style={{fontSize: '1.1rem'}}>{theme === 'dark' ? '☀️' : '🌙'}</span>
-                  <span style={{fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-primary)'}}>
-                    {theme === 'dark' ? 'Light' : 'Dark'}
-                  </span>
+              {!showThemeModal && (
+                <div className="float-theme-toggle-container">
+                  <div className="theme-toggle-switch-shell" onClick={toggleThemeModeSwitch}>
+                    <span style={{fontSize: '1.1rem'}}>{theme === 'dark' ? '☀️' : '🌙'}</span>
+                    <span style={{fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-primary)'}}>
+                      {theme === 'dark' ? 'Light' : 'Dark'}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="float-whatsapp-container">
                 <a href="https://wa.me/2348123456789" target="_blank" rel="noopener noreferrer" className="whatsapp-float-btn">
@@ -796,10 +806,7 @@ export default function App() {
 
                 <section id="founder-suite" className="founder-executive-suite" data-aos="fade-up">
                   <div className="founder-portrait-frame" data-aos="fade-right">
-                    <div className="founder-portraits">
-                      <img src="../image/pic1.jpeg" className="founder-img" alt="Paz Tribe Founder and CEO" />
-                      <img src="../image/pic1.jpeg" className="founder-img" alt="Paz Tribe Founder and CEO" />
-                    </div>
+                    <img src="../image/pic1.jpeg" className="founder-img" alt="Paz Tribe Founder and CEO" />
                     <div className="founder-title-tag-overlay">
                       <h4>Mrs. Iraoya Roseline</h4>
                       <span>Founder/Visionair of PTT</span>
