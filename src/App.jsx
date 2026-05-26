@@ -28,7 +28,7 @@ export default function App() {
     {
       title: 'Welcome to Paz Thriving Tribe',
       text: 'Welcome — connecting families, strengthening minds, and building resilient communities.',
-      image: logoImageUrl,
+      image: "./logo/logomain.png",
       imageType: 'logo'
     },
     {
@@ -98,15 +98,15 @@ export default function App() {
   const [activeStatementIndex, setActiveStatementIndex] = useState(0);
   const statements = [
     {
-      type: "Our Strategic Mission",
+      type: "Our Mission Statement",
       heading: "Engineering Healthy Connections Across Generations",
-      text: "To deploy structured behavioral architectures and professional transformation frameworks that equip couples, families, and modern youth with intentional clarity, mental resilience, and lasting emotional stability.",
+      text: "To be a leading provider of professional life coaching that empowers children, teenagers, parents, and organizations to achieve lasting personal growth, deeper self-awareness, and unshakable resilience.",
       icon: "fa-solid fa-crosshairs"
     },
     {
-      type: "Our Ecosystem Vision",
+      type: "Our Vision Statement",
       heading: "Setting the Global Standard for Systemic Family Health",
-      text: "To become the leading continental institutional hub for holistic character development, relationship alignment counseling, and systemic generational healing—building premium communities from the core layout of the home up.",
+      text: "To provide professional life coaching services that fosterp ersonal growth, self-awareness, and resilience in children, teenagers, parents, and organizations.",
       icon: "fa-solid fa-wand-magic-sparkles"
     }
   ];
@@ -536,8 +536,10 @@ export default function App() {
           width: 100% !important; background-color: var(--bg-main); border-bottom: 1px solid var(--border-color);
           padding: 5rem 4rem; box-sizing: border-box; display: grid; grid-template-columns: 1fr 1.5fr; gap: 3rem; align-items: center; z-index: 3;
         }
-        .founder-portrait-frame { width: 100%; height: 520px; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-lg); border: 1px solid var(--border-color); position: relative; }
-        .founder-img { width: 100%; height: 100%; object-fit: cover; }
+        .founder-portrait-frame { width: 100%; height: 520px; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-lg); border: 1px solid var(--border-color); position: relative; display: block; }
+        .founder-portraits { display: flex; width: 100%; height: 100%; gap: 0.5rem; }
+        .founder-img { width: 50%; height: 100%; object-fit: cover; display: block; }
+        @media (max-width: 768px) { .founder-portraits { flex-direction: column; } .founder-img { width: 100%; height: 50%; } }
         .founder-title-tag-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.85)); padding: 2rem 1.5rem 1.5rem 1.5rem; color: white; }
         .founder-title-tag-overlay h4 { margin: 0; font-size: 1.3rem; font-weight: 700; color: #ffffff; }
         .founder-title-tag-overlay span { font-size: 0.9rem; color: var(--brand-blue); font-weight: 600; }
@@ -764,7 +766,7 @@ export default function App() {
               </Link>
             ) : (
               <Link to="/admin" className="nav-cta-btn" onClick={() => setNavOpen(false)}>
-                <i className="fa-solid fa-right-to-bracket"></i> Login
+                <i className="fa-solid fa-right-to-bracket"></i> Portal
               </Link>
             )}
           </nav>
@@ -794,10 +796,13 @@ export default function App() {
 
                 <section id="founder-suite" className="founder-executive-suite" data-aos="fade-up">
                   <div className="founder-portrait-frame" data-aos="fade-right">
-                    <img src="../image/pic1.jpeg" className="founder-img" alt="Paz Tribe Founder and CEO" />
+                    <div className="founder-portraits">
+                      <img src="../image/pic1.jpeg" className="founder-img" alt="Paz Tribe Founder and CEO" />
+                      <img src="../image/pic1.jpeg" className="founder-img" alt="Paz Tribe Founder and CEO" />
+                    </div>
                     <div className="founder-title-tag-overlay">
                       <h4>Mrs. Iraoya Roseline</h4>
-                      <span>Founder Desk Office</span>
+                      <span>Founder/Visionair of PTT</span>
                     </div>
                   </div>
 
@@ -818,7 +823,7 @@ export default function App() {
                       {founderActiveTab === 'speech' && (
                         <div className="speech-view-block">
                           <p className="speech-quote-text">
-                            "True structural balance within families and relationships doesn't manifest by chance. It is engineered through deliberate habits, strategic alignment counseling, and an unyielding commitment to personal transformation."
+                            "The lead consultant at Paz Thriving Tribe Academy, a life coaching organization. A certified children's life coach and member of the Chartered Institute of Mentoring and Coaching in Nigeria."
                           </p>
                           <div className="speech-signature">— Executive Speech Address, Leader Council</div>
                         </div>
@@ -828,7 +833,9 @@ export default function App() {
                         <div className="about-org-block">
                           <h3>Building Resilient Human Infrastructure</h3>
                           <p>
-                            Paz Thriving Tribe is a world-class developmental institution established to restore systemic health to modern human connections. Through our highly focused family life track systems, relationships support portals, and direct cognitive teenage coaching metrics, we bridge values across entire generational systems.
+                            At Paz Thriving Tribe, we understand that healthy individuals form aligned couples, and resilient couples build unbreakable generational households.
+    Our signature programs are meticulously engineered to completely replace domestic exhaustion with systematic clarity and sustainable connection structures.
+    Every family deserves a strategic blueprint. We provide the mentorship paths, emotional logic, and tools needed to thrive rather than just survive.
                           </p>
                         </div>
                       )}
@@ -1106,7 +1113,7 @@ export default function App() {
           <div className="footer-columns-container">
             <div className="footer-brand-column">
               <Link to="/" className="footer-brand-logo-row" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
-                <div className="footer-vector-badge">P</div>
+                <div className="footer-vector-badge" img src="./logo/logomain.png" alt="" ></div>
                 <span className="footer-brand-headline">Paz Thriving Tribe</span>
               </Link>
               <p>Providing dynamic infrastructure tracking networks focused on alignment strategies, professional conflict mitigation solutions, and youth development counseling models.</p>
@@ -1124,7 +1131,7 @@ export default function App() {
             <div className="footer-links-column">
               <h4>Portals</h4>
               <div className="footer-interactive-links">
-                <Link to="/admin" className="footer-nav-anchor">Administrative Gateway</Link>
+                <Link to="/admin" className="footer-nav-anchor">Main Portal</Link>
               </div>
             </div>
 
