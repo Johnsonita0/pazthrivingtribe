@@ -28,7 +28,7 @@ export default function App() {
     {
       title: 'Welcome to Paz Thriving Tribe',
       text: 'Welcome — connecting families, strengthening minds, and building resilient communities.',
-      image: "./logo/logomain.png",
+      image: "./logo/logo2.jpeg",
       imageType: 'logo'
     },
     {
@@ -759,7 +759,7 @@ export default function App() {
         {/* STICKY HEADER NAVIGATION BAR */}
         <header className="public-navbar">
           <Link to="/" className="nav-logo-brand-zone" onClick={() => { setNavOpen(false); window.scrollTo({top: 0, behavior: 'smooth'}); }}>
-            <img src= "../logo/logomain.png" alt="Paz Thriving Tribe logo" className="nav-logo-img" />
+            <img src={theme === 'dark' ? "../logo/logo2.jpeg" : "../logo/logomain.png"} alt="Paz Thriving Tribe logo" className="nav-logo-img" />
             <div className="nav-brand-name">Paz Thriving Tribe</div>
           </Link>
           <button className="nav-menu-toggle" onClick={() => setNavOpen((current) => !current)} aria-label="Toggle navigation menu">
