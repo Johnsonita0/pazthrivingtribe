@@ -934,7 +934,7 @@ export default function App() {
             <Link to="/services/children" className="nav-link-item" onClick={() => setNavOpen(false)}>
               <i className="fa-solid fa-child-reaching"></i> Teens & Kids
             </Link>
-            <Link to="/admin" className="nav-cta-btn" onClick={() => setNavOpen(false)}>
+            <Link to="https://pazthrivingtribe.schoolsfocus.net/" className="nav-cta-btn" onClick={() => setNavOpen(false)}>
               <i className="fa-solid fa-right-to-bracket"></i> Portal
             </Link>
           </nav>
@@ -1424,7 +1424,7 @@ export default function App() {
             <div className="footer-links-column">
               <h4>Portals</h4>
               <div className="footer-interactive-links">
-                <Link to="/admin" className="footer-nav-anchor">Main Portal</Link>
+                <Link to="https://pazthrivingtribe.schoolsfocus.net/" className="footer-nav-anchor">Main Portal</Link>
               </div>
             </div>
 
