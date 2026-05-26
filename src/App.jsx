@@ -934,9 +934,9 @@ export default function App() {
             <Link to="/services/children" className="nav-link-item" onClick={() => setNavOpen(false)}>
               <i className="fa-solid fa-child-reaching"></i> Teens & Kids
             </Link>
-            <Link to="https://pazthrivingtribe.schoolsfocus.net/" className="nav-cta-btn" onClick={() => setNavOpen(false)}>
+            <a href="https://pazthrivingtribe.schoolsfocus.net/signin" className="nav-cta-btn" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)}>
               <i className="fa-solid fa-right-to-bracket"></i> Portal
-            </Link>
+            </a>
           </nav>
         </header>
 
