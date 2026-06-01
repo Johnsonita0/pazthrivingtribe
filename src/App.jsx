@@ -50,6 +50,34 @@ export default function App() {
       image: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=1200'
     }
   ];
+  const parentNoticeItems = [
+    {
+      icon: 'fa-solid fa-leaf',
+      title: 'A calmer household rhythm',
+      description: 'Parents notice more ease in daily routines as family conversations become purposeful and predictable.'
+    },
+    {
+      icon: 'fa-solid fa-comments',
+      title: 'Clear communication habits',
+      description: 'Small conflicts are resolved sooner because every member is learning how to share needs with respect.'
+    },
+    {
+      icon: 'fa-solid fa-brain',
+      title: 'Stronger emotional confidence',
+      description: 'Children and teenagers begin showing improved self-awareness, focus, and emotional composure.'
+    },
+    {
+      icon: 'fa-solid fa-calendar-check',
+      title: 'Visible progress markers',
+      description: 'Parents track real milestones and feel the difference in family connection from week to week.'
+    },
+    {
+      icon: 'fa-solid fa-handshake-angle',
+      title: 'More aligned family teamwork',
+      description: 'Every household member becomes a partner in the journey, creating steady momentum across home life.',
+    }
+  ];
+
   const homeSlides = [
     {
       title: "Paz Thriving Tribe",
@@ -855,6 +883,17 @@ export default function App() {
         .service-gateway-card p { font-size: 1.05rem; line-height: 1.6; color: var(--text-muted); margin: 0 0 2rem 0; flex-grow: 1; }
         .gateway-footer-action { font-weight: 700; color: var(--brand-green); display: flex; align-items: center; gap: 0.5rem; }
 
+        .parent-notice-section { width: 100% !important; background-color: var(--bg-card); border-bottom: 1px solid var(--border-color); padding: 5rem 4rem; box-sizing: border-box; }
+        .parent-notice-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.75rem; }
+        .notice-card { position: relative; overflow: hidden; background: linear-gradient(180deg, rgba(35,134,54,0.08), rgba(13,17,23,0.04)); border: 1px solid rgba(35,134,54,0.15); border-radius: 20px; padding: 2rem; min-height: 240px; display: flex; flex-direction: column; gap: 1rem; transition: transform 0.25s ease, box-shadow 0.25s ease; }
+        .notice-card:hover { transform: translateY(-4px); box-shadow: 0 20px 45px rgba(0,0,0,0.12); }
+        .notice-icon-shell { width: 60px; height: 60px; border-radius: 18px; display: grid; place-items: center; background-color: rgba(35,134,54,0.16); color: var(--brand-green); font-size: 1.4rem; box-shadow: inset 0 0 0 1px rgba(35,134,54,0.1); }
+        .notice-card h3 { margin: 0; font-size: 1.4rem; color: var(--text-primary); line-height: 1.3; }
+        .notice-card p { margin: 0; color: var(--text-muted); line-height: 1.75; font-size: 1rem; }
+        .notice-card::after { content: ''; position: absolute; width: 70px; height: 70px; border-radius: 50%; background: rgba(35,134,54,0.08); top: -20px; right: -20px; pointer-events: none; }
+        @media (max-width: 992px) { .parent-notice-grid { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 768px) { .parent-notice-grid { grid-template-columns: 1fr; } .parent-notice-section { padding: 3rem 1.5rem; } }
+
         /* Multi-Column Workspace Footer Layer */
         .workspace-fluid-footer { width: 100% !important; background-color: var(--bg-card); border-top: 1px solid var(--border-color); padding: 5rem 4rem 2.5rem 4rem; box-sizing: border-box; margin-top: 6rem; }
         .footer-columns-container { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 4rem; width: 100%; padding-bottom: 3.5rem; border-bottom: 1px solid var(--border-color); }
@@ -1155,6 +1194,30 @@ export default function App() {
                       </div>
                       <div className="gateway-footer-action">Open Dedicated View <i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
+                  </div>
+                </section>
+
+                <section id="what-parents-will-notice" className="parent-notice-section" data-aos="fade-up">
+                  <div style={{ maxWidth: '1080px', margin: '0 auto' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.95rem', fontWeight: '700', color: 'var(--brand-blue)', textTransform: 'uppercase' }}>
+                        <i className="fa-solid fa-eye" style={{ fontSize: '0.9rem' }}></i>
+                        What Parents Will Notice
+                      </span>
+                      <h2 style={{ margin: '1rem auto 0 auto', fontSize: '2.7rem', lineHeight: '1.05', maxWidth: '760px' }}>An illustrated flow of the changes you will see first in your home.</h2>
+                    </div>
+
+                    <div className="parent-notice-grid">
+                      {parentNoticeItems.map((item, index) => (
+                        <div key={item.title} className="notice-card" data-aos="fade-up" data-aos-delay={index * 120}>
+                          <div className="notice-icon-shell">
+                            <i className={item.icon}></i>
+                          </div>
+                          <h3>{item.title}</h3>
+                          <p>{item.description}</p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </section>
 
