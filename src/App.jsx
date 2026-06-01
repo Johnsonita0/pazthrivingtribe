@@ -3,6 +3,7 @@ import { Routes, Route, Link, Navigate, useParams, useNavigate } from 'react-rou
 import { supabase } from './supabaseClient';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
+import TeensKidsMenu from './TeensKidsMenu';
 
 // =========================================================================
 // MAIN UNIFIED APPLICATION WITH DEDICATED SERVICE PAGES & INTAKE FORMS
@@ -997,7 +998,7 @@ export default function App() {
             <Link to="/services/marriage" className="nav-link-item" onClick={() => setNavOpen(false)}>
               <i className="fa-solid fa-heart-crack"></i> Marriage
             </Link>
-            <Link to="/services/children" className="nav-link-item" onClick={() => setNavOpen(false)}>
+            <Link to="/teens-kids-academy" className="nav-link-item" onClick={() => setNavOpen(false)}>
               <i className="fa-solid fa-child-reaching"></i> Teens & Kids
             </Link>
             <a href="https://pazthrivingtribe.schoolsfocus.net/signin" className="nav-cta-btn" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)}>
@@ -1258,6 +1259,7 @@ export default function App() {
           {/* =========================================================================
              DEDICATED ROUTE PATTERNS FOR INDIVIDUAL PAGE VIEWS
              ========================================================================= */}
+          <Route path="/teens-kids-academy" element={<TeensKidsMenu />} />
           <Route path="/services/:serviceSlug" element={<ServicePageWrapper services={services} programs={programs} onIntakeSubmit={handleServiceIntakeSubmit} />} />
 
           {/* Administrative Gateway Login */}
