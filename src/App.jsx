@@ -650,8 +650,13 @@ export default function App() {
           top: 0; left: 0; width: 100%; height: 100%;
           background-position: center;
           background-size: cover;
-          transition: background-image 1s ease-in-out;
+          background-repeat: no-repeat;
+          opacity: 0;
+          transition: opacity 1s ease;
           z-index: 1;
+        }
+        .hero-slide-bg.active {
+          opacity: 1;
         }
         .hero-slide-bg::before {
           content: '';
@@ -1068,14 +1073,17 @@ export default function App() {
             element={
               <div className="public-website-container">
                 <section className="hero-section" data-aos="fade-down">
-                  <div 
-                    className="hero-slide-bg" 
-                    style={{
-                      backgroundImage: `url(${homeSlides[currentHomeSlide].image})`,
-                      backgroundSize: homeSlides[currentHomeSlide].imageType === 'logo' ? 'contain' : 'cover',
-                      backgroundRepeat: 'no-repeat'
-                    }}
-                  />
+                  {homeSlides.map((slide, idx) => (
+                    <div
+                      key={idx}
+                      className={`hero-slide-bg ${idx === currentHomeSlide ? 'active' : ''}`}
+                      style={{
+                        backgroundImage: `url(${slide.image})`,
+                        backgroundSize: slide.imageType === 'logo' ? 'contain' : 'cover',
+                        backgroundRepeat: 'no-repeat'
+                      }}
+                    />
+                  ))}
                   <div className="hero-overlay" key={currentHomeSlide}>
                     <h1>{homeSlides[currentHomeSlide].title}</h1>
                     <p>{homeSlides[currentHomeSlide].subtitle}</p>
