@@ -99,7 +99,7 @@ export default function App() {
     {
       title: "Structured Teens Development Program",
       subtitle: "Supportive and Structured approach that helps children, teenagers and young adults develop essential life skills, build self-confidence and navigate life challenges.",
-      image: "./image/pic4.png"
+      image: "./image/pic5.png"
     },
      {
       title: "                             ",
