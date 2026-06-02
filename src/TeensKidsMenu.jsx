@@ -328,7 +328,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
               borderRadius: '12px',
               border: '2px solid #667eea'
             }}>
-              <h4 style={{ fontSize: '1.3rem', fontWeight: '700', marginBottom: '0.5rem' }}>🧒 Thriving Kids</h4>
+              <h4 style={{ fontSize: '1.3rem', fontWeight: '700', marginBottom: '0.5rem' }}>🧒 Thriving Pre-teens</h4>
               <p style={{ fontSize: '1.1rem', fontWeight: '600', color: '#667eea' }}>Ages 7–12 years</p>
             </div>
             <div data-aos="zoom-in" data-aos-delay="100" style={{
