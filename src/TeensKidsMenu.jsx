@@ -2,10 +2,14 @@ import React, { useState, useEffect } from 'react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 
-export default function TeensKidsMenu() {
+export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_update_from_admin', teensKidsMonthlyFee = 10000 }) {
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedProgram, setSelectedProgram] = useState(null);
   const [showContactForm, setShowContactForm] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [monthlyFee, setMonthlyFee] = useState(teensKidsMonthlyFee);
+  const [selectedMonths, setSelectedMonths] = useState(1);
+  const [paymentStep, setPaymentStep] = useState('registration'); // 'registration' or 'payment'
   const [formData, setFormData] = useState({
     parentName: '',
     childName: '',
@@ -14,11 +18,25 @@ export default function TeensKidsMenu() {
     phone: '',
     interest: ''
   });
+  const [paymentFormData, setPaymentFormData] = useState({
+    parentName: '',
+    childName: '',
+    email: '',
+    phone: ''
+  });
   const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  useEffect(() => {
+    setMonthlyFee(teensKidsMonthlyFee);
+  }, [teensKidsMonthlyFee]);
 
   useEffect(() => {
     AOS.init({ duration: 800, offset: 100 });
     window.scrollTo(0, 0);
+    // Load Paystack script
+    const script = document.createElement('script');
+    script.src = 'https://js.paystack.co/v1/inline.js';
+    document.body.appendChild(script);
   }, []);
 
   const corePrograms = [
@@ -72,29 +90,6 @@ export default function TeensKidsMenu() {
     }
   ];
 
-  const monthlyThemes = [
-    'Building Confidence',
-    'Effective Communication',
-    'Leadership and Responsibility',
-    'Emotional Intelligence',
-    'Purpose Discovery',
-    'Public Speaking Mastery',
-    'Character and Integrity',
-    'Financial Wisdom',
-    'Time Management',
-    'Goal Setting',
-    'Healthy Relationships',
-    'Celebration and Awards'
-  ];
-
-  const weeklySchedule = [
-    { time: '3:00 – 3:15 PM', activity: 'Welcome and Ice Breakers' },
-    { time: '3:15 – 3:45 PM', activity: 'Life Skill Teaching' },
-    { time: '3:45 – 4:15 PM', activity: 'Coaching Discussion' },
-    { time: '4:15 – 4:45 PM', activity: 'Dance/Drama Club' },
-    { time: '4:45 – 5:00 PM', activity: 'Reflection and Closing' }
-  ];
-
   const uniqueSellingPoints = [
     'Certified Children and Teen Coach',
     'One-on-One Coaching Sessions',
@@ -113,21 +108,73 @@ export default function TeensKidsMenu() {
     }));
   };
 
+  const handlePaymentFormChange = (e) => {
+    const { name, value } = e.target;
+    setPaymentFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleRegistrationNext = (e) => {
+    e.preventDefault();
+    setPaymentFormData({
+      parentName: formData.parentName,
+      childName: formData.childName,
+      email: formData.email,
+      phone: formData.phone
+    });
+    setPaymentStep('payment');
+  };
+
+  const handlePaystackPayment = () => {
+    if (typeof window.PaystackPop === 'undefined') {
+      alert('Paystack library not loaded. Please try again.');
+      return;
+    }
+    
+    const totalAmount = monthlyFee * selectedMonths * 100; // Convert to kobo
+    
+    const handler = window.PaystackPop.setup({
+      key: paystackPublicKey,
+      email: paymentFormData.email,
+      amount: totalAmount,
+      currency: 'NGN',
+      ref: `PAZ-${Date.now()}`,
+      onClose: function() {
+        alert('Payment window closed.');
+      },
+      onSuccess: function(response) {
+        alert(`Payment successful! Reference: ${response.reference}`);
+        setSubmitSuccess(true);
+        setTimeout(() => {
+          setShowPaymentModal(false);
+          setPaymentStep('registration');
+          setFormData({
+            parentName: '',
+            childName: '',
+            childAge: '',
+            email: '',
+            phone: '',
+            interest: ''
+          });
+          setPaymentFormData({
+            parentName: '',
+            childName: '',
+            email: '',
+            phone: ''
+          });
+          setSubmitSuccess(false);
+        }, 3000);
+      }
+    });
+    handler.openIframe();
+  };
+
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    setSubmitSuccess(true);
-    setFormData({
-      parentName: '',
-      childName: '',
-      childAge: '',
-      email: '',
-      phone: '',
-      interest: ''
-    });
-    setTimeout(() => {
-      setShowContactForm(false);
-      setSubmitSuccess(false);
-    }, 3000);
+    setShowPaymentModal(true);
+    setPaymentStep('registration');
   };
 
   return (
@@ -264,46 +311,6 @@ export default function TeensKidsMenu() {
         </div>
       </section>
 
-      {/* WEEKLY SCHEDULE */}
-      <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '3rem 2rem', marginBottom: '3rem' }}>
-        <h2 style={{ fontSize: '2rem', fontWeight: '900', marginBottom: '1rem', textAlign: 'center' }}>
-          Weekly Session Schedule
-        </h2>
-        <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '2rem', fontSize: '1.05rem' }}>
-          Every Saturday | 3:00 PM – 5:00 PM
-        </p>
-        <div style={{
-          background: 'var(--bg-secondary)',
-          borderRadius: '12px',
-          overflow: 'hidden',
-          border: '1px solid var(--border-color)'
-        }} data-aos="fade-up">
-          {weeklySchedule.map((slot, index) => (
-            <div key={index} style={{
-              display: 'grid',
-              gridTemplateColumns: '150px 1fr',
-              borderBottom: index !== weeklySchedule.length - 1 ? '1px solid var(--border-color)' : 'none',
-              padding: '1.5rem 2rem',
-              alignItems: 'center'
-            }}>
-              <div style={{
-                fontSize: '1rem',
-                fontWeight: '700',
-                color: '#667eea'
-              }}>
-                {slot.time}
-              </div>
-              <div style={{
-                fontSize: '1.05rem',
-                color: 'var(--text-primary)'
-              }}>
-                {slot.activity}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* UNIQUE SELLING POINTS */}
       <section style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', padding: '3rem 2rem', marginBottom: '3rem' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -328,38 +335,6 @@ export default function TeensKidsMenu() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* MONTHLY CURRICULUM THEMES */}
-      <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '3rem 2rem', marginBottom: '3rem' }}>
-        <h2 style={{ fontSize: '2rem', fontWeight: '900', marginBottom: '2rem', textAlign: 'center' }}>
-          12-Month Curriculum Themes
-        </h2>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '1.5rem'
-        }}>
-          {monthlyThemes.map((theme, index) => (
-            <div key={index} data-aos="fade-up" data-aos-delay={index * 30} style={{
-              background: `linear-gradient(135deg, #667eea${Math.floor(index / 6) === 0 ? '40' : '20'}, #764ba2${Math.floor(index / 6) === 0 ? '40' : '20'})`,
-              padding: '1.5rem',
-              borderRadius: '12px',
-              border: '1px solid var(--border-color)',
-              textAlign: 'center'
-            }}>
-              <div style={{
-                fontSize: '1.8rem',
-                fontWeight: '700',
-                color: '#667eea',
-                marginBottom: '0.5rem'
-              }}>
-                Month {index + 1}
-              </div>
-              <p style={{ fontSize: '1rem', fontWeight: '600' }}>{theme}</p>
-            </div>
-          ))}
         </div>
       </section>
 
@@ -605,7 +580,7 @@ export default function TeensKidsMenu() {
           Limited slots available. Join us today and be part of a transformational academy.
         </p>
 
-        {!showContactForm ? (
+        {!showContactForm && !showPaymentModal ? (
           <button
             onClick={() => setShowContactForm(true)}
             style={{
@@ -624,6 +599,240 @@ export default function TeensKidsMenu() {
           >
             🎯 Enroll Your Child Now
           </button>
+        ) : showPaymentModal ? (
+          <div data-aos="fade-up" style={{
+            background: 'var(--bg-secondary)',
+            padding: '2.5rem',
+            borderRadius: '12px',
+            maxWidth: '600px',
+            margin: '0 auto',
+            border: '1px solid var(--border-color)'
+          }}>
+            {submitSuccess ? (
+              <div style={{
+                textAlign: 'center',
+                padding: '2rem',
+                color: '#28a745'
+              }}>
+                <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>✅</div>
+                <h3 style={{ fontWeight: '700', marginBottom: '0.5rem' }}>Payment Successful!</h3>
+                <p>Welcome to Paz Thriving Teens Academy! We'll contact you with orientation details.</p>
+              </div>
+            ) : paymentStep === 'registration' ? (
+              <form onSubmit={handleRegistrationNext}>
+                <h3 style={{ marginBottom: '1.5rem', fontWeight: '700' }}>Step 1: Registration Details</h3>
+                <div style={{ marginBottom: '1.2rem' }}>
+                  <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '600', fontSize: '0.95rem' }}>Parent/Guardian Name *</label>
+                  <input
+                    type="text"
+                    name="parentName"
+                    value={formData.parentName}
+                    onChange={handleFormChange}
+                    required
+                    placeholder="Your full name"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '6px',
+                      fontSize: '0.95rem',
+                      background: 'var(--bg-primary)',
+                      color: 'var(--text-primary)',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: '1.2rem' }}>
+                  <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '600', fontSize: '0.95rem' }}>Child's Name *</label>
+                  <input
+                    type="text"
+                    name="childName"
+                    value={formData.childName}
+                    onChange={handleFormChange}
+                    required
+                    placeholder="Your child's name"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '6px',
+                      fontSize: '0.95rem',
+                      background: 'var(--bg-primary)',
+                      color: 'var(--text-primary)',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: '1.2rem' }}>
+                  <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '600', fontSize: '0.95rem' }}>Child's Age *</label>
+                  <input
+                    type="number"
+                    name="childAge"
+                    value={formData.childAge}
+                    onChange={handleFormChange}
+                    required
+                    placeholder="Age"
+                    min="7"
+                    max="19"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '6px',
+                      fontSize: '0.95rem',
+                      background: 'var(--bg-primary)',
+                      color: 'var(--text-primary)',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: '1.2rem' }}>
+                  <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '600', fontSize: '0.95rem' }}>Email Address *</label>
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleFormChange}
+                    required
+                    placeholder="your@email.com"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '6px',
+                      fontSize: '0.95rem',
+                      background: 'var(--bg-primary)',
+                      color: 'var(--text-primary)',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '600', fontSize: '0.95rem' }}>Phone Number *</label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleFormChange}
+                    required
+                    placeholder="08012345678"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '6px',
+                      fontSize: '0.95rem',
+                      background: 'var(--bg-primary)',
+                      color: 'var(--text-primary)',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+                <button
+                  type="submit"
+                  style={{
+                    width: '100%',
+                    background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.75rem',
+                    fontSize: '1rem',
+                    fontWeight: '700',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    marginBottom: '1rem'
+                  }}
+                >
+                  Next: Select Payment Plan →
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowPaymentModal(false);
+                    setFormData({ parentName: '', childName: '', childAge: '', email: '', phone: '', interest: '' });
+                  }}
+                  style={{
+                    width: '100%',
+                    background: 'transparent',
+                    color: 'var(--text-muted)',
+                    border: '1px solid var(--border-color)',
+                    padding: '0.75rem',
+                    fontSize: '0.95rem',
+                    fontWeight: '600',
+                    borderRadius: '6px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Cancel
+                </button>
+              </form>
+            ) : (
+              <form>
+                <h3 style={{ marginBottom: '1.5rem', fontWeight: '700' }}>Step 2: Select Payment Plan</h3>
+                <div style={{ background: 'var(--bg-primary)', padding: '1.5rem', borderRadius: '8px', marginBottom: '1.5rem', border: '1px solid var(--border-color)' }}>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>Monthly Fee: ₦{monthlyFee.toLocaleString()}</p>
+                  <label style={{ display: 'block', marginBottom: '0.4rem', fontWeight: '600', fontSize: '0.95rem' }}>How many months? *</label>
+                  <select
+                    value={selectedMonths}
+                    onChange={(e) => setSelectedMonths(parseInt(e.target.value))}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '6px',
+                      fontSize: '0.95rem',
+                      background: 'var(--bg-secondary)',
+                      color: 'var(--text-primary)',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <option value="1">1 Month - ₦{monthlyFee.toLocaleString()}</option>
+                    <option value="3">3 Months - ₦{(monthlyFee * 3).toLocaleString()}</option>
+                    <option value="6">6 Months - ₦{(monthlyFee * 6).toLocaleString()}</option>
+                    <option value="12">12 Months - ₦{(monthlyFee * 12).toLocaleString()}</option>
+                  </select>
+                </div>
+                <div style={{ background: '#667eea10', padding: '1.5rem', borderRadius: '8px', marginBottom: '1.5rem', border: '2px solid #667eea' }}>
+                  <p style={{ margin: 0, fontSize: '1rem', color: 'var(--text-primary)' }}>Total Amount: <strong style={{ fontSize: '1.3rem', color: '#667eea' }}>₦{(monthlyFee * selectedMonths).toLocaleString()}</strong></p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handlePaystackPayment}
+                  style={{
+                    width: '100%',
+                    background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '0.85rem',
+                    fontSize: '1rem',
+                    fontWeight: '700',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    marginBottom: '1rem'
+                  }}
+                >
+                  💳 Pay with Paystack
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentStep('registration')}
+                  style={{
+                    width: '100%',
+                    background: 'transparent',
+                    color: 'var(--text-muted)',
+                    border: '1px solid var(--border-color)',
+                    padding: '0.75rem',
+                    fontSize: '0.95rem',
+                    fontWeight: '600',
+                    borderRadius: '6px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ← Back
+                </button>
+              </form>
+            )}
+          </div>
         ) : (
           <div data-aos="fade-up" style={{
             background: 'var(--bg-secondary)',
@@ -789,7 +998,7 @@ export default function TeensKidsMenu() {
                     marginBottom: '1rem'
                   }}
                 >
-                  Submit Enrollment Request
+                  Proceed to Payment
                 </button>
                 <button
                   type="button"
@@ -832,16 +1041,16 @@ export default function TeensKidsMenu() {
           margin: '0 auto'
         }}>
           <div>
-            <p style={{ fontWeight: '700', marginBottom: '0.5rem' }}>📱 Phone Numbers</p>
+            <p style={{ fontWeight: '700', marginBottom: '0.5rem' }}>Phone Numbers</p>
             <p style={{ color: '#667eea', fontWeight: '600' }}>08037383820 | 09077219215</p>
           </div>
           <div>
-            <p style={{ fontWeight: '700', marginBottom: '0.5rem' }}>👩‍💼 Founder</p>
+            <p style={{ fontWeight: '700', marginBottom: '0.5rem' }}>Founder</p>
             <p style={{ color: '#764ba2', fontWeight: '600' }}>Coach Roseline Iraoya</p>
           </div>
           <div>
-            <p style={{ fontWeight: '700', marginBottom: '0.5rem' }}>📅 Session Day</p>
-            <p style={{ color: '#667eea', fontWeight: '600' }}>Every Saturday • 3:00 - 5:00 PM</p>
+            <p style={{ fontWeight: '700', marginBottom: '0.5rem' }}>Session Day</p>
+            <p style={{ color: '#667eea', fontWeight: '600' }}>Every Saturday - 3:00 to 5:00 PM</p>
           </div>
         </div>
       </section>

@@ -36,18 +36,18 @@ export default function App() {
     },
     {
       title: 'Elevating Mindsets, Aligning Connections',
-      text: 'We deploy structured frameworks engineered to guide couples, families, and high-potential youth toward systemic clarity and lasting emotional equilibrium.',
-      image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?q=80&w=1200'
+      text: 'We deploy structured frameworks engineered to guide families and young people toward clearer communication and stronger relationships.',
+      image: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=1200'
     },
     {
       title: 'Practical Family Frameworks',
-      text: 'Actionable toolsets and coaching modules that rebuild daily rhythms, leading to sustained generational health.',
-      image: 'https://images.unsplash.com/photo-1521790360361-1b5b3b8d4a5a?q=80&w=1200'
+      text: 'Actionable coaching tools that rebuild daily rhythms and create healthy, calm household systems.',
+      image: 'https://images.unsplash.com/photo-1507537297725-24a1c029d3ca?q=80&w=1200'
     },
     {
       title: 'Youth Mentorship Pathways',
-      text: 'Focused mentorship programs designed to empower teenagers with confidence, resilience, and social-emotional tools.',
-      image: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=1200'
+      text: 'Structured support for pre-teens and teens that builds confidence, resilience, and leadership skills.',
+      image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=1200'
     }
   ];
   const parentNoticeItems = [
@@ -81,18 +81,24 @@ export default function App() {
   const homeSlides = [
     {
       title: "Paz Thriving Tribe",
-      subtitle: "A structured developmental network centered on strategic human development, relationship resolution, and youth mentorship.",
-      image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200"
+      subtitle: "Coaching and Mentoring Organizations.",
+      image: "./logo/logo2.jpeg",
+      imageType: 'logo'
     },
     {
-      title: "Rebuild Core Foundations",
-      subtitle: "Engineering generational healing, structural communication channels, and premium community baseline frameworks.",
-      image: "https://images.unsplash.com/photo-1511556532299-8f662fc26c06?q=80&w=1200"
+      title: "Building Positive Values.",
+      subtitle: "Helping you Build values you need to thrive.",
+      image: "./image/pic2.png"
     },
     {
-      title: "Empower Your Generation",
-      subtitle: "Deploying intentional behavioral frameworks designed to bring mental clarity, resilience, and emotional stability.",
-      image: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?q=80&w=1200"
+      title: "Coaching and Mentoring",
+      subtitle: "Empowering you with core values to reach your full potential.",
+      image: "./image/pic3.png"
+    },
+    {
+      title: "Structured Teens Development Program",
+      subtitle: "Supportive and Structured approach that helps children, teenagers and young adults develop essential life skills, build self-confidence and navigate life challenges.",
+      image: "./image/pic4.png"
     }
   ];
 
@@ -117,7 +123,7 @@ export default function App() {
       title: "Children & Teenagers Coaching",
       subtitle: "Dedicated Mentors & Development Programs",
       description: "Guiding the next generation via one-on-one professional mentorship frameworks designed to build confidence, self-reliance, and cognitive emotional stability.",
-      metricCount: "310+ Youth Mentored"
+      metricCount: "310+ Teens Mentored"
     }
   });
 
@@ -209,6 +215,12 @@ export default function App() {
   const [applicants, setApplicants] = useState([]);
   const [programForm, setProgramForm] = useState({ service: 'family', title: '', description: '', duration: '', schedule: '', level: '' });
   const [dashboardMessage, setDashboardMessage] = useState(null);
+
+  // --- Paystack Integration Settings ---
+  const [paystackPublicKey, setPaystackPublicKey] = useState('pk_test_demo_key_update_from_admin');
+  const [teensKidsMonthlyFee, setTeensKidsMonthlyFee] = useState(10000);
+  const [tempPaystackKey, setTempPaystackKey] = useState(paystackPublicKey);
+  const [tempMonthlyFee, setTempMonthlyFee] = useState(teensKidsMonthlyFee);
 
   const emailInputRef = useRef(null);
 
@@ -899,7 +911,8 @@ export default function App() {
         .footer-columns-container { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 4rem; width: 100%; padding-bottom: 3.5rem; border-bottom: 1px solid var(--border-color); }
         .footer-brand-column { display: flex; flex-direction: column; gap: 1.2rem; }
         .footer-brand-logo-row { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; }
-        .footer-vector-badge { width: 32px; height: 32px; background-color: var(--brand-green); color: white; font-weight: 800; display: flex; align-items: center; justify-content: center; border-radius: 6px; }
+        .footer-vector-badge { width: 32px; height: 32px; background-color: var(--brand-green); color: white; font-weight: 800; display: flex; align-items: center; justify-content: center; border-radius: 6px; overflow: hidden; }
+        .footer-vector-badge img { width: 100%; height: 100%; object-fit: contain; display: block; }
         .footer-brand-headline { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.3px; }
         .footer-brand-column p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin: 0; }
         .footer-links-column { display: flex; flex-direction: column; gap: 1.2rem; }
@@ -1038,7 +1051,7 @@ export default function App() {
               <i className="fa-solid fa-heart-crack"></i> Marriage
             </Link>
             <Link to="/teens-kids-academy" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-child-reaching"></i> Teens & Kids
+              <i className="fa-solid fa-child-reaching"></i> Pre-teen & Teens
             </Link>
             <a href="https://pazthrivingtribe.schoolsfocus.net/signin" className="nav-cta-btn" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)}>
               <i className="fa-solid fa-right-to-bracket"></i> Portal
@@ -1057,7 +1070,11 @@ export default function App() {
                 <section className="hero-section" data-aos="fade-down">
                   <div 
                     className="hero-slide-bg" 
-                    style={{ backgroundImage: `url(${homeSlides[currentHomeSlide].image})` }}
+                    style={{
+                      backgroundImage: `url(${homeSlides[currentHomeSlide].image})`,
+                      backgroundSize: homeSlides[currentHomeSlide].imageType === 'logo' ? 'contain' : 'cover',
+                      backgroundRepeat: 'no-repeat'
+                    }}
                   />
                   <div className="hero-overlay" key={currentHomeSlide}>
                     <h1>{homeSlides[currentHomeSlide].title}</h1>
@@ -1322,7 +1339,7 @@ export default function App() {
           {/* =========================================================================
              DEDICATED ROUTE PATTERNS FOR INDIVIDUAL PAGE VIEWS
              ========================================================================= */}
-          <Route path="/teens-kids-academy" element={<TeensKidsMenu />} />
+          <Route path="/teens-kids-academy" element={<TeensKidsMenu paystackPublicKey={paystackPublicKey} teensKidsMonthlyFee={teensKidsMonthlyFee} />} />
           <Route path="/services/:serviceSlug" element={<ServicePageWrapper services={services} programs={programs} onIntakeSubmit={handleServiceIntakeSubmit} />} />
 
           {/* Administrative Gateway Login */}
@@ -1383,13 +1400,13 @@ export default function App() {
 
                     <main className="portal-workspace-body-content">
                       <div className="dashboard-tab-buttons">
-                        {['content', 'social', 'programs', 'applicants'].map((tab) => (
+                        {['content', 'social', 'programs', 'applicants', 'payments'].map((tab) => (
                           <button
                             key={tab}
                             onClick={() => setSelectedAdminTab(tab)}
                             className={`dashboard-tab-button ${selectedAdminTab === tab ? 'active' : ''}`}
                           >
-                            {tab === 'content' ? 'Page Content' : tab === 'social' ? 'Social Preview' : tab === 'programs' ? 'Programs' : 'Applicants'}
+                            {tab === 'content' ? 'Page Content' : tab === 'social' ? 'Social Preview' : tab === 'programs' ? 'Programs' : tab === 'applicants' ? 'Applicants' : 'Payment Settings'}
                           </button>
                         ))}
                       </div>
@@ -1583,6 +1600,74 @@ export default function App() {
                           </div>
                         </section>
                       )}
+
+                      {selectedAdminTab === 'payments' && (
+                        <section className="dashboard-editor-card">
+                          <h3 style={{margin: '0 0 0.5rem 0', color: 'var(--text-primary)'}}>Paystack Payment Settings</h3>
+                          <p style={{color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0}}>Configure your Paystack API key and pricing for Pre-teen & Teens Academy program.</p>
+
+                          {dashboardMessage && <div className="status-feedback-banner" style={{marginTop: '1.5rem'}}>{dashboardMessage}</div>}
+
+                          <form onSubmit={(e) => {
+                            e.preventDefault();
+                            setPaystackPublicKey(tempPaystackKey);
+                            setTeensKidsMonthlyFee(parseInt(tempMonthlyFee) || 10000);
+                            setDashboardMessage('✓ Payment settings saved successfully!');
+                            setTimeout(() => setDashboardMessage(null), 3000);
+                          }} style={{marginTop: '1.5rem'}}>
+                            <div className="form-input-container">
+                              <label style={{fontWeight: '600'}}>Paystack Public Key</label>
+                              <input 
+                                type="text" 
+                                value={tempPaystackKey} 
+                                onChange={(e) => setTempPaystackKey(e.target.value)} 
+                                className="plain-text-input" 
+                                placeholder="pk_live_... or pk_test_..."
+                                required 
+                              />
+                              <small style={{color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block'}}>
+                                Your Paystack public API key. Switch between test and live keys as needed.
+                              </small>
+                            </div>
+
+                            <div className="form-input-container">
+                              <label style={{fontWeight: '600'}}>Monthly Fee (NGN)</label>
+                              <input 
+                                type="number" 
+                                value={tempMonthlyFee} 
+                                onChange={(e) => setTempMonthlyFee(e.target.value)} 
+                                className="plain-text-input" 
+                                placeholder="10000"
+                                min="1000"
+                                max="1000000"
+                                required 
+                              />
+                              <small style={{color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block'}}>
+                                Cost per month for Pre-teen & Teens Academy. Clients can select 1, 3, 6, or 12 months.
+                              </small>
+                            </div>
+
+                            <button 
+                              type="submit" 
+                              className="form-submit-action-btn" 
+                              style={{marginTop: '1.5rem', width: '100%', maxWidth: '200px'}}
+                            >
+                              Save Payment Settings
+                            </button>
+                          </form>
+
+                          <div style={{marginTop: '2rem', padding: '1rem', background: 'var(--bg-main)', borderRadius: '8px', border: '1px solid var(--border-color)'}}>
+                            <h4 style={{margin: '0 0 0.75rem 0', color: 'var(--text-primary)'}}>Current Configuration</h4>
+                            <div style={{display: 'grid', gap: '0.75rem', color: 'var(--text-muted)'}}>
+                              <span><strong>Active Public Key:</strong> {paystackPublicKey.substring(0, 20)}...</span>
+                              <span><strong>Monthly Fee:</strong> ₦{teensKidsMonthlyFee.toLocaleString()}</span>
+                              <span><strong>3 Months:</strong> ₦{(teensKidsMonthlyFee * 3).toLocaleString()}</span>
+                              <span><strong>6 Months:</strong> ₦{(teensKidsMonthlyFee * 6).toLocaleString()}</span>
+                              <span><strong>12 Months:</strong> ₦{(teensKidsMonthlyFee * 12).toLocaleString()}</span>
+                            </div>
+                          </div>
+                        </section>
+                      )}
                     </main>
                   </div>
                 </div>
@@ -1600,7 +1685,7 @@ export default function App() {
           <div className="footer-columns-container">
             <div className="footer-brand-column">
               <Link to="/" className="footer-brand-logo-row" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
-                <div className="footer-vector-badge" img src="./logo/logomain.png" alt="" ></div>
+                <div className="footer-vector-badge"><img src="./logo/logomain.png" alt="" /></div>
                 <span className="footer-brand-headline">Paz Thriving Tribe</span>
               </Link>
               <p>Providing dynamic infrastructure tracking networks focused on alignment strategies, professional conflict mitigation solutions, and youth development counseling models.</p>
@@ -1823,7 +1908,7 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
       </div>
 
       {/* AVAILABLE CLASSES & ENROLLMENT SECTION */}
-      <section style={{ padding: '4rem 2rem', backgroundColor: 'var(--bg-secondary)', marginTop: '3rem' }}>
+      <section style={{ padding: '4rem 2rem', backgroundColor: 'var(--bg-card)', marginTop: '3rem' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
           <h2 style={{ marginBottom: '1rem', fontSize: '2.2rem', fontWeight: '800', textAlign: 'center' }} data-aos="fade-down">
             <i className="fa-solid fa-graduation-cap" style={{ marginRight: '0.5rem', color: 'var(--accent-primary)' }}></i>
@@ -1867,7 +1952,7 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                   <span style={{
                     display: 'inline-block',
-                    backgroundColor: 'var(--accent-primary)',
+                    backgroundColor: 'var(--accent-green)',
                     color: 'white',
                     padding: '0.4rem 0.8rem',
                     borderRadius: '20px',
@@ -1891,8 +1976,8 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
                   color: 'var(--text-muted)',
                   flexGrow: 1
                 }}>
-                  <div><i className="fa-solid fa-calendar" style={{ marginRight: '0.5rem', color: 'var(--accent-primary)' }}></i> {classItem.duration}</div>
-                  <div><i className="fa-solid fa-clock" style={{ marginRight: '0.5rem', color: 'var(--accent-primary)' }}></i> {classItem.time}</div>
+                  <div><i className="fa-solid fa-calendar" style={{ marginRight: '0.5rem', color: 'var(--accent-green)' }}></i> {classItem.duration}</div>
+                  <div><i className="fa-solid fa-clock" style={{ marginRight: '0.5rem', color: 'var(--accent-green)' }}></i> {classItem.time}</div>
                 </div>
 
                 <button
@@ -1900,7 +1985,7 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
                   disabled={enrolledClasses.some(c => c.id === classItem.id)}
                   style={{
                     padding: '0.8rem 1.2rem',
-                    backgroundColor: enrolledClasses.some(c => c.id === classItem.id) ? 'var(--text-muted)' : 'var(--accent-primary)',
+                    backgroundColor: enrolledClasses.some(c => c.id === classItem.id) ? 'var(--text-muted)' : 'var(--accent-green)',
                     color: 'white',
                     border: 'none',
                     borderRadius: '8px',
@@ -1932,7 +2017,7 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
             <div
               style={{
                 backgroundColor: 'var(--bg-main)',
-                border: '2px solid var(--accent-primary)',
+                border: '2px solid var(--accent-green)',
                 borderRadius: '12px',
                 padding: '2rem',
                 marginTop: '2rem'
@@ -1940,7 +2025,7 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
               data-aos="zoom-in"
             >
               <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center' }}>
-                <i className="fa-solid fa-bookmark" style={{ marginRight: '0.8rem', color: 'var(--accent-primary)', fontSize: '1.4rem' }}></i>
+                <i className="fa-solid fa-bookmark" style={{ marginRight: '0.8rem', color: 'var(--accent-green)', fontSize: '1.4rem' }}></i>
                 Your Enrollment Summary ({enrolledClasses.length} classe{enrolledClasses.length !== 1 ? 's' : ''})
               </h3>
 
@@ -1953,9 +2038,9 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       padding: '1rem',
-                      backgroundColor: 'var(--bg-secondary)',
+                      backgroundColor: 'var(--bg-card)',
                       borderRadius: '8px',
-                      borderLeft: '4px solid var(--accent-primary)'
+                      borderLeft: '4px solid var(--accent-green)'
                     }}
                   >
                     <div>
@@ -2000,7 +2085,7 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
                 style={{
                   width: '100%',
                   padding: '1rem',
-                  backgroundColor: 'var(--accent-primary)',
+                  backgroundColor: 'var(--accent-green)',
                   color: 'white',
                   border: 'none',
                   borderRadius: '8px',
