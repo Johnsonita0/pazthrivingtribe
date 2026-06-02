@@ -307,7 +307,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
               Vision Statement
             </h3>
             <p style={{ lineHeight: '1.8', fontSize: '1rem', color: 'var(--text-primary)' }}>
-              To nurture children and teenagers into emotionally healthy, morally grounded, and purpose-driven leaders who will positively influence their world.
+              To raise a generation of confident, kind, and purposeful young leaders who are equipped with the character, skills, and values needed to thrive and positively impact their world.
             </p>
           </div>
 
@@ -322,7 +322,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
               Mission Statement
             </h3>
             <p style={{ lineHeight: '1.8', fontSize: '1rem', color: 'var(--text-primary)' }}>
-              To equip children and teenagers with life skills, leadership values, and character-building principles through coaching, mentoring, and engaging activities.
+              To empower children and teenagers through coaching, mentoring, leadership development, character formation, and life-skills training, helping them discover their potential, build confidence, and become responsible leaders of influence.
             </p>
           </div>
         </div>
