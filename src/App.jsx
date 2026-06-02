@@ -113,23 +113,23 @@ export default function App() {
   const [services, setServices] = useState({
     family: {
       slug: "family",
-      title: "Family Life Coaching",
-      subtitle: "Family Strategists & Conflict Resolution",
-      description: "Empowering families with behavioral strategies, open structural communication channels, and actionable toolsets to manage conflict and cultivate deep-rooted harmony.",
-      metricCount: "120+ Families Assisted"
+      title: "Thriving Singles",
+      subtitle: "Single Women Empowerment & Personal Development",
+      description: "Empowering single women with personal growth strategies, confidence-building frameworks, and actionable toolsets to navigate life's transitions and cultivate purposeful independence.",
+      metricCount: "120+ Women Empowered"
     },
     marriage: {
       slug: "marriage",
-      title: "Marriage & Relationship Counseling",
-      subtitle: "Professional Counselors & Clear Intake Assessments",
-      description: "Providing premium guidance through structural alignment counseling sessions, detailed intake evaluations, and long-term milestone planning for couples.",
-      metricCount: "450+ Couples Guided"
+      title: "Thriving Women Tribe",
+      subtitle: "Women's Community & Collective Growth",
+      description: "Building thriving communities of women through structured mentorship, shared experiences, and collective empowerment programs designed to strengthen relationships and cultivate lasting sisterhood.",
+      metricCount: "450+ Women Connected"
     },
     children: {
       slug: "children",
-      title: "Children & Teenagers Coaching",
-      subtitle: "Dedicated Mentors & Development Programs",
-      description: "Guiding the next generation via one-on-one professional mentorship frameworks designed to build confidence, self-reliance, and cognitive emotional stability.",
+      title: "Pre-teens Mentorship Pathways",
+      subtitle: "Dedicated Mentors & Youth Development Programs",
+      description: "Guiding pre-teens and teenagers via one-on-one professional mentorship frameworks designed to build confidence, self-reliance, character development, and cognitive emotional stability.",
       metricCount: "310+ Teens Mentored"
     }
   });
@@ -1849,9 +1849,9 @@ export default function App() {
                             <div className="form-input-container">
                               <label style={{ color: 'var(--brand-blue)', fontWeight: '600' }}>Select Targeted Menu Category to Update</label>
                               <select value={editTarget} onChange={(e) => setEditTarget(e.target.value)} className="plain-text-input" style={{ height: '46px', border: '1px solid var(--brand-blue)' }}>
-                                <option value="family">Family Life Coaching</option>
-                                <option value="marriage">Marriage & Relationship Counseling</option>
-                                <option value="children">Children & Teenagers Coaching</option>
+                                <option value="family">Thriving Singles</option>
+                                <option value="marriage">Thriving Women Tribe</option>
+                                <option value="children">Pre-teens Mentorship Pathways</option>
                               </select>
                             </div>
 
@@ -1937,9 +1937,9 @@ export default function App() {
                             <div className="form-input-container">
                               <label style={{ fontWeight: '600' }}>Service Category</label>
                               <select value={programForm.service} onChange={(e) => setProgramForm((prev) => ({ ...prev, service: e.target.value }))} className="plain-text-input" style={{ height: '46px' }}>
-                                <option value="family">Family Life Coaching</option>
-                                <option value="marriage">Marriage & Relationship Counseling</option>
-                                <option value="children">Children & Teenagers Coaching</option>
+                                <option value="family">Thriving Singles</option>
+                                <option value="marriage">Thriving Women Tribe</option>
+                                <option value="children">Pre-teens Mentorship Pathways</option>
                               </select>
                             </div>
 
@@ -2138,9 +2138,9 @@ export default function App() {
             <div className="footer-links-column">
               <h4>Ecosystem Tracks</h4>
               <div className="footer-interactive-links">
-                <Link to="/services/family" className="footer-nav-anchor">Family Life Coaching</Link>
-                <Link to="/services/marriage" className="footer-nav-anchor">Marriage & Couples</Link>
-                <Link to="/services/children" className="footer-nav-anchor">Children & Teenagers</Link>
+                <Link to="/services/family" className="footer-nav-anchor">Thriving Singles</Link>
+                <Link to="/services/marriage" className="footer-nav-anchor">Thriving Women Tribe</Link>
+                <Link to="/services/children" className="footer-nav-anchor">Pre-teens Mentorship Pathways</Link>
               </div>
             </div>
 
@@ -2249,19 +2249,19 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
 
   const subPageMeta = {
     family: {
-      newsTitle: "Family Dynamics Dispatch",
-      newsText: "New behavioral guide published: 'Navigating Cross-Generational Boundaries inside the Modern Household Structure'.",
-      formSub: "Schedule Family Strategy Intake Consultation Session"
+      newsTitle: "Thriving Singles Update",
+      newsText: "New empowerment guide released: 'Building Confidence & Purpose as an Independent Woman'.",
+      formSub: "Schedule Your Personal Development Consultation"
     },
     marriage: {
-      newsTitle: "Marriage Foundation Brief",
-      newsText: "Upcoming Interactive Couple Milestone Alignment Summit schedule confirmed for next quarter layout cycles.",
-      formSub: "Initiate Private Couple Alignment Relationship Intake"
+      newsTitle: "Women Tribe Connection Brief",
+      newsText: "Upcoming Women's Empowerment Circle meeting scheduled for next month with guest speakers on leadership and sisterhood.",
+      formSub: "Join the Thriving Women Tribe Community"
     },
     children: {
       newsTitle: "Pre-teens Mentorship Monitor",
       newsText: "Cognitive stability milestone tracking update released for one-on-one pre-teen and adolescent mentorship program platforms.",
-      formSub: "Enroll Child / Teenager into Cognitive Mentorship Framework"
+      formSub: "Enroll Child / Teenager into Pre-teens Mentorship Pathways"
     }
   }[serviceSlug];
 
@@ -2621,9 +2621,9 @@ function HomeIntakeForm({ onSubmitApplicant }) {
         <div className="form-input-container">
           <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Targeted Intake Track Selection</label>
           <select required value={track} onChange={(e) => setTrack(e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
-            <option value="family">Family Life Coaching Framework</option>
-            <option value="marriage">Marriage & Relationship Counseling Framework</option>
-            <option value="children">Children & Teenagers Coaching Framework</option>
+            <option value="family">Thriving Singles Framework</option>
+            <option value="marriage">Thriving Women Tribe Framework</option>
+            <option value="children">Pre-teens Mentorship Pathways Framework</option>
           </select>
         </div>
       </div>
@@ -2661,7 +2661,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
     emergencyContactNumber: '',
     signature: '',
     consentDate: new Date().toISOString().slice(0, 10),
-    track: 'Children & Teenagers Coaching Framework',
+    track: 'Pre-teens Mentorship Pathways Framework',
     amount: 10000
   });
   const [goalAreas, setGoalAreas] = useState({
@@ -2742,7 +2742,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
         emergencyContactNumber: '',
         signature: '',
         consentDate: new Date().toISOString().slice(0, 10),
-        track: 'Children & Teenagers Coaching Framework',
+        track: 'Pre-teens Mentorship Pathways Framework',
         amount: 10000
       }));
       setGoalAreas({
@@ -3093,9 +3093,9 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
               <div className="form-input-container" style={{ marginBottom: '1rem' }}>
                 <label>Selected Academy Track</label>
                 <select value={formData.track} onChange={(e) => updateField('track', e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
-                  <option>Children & Teenagers Coaching Framework</option>
-                  <option>Family Life Coaching Framework</option>
-                  <option>Marriage & Relationship Counseling Framework</option>
+                  <option>Pre-teens Mentorship Pathways Framework</option>
+                  <option>Thriving Singles Framework</option>
+                  <option>Thriving Women Tribe Framework</option>
                 </select>
               </div>
             </>
