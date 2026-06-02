@@ -105,7 +105,7 @@ export default function App() {
       title: "                             ",
       subtitle: "                          ",
       image: "./image/pic6.png",
-      
+      imageType: 'contain'
     },
   ];
 
@@ -664,6 +664,10 @@ export default function App() {
           background-size: cover;
           transition: background-image 1s ease-in-out;
           z-index: 1;
+        }
+        @media (max-width: 420px) {
+          .hero-section { min-height: 240px; }
+          .hero-slide-bg { background-position: center top; }
         }
         .hero-slide-bg::before {
           content: '';
@@ -1476,7 +1480,7 @@ export default function App() {
                         <i className="fa-solid fa-microphone"></i> From the Founder's Desk
                       </button>
                       <button className={`founder-nav-pill ${founderActiveTab === 'about' ? 'active' : ''}`} onClick={() => setFounderActiveTab('about')}>
-                        <i className="fa-solid fa-building"></i> About the Organization
+                        <i className="fa-solid fa-building"></i> About Paz Thriving Tribe
                       </button>
                       <button className={`founder-nav-pill ${founderActiveTab === 'values' ? 'active' : ''}`} onClick={() => setFounderActiveTab('values')}>
                         <i className="fa-solid fa-gem"></i> Core Values
@@ -1502,6 +1506,7 @@ export default function App() {
                           <p className="tagline">
                             Tagline: Transforming Lives, Building Character, Raising Leaders
                           </p>
+
                         </div>
                       )}
 
