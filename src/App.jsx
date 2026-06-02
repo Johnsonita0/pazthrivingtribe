@@ -706,7 +706,7 @@ export default function App() {
         .preview-item { display: grid; grid-template-columns: minmax(140px, 1fr) 1fr; gap: 0.75rem; align-items: start; padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb; font-size: 0.95rem; }
 
         .hero-slide-bg { background-position: center center; background-size: cover; }
-        .hero-bg-contain { background-size: 80% auto !important; }
+        .hero-bg-contain { background-size: 65% auto !important; }
         .hero-overlay { padding: 3rem 1.5rem; }
         .hero-overlay h1 { font-size: 3.8rem; }
         .hero-overlay p { font-size: 1.25rem; max-width: 100%; }
@@ -742,7 +742,7 @@ export default function App() {
           .banner-slider { height: 220px; }
           .slide-graphic { min-height: 160px; max-height: 240px; }
           .slide-graphic img { object-fit: cover; height: 100%; }
-          .hero-bg-contain { background-size: 60% auto !important; }
+          .hero-bg-contain { background-size: 50% auto !important; background-position: center top !important; }
           .hero-overlay h1 { font-size: 2rem !important; }
           .hero-overlay p { font-size: 0.95rem !important; }
         }
@@ -1455,9 +1455,11 @@ export default function App() {
                   <div className="hero-overlay" key={currentHomeSlide}>
                     <h1>{homeSlides[currentHomeSlide].title}</h1>
                     <p>{homeSlides[currentHomeSlide].subtitle}</p>
-                    <button className="hero-scroll-btn" onClick={() => setShowRegisterModal(true)}>
-                      Register Now <i className="fa-solid fa-user-plus"></i>
-                    </button>
+                    {homeSlides[currentHomeSlide].imageType !== 'contain' && (
+                      <button className="hero-scroll-btn" onClick={() => setShowRegisterModal(true)}>
+                        Register Now <i className="fa-solid fa-user-plus"></i>
+                      </button>
+                    )}
                   </div>
                 </section>
 
