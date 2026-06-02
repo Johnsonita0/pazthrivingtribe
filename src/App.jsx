@@ -730,6 +730,16 @@ export default function App() {
           .registration-preview-row { grid-template-columns: 1fr; }
           .registration-confirmation-actions { grid-template-columns: 1fr; }
         }
+        @media (max-width: 420px) {
+          .teens-kids-hero { padding: 1rem 0.75rem; min-height: 200px; }
+          .teens-kids-hero h1 { font-size: 1.6rem; }
+          .teens-kids-hero p { font-size: 0.9rem; }
+          .banner-slider { height: 220px; }
+          .slide-graphic { min-height: 160px; max-height: 240px; }
+          .slide-graphic img { object-fit: cover; height: 100%; }
+          .hero-overlay h1 { font-size: 2rem !important; }
+          .hero-overlay p { font-size: 0.95rem !important; }
+        }
         .slide-graphic { min-height: 260px; max-height: 360px; aspect-ratio: 4 / 3; }
         .slide-graphic img { width: 100%; height: 100%; object-fit: contain; display: block; }
         img { max-width: 100%; height: auto; display: block; }
@@ -1485,11 +1495,12 @@ export default function App() {
 
                       {founderActiveTab === 'about' && (
                         <div className="about-org-block">
-                          <h3>Building Resilient Human Infrastructure</h3>
+                          <h3>About Paz Thriving Tribe</h3>
                           <p>
-                            At Paz Thriving Tribe, we understand that healthy individuals form aligned couples, and resilient couples build unbreakable generational households.
-    Our signature programs are meticulously engineered to completely replace domestic exhaustion with systematic clarity and sustainable connection structures.
-    Every family deserves a strategic blueprint. We provide the mentorship paths, emotional logic, and tools needed to thrive rather than just survive.
+                            Paz Thriving Tribe Coaching and Mentoring Organisation is committed to impacting families, transforming teenagers, positively influencing women, and helping children and young people develop the values, character, and healthy habits they need to thrive and become purposeful leaders.
+                          </p>
+                          <p className="tagline">
+                            Tagline: Transforming Lives, Building Character, Raising Leaders
                           </p>
                         </div>
                       )}
