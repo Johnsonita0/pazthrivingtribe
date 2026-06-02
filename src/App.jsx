@@ -707,6 +707,18 @@ export default function App() {
 
         .hero-slide-bg { background-position: center center; background-size: cover; }
         .hero-bg-contain { background-size: contain !important; background-position: center center !important; background-repeat: no-repeat !important; }
+        .hero-inline-contain-img {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          max-width: 90%;
+          max-height: 80%;
+          width: auto;
+          height: auto;
+          object-fit: contain;
+          z-index: 1;
+        }
         .hero-overlay { padding: 3rem 1.5rem; }
         .hero-overlay h1 { font-size: 3.8rem; }
         .hero-overlay p { font-size: 1.25rem; max-width: 100%; }
@@ -742,7 +754,8 @@ export default function App() {
           .banner-slider { height: 220px; }
           .slide-graphic { min-height: 160px; max-height: 240px; }
           .slide-graphic img { object-fit: cover; height: 100%; }
-          .hero-bg-contain { background-size: 70% auto !important; background-position: center top !important; }
+          .hero-bg-contain { background-size: contain !important; background-position: center !important; }
+          .hero-inline-contain-img { max-height: 70%; max-width: 85%; }
           .hero-overlay h1 { font-size: 2rem !important; }
           .hero-overlay p { font-size: 0.95rem !important; }
         }
@@ -1442,16 +1455,21 @@ export default function App() {
                   <div 
                     className={`hero-slide-bg ${homeSlides[currentHomeSlide].imageType === 'contain' ? 'hero-bg-contain' : ''}`} 
                     style={{
-                      backgroundImage: `url(${homeSlides[currentHomeSlide].image})`,
+                      backgroundImage: homeSlides[currentHomeSlide].imageType === 'contain' ? 'none' : `url(${homeSlides[currentHomeSlide].image})`,
                       backgroundSize: homeSlides[currentHomeSlide].imageType === 'logo'
                         ? 'contain'
-                        : homeSlides[currentHomeSlide].imageType === 'contain'
-                          ? 'contain'
-                          : 'cover',
+                        : 'cover',
                       backgroundPosition: 'center',
                       backgroundRepeat: 'no-repeat'
                     }}
                   />
+                  {homeSlides[currentHomeSlide].imageType === 'contain' && (
+                    <img
+                      src={homeSlides[currentHomeSlide].image}
+                      alt="Banner"
+                      className="hero-inline-contain-img"
+                    />
+                  )}
                   <div className="hero-overlay" key={currentHomeSlide}>
                     <h1>{homeSlides[currentHomeSlide].title}</h1>
                     <p>{homeSlides[currentHomeSlide].subtitle}</p>
