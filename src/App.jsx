@@ -706,7 +706,7 @@ export default function App() {
         .preview-item { display: grid; grid-template-columns: minmax(140px, 1fr) 1fr; gap: 0.75rem; align-items: start; padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb; font-size: 0.95rem; }
 
         .hero-slide-bg { background-position: center center; background-size: cover; }
-        .hero-bg-contain { background-size: 65% auto !important; }
+        .hero-bg-contain { background-size: contain !important; background-position: center center !important; background-repeat: no-repeat !important; }
         .hero-overlay { padding: 3rem 1.5rem; }
         .hero-overlay h1 { font-size: 3.8rem; }
         .hero-overlay p { font-size: 1.25rem; max-width: 100%; }
@@ -736,13 +736,13 @@ export default function App() {
           .registration-confirmation-actions { grid-template-columns: 1fr; }
         }
         @media (max-width: 420px) {
-          .teens-kids-hero { padding: 1rem 0.75rem; min-height: 200px; }
+          .teens-kids-hero { padding: 1rem 0.75rem; min-height: 260px; }
           .teens-kids-hero h1 { font-size: 1.6rem; }
           .teens-kids-hero p { font-size: 0.9rem; }
           .banner-slider { height: 220px; }
           .slide-graphic { min-height: 160px; max-height: 240px; }
           .slide-graphic img { object-fit: cover; height: 100%; }
-          .hero-bg-contain { background-size: 50% auto !important; background-position: center top !important; }
+          .hero-bg-contain { background-size: 70% auto !important; background-position: center top !important; }
           .hero-overlay h1 { font-size: 2rem !important; }
           .hero-overlay p { font-size: 0.95rem !important; }
         }
@@ -1446,9 +1446,9 @@ export default function App() {
                       backgroundSize: homeSlides[currentHomeSlide].imageType === 'logo'
                         ? 'contain'
                         : homeSlides[currentHomeSlide].imageType === 'contain'
-                          ? '80% auto'
+                          ? 'contain'
                           : 'cover',
-                      backgroundPosition: homeSlides[currentHomeSlide].imageType === 'contain' ? 'center center' : 'center',
+                      backgroundPosition: 'center',
                       backgroundRepeat: 'no-repeat'
                     }}
                   />
