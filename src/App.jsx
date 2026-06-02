@@ -712,12 +712,12 @@ export default function App() {
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
-          max-width: 90%;
-          max-height: 80%;
+          max-width: 75%;
+          max-height: 75%;
           width: auto;
           height: auto;
           object-fit: contain;
-          z-index: 1;
+          z-index: 2;
         }
         .hero-overlay { padding: 3rem 1.5rem; }
         .hero-overlay h1 { font-size: 3.8rem; }
@@ -755,7 +755,7 @@ export default function App() {
           .slide-graphic { min-height: 160px; max-height: 240px; }
           .slide-graphic img { object-fit: cover; height: 100%; }
           .hero-bg-contain { background-size: contain !important; background-position: center !important; }
-          .hero-inline-contain-img { max-height: 70%; max-width: 85%; }
+          .hero-inline-contain-img { max-height: 65%; max-width: 90%; }
           .hero-overlay h1 { font-size: 2rem !important; }
           .hero-overlay p { font-size: 0.95rem !important; }
         }
@@ -1470,15 +1470,15 @@ export default function App() {
                       className="hero-inline-contain-img"
                     />
                   )}
-                  <div className="hero-overlay" key={currentHomeSlide}>
-                    <h1>{homeSlides[currentHomeSlide].title}</h1>
-                    <p>{homeSlides[currentHomeSlide].subtitle}</p>
-                    {homeSlides[currentHomeSlide].imageType !== 'contain' && (
+                  {homeSlides[currentHomeSlide].imageType !== 'contain' && (
+                    <div className="hero-overlay" key={currentHomeSlide}>
+                      <h1>{homeSlides[currentHomeSlide].title}</h1>
+                      <p>{homeSlides[currentHomeSlide].subtitle}</p>
                       <button className="hero-scroll-btn" onClick={() => setShowRegisterModal(true)}>
                         Register Now <i className="fa-solid fa-user-plus"></i>
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </section>
 
                 {showRegisterModal && (
