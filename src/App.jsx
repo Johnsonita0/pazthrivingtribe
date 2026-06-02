@@ -706,13 +706,13 @@ export default function App() {
         .hero-overlay h1 { font-size: 3.8rem; }
         .hero-overlay p { font-size: 1.25rem; max-width: 100%; }
         .hero-scroll-btn { min-width: 220px; }
-        .teens-kids-hero { padding: 4rem 2rem; }
-        .teens-kids-hero h1 { max-width: 100%; }
-        .teens-kids-hero p { font-size: 1.2rem; max-width: 100%; }
+        .teens-kids-hero { padding: 4rem 2rem; display: flex; align-items: center; justify-content: center; min-height: 320px; box-sizing: border-box; }
+        .teens-kids-hero h1 { max-width: 100%; line-height: 1.05; overflow-wrap: break-word; }
+        .teens-kids-hero p { font-size: 1.2rem; max-width: 100%; line-height: 1.6; overflow-wrap: break-word; }
         @media (max-width: 768px) {
-          .teens-kids-hero { padding: 2.25rem 1rem; text-align: center; }
-          .teens-kids-hero h1 { font-size: 2.4rem; }
-          .teens-kids-hero p { font-size: 1rem; }
+          .teens-kids-hero { padding: 1.75rem 1rem; text-align: center; min-height: 240px; align-items: center; }
+          .teens-kids-hero h1 { font-size: 2rem; line-height: 1.05; }
+          .teens-kids-hero p { font-size: 0.98rem; }
           .teens-welcome-overlay { align-items: flex-start; overflow-y: auto; padding: 1rem 0.75rem; }
           .teens-welcome-card { margin-top: 1rem; padding: 1.25rem; max-height: calc(100vh - 2rem); }
           .teens-welcome-close-btn { top: 0.8rem; right: 0.8rem; font-size: 1.2rem; }
