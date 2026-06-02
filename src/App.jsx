@@ -2259,8 +2259,8 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
       formSub: "Initiate Private Couple Alignment Relationship Intake"
     },
     children: {
-      newsTitle: "Youth Mentorship Monitor",
-      newsText: "Cognitive stability milestone tracking update released for one-on-one adolescent mentorship program platforms.",
+      newsTitle: "Pre-teens Mentorship Monitor",
+      newsText: "Cognitive stability milestone tracking update released for one-on-one pre-teen and adolescent mentorship program platforms.",
       formSub: "Enroll Child / Teenager into Cognitive Mentorship Framework"
     }
   }[serviceSlug];
