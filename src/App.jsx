@@ -46,7 +46,7 @@ export default function App() {
       image: 'https://images.unsplash.com/photo-1507537297725-24a1c029d3ca?q=80&w=1200'
     },
     {
-      title: 'Youth Mentorship Pathways',
+      title: 'Pre-teens Mentorship Pathways',
       text: 'Structured support for pre-teens and teens that builds confidence, resilience, and leadership skills.',
       image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=1200'
     }
@@ -685,6 +685,55 @@ export default function App() {
         .hero-scroll-btn { background-color: var(--brand-green); color: white; padding: 1rem 2.5rem; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 1.05rem; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.6rem; }
         .hero-scroll-btn:hover { background-color: var(--brand-green-hover); }
 
+        .teens-kids-hero { box-sizing: border-box; }
+        .teens-welcome-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.7); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 1.25rem; }
+        .teens-welcome-card { background: white; border-radius: 20px; max-width: 760px; width: 100%; padding: 2rem; box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25); position: relative; max-height: calc(100vh - 2rem); overflow-y: auto; }
+        .teens-welcome-close-btn { position: absolute; top: 1rem; right: 1rem; background: transparent; border: none; color: #4a5568; font-size: 1.4rem; cursor: pointer; }
+
+        .teens-page-grid, .teens-info-grid, .teens-age-grid, .teens-program-grid, .teens-benefit-grid { display: grid; gap: 1.5rem; }
+        .teens-info-grid { grid-template-columns: 1fr 1fr; }
+        .teens-age-grid { grid-template-columns: 1fr 1fr; max-width: 100%; margin: 0 auto; }
+        .teens-program-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+        .teens-benefit-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+        .passport-upload-row { display: flex; gap: 1rem; align-items: flex-start; grid-column: 1 / -1; }
+        .passport-upload-preview { width: 130px; min-width: 130px; }
+        .passport-upload-preview .preview-box { width: 100%; height: 140px; border-radius: 8px; overflow: hidden; margin: 0 auto; border: 1px solid var(--border-color); background: #f7fafc; display: flex; align-items: center; justify-content: center; }
+        .passport-upload-form { flex: 1; min-width: 0; }
+        .preview-item { display: grid; grid-template-columns: minmax(140px, 1fr) 1fr; gap: 0.75rem; align-items: start; padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb; font-size: 0.95rem; }
+
+        .hero-slide-bg { background-position: center center; background-size: cover; }
+        .hero-overlay { padding: 3rem 1.5rem; }
+        .hero-overlay h1 { font-size: 3.8rem; }
+        .hero-overlay p { font-size: 1.25rem; max-width: 100%; }
+        .hero-scroll-btn { min-width: 220px; }
+        .teens-kids-hero { padding: 4rem 2rem; }
+        .teens-kids-hero h1 { max-width: 100%; }
+        .teens-kids-hero p { font-size: 1.2rem; max-width: 100%; }
+        @media (max-width: 768px) {
+          .teens-kids-hero { padding: 2.25rem 1rem; text-align: center; }
+          .teens-kids-hero h1 { font-size: 2.4rem; }
+          .teens-kids-hero p { font-size: 1rem; }
+          .teens-welcome-overlay { align-items: flex-start; overflow-y: auto; padding: 1rem 0.75rem; }
+          .teens-welcome-card { margin-top: 1rem; padding: 1.25rem; max-height: calc(100vh - 2rem); }
+          .teens-welcome-close-btn { top: 0.8rem; right: 0.8rem; font-size: 1.2rem; }
+          .teens-info-grid, .teens-age-grid, .teens-program-grid, .teens-benefit-grid { grid-template-columns: 1fr; }
+          .passport-upload-row { flex-direction: column; }
+          .passport-upload-preview { width: 100%; min-width: auto; }
+          .preview-item { grid-template-columns: 1fr; }
+          .registration-modal-panel { padding: 1.25rem 1rem 1.5rem; }
+          .registration-modal-header { flex-direction: column; align-items: stretch; }
+          .registration-modal-section { padding: 0.75rem 0; }
+          .registration-flow-step { justify-content: center; }
+          .registration-action-row { flex-direction: column; align-items: stretch; gap: 1rem; }
+          .registration-action-row .form-submit-action-btn, .registration-action-row .form-cancel-action-btn { width: 100%; }
+          .hero-scroll-btn { width: 100%; justify-content: center; }
+          .registration-preview-row { grid-template-columns: 1fr; }
+          .registration-confirmation-actions { grid-template-columns: 1fr; }
+        }
+        .slide-graphic { min-height: 260px; max-height: 360px; aspect-ratio: 4 / 3; }
+        .slide-graphic img { width: 100%; height: 100%; object-fit: contain; display: block; }
+        img { max-width: 100%; height: auto; display: block; }
+
         /* Promo slider (replaces synchronized-promo-banner) */
         .synchronized-promo-banner { width: 100% !important; padding: 2.5rem 4rem; box-sizing: border-box; }
         .banner-slider { position: relative; width: 100%; height: 380px; }
@@ -715,15 +764,18 @@ export default function App() {
         .registration-modal-overlay {
           position: fixed;
           inset: 0;
-          background: rgba(0, 0, 0, 0.7);
+          background: rgba(0, 0, 0, 0.75);
           z-index: 20000;
           display: flex;
           align-items: center;
           justify-content: center;
           padding: 1.25rem;
+          overflow-y: auto;
+          overflow-x: hidden;
         }
         .registration-modal-panel {
           width: min(100%, 960px);
+          max-width: 100%;
           max-height: 95vh;
           overflow-y: auto;
           background: var(--bg-main);
@@ -732,15 +784,85 @@ export default function App() {
           padding: 2rem 2.5rem;
           box-shadow: 0 28px 80px rgba(0, 0, 0, 0.28);
           position: relative;
+          margin: 0 auto;
+          box-sizing: border-box;
         }
         @media (max-width: 768px) {
+          .registration-modal-overlay {
+            align-items: flex-start;
+            justify-content: center;
+            padding: 0.75rem 0.5rem;
+          }
           .registration-modal-panel {
             width: 100%;
-            max-height: 100vh;
-            padding: 1.2rem 1rem 1.5rem;
+            max-width: 100%;
+            max-height: calc(100vh - 1.5rem);
+            padding: 1rem 0.9rem 1.25rem;
+            margin-top: 0.75rem;
+            border-radius: 18px;
           }
-          .registration-modal-header { flex-direction: column; align-items: stretch; }
-          .registration-modal-close-btn { position: static; margin-left: 0; }
+          .registration-modal-header {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+          }
+          .registration-modal-close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            margin-left: 0;
+          }
+          .registration-modal-section {
+            padding: 0.5rem 0;
+          }
+          .registration-flow-step {
+            justify-content: center;
+          }
+          .registration-flow-step span {
+            flex: 1 1 auto;
+            min-width: 0;
+          }
+          .registration-fields-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+          }
+          .passport-upload-row {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .passport-upload-preview {
+            width: 100%;
+            min-width: auto;
+          }
+          .passport-upload-preview .preview-box {
+            min-height: 180px;
+          }
+          .registration-payment-row {
+            grid-template-columns: 1fr;
+          }
+          .registration-action-row {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.9rem;
+          }
+          .registration-action-row .form-submit-action-btn,
+          .registration-action-row .form-cancel-action-btn {
+            width: 100%;
+            min-width: 0;
+          }
+          .registration-preview-row {
+            grid-template-columns: 1fr;
+          }
+          .registration-preview-photo {
+            min-height: 180px;
+          }
+          .preview-item {
+            grid-template-columns: 1fr;
+          }
+          .registration-confirmation-actions {
+            grid-template-columns: 1fr;
+          }
         }
         .registration-modal-header {
           display: flex;
@@ -1190,7 +1312,13 @@ export default function App() {
           .portal-workspace-grid { grid-template-columns: 1fr; }
           .portal-sidebar-panel { display: none; }
           .public-navbar { padding: 1rem 1.5rem; }
-          .hero-section { height: 100vh; min-height: 420px; }
+          .hero-section { height: auto; min-height: 72vh; }
+          .hero-overlay { padding: 2.2rem 1rem; }
+          .hero-overlay h1 { font-size: 2.8rem; }
+          .hero-overlay p { font-size: 1.1rem; line-height: 1.5; }
+          .hero-scroll-btn { width: 100%; justify-content: center; }
+          .banner-slide { gap: 1.25rem; padding: 1.5rem; }
+          .slide-graphic { max-height: 320px; }
           .interactive-tabs-section { padding: 4rem 1.5rem; }
           .portal-workspace-body-content { padding: 2rem 1rem; }
           .intake-form-wrapper { padding: 2.5rem 1.5rem; }
@@ -2744,20 +2872,20 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
               <section className="registration-modal-section">
                 <h4>A. THRIVER INFORMATION</h4>
                 <div className="registration-fields-grid">
-                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', gridColumn: '1 / -1' }}>
-                    <div style={{ width: 130, textAlign: 'center' }}>
-                      <div style={{ width: 120, height: 140, borderRadius: 8, overflow: 'hidden', margin: '0 auto', border: '1px solid var(--border-color)', background: '#f7fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div className="passport-upload-row">
+                    <div className="passport-upload-preview">
+                      <div className="preview-box">
                         {passportPreviewUrl ? (
                           <img src={passportPreviewUrl} alt="Passport preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
-                          <div style={{ fontSize: '0.85rem', color: '#6b7280', padding: '0.5rem' }}>Passport preview</div>
+                          <div style={{ fontSize: '0.85rem', color: '#6b7280', padding: '0.5rem', textAlign: 'center' }}>Passport preview</div>
                         )}
                       </div>
-                      <div style={{ marginTop: '0.5rem' }}>
+                      <div style={{ marginTop: '0.75rem' }}>
                         <input type="file" accept="image/*" onChange={(e) => setPassportFile(e.target.files && e.target.files[0] ? e.target.files[0] : null)} className="plain-text-input" />
                       </div>
                     </div>
-                    <div style={{ flex: 1 }}>
+                    <div className="passport-upload-form">
                       <div className="form-input-container">
                         <label>Full Name</label>
                         <input type="text" value={formData.fullName} onChange={(e) => updateField('fullName', e.target.value)} required className="plain-text-input" />

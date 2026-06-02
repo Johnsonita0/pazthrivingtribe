@@ -181,26 +181,35 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
   return (
     <div className="public-website-container">
       {showWelcomeModal && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(15, 23, 42, 0.7)',
-          zIndex: 9999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '1.5rem'
-        }} onClick={() => setShowWelcomeModal(false)}>
-          <div style={{
-            background: 'white',
-            borderRadius: '20px',
-            maxWidth: '760px',
-            width: '100%',
-            padding: '2rem',
-            boxShadow: '0 20px 60px rgba(15, 23, 42, 0.25)',
-            position: 'relative'
-          }} onClick={(e) => e.stopPropagation()}>
+        <div
+          className="teens-welcome-overlay"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.7)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem'
+          }}
+          onClick={() => setShowWelcomeModal(false)}
+        >
+          <div
+            className="teens-welcome-card"
+            style={{
+              background: 'white',
+              borderRadius: '20px',
+              maxWidth: '760px',
+              width: '100%',
+              padding: '2rem',
+              boxShadow: '0 20px 60px rgba(15, 23, 42, 0.25)',
+              position: 'relative'
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
+              className="teens-welcome-close-btn"
               onClick={() => setShowWelcomeModal(false)}
               style={{
                 position: 'absolute',
@@ -271,7 +280,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
         textAlign: 'center',
         marginBottom: '3rem'
       }} data-aos="fade-down">
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
+        <div className="teens-kids-hero-content" style={{ maxWidth: '900px', margin: '0 auto' }}>
           <h1 style={{ fontSize: '2.5rem', fontWeight: '900', marginBottom: '1rem' }}>
             Paz Thriving Teens Academy
           </h1>
@@ -286,7 +295,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
 
       {/* VISION & MISSION */}
       <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '3rem 2rem', marginBottom: '3rem' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '3rem' }}>
+        <div className="teens-info-grid" style={{ display: 'grid', gap: '2rem', marginBottom: '3rem' }}>
           {/* Vision */}
           <div data-aos="fade-right" style={{
             background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1))',
@@ -321,7 +330,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
         {/* Target Age Groups */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h3 style={{ fontSize: '1.8rem', fontWeight: '800', marginBottom: '2rem' }}>Target Age Groups</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', maxWidth: '600px', margin: '0 auto' }}>
+          <div className="teens-age-grid" style={{ display: 'grid', gap: '1.5rem', maxWidth: '600px', margin: '0 auto' }}>
             <div data-aos="zoom-in" style={{
               background: 'var(--bg-secondary)',
               padding: '2rem',
@@ -350,9 +359,8 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
           <h2 style={{ fontSize: '2rem', fontWeight: '900', textAlign: 'center', marginBottom: '3rem' }}>
             Core Program Areas
           </h2>
-          <div style={{
+          <div className="teens-program-grid" style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
             gap: '2rem'
           }}>
             {corePrograms.map((program, index) => (
@@ -401,9 +409,8 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
           <h2 style={{ fontSize: '2rem', fontWeight: '900', marginBottom: '2rem', textAlign: 'center' }}>
             What Makes PTTA Different
           </h2>
-          <div style={{
+          <div className="teens-benefit-grid" style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
             gap: '2rem'
           }}>
             {uniqueSellingPoints.map((point, index) => (
