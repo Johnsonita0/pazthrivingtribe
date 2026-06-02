@@ -2621,9 +2621,9 @@ function HomeIntakeForm({ onSubmitApplicant }) {
         <div className="form-input-container">
           <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Targeted Intake Track Selection</label>
           <select required value={track} onChange={(e) => setTrack(e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
-            <option value="family">Thriving Singles Framework</option>
-            <option value="marriage">Thriving Women Tribe Framework</option>
-            <option value="children">Pre-teens Mentorship Pathways Framework</option>
+            <option value="family">Thriving Singles</option>
+            <option value="marriage">Thriving Women Tribe</option>
+            <option value="children">Pre-teens Mentorship Pathways</option>
           </select>
         </div>
       </div>
@@ -2661,7 +2661,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
     emergencyContactNumber: '',
     signature: '',
     consentDate: new Date().toISOString().slice(0, 10),
-    track: 'Pre-teens Mentorship Pathways Framework',
+    track: 'Pre-teens Mentorship Pathways',
     amount: 10000
   });
   const [goalAreas, setGoalAreas] = useState({
@@ -2742,7 +2742,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
         emergencyContactNumber: '',
         signature: '',
         consentDate: new Date().toISOString().slice(0, 10),
-        track: 'Pre-teens Mentorship Pathways Framework',
+        track: 'Pre-teens Mentorship Pathways',
         amount: 10000
       }));
       setGoalAreas({
@@ -3093,9 +3093,9 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
               <div className="form-input-container" style={{ marginBottom: '1rem' }}>
                 <label>Selected Academy Track</label>
                 <select value={formData.track} onChange={(e) => updateField('track', e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
-                  <option>Pre-teens Mentorship Pathways Framework</option>
-                  <option>Thriving Singles Framework</option>
-                  <option>Thriving Women Tribe Framework</option>
+                  <option>Pre-teens Mentorship Pathways</option>
+                  <option>Thriving Singles</option>
+                  <option>Thriving Women Tribe</option>
                 </select>
               </div>
             </>
