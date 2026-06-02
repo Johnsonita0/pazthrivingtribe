@@ -1508,20 +1508,20 @@ export default function App() {
                       {founderActiveTab === 'values' && (
                         <div className="core-values-matrix">
                           <div className="value-card-element">
-                            <h5><i className="fa-solid fa-compass"></i> Intentional Alignment</h5>
-                            <p>Every dynamic track strategy is calculated to cultivate structured harmony.</p>
+                            <h5><i className="fa-solid fa-award"></i> Excellence</h5>
+                            <p>We encourage individuals to give their best in every area of life, striving for continuous growth, improvement, and outstanding character.</p>
                           </div>
                           <div className="value-card-element">
-                            <h5><i className="fa-solid fa-brain"></i> Cognitive Stability</h5>
-                            <p>Equipping youth and relationships with sustainable behavioral architectures.</p>
+                            <h5><i className="fa-solid fa-scale-balanced"></i> Integrity</h5>
+                            <p>We uphold honesty, accountability, and strong moral principles, doing what is right even when no one is watching.</p>
                           </div>
                           <div className="value-card-element">
-                            <h5><i className="fa-solid fa-chart-simple"></i> Systemic Transparency</h5>
-                            <p>Providing pristine operational support metrics across all organizational touchpoints.</p>
+                            <h5><i className="fa-solid fa-user-gear"></i> Leadership</h5>
+                            <p>We empower children, teenagers, and women to influence others positively, take responsibility, and become agents of positive change.</p>
                           </div>
                           <div className="value-card-element">
-                            <h5><i className="fa-solid fa-bolt"></i> Empowerment Frameworks</h5>
-                            <p>Transforming complex conflict dynamics into foundational milestones.</p>
+                            <h5><i className="fa-solid fa-seedling"></i> Growth</h5>
+                            <p>We believe everyone has the potential to improve. Through learning, coaching, and mentoring, we help people develop the habits and mindset needed to thrive.</p>
                           </div>
                         </div>
                       )}
