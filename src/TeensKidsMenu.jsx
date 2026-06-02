@@ -25,6 +25,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
     phone: ''
   });
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(true);
 
   useEffect(() => {
     setMonthlyFee(teensKidsMonthlyFee);
@@ -179,6 +180,89 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
 
   return (
     <div className="public-website-container">
+      {showWelcomeModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(15, 23, 42, 0.7)',
+          zIndex: 9999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1.5rem'
+        }} onClick={() => setShowWelcomeModal(false)}>
+          <div style={{
+            background: 'white',
+            borderRadius: '20px',
+            maxWidth: '760px',
+            width: '100%',
+            padding: '2rem',
+            boxShadow: '0 20px 60px rgba(15, 23, 42, 0.25)',
+            position: 'relative'
+          }} onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setShowWelcomeModal(false)}
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                right: '1rem',
+                background: 'transparent',
+                border: 'none',
+                color: '#4a5568',
+                fontSize: '1.4rem',
+                cursor: 'pointer'
+              }}
+              aria-label="Close welcome message"
+            >
+              ×
+            </button>
+            <h2 style={{ fontSize: '2rem', fontWeight: '900', marginBottom: '1rem', color: '#2d3748' }}>
+              Welcome to Paz Thriving Teens Academy
+            </h2>
+            <p style={{ fontSize: '1rem', lineHeight: '1.8', color: '#4a5568', marginBottom: '1rem' }}>
+              Dear Thriver,
+            </p>
+            <p style={{ fontSize: '1rem', lineHeight: '1.8', color: '#4a5568', marginBottom: '1rem' }}>
+              Welcome to Paz Thriving Teens Academy!
+            </p>
+            <p style={{ fontSize: '1rem', lineHeight: '1.8', color: '#4a5568', marginBottom: '1rem' }}>
+              A place where we help you build positive values, empower you to reach your full potential and thrive.
+            </p>
+            <p style={{ fontSize: '1rem', lineHeight: '1.8', color: '#4a5568', marginBottom: '1rem' }}>
+              At Paz Thriving Teens Academy, you will build confidence, strengthen your character, discover your purpose, and develop the leadership skills needed to shine in your world.
+            </p>
+            <p style={{ fontSize: '1rem', lineHeight: '1.8', color: '#4a5568', marginBottom: '1.5rem' }}>
+              We are excited to walk this journey with you.
+            </p>
+            <p style={{ fontSize: '0.95rem', lineHeight: '1.6', color: '#4a5568', marginBottom: '0.25rem' }}>
+              With love,
+            </p>
+            <p style={{ fontSize: '0.95rem', lineHeight: '1.6', color: '#4a5568', marginBottom: '0.25rem', fontWeight: '700' }}>
+              Coach Roseline Iraoya
+            </p>
+            <p style={{ fontSize: '0.9rem', lineHeight: '1.4', color: '#4a5568', marginBottom: '1rem', fontStyle: 'italic' }}>
+              Founder, Paz Thriving Teens Academy
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setShowWelcomeModal(false)}
+                style={{
+                  background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.9rem 1.8rem',
+                  borderRadius: '999px',
+                  fontSize: '1rem',
+                  fontWeight: '700',
+                  cursor: 'pointer'
+                }}
+              >
+                Continue to the Academy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* HERO BANNER */}
       <section className="teens-kids-hero" style={{
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',

@@ -13,6 +13,7 @@ export default function App() {
   const [theme, setTheme] = useState('dark'); 
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
   const logoImageUrl = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"%3E%3Crect width="48" height="48" rx="12" fill="%23238636"/%3E%3Ctext x="50%" y="55%" font-size="26" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-weight="700"%3EP%3C/text%3E%3C/svg%3E';
 
   // --- Auth & System Loading States ---
@@ -99,7 +100,13 @@ export default function App() {
       title: "Structured Teens Development Program",
       subtitle: "Supportive and Structured approach that helps children, teenagers and young adults develop essential life skills, build self-confidence and navigate life challenges.",
       image: "./image/pic4.png"
-    }
+    },
+     {
+      title: "                             ",
+      subtitle: "                          ",
+      image: "./image/pic6.png",
+      
+    },
   ];
 
   // --- Core Content State (Restored Baseline Titles) ---
@@ -215,6 +222,9 @@ export default function App() {
   const [applicants, setApplicants] = useState([]);
   const [programForm, setProgramForm] = useState({ service: 'family', title: '', description: '', duration: '', schedule: '', level: '' });
   const [dashboardMessage, setDashboardMessage] = useState(null);
+  const [showHomepageIntake, setShowHomepageIntake] = useState(false);
+  const [formPassportFile, setFormPassportFile] = useState(null);
+  const [formDocumentFile, setFormDocumentFile] = useState(null);
 
   // --- Paystack Integration Settings ---
   const [paystackPublicKey, setPaystackPublicKey] = useState('pk_test_demo_key_update_from_admin');
@@ -525,11 +535,13 @@ export default function App() {
   const addApplicant = async (applicant) => {
     const newApplicant = {
       id: `app-${Date.now()}`,
-      fullName: applicant.fullName,
-      email: applicant.email,
-      phone: applicant.phone,
-      track: applicant.track,
-      message: applicant.message || '',
+      fullName: applicant.fullName || applicant.parentName || applicant.full_name || '',
+      email: applicant.email || applicant.parentEmail || '',
+      phone: applicant.phone || applicant.phoneNumber1 || applicant.phone1 || '',
+      track: applicant.track || applicant.targetTrack || applicant.selectedTrack || '',
+      message: applicant.message || applicant.developmentGoals || '',
+      paymentReference: applicant.paymentReference || '',
+      paymentStatus: applicant.paymentStatus || 'pending',
       submittedAt: new Date().toISOString()
     };
     setApplicants((prev) => [newApplicant, ...prev]);
@@ -650,13 +662,8 @@ export default function App() {
           top: 0; left: 0; width: 100%; height: 100%;
           background-position: center;
           background-size: cover;
-          background-repeat: no-repeat;
-          opacity: 0;
-          transition: opacity 1s ease;
+          transition: background-image 1s ease-in-out;
           z-index: 1;
-        }
-        .hero-slide-bg.active {
-          opacity: 1;
         }
         .hero-slide-bg::before {
           content: '';
@@ -704,6 +711,82 @@ export default function App() {
         @media (max-width: 768px) { .intake-form-wrapper p { font-size: 0.95rem; margin: 0 0 1.5rem 0; } }
         .registration-fields-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.75rem; }
         @media (max-width: 768px) { .registration-fields-grid { grid-template-columns: 1fr; } }
+
+        .registration-modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.7);
+          z-index: 20000;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1.25rem;
+        }
+        .registration-modal-panel {
+          width: min(100%, 960px);
+          max-height: 95vh;
+          overflow-y: auto;
+          background: var(--bg-main);
+          border: 1px solid var(--border-color);
+          border-radius: 22px;
+          padding: 2rem 2.5rem;
+          box-shadow: 0 28px 80px rgba(0, 0, 0, 0.28);
+          position: relative;
+        }
+        .registration-modal-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 1rem;
+          margin-bottom: 1.5rem;
+        }
+        .registration-modal-header h3 { margin: 0; font-size: 2rem; color: var(--text-primary); }
+        .registration-modal-close-btn {
+          width: 44px;
+          height: 44px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          border: 1px solid var(--border-color);
+          border-radius: 14px;
+          background: var(--bg-card);
+          color: var(--text-primary);
+          cursor: pointer;
+          position: sticky;
+          top: 1rem;
+          margin-left: auto;
+          z-index: 10;
+        }
+        .registration-modal-section { margin-bottom: 1.5rem; }
+        .registration-modal-section h4 { margin: 0 0 0.75rem 0; font-size: 1.05rem; color: var(--text-primary); }
+        .registration-modal-section p { color: var(--text-muted); line-height: 1.75; margin: 0 0 1rem 0; }
+        .registration-checklist-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+        @media (max-width: 768px) { .registration-checklist-grid { grid-template-columns: 1fr; } }
+        .checkbox-card { display: flex; align-items: flex-start; gap: 0.8rem; padding: 1rem 1rem 1rem 0.95rem; border: 1px solid var(--border-color); border-radius: 14px; background: var(--bg-card); }
+        .checkbox-card input { margin-top: 5px; }
+        .registration-payment-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: flex-end; margin-top: 1rem; }
+        @media (max-width: 768px) { .registration-payment-row { grid-template-columns: 1fr; } }
+        .registration-prompt-banner { margin-bottom: 1rem; padding: 1rem 1.15rem; border-radius: 14px; background: rgba(35, 134, 54, 0.1); border: 1px solid rgba(35, 134, 54, 0.16); color: var(--text-primary); }
+        .payment-status-message { margin: 1rem 0 0 0; color: var(--brand-green); font-weight: 700; }
+
+        .bottom-registration-panel { background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 22px; padding: 2rem 2.25rem; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.1); }
+        .bottom-registration-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 1.25rem; }
+        .section-label { display: inline-flex; margin-bottom: 0.85rem; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brand-green); }
+        .bottom-registration-header h3 { margin: 0 0 0.5rem 0; font-size: 2rem; color: var(--text-primary); }
+        .section-description { margin: 0; color: var(--text-muted); line-height: 1.75; max-width: 720px; }
+        .bottom-registration-body { margin-top: 1.75rem; }
+        .intake-form-toggle-btn { background: var(--brand-green); color: #fff; padding: 0.95rem 1.4rem; border: none; border-radius: 12px; cursor: pointer; font-weight: 700; display: inline-flex; align-items: center; gap: 0.6rem; }
+        .intake-form-toggle-btn:hover { background: var(--brand-green-hover); }
+        .intake-collapsed-note { color: var(--text-muted); margin-top: 1.75rem; padding: 1.5rem 1.25rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; }
+        .applicants-table-wrapper { width: 100%; overflow-x: auto; margin-top: 1.5rem; }
+        .dashboard-table { width: 100%; border-collapse: collapse; min-width: 860px; }
+        .dashboard-table th,
+        .dashboard-table td { padding: 1rem 1rem; border: 1px solid var(--border-color); text-align: left; vertical-align: top; }
+        .dashboard-table th { background: var(--bg-main); color: var(--text-primary); font-weight: 700; }
+        .dashboard-table tbody tr:hover { background: rgba(46, 164, 79, 0.08); }
+        .status-pill { display: inline-flex; padding: 0.35rem 0.8rem; border-radius: 999px; font-size: 0.85rem; font-weight: 700; }
+        .status-pill.success { background: rgba(35, 134, 54, 0.14); color: var(--accent-green); }
+        .status-pill.pending { background: rgba(255, 231, 179, 0.8); color: #b58304; }
 
         /* SERVICE VIEW SLIDING HERO BANNER SPECIFICS */
         .service-view-hero-banner { 
@@ -993,6 +1076,9 @@ export default function App() {
           .interactive-tabs-section { padding: 4rem 1.5rem; }
           .portal-workspace-body-content { padding: 2rem 1rem; }
           .intake-form-wrapper { padding: 2.5rem 1.5rem; }
+          .dashboard-tab-buttons { justify-content: center; }
+          .dashboard-editor-card { padding: 2rem; }
+          .dashboard-table { min-width: 100% !important; }
         }
       `}</style>
 
@@ -1073,25 +1159,33 @@ export default function App() {
             element={
               <div className="public-website-container">
                 <section className="hero-section" data-aos="fade-down">
-                  {homeSlides.map((slide, idx) => (
-                    <div
-                      key={idx}
-                      className={`hero-slide-bg ${idx === currentHomeSlide ? 'active' : ''}`}
-                      style={{
-                        backgroundImage: `url(${slide.image})`,
-                        backgroundSize: slide.imageType === 'logo' ? 'contain' : 'cover',
-                        backgroundRepeat: 'no-repeat'
-                      }}
-                    />
-                  ))}
+                  <div 
+                    className="hero-slide-bg" 
+                    style={{
+                      backgroundImage: `url(${homeSlides[currentHomeSlide].image})`,
+                      backgroundSize: homeSlides[currentHomeSlide].imageType === 'logo' ? 'contain' : 'cover',
+                      backgroundRepeat: 'no-repeat'
+                    }}
+                  />
                   <div className="hero-overlay" key={currentHomeSlide}>
                     <h1>{homeSlides[currentHomeSlide].title}</h1>
                     <p>{homeSlides[currentHomeSlide].subtitle}</p>
-                    <button className="hero-scroll-btn" onClick={() => document.getElementById('services-explore').scrollIntoView({ behavior: 'smooth' })}>
-                      Explore Specialty Tracks <i className="fa-solid fa-arrow-down"></i>
+                    <button className="hero-scroll-btn" onClick={() => setShowRegisterModal(true)}>
+                      Register Now <i className="fa-solid fa-user-plus"></i>
                     </button>
                   </div>
                 </section>
+
+                {showRegisterModal && (
+                  <ThriverRegistrationModal
+                    visible={showRegisterModal}
+                    onClose={() => setShowRegisterModal(false)}
+                    onRegister={async (registrationData) => {
+                      await addApplicant(registrationData);
+                    }}
+                    paystackPublicKey={paystackPublicKey}
+                  />
+                )}
 
                 <section id="founder-suite" className="founder-executive-suite" data-aos="fade-up">
                   <div className="founder-portrait-frame" data-aos="fade-right">
@@ -1222,7 +1316,7 @@ export default function App() {
                   </div>
                 </section>
 
-                <section id="what-parents-will-notice" className="parent-notice-section" data-aos="fade-up">
+                {/* <section id="what-parents-will-notice" className="parent-notice-section" data-aos="fade-up">
                   <div style={{ maxWidth: '1080px', margin: '0 auto' }}>
                     <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.95rem', fontWeight: '700', color: 'var(--brand-blue)', textTransform: 'uppercase' }}>
@@ -1244,7 +1338,7 @@ export default function App() {
                       ))}
                     </div>
                   </div>
-                </section>
+                </section> */}
 
                 <section id="social-updates" className="social-news-stream-section" data-aos="fade-up">
                   <div className="social-news-layout-wrapper">
@@ -1334,10 +1428,26 @@ export default function App() {
 
                 {/* REQUESTED GLOBAL NEW CLIENT REGISTRATION FORM */}
                 <section className="intake-registration-section" data-aos="fade-up">
-                  <div className="intake-form-wrapper">
-                    <h3>Ecosystem Client Intake</h3>
-                    <p>Register as a new client within our global framework to begin onboarding your personal track strategy.</p>
-                    <HomeIntakeForm onSubmitApplicant={addApplicant} />
+                  <div className="bottom-registration-panel">
+                    <div className="bottom-registration-header">
+                      <div>
+                        <p className="section-label">New Client Intake</p>
+                        <h3>Ecosystem Client Intake</h3>
+                        <p className="section-description">Register as a new client within our global framework and begin onboarding your personalized coaching track.</p>
+                      </div>
+                      <button type="button" className="intake-form-toggle-btn" onClick={() => setShowHomepageIntake((prev) => !prev)}>
+                        {showHomepageIntake ? 'Hide Intake Form' : 'Open Intake Form'}
+                        <i className={`fa-solid ${showHomepageIntake ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '0.6rem' }}></i>
+                      </button>
+                    </div>
+
+                    {showHomepageIntake ? (
+                      <div className="bottom-registration-body">
+                        <HomeIntakeForm onSubmitApplicant={addApplicant} />
+                      </div>
+                    ) : (
+                      <div className="intake-collapsed-note">Click the button above to expand the intake form and submit a registration request from the homepage.</div>
+                    )}
                   </div>
                 </section>
               </div>
@@ -1581,31 +1691,50 @@ export default function App() {
 
                       {selectedAdminTab === 'applicants' && (
                         <section className="dashboard-editor-card">
-                          <h3 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Recent Applicants</h3>
-                          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Review the latest intake submissions and track their requested service path.</p>
-
-                          <div style={{ marginTop: '1.5rem', display: 'grid', gap: '1rem' }}>
-                            {applicants.length === 0 ? (
-                              <div style={{ padding: '1.5rem', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                                <p style={{ margin: 0, color: 'var(--text-muted)' }}>No applicants have submitted yet.</p>
-                              </div>
-                            ) : applicants.slice(0, 20).map((applicant) => (
-                              <div key={applicant.id} style={{ backgroundColor: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)', padding: '1rem' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
-                                  <div>
-                                    <h4 style={{ margin: 0 }}>{applicant.fullName}</h4>
-                                    <span style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>{applicant.track} intake request</span>
-                                  </div>
-                                  <span style={{ color: 'var(--accent-primary)', fontSize: '0.85rem', fontWeight: '700' }}>{new Date(applicant.submittedAt).toLocaleString()}</span>
-                                </div>
-                                <div style={{ marginTop: '0.75rem', display: 'grid', gap: '0.5rem' }}>
-                                  <span style={{ color: 'var(--text-muted)' }}><strong>Email:</strong> {applicant.email}</span>
-                                  <span style={{ color: 'var(--text-muted)' }}><strong>Phone:</strong> {applicant.phone}</span>
-                                  {applicant.message && <p style={{ margin: '0.5rem 0 0 0', color: 'var(--text-muted)' }}>{applicant.message}</p>}
-                                </div>
-                              </div>
-                            ))}
+                          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+                            <div>
+                              <h3 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Recent Applicants</h3>
+                              <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Review the latest intake submissions and track their requested service path.</p>
+                            </div>
+                            <div style={{ color: 'var(--text-primary)', fontWeight: 700, minWidth: '150px' }}>
+                              Total Registered: {applicants.length}
+                            </div>
                           </div>
+
+                          {applicants.length === 0 ? (
+                            <div style={{ marginTop: '1.5rem', padding: '1.5rem', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                              <p style={{ margin: 0, color: 'var(--text-muted)' }}>No applicants have submitted yet.</p>
+                            </div>
+                          ) : (
+                            <div className="applicants-table-wrapper">
+                              <table className="dashboard-table">
+                                <thead>
+                                  <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Track</th>
+                                    <th>Status</th>
+                                    <th>Payment Ref</th>
+                                    <th>Submitted</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {applicants.slice(0, 50).map((applicant) => (
+                                    <tr key={applicant.id}>
+                                      <td>{applicant.fullName}</td>
+                                      <td>{applicant.email}</td>
+                                      <td>{applicant.phone}</td>
+                                      <td>{applicant.track}</td>
+                                      <td><span className={`status-pill ${applicant.paymentStatus === 'success' ? 'success' : 'pending'}`}>{applicant.paymentStatus}</span></td>
+                                      <td>{applicant.paymentReference || 'N/A'}</td>
+                                      <td>{new Date(applicant.submittedAt).toLocaleString()}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
                         </section>
                       )}
 
@@ -1639,7 +1768,7 @@ export default function App() {
                             </div>
 
                             <div className="form-input-container">
-                              <label style={{fontWeight: '600'}}>Monthly Fee (NGN)</label>
+                              <label style={{fontWeight: '600'}}>Program Registration Fee (NGN)</label>
                               <input 
                                 type="number" 
                                 value={tempMonthlyFee} 
@@ -1651,7 +1780,7 @@ export default function App() {
                                 required 
                               />
                               <small style={{color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block'}}>
-                                Cost per month for Pre-teen & Teens Academy. Clients can select 1, 3, 6, or 12 months.
+                                Update the academy registration fee for the Pre-teen & Teens program. This value drives the displayed pricing for clients.
                               </small>
                             </div>
 
@@ -1837,13 +1966,17 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
         email: formEmail,
         phone: '',
         track: serviceSlug,
-        message: formConcern
+        message: formConcern,
+        passportFile: formPassportFile,
+        documentFile: formDocumentFile
       });
     }
     setSuccess(true);
     setFormName('');
     setFormEmail('');
     setFormConcern('');
+    setFormPassportFile(null);
+    setFormDocumentFile(null);
     setTimeout(() => setSuccess(false), 5000);
   };
 
@@ -1889,6 +2022,14 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
                 <div className="form-input-container">
                   <label style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Specific Primary Concern Context / Program Interest</label>
                   <textarea rows="4" required placeholder="Provide brief summary details..." value={formConcern} onChange={(e) => setFormConcern(e.target.value)} className="plain-text-input" style={{ resize: 'vertical' }}></textarea>
+                </div>
+                <div className="form-input-container">
+                  <label style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Passport Photo (jpg/png)</label>
+                  <input type="file" accept="image/*" onChange={(e) => setFormPassportFile(e.target.files && e.target.files[0] ? e.target.files[0] : null)} className="plain-text-input" />
+                </div>
+                <div className="form-input-container">
+                  <label style={{ fontSize: '0.85rem', fontWeight: 'bold' }}>Supporting Document (PDF/DOC)</label>
+                  <input type="file" accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*" onChange={(e) => setFormDocumentFile(e.target.files && e.target.files[0] ? e.target.files[0] : null)} className="plain-text-input" />
                 </div>
                 <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '280px' }}><i className="fa-solid fa-paper-plane"></i> Submit Intake Request</button>
               </form>
@@ -2189,5 +2330,479 @@ function HomeIntakeForm({ onSubmitApplicant }) {
         <i className="fa-solid fa-user-plus"></i> Submit Secure Registration
       </button>
     </form>
+  );
+}
+
+function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublicKey }) {
+  const [formData, setFormData] = useState({
+    fullName: '',
+    dateOfBirth: '',
+    age: '',
+    gender: 'Female',
+    schoolName: '',
+    currentClassGrade: '',
+    homeAddress: '',
+    hobbies: '',
+    parentName: '',
+    relationship: '',
+    phone1: '',
+    phone2: '',
+    parentEmail: '',
+    occupation: '',
+    allergies: '',
+    emergencyContactName: '',
+    emergencyContactNumber: '',
+    signature: '',
+    consentDate: new Date().toISOString().slice(0, 10),
+    track: 'Children & Teenagers Coaching Framework',
+    amount: 10000
+  });
+  const [goalAreas, setGoalAreas] = useState({
+    confidenceBuilding: true,
+    publicSpeaking: false,
+    communicationSkills: false,
+    leadershipResilience: false,
+    disciplineIntegrity: false,
+    emotionalIntelligence: false,
+    goalSetting: false,
+    positiveCharacter: false,
+    financialLiteracy: false,
+    others: false
+  });
+  const [otherGoal, setOtherGoal] = useState('');
+  const [statusMessage, setStatusMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [paystackReady, setPaystackReady] = useState(false);
+  const [passportFile, setPassportFile] = useState(null);
+  const [documentFile, setDocumentFile] = useState(null);
+  const [passportPreviewUrl, setPassportPreviewUrl] = useState(null);
+  const [step, setStep] = useState('form'); // 'form' | 'preview'
+
+  const goalLabels = {
+    confidenceBuilding: 'Confidence Building',
+    publicSpeaking: 'Public Speaking',
+    communicationSkills: 'Communication Skills',
+    leadershipResilience: 'Leadership and Resilience Skills',
+    disciplineIntegrity: 'Discipline, Integrity and Responsibility',
+    emotionalIntelligence: 'Emotional Intelligence',
+    goalSetting: 'Goal Setting',
+    positiveCharacter: 'Positive Character Formation',
+    financialLiteracy: 'Financial Literacy',
+    others: 'Others'
+  };
+
+  useEffect(() => {
+    if (!visible) return;
+    if (window.PaystackPop) {
+      setPaystackReady(true);
+      return;
+    }
+
+    const existingScript = document.getElementById('paystack-inline-js');
+    if (existingScript) {
+      setPaystackReady(true);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = 'paystack-inline-js';
+    script.src = 'https://js.paystack.co/v1/inline.js';
+    script.onload = () => setPaystackReady(true);
+    script.onerror = () => setStatusMessage('Unable to load Paystack checkout. Please try again later.');
+    document.body.appendChild(script);
+  }, [visible]);
+
+  useEffect(() => {
+    if (!visible) {
+      setFormData((prev) => ({
+        ...prev,
+        fullName: '',
+        dateOfBirth: '',
+        age: '',
+        gender: 'Female',
+        schoolName: '',
+        currentClassGrade: '',
+        homeAddress: '',
+        hobbies: '',
+        parentName: '',
+        relationship: '',
+        phone1: '',
+        phone2: '',
+        parentEmail: '',
+        occupation: '',
+        allergies: '',
+        emergencyContactName: '',
+        emergencyContactNumber: '',
+        signature: '',
+        consentDate: new Date().toISOString().slice(0, 10),
+        track: 'Children & Teenagers Coaching Framework',
+        amount: 10000
+      }));
+      setGoalAreas({
+        confidenceBuilding: true,
+        publicSpeaking: false,
+        communicationSkills: false,
+        leadershipResilience: false,
+        disciplineIntegrity: false,
+        emotionalIntelligence: false,
+        goalSetting: false,
+        positiveCharacter: false,
+        financialLiteracy: false,
+        others: false
+      });
+      setOtherGoal('');
+      setStatusMessage('');
+      setLoading(false);
+      setPassportFile(null);
+      setDocumentFile(null);
+      setPassportPreviewUrl(null);
+      setStep('form');
+    }
+  }, [visible]);
+
+  useEffect(() => {
+    if (!passportFile) {
+      setPassportPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(passportFile);
+    setPassportPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [passportFile]);
+
+  const updateField = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const toggleGoal = (key) => {
+    setGoalAreas((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const selectedGoals = Object.entries(goalAreas).reduce((acc, [key, checked]) => {
+    if (!checked) return acc;
+    if (key === 'others') {
+      if (otherGoal.trim()) acc.push(otherGoal.trim());
+      return acc;
+    }
+    acc.push(goalLabels[key]);
+    return acc;
+  }, []);
+
+  const handlePaymentSubmit = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setStatusMessage('');
+
+    if (!formData.parentEmail || !formData.phone1) {
+      setStatusMessage('Please provide both parent email and a primary phone number.');
+      return;
+    }
+
+    if (!paystackReady || !window.PaystackPop) {
+      setStatusMessage('Paystack checkout is loading. Please wait a moment and try again.');
+      return;
+    }
+
+    if (!paystackPublicKey || paystackPublicKey.includes('demo_key_update_from_admin')) {
+      setStatusMessage('A valid Paystack test key is required. Please update the public key in admin settings.');
+      return;
+    }
+
+    setLoading(true);
+
+    const paymentHandler = window.PaystackPop.setup({
+      key: paystackPublicKey,
+      email: formData.parentEmail,
+      amount: Number(formData.amount || 10000) * 100,
+      currency: 'NGN',
+      ref: `PTT-${Date.now()}`,
+      metadata: {
+        custom_fields: [
+          { display_name: 'Thriver Name', variable_name: 'thriver_name', value: formData.fullName },
+          { display_name: 'Parent Phone', variable_name: 'parent_phone', value: formData.phone1 },
+          { display_name: 'Selected Track', variable_name: 'selected_track', value: formData.track }
+        ]
+      },
+      callback: async (response) => {
+        const registrationData = {
+          ...formData,
+          developmentGoals: selectedGoals.join(', '),
+          paymentReference: response.reference,
+          paymentStatus: 'success'
+          ,passportFile,
+          documentFile
+        };
+        if (onRegister) await onRegister(registrationData);
+        setStatusMessage('Payment successful and registration submitted. Thank you!');
+        setLoading(false);
+        setTimeout(() => {
+          setStatusMessage('');
+          onClose();
+        }, 1200);
+      },
+      onClose: () => {
+        setStatusMessage('Payment was cancelled. You can try again anytime.');
+        setLoading(false);
+      }
+    });
+
+    paymentHandler.openIframe();
+  };
+
+  const handlePayLater = async () => {
+    setStatusMessage('');
+    setLoading(true);
+    try {
+      const registrationData = {
+        ...formData,
+        developmentGoals: selectedGoals.join(', '),
+        paymentStatus: 'pending',
+        paymentMethod: 'bank_transfer',
+        passportFile,
+        documentFile
+      };
+      if (onRegister) await onRegister(registrationData);
+      setStatusMessage('Registration submitted. Please complete payment via bank transfer using the details provided to you.');
+      setLoading(false);
+      setTimeout(() => {
+        setStatusMessage('');
+        onClose();
+      }, 2500);
+    } catch (err) {
+      setStatusMessage('Unable to submit registration. Please try again.');
+      setLoading(false);
+    }
+  };
+
+  if (!visible) return null;
+
+  const handlePreview = (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    setStep('preview');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleEdit = () => setStep('form');
+
+  return (
+    <div className="registration-modal-overlay" onClick={onClose}>
+      <div className="registration-modal-panel" onClick={(e) => e.stopPropagation()}>
+        <div className="registration-modal-header">
+          <div>
+            <h3>Thriver Registration Form</h3>
+            <p className="registration-prompt-banner">Complete this registration and pay securely through Paystack to reserve your place in Paz Thriving Teens Academy.</p>
+          </div>
+          <button className="registration-modal-close-btn" type="button" onClick={onClose} aria-label="Close registration form">
+            <i className="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <form onSubmit={handlePreview}>
+          <section className="registration-modal-section">
+            <h4>A. THRIVER INFORMATION</h4>
+            <div className="registration-fields-grid">
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', gridColumn: '1 / -1' }}>
+                <div style={{ width: 130, textAlign: 'center' }}>
+                  <div style={{ width: 120, height: 140, borderRadius: 8, overflow: 'hidden', margin: '0 auto', border: '1px solid var(--border-color)', background: '#f7fafc', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {passportPreviewUrl ? (
+                      <img src={passportPreviewUrl} alt="Passport preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ fontSize: '0.85rem', color: '#6b7280', padding: '0.5rem' }}>Passport preview</div>
+                    )}
+                  </div>
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <input type="file" accept="image/*" onChange={(e) => setPassportFile(e.target.files && e.target.files[0] ? e.target.files[0] : null)} className="plain-text-input" />
+                  </div>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div className="form-input-container">
+                    <label>Full Name</label>
+                    <input type="text" value={formData.fullName} onChange={(e) => updateField('fullName', e.target.value)} required className="plain-text-input" />
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div className="form-input-container">
+                      <label>Date of Birth</label>
+                      <input type="date" value={formData.dateOfBirth} onChange={(e) => updateField('dateOfBirth', e.target.value)} required className="plain-text-input" />
+                    </div>
+                    <div className="form-input-container">
+                      <label>Age</label>
+                      <input type="number" min="6" max="25" value={formData.age} onChange={(e) => updateField('age', e.target.value)} required className="plain-text-input" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="form-input-container">
+                <label>Gender</label>
+                <select value={formData.gender} onChange={(e) => updateField('gender', e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
+                  <option value="Female">Female</option>
+                  <option value="Male">Male</option>
+                  <option value="Non-binary">Non-binary</option>
+                  <option value="Prefer not to say">Prefer not to say</option>
+                </select>
+              </div>
+              <div className="form-input-container">
+                <label>School Name</label>
+                <input type="text" value={formData.schoolName} onChange={(e) => updateField('schoolName', e.target.value)} className="plain-text-input" />
+              </div>
+              <div className="form-input-container">
+                <label>Current Class / Grade</label>
+                <input type="text" value={formData.currentClassGrade} onChange={(e) => updateField('currentClassGrade', e.target.value)} className="plain-text-input" />
+              </div>
+              <div className="form-input-container" style={{ gridColumn: '1 / -1' }}>
+                <label>Home Address</label>
+                <input type="text" value={formData.homeAddress} onChange={(e) => updateField('homeAddress', e.target.value)} className="plain-text-input" />
+              </div>
+              <div className="form-input-container" style={{ gridColumn: '1 / -1' }}>
+                <label>Special Interests / Hobbies</label>
+                <input type="text" value={formData.hobbies} onChange={(e) => updateField('hobbies', e.target.value)} className="plain-text-input" />
+              </div>
+            </div>
+          </section>
+
+          <section className="registration-modal-section">
+            <h4>B. PARENT / GUARDIAN INFORMATION</h4>
+            <div className="registration-fields-grid">
+              <div className="form-input-container">
+                <label>Parent / Guardian Name</label>
+                <input type="text" value={formData.parentName} onChange={(e) => updateField('parentName', e.target.value)} required className="plain-text-input" />
+              </div>
+              <div className="form-input-container">
+                <label>Relationship to Child</label>
+                <input type="text" value={formData.relationship} onChange={(e) => updateField('relationship', e.target.value)} required className="plain-text-input" />
+              </div>
+              <div className="form-input-container">
+                <label>Phone Number 1</label>
+                <input type="tel" value={formData.phone1} onChange={(e) => updateField('phone1', e.target.value)} required className="plain-text-input" />
+              </div>
+              <div className="form-input-container">
+                <label>Phone Number 2</label>
+                <input type="tel" value={formData.phone2} onChange={(e) => updateField('phone2', e.target.value)} className="plain-text-input" />
+              </div>
+              <div className="form-input-container">
+                <label>Email Address</label>
+                <input type="email" value={formData.parentEmail} onChange={(e) => updateField('parentEmail', e.target.value)} required className="plain-text-input" />
+              </div>
+              <div className="form-input-container">
+                <label>Occupation</label>
+                <input type="text" value={formData.occupation} onChange={(e) => updateField('occupation', e.target.value)} className="plain-text-input" />
+              </div>
+            </div>
+          </section>
+
+          <section className="registration-modal-section">
+            <h4>C. DEVELOPMENT GOALS</h4>
+            <div className="registration-checklist-grid">
+              {Object.keys(goalLabels).map((key) => (
+                <label key={key} className="checkbox-card">
+                  <input type="checkbox" checked={goalAreas[key]} onChange={() => toggleGoal(key)} />
+                  <span>{goalLabels[key]}</span>
+                </label>
+              ))}
+            </div>
+            {goalAreas.others && (
+              <div className="form-input-container" style={{ marginTop: '1rem' }}>
+                <label>Other goal focus</label>
+                <input type="text" value={otherGoal} onChange={(e) => setOtherGoal(e.target.value)} className="plain-text-input" placeholder="Please specify other development goals" />
+              </div>
+            )}
+          </section>
+
+          <section className="registration-modal-section">
+            <h4>D. HEALTH INFORMATION</h4>
+            <div className="registration-fields-grid">
+              <div className="form-input-container">
+                <label>Allergies or Medical Conditions</label>
+                <input type="text" value={formData.allergies} onChange={(e) => updateField('allergies', e.target.value)} className="plain-text-input" />
+              </div>
+              <div className="form-input-container">
+                <label>Emergency Contact Name</label>
+                <input type="text" value={formData.emergencyContactName} onChange={(e) => updateField('emergencyContactName', e.target.value)} className="plain-text-input" />
+              </div>
+              <div className="form-input-container" style={{ gridColumn: '1 / -1' }}>
+                <label>Emergency Contact Number</label>
+                <input type="tel" value={formData.emergencyContactNumber} onChange={(e) => updateField('emergencyContactNumber', e.target.value)} className="plain-text-input" />
+              </div>
+            </div>
+          </section>
+
+          <section className="registration-modal-section">
+            <h4>E. UPLOADS</h4>
+            <div className="registration-fields-grid">
+              <div className="form-input-container">
+                <label>Supporting Document (PDF/DOC)</label>
+                <input type="file" accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*" onChange={(e) => setDocumentFile(e.target.files && e.target.files[0] ? e.target.files[0] : null)} className="plain-text-input" />
+              </div>
+            </div>
+          </section>
+
+          <section className="registration-modal-section">
+            <h4>F. CONSENT</h4>
+            <div className="form-input-container">
+              <label>I authorize my child/ward to participate in activities organized by Paz Thriving Teens Academy and I will pay the investment fee as at when due.</label>
+              <textarea rows="3" value={formData.signature} onChange={(e) => updateField('signature', e.target.value)} placeholder="Parent signature or printed name" className="plain-text-input" style={{ resize: 'vertical' }} required />
+            </div>
+            <div className="registration-payment-row">
+              <div className="form-input-container">
+                <label>Date</label>
+                <input type="date" value={formData.consentDate} onChange={(e) => updateField('consentDate', e.target.value)} className="plain-text-input" />
+              </div>
+              <div className="form-input-container">
+                <label>Payment Amount (NGN)</label>
+                <input type="number" min="100" value={formData.amount} onChange={(e) => updateField('amount', e.target.value)} className="plain-text-input" required />
+              </div>
+            </div>
+          </section>
+
+          <div className="form-input-container" style={{ marginBottom: '1rem' }}>
+            <label>Selected Academy Track</label>
+            <select value={formData.track} onChange={(e) => updateField('track', e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
+              <option>Children & Teenagers Coaching Framework</option>
+              <option>Family Life Coaching Framework</option>
+              <option>Marriage & Relationship Counseling Framework</option>
+            </select>
+          </div>
+
+          {statusMessage && <div className="payment-status-message">{statusMessage}</div>}
+
+          {step === 'form' ? (
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <button type="submit" className="form-submit-action-btn" disabled={loading} style={{ flex: '1 1 200px' }}>
+                <i className="fa-solid fa-eye"></i> Preview
+              </button>
+              <button type="button" className="form-cancel-action-btn" onClick={onClose} style={{ background: 'transparent', border: '1px solid var(--border-color)', padding: '0.6rem 1rem', flex: '0 0 auto' }}>Cancel</button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <button type="button" className="form-submit-action-btn" onClick={handlePaymentSubmit} disabled={loading} style={{ flex: '1 1 200px' }}>
+                <i className="fa-solid fa-credit-card"></i> Pay & Register Now
+              </button>
+              <button type="button" className="form-submit-action-btn" onClick={handlePayLater} disabled={loading} style={{ flex: '1 1 200px', background: '#f6ad55', borderColor: '#f6ad55' }}>
+                <i className="fa-solid fa-money-bill-transfer"></i> Pay Later (Bank Transfer)
+              </button>
+              <button type="button" className="form-cancel-action-btn" onClick={handleEdit} style={{ background: 'transparent', border: '1px solid var(--border-color)', padding: '0.6rem 1rem', flex: '0 0 auto' }}>Edit</button>
+            </div>
+          )}
+        </form>
+
+        {step === 'preview' && (
+          <div style={{ marginTop: '1.25rem', padding: '1rem', borderRadius: 8, border: '1px solid var(--border-color)', background: 'var(--bg-primary)' }}>
+            <h4 style={{ marginBottom: '0.5rem' }}>Preview Registration Details</h4>
+            <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '0.75rem', alignItems: 'start' }}>
+              <div>
+                {passportPreviewUrl ? <img src={passportPreviewUrl} alt="passport" style={{ width: 120, height: 140, objectFit: 'cover', borderRadius: 6 }} /> : <div style={{ width: 120, height: 140, borderRadius: 6, background: '#f7fafc', border: '1px solid var(--border-color)' }} />}
+              </div>
+              <div>
+                <p><strong>Full Name:</strong> {formData.fullName}</p>
+                <p><strong>DOB:</strong> {formData.dateOfBirth} <strong>Age:</strong> {formData.age}</p>
+                <p><strong>Gender:</strong> {formData.gender}</p>
+                <p><strong>School:</strong> {formData.schoolName} — <strong>Class:</strong> {formData.currentClassGrade}</p>
+                <p><strong>Parent:</strong> {formData.parentName} — {formData.phone1} / {formData.parentEmail}</p>
+                <p><strong>Development Goals:</strong> {selectedGoals.join(', ')}</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
