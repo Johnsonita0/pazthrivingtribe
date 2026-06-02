@@ -1429,10 +1429,10 @@ export default function App() {
               <i className="fa-solid fa-house"></i> Home
             </Link>
             <Link to="/services/family" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-people-roof"></i> Family Life
+              <i className="fa-solid fa-people-roof"></i> Thriving Singles
             </Link>
             <Link to="/services/marriage" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-heart-crack"></i> Marriage
+              <i className="fa-solid fa-heart-crack"></i> Thriving Women Tribe
             </Link>
             <Link to="/teens-kids-academy" className="nav-link-item" onClick={() => setNavOpen(false)}>
               <i className="fa-solid fa-child-reaching"></i> Pre-teen & Teens
@@ -1590,8 +1590,8 @@ export default function App() {
 
                 {/* Interactive Gateway Matrix */}
                 <section id="services-explore" className="interactive-tabs-section">
-                  <h2 className="section-title-heading" data-aos="fade-right">Ecosystem Specialty Menus</h2>
-                  <p className="section-subtext">Click on any core module path below to access its deep-dive page layout view, customized banners, and dedicated forms.</p>
+                  <h2 className="section-title-heading" data-aos="fade-right">What we offer</h2>
+                  <p className="section-subtext">Kindly check the options below to explore our services</p>
 
                   <div className="services-routing-grid" data-aos="fade-up">
                     <Link to="/services/family" className="service-gateway-card">
