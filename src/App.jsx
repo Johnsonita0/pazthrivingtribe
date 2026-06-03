@@ -177,7 +177,14 @@ export default function App() {
       icon: "fa-solid fa-wand-magic-sparkles"
     }
   ];
-
+ const [socialEditTarget, setSocialEditTarget] = useState('YouTube');
+  const [socialPreviewTitle, setSocialPreviewTitle] = useState('');
+  const [socialPreviewSummary, setSocialPreviewSummary] = useState('');
+  const [socialPreviewBadgeText, setSocialPreviewBadgeText] = useState('');
+  const [socialPreviewUrl, setSocialPreviewUrl] = useState('https://youtube.com/shorts/-vOSeWpU1Xs?feature=share');
+  const [socialPreviewEmbedUrl, setSocialPreviewEmbedUrl] = useState('https://www.youtube.com/embed/-vOSeWpU1Xs');
+  const [youtubeEmbedUrl, setYoutubeEmbedUrl] = useState('https://www.youtube.com/embed/-vOSeWpU1Xs');
+  
   // --- State for Auto-Sliding Social Media News Updates Screen ---
   const [activeNewsIndex, setActiveNewsIndex] = useState(0);
   const [socialNewsFeed, setSocialNewsFeed] = useState([
@@ -201,24 +208,18 @@ export default function App() {
       timestamp: "Posted 1 day ago",
       targetUrl: "https://instagram.com/paztribe"
     },
-    {
-      platform: "YouTube",
-      icon: "fa-brands fa-youtube",
-      color: "#FF0000",
-      badgeText: "Featured Masterclass Broadcast",
-      title: "Marriage Alignment Frameworks: Annual Summit Highlights",
-      summary: "Watch the full 45-minute premium streaming segment breaking down advanced relationship intake assessments, milestone mapping, and interactive couple exercises.",
-      timestamp: "Streamed 3 days ago",
-      targetUrl: "https://youtube.com/shorts/-vOSeWpU1Xs?feature=share"
-    }
+    // {
+    //   platform: "YouTube",
+    //   icon: "fa-brands fa-youtube",
+    //   color: "#FF0000",
+    //   badgeText: "Featured Masterclass Broadcast",
+    //   title: "Marriage Alignment Frameworks: Annual Summit Highlights",
+    //   summary: "Watch the full 45-minute premium streaming segment breaking down advanced relationship intake assessments, milestone mapping, and interactive couple exercises.",
+    //   timestamp: "Streamed 3 days ago",
+    //   targetUrl: "https://youtube.com/shorts/-vOSeWpU1Xs?feature=share"
+    // }
   ]);
-  const [socialEditTarget, setSocialEditTarget] = useState('YouTube');
-  const [socialPreviewTitle, setSocialPreviewTitle] = useState('');
-  const [socialPreviewSummary, setSocialPreviewSummary] = useState('');
-  const [socialPreviewBadgeText, setSocialPreviewBadgeText] = useState('');
-  const [socialPreviewUrl, setSocialPreviewUrl] = useState('https://youtube.com/shorts/-vOSeWpU1Xs?feature=share');
-  const [socialPreviewEmbedUrl, setSocialPreviewEmbedUrl] = useState('https://www.youtube.com/embed/-vOSeWpU1Xs');
-  const [youtubeEmbedUrl, setYoutubeEmbedUrl] = useState('https://www.youtube.com/embed/-vOSeWpU1Xs');
+ 
 
   // --- CMS Admin Form Inputs ---
   const [editTarget, setEditTarget] = useState('family');
@@ -1824,6 +1825,29 @@ export default function App() {
                   </div>
                 </section> */}
 
+                <section id="video-feature" className="youtube-video-feature-section" data-aos="fade-up">
+                  <div className="video-feature-grid">
+                    <div className="video-feature-copy">
+                      <h2>Featured YouTube Playback</h2>
+                      <p>Play a highlighted video directly on the homepage without leaving the site. Update the featured YouTube video from the admin dashboard.</p>
+                    </div>
+                    <div className="video-embed-wrap">
+                      {youtubeEmbedUrl ? (
+                        <iframe
+                          title="Featured YouTube Playback"
+                          src={normalizeYoutubeEmbed(youtubeEmbedUrl)}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <div style={{ padding: '2rem', color: 'var(--text-muted)', minHeight: '240px' }}>
+                          A featured YouTube video will appear here once a valid embed URL is configured in the CMS.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </section>
+
                 <section id="social-updates" className="social-news-stream-section" data-aos="fade-up">
                   <div className="social-news-layout-wrapper">
                     <div className="social-news-header-zone">
@@ -1866,29 +1890,6 @@ export default function App() {
                       </div>
                       <div className="broadcast-action-footer">View Now <i className="fa-solid fa-arrow-right"></i></div>
                     </a>
-                  </div>
-                </section>
-
-                <section id="video-feature" className="youtube-video-feature-section" data-aos="fade-up">
-                  <div className="video-feature-grid">
-                    <div className="video-feature-copy">
-                      <h2>Featured YouTube Playback</h2>
-                      <p>Play a highlighted video directly on the homepage without leaving the site. Update the featured YouTube video from the admin dashboard.</p>
-                    </div>
-                    <div className="video-embed-wrap">
-                      {youtubeEmbedUrl ? (
-                        <iframe
-                          title="Featured YouTube Playback"
-                          src={normalizeYoutubeEmbed(youtubeEmbedUrl)}
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      ) : (
-                        <div style={{ padding: '2rem', color: 'var(--text-muted)', minHeight: '240px' }}>
-                          A featured YouTube video will appear here once a valid embed URL is configured in the CMS.
-                        </div>
-                      )}
-                    </div>
                   </div>
                 </section>
 
