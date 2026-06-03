@@ -617,9 +617,6 @@ export default function App() {
       if (item.platform !== socialEditTarget) return item;
       return {
         ...item,
-                                  <option value="children">Pre-teens & Teens</option>
-                                  <option value="children">Pre-teens & Teens</option>
-                                  <option value="children">Pre-teens & Teens</option>
         summary: socialPreviewSummary,
         badgeText: socialPreviewBadgeText,
         targetUrl: socialPreviewUrl
@@ -2949,7 +2946,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
       setPassportPreviewUrl(null);
       setStepIndex(0);
     }
-                  <option>Pre-teens & Teens</option>
+  }, [visible]);
 
   useEffect(() => {
     if (!passportFile) {
