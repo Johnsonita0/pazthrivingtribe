@@ -30,7 +30,7 @@ export default function App() {
   const [currentPromoSlide, setCurrentPromoSlide] = useState(0);
   const [promoSlides, setPromoSlides] = useState([
     {
-      title: 'Arabian Client',
+      title: 'Jojo’s Mom',
       text: "Ms. Rosaline has been a truly exceptional tutor and coach for my 10-year-old daughter. My daughter will have her 9th class this week. From the beginning, she created a fun, warm, and engaging environment that made my daughter genuinely excited for every lesson—often looking forward to it even before it starts. What makes Ms. Rosaline stand out is her real impact. She has played a major role in building my daughter’s personality—developing her sense of responsibility and, most importantly, her inner motivation. Today, my daughter attends her classes because she wants to, not because I ask her to—and that, to me, is incredibly valuable. Through her constant encouragement, positivity, and genuine care, Ms. Rosaline has helped my daughter grow in confidence, independence, self-love, and communication. She also nurtures leadership skills and teaches children how to handle different life situations with confidence and awareness. Her dedication, patience, and uplifting spirit truly make a lasting difference. I’m deeply grateful for her efforts and highly recommend her as an inspiring and impactful life coach for children.",
       image: "./logo/logomain.png",
       imageType: 'logo'
@@ -505,14 +505,21 @@ export default function App() {
       // Attempt DB update if record has id
       try {
         if (target.id) {
-          const { error } = await supabase.from('tribe_testimonials').update({ author: payload.title, origin: payload.origin, text: payload.text }).eq('id', target.id);
+          const { data, error } = await supabase.from('tribe_testimonials').update({ author: payload.title, origin: payload.origin, text: payload.text }).eq('id', target.id).select().single();
           if (error) throw error;
+          // update local slide with authoritative DB row
+          setPromoSlides((prev) => prev.map((t, i) => (i === testimonialEditIndex ? {
+            id: data.id,
+            title: data.author || payload.title,
+            text: data.text,
+            origin: data.origin || payload.origin,
+            image: data.image || payload.image,
+            imageType: data.imageType || payload.imageType
+          } : t)));
           setCmsSuccessMessage('Testimonial updated in database.');
         } else {
           setCmsSuccessMessage('Testimonial updated locally.');
         }
-        // refresh from DB to ensure main site reflects latest
-        await fetchTestimonials();
       } catch (err) {
         setCmsSuccessMessage('Update applied locally; database update failed.');
       }
@@ -524,8 +531,16 @@ export default function App() {
       try {
         const { data, error } = await supabase.from('tribe_testimonials').insert([{ author: payload.title, origin: payload.origin, text: payload.text }]).select().single();
         if (error) throw error;
-        // refresh from DB and set local slides
-        await fetchTestimonials();
+        // prepend authoritative DB row to local slides
+        const created = {
+          id: data.id,
+          title: data.author || payload.title,
+          text: data.text,
+          origin: data.origin || payload.origin,
+          image: data.image || payload.image,
+          imageType: data.imageType || payload.imageType
+        };
+        setPromoSlides((prev) => [created, ...prev]);
         setCmsSuccessMessage('Testimonial saved to database.');
       } catch (err) {
         setCmsSuccessMessage('Testimonial added locally; database insert failed.');
