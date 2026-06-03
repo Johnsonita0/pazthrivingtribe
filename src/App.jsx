@@ -205,6 +205,7 @@ export default function App() {
   const [testimonialAuthor, setTestimonialAuthor] = useState('');
   const [testimonialText, setTestimonialText] = useState('');
   const [testimonialOrigin, setTestimonialOrigin] = useState('');
+  const [testimonialEditIndex, setTestimonialEditIndex] = useState(null);
   const [programs, setPrograms] = useState([
     { id: 'fam-101', service: 'family', name: 'Family Communication Foundations', duration: '8 weeks', level: 'Beginner', schedule: 'Saturdays 10:00 AM', description: 'Build family communication patterns with practical exercises for every household.' },
     { id: 'fam-102', service: 'family', name: 'Conflict Resolution Mastery', duration: '6 weeks', level: 'Intermediate', schedule: 'Wednesdays 6:00 PM', description: 'Develop the skills needed to de-escalate conflict, rebuild trust, and create healthy family rhythms.' },
@@ -466,7 +467,8 @@ export default function App() {
   const handleAddTestimonial = async (e) => {
     e.preventDefault();
     setCmsSuccessMessage(null);
-    const newT = {
+
+    const payload = {
       title: testimonialAuthor || 'Anonymous',
       text: testimonialText,
       origin: testimonialOrigin || '',
@@ -474,21 +476,73 @@ export default function App() {
       imageType: 'logo'
     };
 
-    setPromoSlides((prev) => [newT, ...prev]);
+    // If editing an existing testimonial, update it in local state (and attempt DB update)
+    if (testimonialEditIndex !== null && promoSlides[testimonialEditIndex]) {
+      const target = promoSlides[testimonialEditIndex];
+      setPromoSlides((prev) => prev.map((t, i) => (i === testimonialEditIndex ? { ...t, ...payload } : t)));
 
-    try {
-      const { error } = await supabase.from('tribe_testimonials').insert([{
-        author: newT.title,
-        origin: newT.origin,
-        text: newT.text
-      }]);
-      if (error) throw error;
-      setCmsSuccessMessage('Testimonial saved to database.');
-    } catch (err) {
-      setCmsSuccessMessage('Testimonial added locally; database insert failed.');
+      // Attempt DB update if record has id
+      try {
+        if (target.id) {
+          const { error } = await supabase.from('tribe_testimonials').update({ author: payload.title, origin: payload.origin, text: payload.text }).eq('id', target.id);
+          if (error) throw error;
+          setCmsSuccessMessage('Testimonial updated in database.');
+        } else {
+          setCmsSuccessMessage('Testimonial updated locally.');
+        }
+      } catch (err) {
+        setCmsSuccessMessage('Update applied locally; database update failed.');
+      }
+
+      setTestimonialEditIndex(null);
+    } else {
+      // Add new testimonial
+      setPromoSlides((prev) => [payload, ...prev]);
+      try {
+        const { data, error } = await supabase.from('tribe_testimonials').insert([{ author: payload.title, origin: payload.origin, text: payload.text }]).select().single();
+        if (error) throw error;
+        // attach returned id to local copy (replace first item)
+        if (data && data.id) {
+          setPromoSlides((prev) => prev.map((t, i) => i === 0 ? { ...t, id: data.id } : t));
+        }
+        setCmsSuccessMessage('Testimonial saved to database.');
+      } catch (err) {
+        setCmsSuccessMessage('Testimonial added locally; database insert failed.');
+      }
     }
 
     setTestimonialAuthor(''); setTestimonialText(''); setTestimonialOrigin('');
+  };
+
+  const handleStartEditTestimonial = (index) => {
+    const t = promoSlides[index];
+    if (!t) return;
+    setTestimonialAuthor(t.title || '');
+    setTestimonialText(t.text || '');
+    setTestimonialOrigin(t.origin || '');
+    setTestimonialEditIndex(index);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEditTestimonial = () => {
+    setTestimonialAuthor(''); setTestimonialText(''); setTestimonialOrigin(''); setTestimonialEditIndex(null);
+  };
+
+  const handleDeleteTestimonial = async (index) => {
+    const t = promoSlides[index];
+    if (!t) return;
+    // remove locally
+    setPromoSlides((prev) => prev.filter((_, i) => i !== index));
+    // attempt DB delete if id present
+    if (t.id) {
+      try {
+        const { error } = await supabase.from('tribe_testimonials').delete().eq('id', t.id);
+        if (error) throw error;
+        setCmsSuccessMessage('Testimonial deleted from database.');
+      } catch (err) {
+        setCmsSuccessMessage('Testimonial removed locally; database delete failed.');
+      }
+    }
   };
 
   const handleUpdateSocialPreview = (e) => {
@@ -1931,16 +1985,27 @@ export default function App() {
                                 <label style={{ fontWeight: '600' }}>Testimonial</label>
                                 <textarea value={testimonialText} onChange={(e) => setTestimonialText(e.target.value)} rows="4" className="plain-text-input" style={{ resize: 'vertical' }} required />
                               </div>
-                              <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Add Testimonial</button>
+                              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                                <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>{testimonialEditIndex !== null ? 'Save Testimonial' : 'Add Testimonial'}</button>
+                                {testimonialEditIndex !== null && (
+                                  <button type="button" onClick={handleCancelEditTestimonial} className="form-cancel-action-btn" style={{ maxWidth: '140px' }}>Cancel</button>
+                                )}
+                              </div>
                             </form>
 
                             <div style={{ marginTop: '1.25rem' }}>
                               <h5 style={{ marginBottom: '0.6rem' }}>Current Testimonials</h5>
                               <div style={{ display: 'grid', gap: '0.75rem' }}>
                                 {promoSlides.map((t, idx) => (
-                                  <div key={idx} style={{ backgroundColor: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '0.9rem' }}>
-                                    <strong style={{ display: 'block' }}>{t.title}</strong>
-                                    <div style={{ color: 'var(--text-muted)', marginTop: '0.4rem' }}>{t.text.slice(0, 220)}{t.text.length > 220 ? '…' : ''}</div>
+                                  <div key={idx} style={{ backgroundColor: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '0.9rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}>
+                                    <div style={{ flex: 1 }}>
+                                      <strong style={{ display: 'block' }}>{t.title}</strong>
+                                      <div style={{ color: 'var(--text-muted)', marginTop: '0.4rem' }}>{t.text.slice(0, 220)}{t.text.length > 220 ? '…' : ''}</div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                      <button onClick={() => handleStartEditTestimonial(idx)} className="form-submit-action-btn" style={{ padding: '0.45rem 0.7rem' }}>Edit</button>
+                                      <button onClick={() => handleDeleteTestimonial(idx)} className="form-cancel-action-btn" style={{ padding: '0.45rem 0.7rem' }}>Delete</button>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
