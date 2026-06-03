@@ -922,7 +922,8 @@ export default function App() {
         .slide-graphic { width: 45%; height: 100%; border-radius: 12px; background-position: center; background-size: cover; box-shadow: var(--shadow-lg); border: 1px solid var(--border-color); }
         .testimonial-author { font-size: 0.95rem; color: var(--text-muted); font-weight: 700; margin-top: 0.5rem; text-align: left; }
         @media (max-width: 768px) { .testimonial-author { text-align: center; margin-top: 0.5rem; } }
-        @media (max-width: 768px) { .synchronized-promo-banner { padding: 1.5rem; } .banner-slider { height: auto; min-height: 400px; position: relative; } .banner-slide { position: static !important; display: none; opacity: 1 !important; transform: none !important; transition: none; flex-direction: column; gap: 1.5rem; padding: 1.5rem 0; align-items: stretch; } .banner-slide.active { display: flex; } .banner-text-package { width: 100%; } .slide-graphic { width: 100%; height: 250px; } }
+        @media (max-width: 768px) { .synchronized-promo-banner { padding: 1.25rem; } .banner-slider { height: auto; min-height: auto; position: relative; } .banner-slide { position: static !important; display: none; opacity: 1 !important; transform: none !important; transition: none; flex-direction: column; gap: 1rem; padding: 1rem; align-items: stretch; } .banner-slide.active { display: flex; } .banner-text-package { width: 100%; gap: 0.75rem; } .banner-badge { font-size: 0.75rem; padding: 0.3rem 0.8rem; } .banner-text-package p { font-size: 0.9rem; line-height: 1.5; } .slide-graphic { width: 100%; height: 180px; margin: 0.5rem 0 0 0; } }
+        @media (max-width: 480px) { .synchronized-promo-banner { padding: 0.75rem; } .banner-slide { padding: 0.75rem; gap: 0.6rem; } .banner-text-package { gap: 0.5rem; } .banner-badge { font-size: 0.65rem; padding: 0.25rem 0.6rem; i { font-size: 0.65rem; } } .banner-text-package p { font-size: 0.8rem; line-height: 1.4; } .slide-graphic { height: 140px; } }
         .banner-controls { position: absolute; right: 18px; bottom: 12px; display: flex; gap: 0.6rem; }
         @media (max-width: 768px) { .banner-controls { position: relative; right: auto; bottom: auto; justify-content: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); } }
         .banner-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border-color); cursor: pointer; border: none; }
@@ -1673,7 +1674,7 @@ export default function App() {
                     <img src="../image/pic1.jpeg" className="founder-img" alt="Paz Tribe Founder and CEO" />
                     <div className="founder-title-tag-overlay">
                       <h4>Mrs. Roseline Iraoya </h4>
-                      <span>Lead Coach PTT</span>
+                      <span>Lead Coach</span>
                       <span>Paz Thriving Tribe</span>
                     </div>
                   </div>
@@ -1743,7 +1744,7 @@ export default function App() {
                     {promoSlides.map((slide, idx) => (
                       <div key={idx} className={`banner-slide ${idx === currentPromoSlide ? 'active' : ''}`}>
                         <div className="banner-text-package">
-                          <span className="banner-badge"><i className="fa-solid fa-bullseye" style={{ fontSize: '0.8rem' }}></i>Client Testimonial</span>
+                          <span className="banner-badge"><i className="fa-solid fa-bullseye" style={{ fontSize: '0.8rem' }}></i>Client Review</span>
                           <p>{slide.text}</p>
                           <div className="testimonial-author">{slide.title}</div>
                         </div>
