@@ -1,8 +1,10 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
-const adminEmails = process.env.ADMIN_EMAILS || process.env.VITE_ADMIN_EMAILS || ''
+const getEnv = () => ({
+  supabaseUrl: process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+  serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+  adminEmails: process.env.ADMIN_EMAILS || process.env.VITE_ADMIN_EMAILS || ''
+})
 
 const jsonResponse = (res, status, body) => {
   res.statusCode = status
@@ -11,6 +13,7 @@ const jsonResponse = (res, status, body) => {
 }
 
 export default async function handler(req, res) {
+  const { supabaseUrl, serviceRoleKey, adminEmails } = getEnv()
   if (req.method !== 'GET') {
     return jsonResponse(res, 405, { status: 'error', error: 'Method not allowed', allowed: ['GET'] })
   }

@@ -21,13 +21,13 @@ This app uses Supabase env vars for both client-side rendering and secure server
 
 Required environment variables in production:
 
-- `VITE_SUPABASE_URL` — your Supabase project URL
-- `VITE_SUPABASE_ANON_KEY` — your Supabase anon/public key
-- `SUPABASE_URL` — same Supabase project URL for serverless admin endpoint
-- `SUPABASE_SERVICE_ROLE_KEY` — secret Supabase service role key
+- `VITE_SUPABASE_URL` — your Supabase project URL for client-side access
+- `VITE_SUPABASE_ANON_KEY` — your Supabase anon/public key for client-side access
+- `SUPABASE_URL` — the same Supabase project URL for server-side admin APIs
+- `SUPABASE_SERVICE_ROLE_KEY` — secret Supabase service role key used by `/api/admin-update`
 - `ADMIN_EMAILS` — comma-separated list of allowed admin emails (fallback)
 
-If you deploy to Vercel, add these variables in the project dashboard and keep the service role key private. The admin endpoint is available at `/api/admin-update`.
+If you deploy to Vercel, add the `SUPABASE_*` variables in the project dashboard under Environment Variables. Do not use `VITE_SUPABASE_ANON_KEY` as the service role key. The admin endpoint is available at `/api/admin-update`.
 
 ### Supabase production setup
 

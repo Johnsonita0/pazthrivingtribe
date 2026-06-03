@@ -4,9 +4,14 @@ import { createClient } from '@supabase/supabase-js'
 // Requires these environment variables to be set in your deployment:
 // SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ADMIN_EMAILS (comma-separated list)
 
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
-const adminEmails = (process.env.ADMIN_EMAILS || process.env.VITE_ADMIN_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
+const getEnv = () => ({
+  supabaseUrl: process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+  serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+  adminEmails: (process.env.ADMIN_EMAILS || process.env.VITE_ADMIN_EMAILS || '')
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean)
+})
 
 const jsonResponse = (res, status, body) => {
   res.statusCode = status
@@ -15,6 +20,7 @@ const jsonResponse = (res, status, body) => {
 }
 
 export default async function handler(req, res) {
+  const { supabaseUrl, serviceRoleKey, adminEmails } = getEnv()
   if (req.method !== 'POST') return jsonResponse(res, 405, { error: 'Method not allowed' })
   if (!supabaseUrl || !serviceRoleKey) return jsonResponse(res, 500, { error: 'Server misconfigured: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing' })
 
