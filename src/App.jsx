@@ -1965,8 +1965,9 @@ export default function App() {
                 <section id="video-feature" className="youtube-video-feature-section" data-aos="fade-up">
                   <div className="video-feature-grid">
                     <div className="video-feature-copy">
-                      <h2>Featured YouTube Playback</h2>
-                      <p>Play a highlighted video directly on the homepage without leaving the site. Update the featured YouTube video from the admin dashboard.</p>
+                      <h2>Examine your Thoughts, Words and Actions👌👌</h2>
+                      <p>Your life is shaped by 3 things: your thoughts, your words, and your actions.  In this video, we break down why self-examination matters and how checking 
+                        these 3 areas can transform your mindset, relationships, and success.</p>
                     </div>
                     <div className="video-embed-wrap">
                       {youtubeEmbedUrl ? (
