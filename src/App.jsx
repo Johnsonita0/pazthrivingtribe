@@ -1979,7 +1979,7 @@ export default function App() {
                               <label style={{ color: 'var(--brand-blue)', fontWeight: '600' }}>Select Targeted Menu Category to Update</label>
                               <select value={editTarget} onChange={(e) => setEditTarget(e.target.value)} className="plain-text-input" style={{ height: '46px', border: '1px solid var(--brand-blue)' }}>
                                 <option value="family">Thriving Singles</option>
-                                <option value="marriage">Thriving Women Tribe</option>
+                                <option value="marriage">Thriving Women</option>
                                 <option value="children">Pre-teens & Teens</option>
                               </select>
                             </div>
@@ -2113,7 +2113,7 @@ export default function App() {
                               <label style={{ fontWeight: '600' }}>Service Category</label>
                               <select value={programForm.service} onChange={(e) => setProgramForm((prev) => ({ ...prev, service: e.target.value }))} className="plain-text-input" style={{ height: '46px' }}>
                                 <option value="family">Thriving Singles</option>
-                                <option value="marriage">Thriving Women Tribe</option>
+                                <option value="marriage">Thriving Women</option>
                                 <option value="children">Pre-teens Mentorship Pathways</option>
                               </select>
                             </div>
@@ -2431,7 +2431,7 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
     marriage: {
       newsTitle: "Women Tribe Connection Brief",
       newsText: "Upcoming Women's Empowerment Circle meeting scheduled for next month with guest speakers on leadership and sisterhood.",
-      formSub: "Join the Thriving Women Tribe Community"
+      formSub: "Join the Thriving Women Community"
     },
     children: {
       newsTitle: "Pre-teens Mentorship Monitor",
@@ -2797,7 +2797,7 @@ function HomeIntakeForm({ onSubmitApplicant }) {
           <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Targeted Intake Track Selection</label>
           <select required value={track} onChange={(e) => setTrack(e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
             <option value="family">Thriving Singles</option>
-            <option value="marriage">Thriving Women Tribe</option>
+            <option value="marriage">Thriving Women</option>
             <option value="children">Pre-teens Mentorship Pathways</option>
           </select>
         </div>
@@ -3300,7 +3300,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
                 <select value={formData.track} onChange={(e) => updateField('track', e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
                   <option>Pre-teens Mentorship Pathways</option>
                   <option>Thriving Singles</option>
-                  <option>Thriving Women Tribe</option>
+                  <option>Thriving Women</option>
                 </select>
               </div>
             </>
