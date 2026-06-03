@@ -1294,6 +1294,7 @@ export default function App() {
         .founder-title-tag-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.85)); padding: 2rem 1.5rem 1.5rem 1.5rem; color: white; }
         .founder-title-tag-overlay h4 { margin: 0; font-size: 1.3rem; font-weight: 700; color: #ffffff; }
         .founder-title-tag-overlay span { display: block; font-size: 0.9rem; color: var(--brand-blue); font-weight: 600; margin-top: 0.25rem; }
+        .founder-title-tag-overlay span:nth-of-type(2) { color: #ffcc66; }
         .founder-interactive-message-box { display: flex; flex-direction: column; gap: 2rem; }
         .founder-msg-nav-row { display: flex; gap: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; flex-wrap: wrap; }
         .founder-nav-pill { background: none; border: none; font-family: inherit; color: var(--text-muted); font-size: 1rem; font-weight: 700; padding: 0.5rem 1rem; cursor: pointer; position: relative; transition: color 0.2s; display: flex; align-items: center; gap: 0.5rem; }
