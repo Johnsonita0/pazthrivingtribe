@@ -8,8 +8,6 @@ const supabaseUrl = process.env.SUPABASE_URL
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
 
-const supabase = createClient(supabaseUrl, serviceRoleKey)
-
 const jsonResponse = (res, status, body) => {
   res.statusCode = status
   res.setHeader('Content-Type', 'application/json')
@@ -19,6 +17,8 @@ const jsonResponse = (res, status, body) => {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return jsonResponse(res, 405, { error: 'Method not allowed' })
   if (!supabaseUrl || !serviceRoleKey) return jsonResponse(res, 500, { error: 'Server misconfigured: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing' })
+
+  const supabase = createClient(supabaseUrl, serviceRoleKey)
 
   const authHeader = req.headers.authorization || req.headers['x-access-token'] || ''
   const token = authHeader.replace(/^Bearer\s+/i, '')
