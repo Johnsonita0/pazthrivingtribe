@@ -229,6 +229,8 @@ export default function App() {
   const [formMetric, setFormMetric] = useState('');
   const [cmsSuccessMessage, setCmsSuccessMessage] = useState(null);
   const [cmsErrorMessage, setCmsErrorMessage] = useState(null);
+  const [toastMessage, setToastMessage] = useState(null);
+  const [toastType, setToastType] = useState('success');
   const [selectedAdminTab, setSelectedAdminTab] = useState('content');
   const [testimonialAuthor, setTestimonialAuthor] = useState('');
   const [testimonialText, setTestimonialText] = useState('');
@@ -501,6 +503,9 @@ export default function App() {
   }
 
   const setCmsStatus = (message, isError = false) => {
+    setToastMessage(message)
+    setToastType(isError ? 'error' : 'success')
+
     if (isError) {
       setCmsSuccessMessage(null)
       setCmsErrorMessage(message)
@@ -512,7 +517,10 @@ export default function App() {
 
   useEffect(() => {
     if (!cmsSuccessMessage && !cmsErrorMessage) return
-    const timer = setTimeout(() => setCmsStatus(null), 5000)
+    const timer = setTimeout(() => {
+      setCmsStatus(null)
+      setToastMessage(null)
+    }, 5000)
     return () => clearTimeout(timer)
   }, [cmsSuccessMessage, cmsErrorMessage])
 
@@ -1672,6 +1680,12 @@ export default function App() {
           .portal-workspace-header { flex-direction: column; padding: 0.75rem 1rem; }
         }
       `}</style>
+
+      {toastMessage && (
+        <div className="toast-notification-container">
+          <div className={`toast-notification ${toastType}`}>{toastMessage}</div>
+        </div>
+      )}
 
       <div className="full-view-app-root-override">
         {/* THEME CONFIG MODAL */}
