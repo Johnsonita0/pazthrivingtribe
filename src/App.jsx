@@ -10,7 +10,7 @@ import TeensKidsMenu from './TeensKidsMenu';
 // =========================================================================
 export default function App() {
   // --- Theme Management States ---
-  const [theme, setTheme] = useState('dark'); 
+  const [theme, setTheme] = useState('dark');
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
@@ -98,7 +98,7 @@ export default function App() {
       subtitle: "Supportive and Structured approach that helps children, teenagers and young adults develop essential life skills, build self-confidence and navigate life challenges.",
       image: "./image/pic5.png"
     },
-     {
+    {
       title: "                             ",
       subtitle: "                          ",
       image: "./image/pic6.png",
@@ -285,7 +285,7 @@ export default function App() {
   }, []);
 
   // --- Auto-Slide Interval Loops ---
-  
+
   useEffect(() => {
     const homeBannerInterval = setInterval(() => {
       setCurrentHomeSlide((prev) => (prev + 1) % homeSlides.length);
@@ -321,7 +321,7 @@ export default function App() {
   useEffect(() => {
     const newsInterval = setInterval(() => {
       setActiveNewsIndex((prevIndex) => (prevIndex + 1) % socialNewsFeed.length);
-    }, 7000); 
+    }, 7000);
     return () => clearInterval(newsInterval);
   }, [socialNewsFeed.length]);
 
@@ -455,7 +455,7 @@ export default function App() {
           metric_count: formMetric
         })
         .eq('slug', editTarget);
-      
+
       if (error) throw error;
       setCmsSuccessMessage("Ecosystem service menu content synchronized successfully live!");
     } catch (err) {
@@ -1428,8 +1428,8 @@ export default function App() {
               {!showThemeModal && (
                 <div className="float-theme-toggle-container">
                   <div className="theme-toggle-switch-shell" onClick={toggleThemeModeSwitch}>
-                    <span style={{fontSize: '1.1rem'}}>{theme === 'dark' ? '☀️' : '🌙'}</span>
-                    <span style={{fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-primary)'}}>
+                    <span style={{ fontSize: '1.1rem' }}>{theme === 'dark' ? '☀️' : '🌙'}</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
                       {theme === 'dark' ? 'Light' : 'Dark'}
                     </span>
                   </div>
@@ -1447,7 +1447,7 @@ export default function App() {
 
         {/* STICKY HEADER NAVIGATION BAR */}
         <header className="public-navbar">
-          <Link to="/" className="nav-logo-brand-zone" onClick={() => { setNavOpen(false); window.scrollTo({top: 0, behavior: 'smooth'}); }}>
+          <Link to="/" className="nav-logo-brand-zone" onClick={() => { setNavOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
             <img src={theme === 'dark' ? "../logo/logo2.jpeg" : "../logo/logomain.png"} alt="Paz Thriving Tribe logo" className="nav-logo-img" />
             <div className="nav-brand-name">Paz Thriving Tribe</div>
           </Link>
@@ -1455,20 +1455,20 @@ export default function App() {
             <i className={navOpen ? 'fa-solid fa-xmark' : 'fa-solid fa-bars'}></i>
           </button>
           <nav className={`nav-navigation-links ${navOpen ? 'mobile-open' : ''}`}>
-            <Link to="/" className="nav-link-item" onClick={() => { setNavOpen(false); window.scrollTo({top: 0, behavior: 'smooth'}); }}>
+            <Link to="/" className="nav-link-item" onClick={() => { setNavOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
               <i className="fa-solid fa-house"></i> Home
             </Link>
             <Link to="/teens-kids-academy" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-child-reaching"></i> Pre-teen & Teens
+              <i className="fa-solid fa-child-reaching"></i> Pre-teens & Teens
             </Link>
 
-                       <Link to="/services/marriage" className="nav-link-item" onClick={() => setNavOpen(false)}>
+            <Link to="/services/marriage" className="nav-link-item" onClick={() => setNavOpen(false)}>
               <i className="fa-solid fa-heart-crack"></i> Thriving Women
             </Link>
-             <Link to="/services/family" className="nav-link-item" onClick={() => setNavOpen(false)}>
+            <Link to="/services/family" className="nav-link-item" onClick={() => setNavOpen(false)}>
               <i className="fa-solid fa-people-roof"></i> Thriving Singles
             </Link>
-            
+
             <a href="https://pazthrivingtribe.schoolsfocus.net/signin" className="nav-cta-btn" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)}>
               <i className="fa-solid fa-right-to-bracket"></i> Portal
             </a>
@@ -1479,13 +1479,13 @@ export default function App() {
           {/* =========================================================================
              HOME ROUTE (WITH DYNAMIC SLIDING HERO BANNER)
              ========================================================================= */}
-          <Route 
-            path="/" 
+          <Route
+            path="/"
             element={
               <div className="public-website-container">
                 <section className="hero-section" data-aos="fade-down">
-                  <div 
-                    className={`hero-slide-bg ${homeSlides[currentHomeSlide].imageType === 'contain' ? 'hero-bg-contain' : ''}`} 
+                  <div
+                    className={`hero-slide-bg ${homeSlides[currentHomeSlide].imageType === 'contain' ? 'hero-bg-contain' : ''}`}
                     style={{
                       backgroundImage: homeSlides[currentHomeSlide].imageType === 'contain' ? 'none' : `url(${homeSlides[currentHomeSlide].image})`,
                       backgroundSize: homeSlides[currentHomeSlide].imageType === 'logo'
@@ -1614,7 +1614,7 @@ export default function App() {
 
                     <div className="banner-controls">
                       {promoSlides.map((_, i) => (
-                        <button key={i} className={`banner-dot ${i === currentPromoSlide ? 'active' : ''}`} onClick={() => setCurrentPromoSlide(i)} aria-label={`Go to slide ${i+1}`} />
+                        <button key={i} className={`banner-dot ${i === currentPromoSlide ? 'active' : ''}`} onClick={() => setCurrentPromoSlide(i)} aria-label={`Go to slide ${i + 1}`} />
                       ))}
                     </div>
                   </div>
@@ -1790,7 +1790,7 @@ export default function App() {
                   </div>
                 </section>
               </div>
-            } 
+            }
           />
 
           {/* =========================================================================
@@ -1800,22 +1800,22 @@ export default function App() {
           <Route path="/services/:serviceSlug" element={<ServicePageWrapper services={services} programs={programs} onIntakeSubmit={handleServiceIntakeSubmit} />} />
 
           {/* Administrative Gateway Login */}
-          <Route 
-            path="/admin" 
+          <Route
+            path="/admin"
             element={
               !session ? (
                 <div className="auth-page-wrapper">
                   <div className="login-card-layout" data-aos="fade-up">
                     <h2 className="login-brand-title">Admin Gateway</h2>
-                    {authError && <div style={{color: '#f85149', marginBottom: '1.25rem', fontSize: '0.9rem', fontWeight: 'bold'}}>{authError}</div>}
-                    
+                    {authError && <div style={{ color: '#f85149', marginBottom: '1.25rem', fontSize: '0.9rem', fontWeight: 'bold' }}>{authError}</div>}
+
                     <form onSubmit={handleSignIn} className="standard-login-form">
                       <div className="form-input-container">
-                        <label style={{fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '600'}}>Admin Email Account</label>
+                        <label style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '600' }}>Admin Email Account</label>
                         <input ref={emailInputRef} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@paztribe.org" required className="plain-text-input" />
                       </div>
                       <div className="form-input-container">
-                        <label style={{fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '600'}}>Account Password</label>
+                        <label style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '600' }}>Account Password</label>
                         <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required className="plain-text-input" />
                       </div>
                       <button type="submit" className="form-submit-action-btn">Verify Portal Credentials</button>
@@ -1825,19 +1825,19 @@ export default function App() {
               ) : (
                 <Navigate to="/dashboard" replace />
               )
-            } 
+            }
           />
 
           {/* Secure Management Console (CMS Dashboard) */}
-          <Route 
-            path="/dashboard" 
+          <Route
+            path="/dashboard"
             element={
               session ? (
                 <div className="portal-workspace-grid">
                   <aside className="portal-sidebar-panel">
                     <div className="portal-sidebar-title">Ecosystem Admin</div>
                     <nav className="portal-sidebar-links">
-                      <Link to="/" className="sidebar-link-item" style={{textDecoration: 'none'}}>← Exit to Live Website</Link>
+                      <Link to="/" className="sidebar-link-item" style={{ textDecoration: 'none' }}>← Exit to Live Website</Link>
                       <div className="sidebar-link-item active">Core Studio Engine</div>
                     </nav>
                     <button onClick={handleSignOut} className="sidebar-disconnect-btn">Logout to Sign In</button>
@@ -1846,11 +1846,11 @@ export default function App() {
                   <div className="portal-main-workspace">
                     <header className="portal-workspace-header">
                       <div>
-                        <h2 style={{margin: 0, fontSize: '1.4rem', color: 'var(--text-primary)'}}>Paz Tribe Dynamic Website CMS Engine</h2>
-                        <p style={{margin: '0.5rem 0 0 0', color: 'var(--text-muted)', fontSize: '0.95rem'}}>Secure admin console for content, applicants, and programs.</p>
+                        <h2 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--text-primary)' }}>Paz Tribe Dynamic Website CMS Engine</h2>
+                        <p style={{ margin: '0.5rem 0 0 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>Secure admin console for content, applicants, and programs.</p>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                        <div style={{background: 'var(--bg-main)', padding: '0.5rem 1rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', border: '1px solid var(--border-color)'}}>{session.user.email}</div>
+                        <div style={{ background: 'var(--bg-main)', padding: '0.5rem 1rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', border: '1px solid var(--border-color)' }}>{session.user.email}</div>
                         <button onClick={handleSignOut} className="dashboard-logout-btn">Logout</button>
                       </div>
                     </header>
@@ -1868,14 +1868,14 @@ export default function App() {
                         ))}
                       </div>
 
-                      {dashboardMessage && <div className="status-feedback-banner" style={{marginBottom: '1.5rem'}}>{dashboardMessage}</div>}
+                      {dashboardMessage && <div className="status-feedback-banner" style={{ marginBottom: '1.5rem' }}>{dashboardMessage}</div>}
 
                       {selectedAdminTab === 'content' && (
                         <section className="dashboard-editor-card">
-                          <h3 style={{margin: '0 0 0.5rem 0', color: 'var(--text-primary)'}}>Modify Core Specialty Menus Content</h3>
-                          <p style={{color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0}}>Select your menu configuration channel to synchronize text details onto deep pages dynamically.</p>
+                          <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Modify Core Specialty Menus Content</h3>
+                          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Select your menu configuration channel to synchronize text details onto deep pages dynamically.</p>
 
-                          {cmsSuccessMessage && <div className="status-feedback-banner" style={{marginTop: '1.5rem'}}>{cmsSuccessMessage}</div>}
+                          {cmsSuccessMessage && <div className="status-feedback-banner" style={{ marginTop: '1.5rem' }}>{cmsSuccessMessage}</div>}
 
                           <form onSubmit={handleUpdateContentCMS} className="cms-creation-form-layout">
                             <div className="form-input-container">
@@ -1888,22 +1888,22 @@ export default function App() {
                             </div>
 
                             <div className="form-input-container">
-                              <label style={{fontWeight: '600'}}>Display Heading Title</label>
+                              <label style={{ fontWeight: '600' }}>Display Heading Title</label>
                               <input type="text" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} className="plain-text-input" required />
                             </div>
 
                             <div className="form-input-container">
-                              <label style={{fontWeight: '600'}}>Subtitle & Specialist Roles</label>
+                              <label style={{ fontWeight: '600' }}>Subtitle & Specialist Roles</label>
                               <input type="text" value={formSubtitle} onChange={(e) => setFormSubtitle(e.target.value)} className="plain-text-input" required />
                             </div>
 
                             <div className="form-input-container">
-                              <label style={{fontWeight: '600'}}>Impact Score / Metric Total Text</label>
+                              <label style={{ fontWeight: '600' }}>Impact Score / Metric Total Text</label>
                               <input type="text" value={formMetric} onChange={(e) => setFormMetric(e.target.value)} className="plain-text-input" required />
                             </div>
 
                             <div className="form-input-container">
-                              <label style={{fontWeight: '600'}}>Detailed Menu Context Description</label>
+                              <label style={{ fontWeight: '600' }}>Detailed Menu Context Description</label>
                               <textarea value={formDesc} onChange={(e) => setFormDesc(e.target.value)} rows="5" className="plain-text-input" style={{ resize: 'vertical', fontFamily: 'inherit' }} required></textarea>
                             </div>
 
@@ -1914,7 +1914,7 @@ export default function App() {
                             <h4 style={{ marginBottom: '0.75rem' }}>Client Testimonials (Homepage Slider)</h4>
                             <p style={{ color: 'var(--text-muted)', marginTop: 0 }}>Add or preview client reviews shown in the homepage testimonial slider.</p>
 
-                            {cmsSuccessMessage && <div className="status-feedback-banner" style={{marginTop: '0.75rem'}}>{cmsSuccessMessage}</div>}
+                            {cmsSuccessMessage && <div className="status-feedback-banner" style={{ marginTop: '0.75rem' }}>{cmsSuccessMessage}</div>}
 
                             <form onSubmit={handleAddTestimonial} className="cms-creation-form-layout" style={{ marginTop: '1rem' }}>
                               <div className="form-input-container">
@@ -1952,7 +1952,7 @@ export default function App() {
                           <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Social Media Preview Editor</h3>
                           <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Update the featured social card content and YouTube playback URL displayed on the homepage.</p>
 
-                          {cmsSuccessMessage && <div className="status-feedback-banner" style={{marginTop: '1.5rem'}}>{cmsSuccessMessage}</div>}
+                          {cmsSuccessMessage && <div className="status-feedback-banner" style={{ marginTop: '1.5rem' }}>{cmsSuccessMessage}</div>}
 
                           <form onSubmit={handleUpdateSocialPreview} className="cms-creation-form-layout" style={{ marginTop: '1.5rem' }}>
                             <div className="form-input-container">
@@ -2114,10 +2114,10 @@ export default function App() {
 
                       {selectedAdminTab === 'payments' && (
                         <section className="dashboard-editor-card">
-                          <h3 style={{margin: '0 0 0.5rem 0', color: 'var(--text-primary)'}}>Paystack Payment Settings</h3>
-                          <p style={{color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0}}>Configure your Paystack API key and pricing for Pre-teen & Teens Academy program.</p>
+                          <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Paystack Payment Settings</h3>
+                          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Configure your Paystack API key and pricing for Pre-teen & Teens Academy program.</p>
 
-                          {dashboardMessage && <div className="status-feedback-banner" style={{marginTop: '1.5rem'}}>{dashboardMessage}</div>}
+                          {dashboardMessage && <div className="status-feedback-banner" style={{ marginTop: '1.5rem' }}>{dashboardMessage}</div>}
 
                           <form onSubmit={(e) => {
                             e.preventDefault();
@@ -2125,51 +2125,51 @@ export default function App() {
                             setTeensKidsMonthlyFee(parseInt(tempMonthlyFee) || 10000);
                             setDashboardMessage('✓ Payment settings saved successfully!');
                             setTimeout(() => setDashboardMessage(null), 3000);
-                          }} style={{marginTop: '1.5rem'}}>
+                          }} style={{ marginTop: '1.5rem' }}>
                             <div className="form-input-container">
-                              <label style={{fontWeight: '600'}}>Paystack Public Key</label>
-                              <input 
-                                type="text" 
-                                value={tempPaystackKey} 
-                                onChange={(e) => setTempPaystackKey(e.target.value)} 
-                                className="plain-text-input" 
+                              <label style={{ fontWeight: '600' }}>Paystack Public Key</label>
+                              <input
+                                type="text"
+                                value={tempPaystackKey}
+                                onChange={(e) => setTempPaystackKey(e.target.value)}
+                                className="plain-text-input"
                                 placeholder="pk_live_... or pk_test_..."
-                                required 
+                                required
                               />
-                              <small style={{color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block'}}>
+                              <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
                                 Your Paystack public API key. Switch between test and live keys as needed.
                               </small>
                             </div>
 
                             <div className="form-input-container">
-                              <label style={{fontWeight: '600'}}>Program Registration Fee (NGN)</label>
-                              <input 
-                                type="number" 
-                                value={tempMonthlyFee} 
-                                onChange={(e) => setTempMonthlyFee(e.target.value)} 
-                                className="plain-text-input" 
+                              <label style={{ fontWeight: '600' }}>Program Registration Fee (NGN)</label>
+                              <input
+                                type="number"
+                                value={tempMonthlyFee}
+                                onChange={(e) => setTempMonthlyFee(e.target.value)}
+                                className="plain-text-input"
                                 placeholder="10000"
                                 min="1000"
                                 max="1000000"
-                                required 
+                                required
                               />
-                              <small style={{color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block'}}>
+                              <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
                                 Update the academy registration fee for the Pre-teen & Teens program. This value drives the displayed pricing for clients.
                               </small>
                             </div>
 
-                            <button 
-                              type="submit" 
-                              className="form-submit-action-btn" 
-                              style={{marginTop: '1.5rem', width: '100%', maxWidth: '200px'}}
+                            <button
+                              type="submit"
+                              className="form-submit-action-btn"
+                              style={{ marginTop: '1.5rem', width: '100%', maxWidth: '200px' }}
                             >
                               Save Payment Settings
                             </button>
                           </form>
 
-                          <div style={{marginTop: '2rem', padding: '1rem', background: 'var(--bg-main)', borderRadius: '8px', border: '1px solid var(--border-color)'}}>
-                            <h4 style={{margin: '0 0 0.75rem 0', color: 'var(--text-primary)'}}>Current Configuration</h4>
-                            <div style={{display: 'grid', gap: '0.75rem', color: 'var(--text-muted)'}}>
+                          <div style={{ marginTop: '2rem', padding: '1rem', background: 'var(--bg-main)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                            <h4 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Current Configuration</h4>
+                            <div style={{ display: 'grid', gap: '0.75rem', color: 'var(--text-muted)' }}>
                               <span><strong>Active Public Key:</strong> {paystackPublicKey.substring(0, 20)}...</span>
                               <span><strong>Monthly Fee:</strong> ₦{teensKidsMonthlyFee.toLocaleString()}</span>
                               <span><strong>3 Months:</strong> ₦{(teensKidsMonthlyFee * 3).toLocaleString()}</span>
@@ -2185,7 +2185,7 @@ export default function App() {
               ) : (
                 <Navigate to="/admin" replace />
               )
-            } 
+            }
           />
 
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -2195,19 +2195,19 @@ export default function App() {
         <footer className="workspace-fluid-footer">
           <div className="footer-columns-container">
             <div className="footer-brand-column">
-              <Link to="/" className="footer-brand-logo-row" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
+              <Link to="/" className="footer-brand-logo-row" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                 <div className="footer-vector-badge"><img src="./logo/logomain.png" alt="" /></div>
                 <span className="footer-brand-headline">Paz Thriving Tribe</span>
               </Link>
               <p>Providing dynamic infrastructure tracking networks focused on alignment strategies, professional conflict mitigation solutions, and youth development counseling models.</p>
             </div>
-            
+
             <div className="footer-links-column">
               <h4>Ecosystem Tracks</h4>
               <div className="footer-interactive-links">
                 <Link to="/services/family" className="footer-nav-anchor">Thriving Singles</Link>
-                <Link to="/services/marriage" className="footer-nav-anchor">Thriving Women Tribe</Link>
-                <Link to="/services/children" className="footer-nav-anchor">Pre-teens Mentorship Pathways</Link>
+                <Link to="/services/marriage" className="footer-nav-anchor">Thriving Women</Link>
+                <Link to="/services/children" className="footer-nav-anchor">Pre-teens & Teens</Link>
               </div>
             </div>
 
@@ -2221,8 +2221,8 @@ export default function App() {
             <div className="footer-links-column">
               <h4>Inquiries</h4>
               <div className="footer-interactive-links">
-                <span style={{fontSize: '0.95rem', color: 'var(--text-muted)'}}><i className="fa-solid fa-location-dot" style={{ marginRight: '5px' }}></i> Lagos Main Campus, Nigeria</span>
-                <span style={{fontSize: '0.95rem', color: 'var(--text-muted)'}}><i className="fa-solid fa-envelope" style={{ marginRight: '5px' }}></i> support@paztribe.org</span>
+                <span style={{ fontSize: '0.95rem', color: 'var(--text-muted)' }}><i className="fa-solid fa-location-dot" style={{ marginRight: '5px' }}></i> Lagos Main Campus, Nigeria</span>
+                <span style={{ fontSize: '0.95rem', color: 'var(--text-muted)' }}><i className="fa-solid fa-envelope" style={{ marginRight: '5px' }}></i> support@paztribe.org</span>
               </div>
             </div>
           </div>
@@ -2230,8 +2230,8 @@ export default function App() {
           <div className="footer-bottom-copyright-strip">
             <p>&copy; 2026 Paz Thriving Tribe. Unified Content Infrastructure Management.</p>
             <div className="footer-regulatory-tags">
-              <span style={{fontSize: '0.9rem', color: 'var(--text-muted)'}}>Privacy Framework</span>
-              <span style={{fontSize: '0.9rem', color: 'var(--text-muted)'}}>System Terms</span>
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Privacy Framework</span>
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>System Terms</span>
             </div>
           </div>
         </footer>
@@ -2358,8 +2358,8 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
     <div className="public-website-container">
       {/* DYNAMIC SLIDING TOPIC BANNER */}
       <section className="service-view-hero-banner">
-        <div 
-          className="service-banner-bg" 
+        <div
+          className="service-banner-bg"
           style={{ backgroundImage: `url(${subPageBannerPortfolios[activeSlideIndex]})` }}
         />
         <div className="service-banner-content" key={activeSlideIndex}>
@@ -2378,7 +2378,7 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
           <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '2.5rem', marginTop: '2.5rem' }}>
             <h3 style={{ marginBottom: '1rem', fontWeight: '800' }}>Intake Form Session Request</h3>
             <p style={{ fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '2rem' }}>{subPageMeta.formSub}</p>
-            
+
             {success ? (
               <div className="status-feedback-banner"><i className="fa-solid fa-circle-check"></i> Intake requested successfully. Our specialist counselors will reach out to you within 24 hours.</div>
             ) : (
@@ -2414,7 +2414,7 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
         {/* Dedicated News Column Sidebar */}
         <div className="service-sidebar-news-stack" data-aos="fade-left">
           <div style={{ textTransform: 'uppercase', fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-muted)', letterSpacing: '1px' }}>Topic Channel Feed</div>
-          
+
           <div className="topic-news-card">
             <h5><i className="fa-solid fa-hashtag"></i> {subPageMeta.newsTitle}</h5>
             <h3>Latest Dynamic Update</h3>
@@ -2645,7 +2645,7 @@ function HomeIntakeForm({ onSubmitApplicant }) {
   const [phone, setPhone] = useState('');
   const [track, setTrack] = useState('family');
   const [message, setMessage] = useState('');
-  
+
   const submitForm = async (e) => {
     e.preventDefault();
     if (onSubmitApplicant) {
@@ -2909,7 +2909,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
           developmentGoals: selectedGoals.join(', '),
           paymentReference: response.reference,
           paymentStatus: 'success'
-          ,passportFile,
+          , passportFile,
           documentFile
         };
         if (onRegister) await onRegister(registrationData);
