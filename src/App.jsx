@@ -1892,48 +1892,7 @@ export default function App() {
                   </div>
                 </section>
 
-                <section id="mission-vision-marquee" className="marquee-statements-section" data-aos="fade-up">
-                  <div className="marquee-viewport-container">
-                    <div className="sliding-statement-card" key={activeStatementIndex}>
-                      <div className="statement-pill-type">
-                        <span><i className={statements[activeStatementIndex].icon}></i></span>
-                        <span>{statements[activeStatementIndex].type}</span>
-                      </div>
-                      <h3>{statements[activeStatementIndex].heading}</h3>
-                      <p>{statements[activeStatementIndex].text}</p>
-                    </div>
-                  </div>
-                  <div className="slide-dots-indicator-track">
-                    {statements.map((_, index) => (
-                      <button key={index} className={`indicator-dot ${index === activeStatementIndex ? 'active' : ''}`} onClick={() => setActiveStatementIndex(index)} />
-                    ))}
-                  </div>
-                </section>
 
-                {/* REQUESTED GLOBAL NEW CLIENT REGISTRATION FORM */}
-                <section className="intake-registration-section" data-aos="fade-up">
-                  <div className="bottom-registration-panel">
-                    <div className="bottom-registration-header">
-                      <div>
-                        <p className="section-label">New Client Intake</p>
-                        <h3>Ecosystem Client Intake</h3>
-                        <p className="section-description">Register as a new client within our global framework and begin onboarding your personalized coaching track.</p>
-                      </div>
-                      <button type="button" className="intake-form-toggle-btn" onClick={() => setShowHomepageIntake((prev) => !prev)}>
-                        {showHomepageIntake ? 'Hide Intake Form' : 'Open Intake Form'}
-                        <i className={`fa-solid ${showHomepageIntake ? 'fa-chevron-up' : 'fa-chevron-down'}`} style={{ marginLeft: '0.6rem' }}></i>
-                      </button>
-                    </div>
-
-                    {showHomepageIntake ? (
-                      <div className="bottom-registration-body">
-                        <HomeIntakeForm onSubmitApplicant={addApplicant} />
-                      </div>
-                    ) : (
-                      <div className="intake-collapsed-note">Click the button above to expand the intake form and submit a registration request from the homepage.</div>
-                    )}
-                  </div>
-                </section>
               </div>
             }
           />
