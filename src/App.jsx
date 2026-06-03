@@ -396,8 +396,29 @@ export default function App() {
           submittedAt: item.created_at
         })));
       }
+      // fetch testimonials after other content
+      await fetchTestimonials();
     } catch (err) {
       console.log("Using baseline presentation values while tables initialize.");
+    }
+  };
+
+  const fetchTestimonials = async () => {
+    try {
+      const { data, error } = await supabase.from('tribe_testimonials').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      if (data && data.length > 0) {
+        setPromoSlides(data.map((item) => ({
+          id: item.id,
+          title: item.author || item.title || 'Anonymous',
+          text: item.text || '',
+          origin: item.origin || '',
+          image: item.image || './logo/logomain.png',
+          imageType: item.imageType || 'logo'
+        })));
+      }
+    } catch (err) {
+      console.log('Failed to fetch testimonials:', err);
     }
   };
 
@@ -477,7 +498,7 @@ export default function App() {
     };
 
     // If editing an existing testimonial, update it in local state (and attempt DB update)
-    if (testimonialEditIndex !== null && promoSlides[testimonialEditIndex]) {
+      if (testimonialEditIndex !== null && promoSlides[testimonialEditIndex]) {
       const target = promoSlides[testimonialEditIndex];
       setPromoSlides((prev) => prev.map((t, i) => (i === testimonialEditIndex ? { ...t, ...payload } : t)));
 
@@ -490,6 +511,8 @@ export default function App() {
         } else {
           setCmsSuccessMessage('Testimonial updated locally.');
         }
+        // refresh from DB to ensure main site reflects latest
+        await fetchTestimonials();
       } catch (err) {
         setCmsSuccessMessage('Update applied locally; database update failed.');
       }
@@ -501,10 +524,8 @@ export default function App() {
       try {
         const { data, error } = await supabase.from('tribe_testimonials').insert([{ author: payload.title, origin: payload.origin, text: payload.text }]).select().single();
         if (error) throw error;
-        // attach returned id to local copy (replace first item)
-        if (data && data.id) {
-          setPromoSlides((prev) => prev.map((t, i) => i === 0 ? { ...t, id: data.id } : t));
-        }
+        // refresh from DB and set local slides
+        await fetchTestimonials();
         setCmsSuccessMessage('Testimonial saved to database.');
       } catch (err) {
         setCmsSuccessMessage('Testimonial added locally; database insert failed.');
@@ -539,6 +560,8 @@ export default function App() {
         const { error } = await supabase.from('tribe_testimonials').delete().eq('id', t.id);
         if (error) throw error;
         setCmsSuccessMessage('Testimonial deleted from database.');
+        // refresh list
+        await fetchTestimonials();
       } catch (err) {
         setCmsSuccessMessage('Testimonial removed locally; database delete failed.');
       }
