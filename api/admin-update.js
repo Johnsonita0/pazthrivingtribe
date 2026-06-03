@@ -18,6 +18,7 @@ const jsonResponse = (res, status, body) => {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return jsonResponse(res, 405, { error: 'Method not allowed' })
+  if (!supabaseUrl || !serviceRoleKey) return jsonResponse(res, 500, { error: 'Server misconfigured: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing' })
 
   const authHeader = req.headers.authorization || req.headers['x-access-token'] || ''
   const token = authHeader.replace(/^Bearer\s+/i, '')
@@ -48,7 +49,16 @@ export default async function handler(req, res) {
 
     if (!isAdmin) return jsonResponse(res, 403, { error: 'User is not authorized to perform admin updates' })
 
-    const { action, table, payload, match } = req.body || {}
+    let requestBody = req.body
+    if (typeof requestBody === 'string') {
+      try {
+        requestBody = JSON.parse(requestBody)
+      } catch (parseErr) {
+        return jsonResponse(res, 400, { error: 'Invalid JSON body in request' })
+      }
+    }
+
+    const { action, table, payload, match } = requestBody || {}
     if (!action || !table) return jsonResponse(res, 400, { error: 'Missing action or table' })
 
     let result

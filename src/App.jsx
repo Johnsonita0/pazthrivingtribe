@@ -228,6 +228,7 @@ export default function App() {
   const [formDesc, setFormDesc] = useState('');
   const [formMetric, setFormMetric] = useState('');
   const [cmsSuccessMessage, setCmsSuccessMessage] = useState(null);
+  const [cmsErrorMessage, setCmsErrorMessage] = useState(null);
   const [selectedAdminTab, setSelectedAdminTab] = useState('content');
   const [testimonialAuthor, setTestimonialAuthor] = useState('');
   const [testimonialText, setTestimonialText] = useState('');
@@ -490,6 +491,31 @@ export default function App() {
     navigate('/admin');
   };
 
+  const parseAdminResponse = async (res) => {
+    const contentType = res.headers.get('content-type') || ''
+    if (contentType.includes('application/json')) {
+      return await res.json()
+    }
+    const text = await res.text()
+    throw new Error(text || `Unexpected non-JSON response from admin endpoint (${res.status})`)
+  }
+
+  const setCmsStatus = (message, isError = false) => {
+    if (isError) {
+      setCmsSuccessMessage(null)
+      setCmsErrorMessage(message)
+      return
+    }
+    setCmsSuccessMessage(message)
+    setCmsErrorMessage(null)
+  }
+
+  useEffect(() => {
+    if (!cmsSuccessMessage && !cmsErrorMessage) return
+    const timer = setTimeout(() => setCmsStatus(null), 5000)
+    return () => clearTimeout(timer)
+  }, [cmsSuccessMessage, cmsErrorMessage])
+
   const normalizeYoutubeEmbed = (url) => {
     if (!url) return '';
     let normalized = url.trim();
@@ -506,7 +532,7 @@ export default function App() {
 
   const handleUpdateContentCMS = async (e) => {
     e.preventDefault();
-    setCmsSuccessMessage(null);
+    setCmsStatus(null);
 
     setServices(prev => ({
       ...prev,
@@ -535,12 +561,12 @@ export default function App() {
         })
       });
 
-      const payloadRes = await res.json();
+      const payloadRes = await parseAdminResponse(res);
       if (!res.ok) throw new Error(payloadRes?.error || 'Admin endpoint failed');
-      setCmsSuccessMessage('Ecosystem service menu content synchronized successfully live!');
+      setCmsStatus('Ecosystem service menu content synchronized successfully live!');
     } catch (err) {
       console.error('Admin endpoint failed updating tribe_services:', err);
-      setCmsSuccessMessage(`Preview saved locally. Admin update failed: ${err?.message || err}`);
+      setCmsStatus(`Preview saved locally. Admin update failed: ${err?.message || err}`, true);
     }
   };
 
@@ -569,7 +595,7 @@ export default function App() {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
             body: JSON.stringify({ action: 'update', table: 'tribe_testimonials', payload: { author: payload.title, origin: payload.origin, text: payload.text }, match: { id: target.id } })
           });
-          const jr = await res.json();
+          const jr = await parseAdminResponse(res);
           if (!res.ok) throw new Error(jr?.error || 'Admin endpoint failed');
           const data = jr.data?.[0] || jr.data;
           setPromoSlides((prev) => prev.map((t, i) => (i === testimonialEditIndex ? {
@@ -580,7 +606,7 @@ export default function App() {
             image: data.image || payload.image,
             imageType: data.imageType || payload.imageType
           } : t)));
-          setCmsSuccessMessage('Testimonial updated in database.');
+          setCmsStatus('Testimonial updated in database.');
         } else {
           // insert
           const res = await fetch('/api/admin-update', {
@@ -588,15 +614,15 @@ export default function App() {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
             body: JSON.stringify({ action: 'insert', table: 'tribe_testimonials', payload: [{ author: payload.title, origin: payload.origin, text: payload.text }] })
           });
-          const jr = await res.json();
+          const jr = await parseAdminResponse(res);
           if (!res.ok) throw new Error(jr?.error || 'Admin endpoint failed');
           const created = Array.isArray(jr.data) ? jr.data[0] : jr.data
           setPromoSlides((prev) => [created, ...prev]);
-          setCmsSuccessMessage('Testimonial saved to database.');
+          setCmsStatus('Testimonial saved to database.');
         }
       } catch (err) {
         console.error('Failed updating/inserting testimonial via admin endpoint:', err);
-        setCmsSuccessMessage(`Update applied locally; admin update failed: ${err?.message || err}`);
+        setCmsStatus(`Update applied locally; admin update failed: ${err?.message || err}`, true);
       }
 
       setTestimonialEditIndex(null);
@@ -608,15 +634,15 @@ export default function App() {
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
           body: JSON.stringify({ action: 'insert', table: 'tribe_testimonials', payload: [{ author: payload.title, origin: payload.origin, text: payload.text }] })
         });
-        const jr = await res.json();
+        const jr = await parseAdminResponse(res);
         if (!res.ok) throw new Error(jr?.error || 'Admin endpoint failed');
         const created = Array.isArray(jr.data) ? jr.data[0] : jr.data;
         setPromoSlides((prev) => [created, ...prev]);
-        setCmsSuccessMessage('Testimonial saved to database.');
+        setCmsStatus('Testimonial saved to database.');
       } catch (err) {
         console.error('Failed inserting testimonial via admin endpoint:', err);
         setPromoSlides((prev) => [payload, ...prev]);
-        setCmsSuccessMessage(`Testimonial added locally; admin insert failed: ${err?.message || err}`);
+        setCmsStatus(`Testimonial added locally; admin insert failed: ${err?.message || err}`, true);
       }
     }
 
@@ -650,13 +676,13 @@ export default function App() {
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
           body: JSON.stringify({ action: 'delete', table: 'tribe_testimonials', match: { id: t.id } })
         });
-        const jr = await res.json();
+        const jr = await parseAdminResponse(res);
         if (!res.ok) throw new Error(jr?.error || 'Admin endpoint failed');
-        setCmsSuccessMessage('Testimonial deleted from database.');
+        setCmsStatus('Testimonial deleted from database.');
         await fetchTestimonials();
       } catch (err) {
         console.error('Failed deleting testimonial via admin endpoint:', err);
-        setCmsSuccessMessage(`Testimonial removed locally; admin delete failed: ${err?.message || err}`);
+        setCmsStatus(`Testimonial removed locally; admin delete failed: ${err?.message || err}`, true);
       }
     }
   };
@@ -713,12 +739,12 @@ export default function App() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
         body: JSON.stringify(bodyPayload)
       });
-      const jr = await res.json();
+      const jr = await parseAdminResponse(res);
       if (!res.ok) throw new Error(jr?.error || 'Admin endpoint failed');
-      setCmsSuccessMessage(`Social preview for ${socialEditTarget} has been updated successfully.`);
+      setCmsStatus(`Social preview for ${socialEditTarget} has been updated successfully.`);
     } catch (err) {
       console.error('Failed saving social preview via admin endpoint:', err);
-      setCmsSuccessMessage(`Social preview updated locally; admin save failed: ${err?.message || err}`);
+      setCmsStatus(`Social preview updated locally; admin save failed: ${err?.message || err}`, true);
     }
   };
 
@@ -744,7 +770,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
         body: JSON.stringify({ action: 'insert', table: 'tribe_programs', payload: [{ service: programForm.service, title: programForm.title, description: programForm.description, duration: programForm.duration, schedule: programForm.schedule, level: programForm.level }] })
       });
-      const jr = await res.json();
+      const jr = await parseAdminResponse(res);
       if (!res.ok) throw new Error(jr?.error || 'Admin endpoint failed');
       setDashboardMessage('Program created successfully and available in menu pages.');
     } catch (err) {
@@ -765,7 +791,7 @@ export default function App() {
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
           body: JSON.stringify({ action: 'delete', table: 'tribe_programs', match: { id: programToRemove.id } })
         });
-        const jr = await res.json();
+        const jr = await parseAdminResponse(res);
         if (!res.ok) throw new Error(jr?.error || 'Admin endpoint failed');
       }
     } catch (err) {
@@ -2070,6 +2096,7 @@ export default function App() {
                           <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Select your menu configuration channel to synchronize text details onto deep pages dynamically.</p>
 
                           {cmsSuccessMessage && <div className="status-feedback-banner" style={{ marginTop: '1.5rem' }}>{cmsSuccessMessage}</div>}
+                          {cmsErrorMessage && <div className="status-feedback-banner" style={{ marginTop: '1rem', color: '#842029', background: '#f8d7da', border: '1px solid #f5c2c7' }}>{cmsErrorMessage}</div>}
 
                           <form onSubmit={handleUpdateContentCMS} className="cms-creation-form-layout">
                             <div className="form-input-container">
@@ -2109,6 +2136,7 @@ export default function App() {
                             <p style={{ color: 'var(--text-muted)', marginTop: 0 }}>Add or preview client reviews shown in the homepage testimonial slider.</p>
 
                             {cmsSuccessMessage && <div className="status-feedback-banner" style={{ marginTop: '0.75rem' }}>{cmsSuccessMessage}</div>}
+                            {cmsErrorMessage && <div className="status-feedback-banner" style={{ marginTop: '0.75rem', color: '#842029', background: '#f8d7da', border: '1px solid #f5c2c7' }}>{cmsErrorMessage}</div>}
 
                             <form onSubmit={handleAddTestimonial} className="cms-creation-form-layout" style={{ marginTop: '1rem' }}>
                               <div className="form-input-container">
@@ -2158,6 +2186,7 @@ export default function App() {
                           <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Update the featured social card content and YouTube playback URL displayed on the homepage.</p>
 
                           {cmsSuccessMessage && <div className="status-feedback-banner" style={{ marginTop: '1.5rem' }}>{cmsSuccessMessage}</div>}
+                          {cmsErrorMessage && <div className="status-feedback-banner" style={{ marginTop: '1rem', color: '#842029', background: '#f8d7da', border: '1px solid #f5c2c7' }}>{cmsErrorMessage}</div>}
 
                           <form onSubmit={handleUpdateSocialPreview} className="cms-creation-form-layout" style={{ marginTop: '1.5rem' }}>
                             <div className="form-input-container">
