@@ -28,29 +28,26 @@ export default function App() {
   // --- Sliding Hero Banner States (Main Page) ---
   const [currentHomeSlide, setCurrentHomeSlide] = useState(0);
   const [currentPromoSlide, setCurrentPromoSlide] = useState(0);
-  const promoSlides = [
+  const [promoSlides, setPromoSlides] = useState([
     {
-      title: 'Welcome to Paz Thriving Tribe',
-      text: 'Welcome — connecting families, strengthening minds, and building resilient communities.',
-      image: "./logo/logo2.jpeg",
+      title: 'Arabian Client',
+      text: "Ms. Rosaline has been a truly exceptional tutor and coach for my 10-year-old daughter. My daughter will have her 9th class this week. From the beginning, she created a fun, warm, and engaging environment that made my daughter genuinely excited for every lesson—often looking forward to it even before it starts. What makes Ms. Rosaline stand out is her real impact. She has played a major role in building my daughter’s personality—developing her sense of responsibility and, most importantly, her inner motivation. Today, my daughter attends her classes because she wants to, not because I ask her to—and that, to me, is incredibly valuable. Through her constant encouragement, positivity, and genuine care, Ms. Rosaline has helped my daughter grow in confidence, independence, self-love, and communication. She also nurtures leadership skills and teaches children how to handle different life situations with confidence and awareness. Her dedication, patience, and uplifting spirit truly make a lasting difference. I’m deeply grateful for her efforts and highly recommend her as an inspiring and impactful life coach for children.",
+      image: "./logo/logomain.png",
       imageType: 'logo'
     },
     {
-      title: 'Elevating Mindsets, Aligning Connections',
-      text: 'We deploy structured frameworks engineered to guide families and young people toward clearer communication and stronger relationships.',
-      image: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=1200'
+      title: 'Chukwunonso',
+      text: 'Good evening Coach Roseline thank you for the things you have done for me, my grades are improving now.',
+      image: "./logo/logomain.png",
+      imageType: 'logo'
     },
     {
-      title: 'Practical Family Frameworks',
-      text: 'Actionable coaching tools that rebuild daily rhythms and create healthy, calm household systems.',
-      image: 'https://images.unsplash.com/photo-1507537297725-24a1c029d3ca?q=80&w=1200'
-    },
-    {
-      title: 'Pre-teens Mentorship Pathways',
-      text: 'Structured support for pre-teens and teens that builds confidence, resilience, and leadership skills.',
-      image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=1200'
+      title: 'Oniru Client',
+      text: 'Thank You hope they are making progress in line with the schedule. They enjoyed their sessions.',
+      image: "./logo/logomain.png",
+      imageType: 'logo'
     }
-  ];
+  ]);
   const parentNoticeItems = [
     {
       icon: 'fa-solid fa-leaf',
@@ -205,6 +202,9 @@ export default function App() {
   const [formMetric, setFormMetric] = useState('');
   const [cmsSuccessMessage, setCmsSuccessMessage] = useState(null);
   const [selectedAdminTab, setSelectedAdminTab] = useState('content');
+  const [testimonialAuthor, setTestimonialAuthor] = useState('');
+  const [testimonialText, setTestimonialText] = useState('');
+  const [testimonialOrigin, setTestimonialOrigin] = useState('');
   const [programs, setPrograms] = useState([
     { id: 'fam-101', service: 'family', name: 'Family Communication Foundations', duration: '8 weeks', level: 'Beginner', schedule: 'Saturdays 10:00 AM', description: 'Build family communication patterns with practical exercises for every household.' },
     { id: 'fam-102', service: 'family', name: 'Conflict Resolution Mastery', duration: '6 weeks', level: 'Intermediate', schedule: 'Wednesdays 6:00 PM', description: 'Develop the skills needed to de-escalate conflict, rebuild trust, and create healthy family rhythms.' },
@@ -461,6 +461,34 @@ export default function App() {
     } catch (err) {
       setCmsSuccessMessage("Preview saved successfully to layout local view state!");
     }
+  };
+
+  const handleAddTestimonial = async (e) => {
+    e.preventDefault();
+    setCmsSuccessMessage(null);
+    const newT = {
+      title: testimonialAuthor || 'Anonymous',
+      text: testimonialText,
+      origin: testimonialOrigin || '',
+      image: './logo/logomain.png',
+      imageType: 'logo'
+    };
+
+    setPromoSlides((prev) => [newT, ...prev]);
+
+    try {
+      const { error } = await supabase.from('tribe_testimonials').insert([{
+        author: newT.title,
+        origin: newT.origin,
+        text: newT.text
+      }]);
+      if (error) throw error;
+      setCmsSuccessMessage('Testimonial saved to database.');
+    } catch (err) {
+      setCmsSuccessMessage('Testimonial added locally; database insert failed.');
+    }
+
+    setTestimonialAuthor(''); setTestimonialText(''); setTestimonialOrigin('');
   };
 
   const handleUpdateSocialPreview = (e) => {
@@ -1880,6 +1908,41 @@ export default function App() {
 
                             <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Publish Dynamic Update</button>
                           </form>
+
+                          <div style={{ marginTop: '2rem' }}>
+                            <h4 style={{ marginBottom: '0.75rem' }}>Client Testimonials (Homepage Slider)</h4>
+                            <p style={{ color: 'var(--text-muted)', marginTop: 0 }}>Add or preview client reviews shown in the homepage testimonial slider.</p>
+
+                            {cmsSuccessMessage && <div className="status-feedback-banner" style={{marginTop: '0.75rem'}}>{cmsSuccessMessage}</div>}
+
+                            <form onSubmit={handleAddTestimonial} className="cms-creation-form-layout" style={{ marginTop: '1rem' }}>
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Client / Author</label>
+                                <input type="text" value={testimonialAuthor} onChange={(e) => setTestimonialAuthor(e.target.value)} className="plain-text-input" placeholder="Author name or tag" />
+                              </div>
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Origin / Tag</label>
+                                <input type="text" value={testimonialOrigin} onChange={(e) => setTestimonialOrigin(e.target.value)} className="plain-text-input" placeholder="e.g., Oniru Client" />
+                              </div>
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Testimonial</label>
+                                <textarea value={testimonialText} onChange={(e) => setTestimonialText(e.target.value)} rows="4" className="plain-text-input" style={{ resize: 'vertical' }} required />
+                              </div>
+                              <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Add Testimonial</button>
+                            </form>
+
+                            <div style={{ marginTop: '1.25rem' }}>
+                              <h5 style={{ marginBottom: '0.6rem' }}>Current Testimonials</h5>
+                              <div style={{ display: 'grid', gap: '0.75rem' }}>
+                                {promoSlides.map((t, idx) => (
+                                  <div key={idx} style={{ backgroundColor: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '0.9rem' }}>
+                                    <strong style={{ display: 'block' }}>{t.title}</strong>
+                                    <div style={{ color: 'var(--text-muted)', marginTop: '0.4rem' }}>{t.text.slice(0, 220)}{t.text.length > 220 ? '…' : ''}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
                         </section>
                       )}
 
