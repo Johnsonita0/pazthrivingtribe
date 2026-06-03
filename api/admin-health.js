@@ -39,7 +39,7 @@ export default async function handler(req, res) {
   try {
     const { data, error } = await supabase.from('site_admins').select('id').limit(1)
     if (error) {
-      return jsonResponse(res, {
+      return jsonResponse(res, 500, {
         status: 'error',
         error: `Supabase query failed: ${error.message || error}`
       })
