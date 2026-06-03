@@ -79,7 +79,7 @@ export default function App() {
   const homeSlides = [
     {
       title: "Paz Thriving Tribe",
-      subtitle: "Coaching and Mentoring Organizations.",
+      subtitle: "Coaching and Mentoring Organization.",
       image: "./logo/logo2.jpeg",
       imageType: 'logo'
     },
@@ -124,7 +124,7 @@ export default function App() {
     },
     children: {
       slug: "children",
-      title: "Pre-teens Mentorship Pathways",
+      title: "Pre-teens & Teens",
       subtitle: "Dedicated Mentors & Youth Development Programs",
       description: "Guiding pre-teens and teenagers via one-on-one professional mentorship frameworks designed to build confidence, self-reliance, character development, and cognitive emotional stability.",
       metricCount: "310+ Teens Mentored"
@@ -701,10 +701,10 @@ export default function App() {
           content: '';
           position: absolute;
           top: 0; left: 0; width: 100%; height: 100%;
-          /* Inverted overlay: on dark theme, use a light translucent overlay; on light theme, use a darker translucent overlay */
+          /* Refined overlay: dark theme -> transparent white; light theme -> stronger transparent dark for contrast */
           background: ${theme === 'dark'
             ? "linear-gradient(rgba(255,255,255,0.12), rgba(255,255,255,0.06))"
-            : "linear-gradient(rgba(0,0,0,0.18), rgba(0,0,0,0.32))"};
+            : "linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.25))"};
         }
         .hero-overlay {
           position: relative;
@@ -1598,7 +1598,7 @@ export default function App() {
                     {promoSlides.map((slide, idx) => (
                       <div key={idx} className={`banner-slide ${idx === currentPromoSlide ? 'active' : ''}`}>
                         <div className="banner-text-package">
-                          <span className="banner-badge"><i className="fa-solid fa-bullseye" style={{ fontSize: '0.8rem' }}></i> Strategic Mission</span>
+                          <span className="banner-badge"><i className="fa-solid fa-bullseye" style={{ fontSize: '0.8rem' }}></i>Client Testimonial</span>
                           <h2>{slide.title}</h2>
                           <p>{slide.text}</p>
                         </div>
