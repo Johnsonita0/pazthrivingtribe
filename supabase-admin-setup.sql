@@ -56,6 +56,10 @@ create table if not exists tribe_social_feed (
   updated_at timestamp with time zone default now()
 );
 
+insert into tribe_social_feed (platform, icon, color, badge_text, title, summary, timestamp, target_url, embed_url)
+select 'YouTube', 'fa-brands fa-youtube', '#FF0000', 'Featured Masterclass Broadcast', 'Marriage Alignment Frameworks: Annual Summit Highlights', 'Watch the full 45-minute premium streaming segment breaking down advanced relationship intake assessments, milestone mapping, and interactive couple exercises.', 'Streamed 3 days ago', 'https://youtube.com/shorts/-vOSeWpU1Xs?feature=share', 'https://www.youtube.com/embed/-vOSeWpU1Xs'
+where not exists (select 1 from tribe_social_feed where platform = 'YouTube');
+
 alter table if exists tribe_social_feed enable row level security;
 create policy if not exists "allow select on tribe_social_feed" on tribe_social_feed for select using (true);
 create policy if not exists "deny direct mutations on tribe_social_feed" on tribe_social_feed for insert, update, delete using (false);
