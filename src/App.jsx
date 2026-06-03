@@ -508,7 +508,8 @@ export default function App() {
       if (error) throw error;
       setCmsSuccessMessage("Ecosystem service menu content synchronized successfully live!");
     } catch (err) {
-      setCmsSuccessMessage("Preview saved successfully to layout local view state!");
+      console.error('Failed to update tribe_services:', err);
+      setCmsSuccessMessage(`Preview saved locally. DB update failed: ${err?.message || err}`);
     }
   };
 
@@ -548,7 +549,8 @@ export default function App() {
           setCmsSuccessMessage('Testimonial updated locally.');
         }
       } catch (err) {
-        setCmsSuccessMessage('Update applied locally; database update failed.');
+        console.error('Failed updating testimonial:', err);
+        setCmsSuccessMessage(`Update applied locally; database update failed: ${err?.message || err}`);
       }
 
       setTestimonialEditIndex(null);
@@ -570,7 +572,8 @@ export default function App() {
         setPromoSlides((prev) => [created, ...prev]);
         setCmsSuccessMessage('Testimonial saved to database.');
       } catch (err) {
-        setCmsSuccessMessage('Testimonial added locally; database insert failed.');
+        console.error('Failed inserting testimonial:', err);
+        setCmsSuccessMessage(`Testimonial added locally; database insert failed: ${err?.message || err}`);
       }
     }
 
@@ -605,7 +608,8 @@ export default function App() {
         // refresh list
         await fetchTestimonials();
       } catch (err) {
-        setCmsSuccessMessage('Testimonial removed locally; database delete failed.');
+        console.error('Failed deleting testimonial:', err);
+        setCmsSuccessMessage(`Testimonial removed locally; database delete failed: ${err?.message || err}`);
       }
     }
   };
@@ -659,7 +663,8 @@ export default function App() {
       if (error) throw error;
       setDashboardMessage('Program created successfully and available in menu pages.');
     } catch (err) {
-      setDashboardMessage('Program saved locally. Supabase connection not available or table not initialized.');
+      console.error('Failed creating program:', err);
+      setDashboardMessage(`Program saved locally; DB insert failed: ${err?.message || err}`);
     }
 
     setProgramForm({ service: 'family', title: '', description: '', duration: '', schedule: '', level: '' });
@@ -674,7 +679,8 @@ export default function App() {
         if (error) throw error;
       }
     } catch (err) {
-      // No-op fallback for local state only
+      console.error('Failed removing program from DB:', err);
+      setDashboardMessage(`Program removed locally; DB delete failed: ${err?.message || err}`);
     }
   };
 
@@ -702,6 +708,7 @@ export default function App() {
       }]);//.select();
       if (error) throw error;
     } catch (err) {
+      console.error('Failed inserting applicant into DB:', err);
       console.log('Applicant captured locally; Supabase insert unavailable.');
     }
   };
