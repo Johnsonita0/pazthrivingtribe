@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.SUPABASE_URL
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-const adminEmails = process.env.ADMIN_EMAILS || ''
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY
+const adminEmails = process.env.ADMIN_EMAILS || process.env.VITE_ADMIN_EMAILS || ''
 
 const jsonResponse = (res, status, body) => {
   res.statusCode = status
