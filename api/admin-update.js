@@ -16,17 +16,6 @@ const jsonResponse = (res, status, body) => {
   res.end(JSON.stringify(body))
 }
 
-const decodeJwtEmail = (token) => {
-  try {
-    const payload = token.split('.')[1]
-    const decoded = Buffer.from(payload, 'base64').toString('utf8')
-    const parsed = JSON.parse(decoded)
-    return parsed.email || parsed?.user?.email || null
-  } catch (e) {
-    return null
-  }
-}
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') return jsonResponse(res, 405, { error: 'Method not allowed' })
 
@@ -34,17 +23,34 @@ export default async function handler(req, res) {
   const token = authHeader.replace(/^Bearer\s+/i, '')
   if (!token) return jsonResponse(res, 401, { error: 'Missing access token' })
 
-  const email = decodeJwtEmail(token)
-  if (!email) return jsonResponse(res, 401, { error: 'Invalid access token' })
-
-  if (adminEmails.length === 0 || !adminEmails.includes(email.toLowerCase())) {
-    return jsonResponse(res, 403, { error: 'User is not authorized to perform admin updates' })
-  }
-
-  const { action, table, payload, match } = req.body || {}
-  if (!action || !table) return jsonResponse(res, 400, { error: 'Missing action or table' })
-
+  // Verify token with Supabase to retrieve the authenticated user
   try {
+    const { data: userData, error: userErr } = await supabase.auth.getUser(token)
+    if (userErr || !userData?.user) return jsonResponse(res, 401, { error: 'Invalid or expired access token' })
+
+    const user = userData.user
+
+    // First try server-side admin table `site_admins` (recommended).
+    let isAdmin = false
+    try {
+      const { data: adminRows, error: adminErr } = await supabase.from('site_admins').select('email, uid').or(`email.eq.${user.email},uid.eq.${user.id}`)
+      if (!adminErr && Array.isArray(adminRows) && adminRows.length > 0) {
+        isAdmin = true
+      }
+    } catch (e) {
+      // table might not exist yet — we'll fall back to env list
+    }
+
+    // Fallback to ADMIN_EMAILS environment variable if no admin row found
+    if (!isAdmin && adminEmails.includes((user.email || '').toLowerCase())) {
+      isAdmin = true
+    }
+
+    if (!isAdmin) return jsonResponse(res, 403, { error: 'User is not authorized to perform admin updates' })
+
+    const { action, table, payload, match } = req.body || {}
+    if (!action || !table) return jsonResponse(res, 400, { error: 'Missing action or table' })
+
     let result
     if (action === 'update') {
       if (!match) return jsonResponse(res, 400, { error: 'Missing match object for update' })
