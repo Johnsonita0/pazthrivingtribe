@@ -40,5 +40,25 @@ alter table if exists tribe_programs enable row level security;
 create policy if not exists "allow select on tribe_programs" on tribe_programs for select using (true);
 create policy if not exists "deny direct mutations on tribe_programs" on tribe_programs for insert, update, delete using (false);
 
+-- Create a table for social media preview data and allow public reads.
+create table if not exists tribe_social_feed (
+  id uuid primary key default gen_random_uuid(),
+  platform text not null,
+  icon text,
+  color text,
+  badge_text text,
+  title text,
+  summary text,
+  timestamp text,
+  target_url text,
+  embed_url text,
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+alter table if exists tribe_social_feed enable row level security;
+create policy if not exists "allow select on tribe_social_feed" on tribe_social_feed for select using (true);
+create policy if not exists "deny direct mutations on tribe_social_feed" on tribe_social_feed for insert, update, delete using (false);
+
 -- If you want the admin endpoint to be able to bypass these policies, it will do so using the service-role key.
 -- Keep the service-role key secret and do not expose it in client-side code.

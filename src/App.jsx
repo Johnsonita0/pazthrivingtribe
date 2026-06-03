@@ -423,6 +423,31 @@ export default function App() {
           submittedAt: item.created_at
         })));
       }
+
+      try {
+        const { data: socialFeedData, error: socialFeedError } = await supabase.from('tribe_social_feed').select('*');
+        if (!socialFeedError && Array.isArray(socialFeedData) && socialFeedData.length > 0) {
+          const socialRows = socialFeedData.map((row) => ({
+            platform: row.platform,
+            icon: row.icon || (row.platform === 'Facebook' ? 'fa-brands fa-facebook' : row.platform === 'Instagram' ? 'fa-brands fa-instagram' : 'fa-brands fa-youtube'),
+            color: row.color || '#000000',
+            badgeText: row.badge_text,
+            title: row.title,
+            summary: row.summary,
+            timestamp: row.timestamp || row.updated_at || '',
+            targetUrl: row.target_url,
+            embedUrl: row.embed_url
+          }));
+          setSocialNewsFeed(socialRows);
+          const ytRow = socialRows.find((item) => item.platform === 'YouTube');
+          if (ytRow?.embedUrl) {
+            setYoutubeEmbedUrl(ytRow.embedUrl);
+          }
+        }
+      } catch (err) {
+        console.log('No social feed table available for dynamic updates:', err);
+      }
+
       // fetch testimonials after other content
       await fetchTestimonials();
     } catch (err) {
@@ -576,9 +601,23 @@ export default function App() {
 
       setTestimonialEditIndex(null);
     } else {
-      // Add new testimonial
-      setPromoSlides((prev) => [payload, ...prev]);
-      // handled above in combined edit/new branch
+      // Add new testimonial and persist to DB
+      try {
+        const res = await fetch('/api/admin-update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+          body: JSON.stringify({ action: 'insert', table: 'tribe_testimonials', payload: [{ author: payload.title, origin: payload.origin, text: payload.text }] })
+        });
+        const jr = await res.json();
+        if (!res.ok) throw new Error(jr?.error || 'Admin endpoint failed');
+        const created = Array.isArray(jr.data) ? jr.data[0] : jr.data;
+        setPromoSlides((prev) => [created, ...prev]);
+        setCmsSuccessMessage('Testimonial saved to database.');
+      } catch (err) {
+        console.error('Failed inserting testimonial via admin endpoint:', err);
+        setPromoSlides((prev) => [payload, ...prev]);
+        setCmsSuccessMessage(`Testimonial added locally; admin insert failed: ${err?.message || err}`);
+      }
     }
 
     setTestimonialAuthor(''); setTestimonialText(''); setTestimonialOrigin('');
@@ -622,25 +661,65 @@ export default function App() {
     }
   };
 
-  const handleUpdateSocialPreview = (e) => {
+  const handleUpdateSocialPreview = async (e) => {
     e.preventDefault();
     setCmsSuccessMessage(null);
 
-    setSocialNewsFeed((prev) => prev.map((item) => {
-      if (item.platform !== socialEditTarget) return item;
-      return {
-        ...item,
-        summary: socialPreviewSummary,
-        badgeText: socialPreviewBadgeText,
-        targetUrl: socialPreviewUrl
-      };
-    }));
+    const existingItem = socialNewsFeed.find((item) => item.platform === socialEditTarget);
+    const updatedItem = {
+      platform: socialEditTarget,
+      icon: existingItem?.icon || (socialEditTarget === 'Facebook' ? 'fa-brands fa-facebook' : socialEditTarget === 'Instagram' ? 'fa-brands fa-instagram' : 'fa-brands fa-youtube'),
+      color: existingItem?.color || (socialEditTarget === 'Facebook' ? '#1877F2' : socialEditTarget === 'Instagram' ? '#E1306C' : '#FF0000'),
+      badgeText: socialPreviewBadgeText,
+      title: socialPreviewTitle,
+      summary: socialPreviewSummary,
+      timestamp: existingItem?.timestamp || '',
+      targetUrl: socialPreviewUrl,
+      embedUrl: socialEditTarget === 'YouTube' ? normalizeYoutubeEmbed(socialPreviewEmbedUrl) : existingItem?.embedUrl
+    };
+
+    setSocialNewsFeed((prev) => {
+      if (prev.some((item) => item.platform === socialEditTarget)) {
+        return prev.map((item) => (item.platform === socialEditTarget ? updatedItem : item));
+      }
+      return [updatedItem, ...prev];
+    });
 
     if (socialEditTarget === 'YouTube') {
-      setYoutubeEmbedUrl(normalizeYoutubeEmbed(socialPreviewEmbedUrl));
+      setYoutubeEmbedUrl(updatedItem.embedUrl);
     }
 
-    setCmsSuccessMessage(`Social preview for ${socialEditTarget} has been updated successfully.`);
+    try {
+      const action = existingItem ? 'update' : 'insert';
+      const bodyPayload = {
+        action,
+        table: 'tribe_social_feed',
+        payload: [{
+          platform: updatedItem.platform,
+          icon: updatedItem.icon,
+          color: updatedItem.color,
+          badge_text: updatedItem.badgeText,
+          title: updatedItem.title,
+          summary: updatedItem.summary,
+          timestamp: updatedItem.timestamp,
+          target_url: updatedItem.targetUrl,
+          embed_url: updatedItem.embedUrl
+        }],
+        match: existingItem ? { platform: updatedItem.platform } : undefined
+      };
+
+      const res = await fetch('/api/admin-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+        body: JSON.stringify(bodyPayload)
+      });
+      const jr = await res.json();
+      if (!res.ok) throw new Error(jr?.error || 'Admin endpoint failed');
+      setCmsSuccessMessage(`Social preview for ${socialEditTarget} has been updated successfully.`);
+    } catch (err) {
+      console.error('Failed saving social preview via admin endpoint:', err);
+      setCmsSuccessMessage(`Social preview updated locally; admin save failed: ${err?.message || err}`);
+    }
   };
 
   const handleCreateProgram = async (e) => {
