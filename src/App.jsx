@@ -701,10 +701,8 @@ export default function App() {
           content: '';
           position: absolute;
           top: 0; left: 0; width: 100%; height: 100%;
-          /* Refined overlay: dark theme -> transparent white; light theme -> stronger transparent dark for contrast */
-          background: ${theme === 'dark'
-            ? "linear-gradient(rgba(255,255,255,0.12), rgba(255,255,255,0.06))"
-            : "linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.25))"};
+          /* Apply a consistent dark translucent overlay so banner text reads clearly */
+          background: linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.45));
         }
         .hero-overlay {
           position: relative;
@@ -713,8 +711,8 @@ export default function App() {
           padding: 4rem 2rem;
           max-width: 1000px;
         }
-        .hero-overlay h1 { font-size: 4.2rem; color: ${theme === 'dark' ? '#072030' : '#f7fbff'}; margin-bottom: 1rem; font-weight: 800; letter-spacing: -1px; animation: bannerTextFade 0.6s ease-out; text-shadow: ${theme === 'dark' ? 'none' : '0 6px 24px rgba(0,0,0,0.55)'}; }
-        .hero-overlay p { font-size: 1.45rem; color: ${theme === 'dark' ? '#0b1720' : '#e6eef8'}; max-width: 900px; margin: 0 auto 2.5rem auto; line-height: 1.6; animation: bannerTextFade 0.8s ease-out; text-shadow: ${theme === 'dark' ? 'none' : '0 4px 12px rgba(0,0,0,0.45)'}; }
+        .hero-overlay h1 { font-size: 4.2rem; color: #ffffff; margin-bottom: 1rem; font-weight: 800; letter-spacing: -1px; animation: bannerTextFade 0.6s ease-out; text-shadow: 0 8px 28px rgba(0,0,0,0.7); }
+        .hero-overlay p { font-size: 1.45rem; color: #ffffff; max-width: 900px; margin: 0 auto 2.5rem auto; line-height: 1.6; animation: bannerTextFade 0.8s ease-out; text-shadow: 0 6px 20px rgba(0,0,0,0.6); }
         @keyframes bannerTextFade { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         
         .hero-scroll-btn { background-color: var(--brand-green); color: white; padding: 1rem 2.5rem; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 1.05rem; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.6rem; }
@@ -751,8 +749,8 @@ export default function App() {
           z-index: 2;
         }
         .hero-overlay { padding: 3rem 1.5rem; }
-        .hero-overlay h1 { font-size: 3.8rem; color: ${theme === 'dark' ? '#072030' : '#f7fbff'}; text-shadow: ${theme === 'dark' ? 'none' : '0 6px 24px rgba(0,0,0,0.55)'}; }
-        .hero-overlay p { font-size: 1.25rem; max-width: 100%; color: ${theme === 'dark' ? '#0b1720' : '#e6eef8'}; text-shadow: ${theme === 'dark' ? 'none' : '0 4px 12px rgba(0,0,0,0.45)'}; }
+        .hero-overlay h1 { font-size: 3.8rem; color: #ffffff; text-shadow: 0 8px 28px rgba(0,0,0,0.7); }
+        .hero-overlay p { font-size: 1.25rem; max-width: 100%; color: #ffffff; text-shadow: 0 6px 20px rgba(0,0,0,0.6); }
         .hero-scroll-btn { min-width: 220px; }
         .teens-kids-hero { padding: 4rem 2rem; display: flex; align-items: center; justify-content: center; min-height: 320px; box-sizing: border-box; }
         .teens-kids-hero h1 { max-width: 100%; line-height: 1.05; overflow-wrap: break-word; }
@@ -1463,11 +1461,12 @@ export default function App() {
             <Link to="/teens-kids-academy" className="nav-link-item" onClick={() => setNavOpen(false)}>
               <i className="fa-solid fa-child-reaching"></i> Pre-teen & Teens
             </Link>
-            <Link to="/services/family" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-people-roof"></i> 
+
+                       <Link to="/services/marriage" className="nav-link-item" onClick={() => setNavOpen(false)}>
+              <i className="fa-solid fa-heart-crack"></i> Thriving Women
             </Link>
-            <Link to="/services/marriage" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-heart-crack"></i> Thriving Women Tribe
+             <Link to="/services/family" className="nav-link-item" onClick={() => setNavOpen(false)}>
+              <i className="fa-solid fa-people-roof"></i> Thriving Singles
             </Link>
             
             <a href="https://pazthrivingtribe.schoolsfocus.net/signin" className="nav-cta-btn" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)}>
