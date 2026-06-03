@@ -1,9 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
-// Hardcoding your values directly bypasses the broken .env reader completely
-const supabaseUrl = 'https://pcprbkqpxntxgtseiyie.supabase.co'
-const supabaseAnonKey = 'sb_publishable_AJr5ZE4VWG6XAMv4XUwcKA_UH2CL4cc' 
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://pcprbkqpxntxgtseiyie.supabase.co'
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_AJr5ZE4VWG6XAMv4XUwcKA_UH2CL4cc'
 
-console.log("Testing Direct Connection Configuration...")
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
