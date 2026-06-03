@@ -5,6 +5,32 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 import TeensKidsMenu from './TeensKidsMenu';
 
+function AdminTabBar({ selectedTab, onChangeTab }) {
+  const adminTabs = [
+    { id: 'content', label: 'Page Content' },
+    { id: 'social', label: 'Social Preview' },
+    { id: 'programs', label: 'Programs' },
+    { id: 'applicants', label: 'Applicants' },
+    { id: 'payments', label: 'Payment Settings' }
+  ];
+
+  return (
+    <div className="dashboard-tab-navigation">
+      <div className="dashboard-tab-buttons">
+        {adminTabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => onChangeTab(tab.id)}
+            className={`dashboard-tab-button ${selectedTab === tab.id ? 'active' : ''}`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // =========================================================================
 // MAIN UNIFIED APPLICATION WITH DEDICATED SERVICE PAGES & INTAKE FORMS
 // =========================================================================
@@ -1424,8 +1450,8 @@ export default function App() {
         .footer-regulatory-tags { display: flex; gap: 1.5rem; }
 
         /* Secure Dashboard Context Panels */
-        .portal-workspace-grid { display: grid; grid-template-columns: 300px 1fr; min-height: 100vh; background-color: var(--bg-main); width: 100% !important; }
-        .portal-sidebar-panel { background-color: var(--bg-card); border-right: 1px solid var(--border-color); padding: 2.5rem 1.75rem; display: flex; flex-direction: column; gap: 1.5rem; }
+        .portal-workspace-grid { display: grid; grid-template-columns: 300px 1fr; height: 100vh; background-color: var(--bg-main); width: 100% !important; }
+        .portal-sidebar-panel { background-color: var(--bg-card); border-right: 1px solid var(--border-color); padding: 2.5rem 1.75rem; display: flex; flex-direction: column; gap: 1.5rem; overflow-y: auto; }
         .portal-sidebar-title { font-size: 1.35rem; color: var(--text-primary); font-weight: 700; margin-bottom: 1.5rem; border-left: 4px solid var(--brand-green); padding-left: 0.8rem; }
         .portal-sidebar-links { display: flex; flex-direction: column; gap: 0.6rem; flex-grow: 1; }
         .sidebar-link-item { color: var(--text-muted); text-decoration: none; padding: 0.95rem 1.1rem; border-radius: 12px; font-size: 1rem; font-weight: 600; transition: background-color 0.2s ease, color 0.2s ease; }
@@ -1433,17 +1459,19 @@ export default function App() {
         .sidebar-link-item.active { background-color: var(--bg-input); color: var(--text-primary); font-weight: 700; border: 1px solid var(--border-color); }
         .sidebar-disconnect-btn { background-color: #f85149; border: none; color: #fff; padding: 0.85rem 1rem; border-radius: 12px; cursor: pointer; font-weight: 700; transition: background-color 0.2s ease, transform 0.2s ease; }
         .sidebar-disconnect-btn:hover { background-color: #dc3545; transform: translateY(-1px); }
-        .portal-main-workspace { display: flex; flex-direction: column; width: 100%; }
-        .portal-workspace-header { background-color: var(--bg-card); border-bottom: 1px solid var(--border-color); padding: 1.5rem 4rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; box-sizing: border-box; border-radius: 0 0 20px 20px; }
+        .portal-main-workspace { display: flex; flex-direction: column; width: 100%; height: 100%; overflow: hidden; }
+        .portal-workspace-header { background-color: var(--bg-card); border-bottom: 1px solid var(--border-color); padding: 1.5rem 4rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; box-sizing: border-box; flex-shrink: 0; }
         .dashboard-logout-btn { background: transparent; border: 1px solid var(--brand-green); color: var(--brand-green); padding: 0.75rem 1.25rem; border-radius: 999px; cursor: pointer; font-weight: 700; transition: background-color 0.2s ease, color 0.2s ease; }
         .dashboard-logout-btn:hover { background: var(--brand-green); color: #ffffff; }
-        .dashboard-tab-buttons { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; position: sticky; top: 0; z-index: 20; background: var(--bg-main); padding: 1rem 0; border-bottom: 1px solid var(--border-color); }
-        .dashboard-tab-button { padding: 0.95rem 1.4rem; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-weight: 700; cursor: pointer; transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease; }
+        .portal-workspace-header-shell { display: flex; flex-direction: column; flex-shrink: 0; }
+        .dashboard-tab-navigation { position: sticky; top: 0; z-index: 20; background: var(--bg-main); flex-shrink: 0; }
+        .dashboard-tab-buttons { display: flex; flex-wrap: wrap; gap: 1rem; padding: 1rem 4rem 1rem 4rem; margin-bottom: 0; position: sticky; top: 0; z-index: 25; background: var(--bg-main); border-bottom: 1px solid var(--border-color); width: 100%; box-sizing: border-box; }
+        .dashboard-tab-button { padding: 0.95rem 1.4rem; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-weight: 700; cursor: pointer; transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease; white-space: nowrap; }
         .dashboard-tab-button:hover { background: rgba(35,134,54,0.12); border-color: var(--brand-green); color: var(--text-primary); transform: translateY(-1px); }
         .dashboard-tab-button.active { background: var(--accent-primary); border-color: var(--accent-primary); color: #ffffff; }
         .dashboard-tab-button.active:hover { background: #36b560; border-color: #36b560; }
-        .portal-workspace-body-content { padding: 3rem 4rem; width: 100%; box-sizing: border-box; display: grid; gap: 2rem; }
-        .dashboard-editor-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 18px; padding: 3.5rem; box-shadow: var(--shadow-sm); width: 100%; box-sizing: border-box; }
+        .portal-workspace-body-content { padding: 2rem 4rem; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 2rem; flex: 1; overflow-y: auto; }
+        .dashboard-editor-card { position: sticky; top: 0; z-index: 15; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 18px; padding: 3.5rem; box-shadow: var(--shadow-sm); width: 100%; box-sizing: border-box; }
         .cms-creation-form-layout { display: flex; flex-direction: column; gap: 1.75rem; margin-top: 2rem; }
         .form-input-container { display: flex; flex-direction: column; gap: 0.75rem; }
         .plain-text-input { background-color: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 1.1rem 1.35rem; line-height: 1.5; border-radius: 12px; font-size: 1rem; width: 100%; box-sizing: border-box; min-height: 48px; }
@@ -1481,8 +1509,10 @@ export default function App() {
           .core-values-matrix { grid-template-columns: 1fr; }
           .footer-columns-container { grid-template-columns: 1fr; gap: 2.5rem; }
           .footer-bottom-copyright-strip { flex-direction: column; gap: 1.5rem; text-align: center; }
-          .portal-workspace-grid { grid-template-columns: 1fr; }
+          .portal-workspace-grid { grid-template-columns: 1fr; height: auto; }
           .portal-sidebar-panel { display: none; }
+          .portal-main-workspace { height: 100vh; overflow: hidden; }
+          .portal-workspace-body-content { padding: 2rem 1rem; }
           .public-navbar { padding: 1rem 1.5rem; }
           .hero-section { height: auto; min-height: 72vh; }
           .hero-overlay { padding: 2.2rem 1rem; }
@@ -1492,11 +1522,11 @@ export default function App() {
           .banner-slide { gap: 1.25rem; padding: 1.5rem; }
           .slide-graphic { max-height: 320px; }
           .interactive-tabs-section { padding: 4rem 1.5rem; }
-          .portal-workspace-body-content { padding: 2rem 1rem; }
+          .dashboard-tab-buttons { padding: 1rem 1rem; justify-content: flex-start; }
           .intake-form-wrapper { padding: 2.5rem 1.5rem; }
-          .dashboard-tab-buttons { justify-content: center; }
           .dashboard-editor-card { padding: 2rem; }
           .dashboard-table { min-width: 100% !important; }
+          .portal-workspace-header { padding: 1.5rem 1.5rem; }
         }
       `}</style>
 
@@ -1940,30 +1970,22 @@ export default function App() {
                   </aside>
 
                   <div className="portal-main-workspace">
-                    <header className="portal-workspace-header">
-                      <div>
-                        <h2 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--text-primary)' }}>Paz Tribe Dynamic Website CMS Engine</h2>
-                        <p style={{ margin: '0.5rem 0 0 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>Secure admin console for content, applicants, and programs.</p>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                        <div style={{ background: 'var(--bg-main)', padding: '0.5rem 1rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', border: '1px solid var(--border-color)' }}>{session.user.email}</div>
-                        <button onClick={handleSignOut} className="dashboard-logout-btn">Logout</button>
-                      </div>
-                    </header>
+                    <div className="portal-workspace-header-shell">
+                      <header className="portal-workspace-header">
+                        <div>
+                          <h2 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--text-primary)' }}>Paz Tribe Dynamic Website CMS Engine</h2>
+                          <p style={{ margin: '0.5rem 0 0 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>Secure admin console for content, applicants, and programs.</p>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                          <div style={{ background: 'var(--bg-main)', padding: '0.5rem 1rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', border: '1px solid var(--border-color)' }}>{session.user.email}</div>
+                          <button onClick={handleSignOut} className="dashboard-logout-btn">Logout</button>
+                        </div>
+                      </header>
+                    </div>
+
+                    <AdminTabBar selectedTab={selectedAdminTab} onChangeTab={setSelectedAdminTab} />
 
                     <main className="portal-workspace-body-content">
-                      <div className="dashboard-tab-buttons">
-                        {['content', 'social', 'programs', 'applicants', 'payments'].map((tab) => (
-                          <button
-                            key={tab}
-                            onClick={() => setSelectedAdminTab(tab)}
-                            className={`dashboard-tab-button ${selectedAdminTab === tab ? 'active' : ''}`}
-                          >
-                            {tab === 'content' ? 'Page Content' : tab === 'social' ? 'Social Preview' : tab === 'programs' ? 'Programs' : tab === 'applicants' ? 'Applicants' : 'Payment Settings'}
-                          </button>
-                        ))}
-                      </div>
-
                       {dashboardMessage && <div className="status-feedback-banner" style={{ marginBottom: '1.5rem' }}>{dashboardMessage}</div>}
 
                       {selectedAdminTab === 'content' && (

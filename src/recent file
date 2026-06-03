@@ -5,12 +5,38 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 import TeensKidsMenu from './TeensKidsMenu';
 
+function AdminTabBar({ selectedTab, onChangeTab }) {
+  const adminTabs = [
+    { id: 'content', label: 'Page Content' },
+    { id: 'social', label: 'Social Preview' },
+    { id: 'programs', label: 'Programs' },
+    { id: 'applicants', label: 'Applicants' },
+    { id: 'payments', label: 'Payment Settings' }
+  ];
+
+  return (
+    <div className="dashboard-tab-navigation">
+      <div className="dashboard-tab-buttons">
+        {adminTabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => onChangeTab(tab.id)}
+            className={`dashboard-tab-button ${selectedTab === tab.id ? 'active' : ''}`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // =========================================================================
 // MAIN UNIFIED APPLICATION WITH DEDICATED SERVICE PAGES & INTAKE FORMS
 // =========================================================================
 export default function App() {
   // --- Theme Management States ---
-  const [theme, setTheme] = useState('dark'); 
+  const [theme, setTheme] = useState('dark');
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
@@ -28,29 +54,26 @@ export default function App() {
   // --- Sliding Hero Banner States (Main Page) ---
   const [currentHomeSlide, setCurrentHomeSlide] = useState(0);
   const [currentPromoSlide, setCurrentPromoSlide] = useState(0);
-  const promoSlides = [
+  const [promoSlides, setPromoSlides] = useState([
     {
-      title: 'Welcome to Paz Thriving Tribe',
-      text: 'Welcome — connecting families, strengthening minds, and building resilient communities.',
-      image: "./logo/logo2.jpeg",
+      title: 'Jojo’s Mom',
+      text: "Ms. Rosaline has been a truly exceptional tutor and coach for my 10-year-old daughter. My daughter will have her 9th class this week. From the beginning, she created a fun, warm, and engaging environment that made my daughter genuinely excited for every lesson—often looking forward to it even before it starts. What makes Ms. Rosaline stand out is her real impact. She has played a major role in building my daughter’s personality—developing her sense of responsibility and, most importantly, her inner motivation. Today, my daughter attends her classes because she wants to, not because I ask her to—and that, to me, is incredibly valuable. Through her constant encouragement, positivity, and genuine care, Ms. Rosaline has helped my daughter grow in confidence, independence, self-love, and communication. She also nurtures leadership skills and teaches children how to handle different life situations with confidence and awareness. Her dedication, patience, and uplifting spirit truly make a lasting difference. I’m deeply grateful for her efforts and highly recommend her as an inspiring and impactful life coach for children.",
+      image: "./logo/logomain.png",
       imageType: 'logo'
     },
     {
-      title: 'Elevating Mindsets, Aligning Connections',
-      text: 'We deploy structured frameworks engineered to guide families and young people toward clearer communication and stronger relationships.',
-      image: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?q=80&w=1200'
+      title: 'Chukwunonso',
+      text: 'Good evening Coach Roseline thank you for the things you have done for me, my grades are improving now.',
+      image: "./logo/logomain.png",
+      imageType: 'logo'
     },
     {
-      title: 'Practical Family Frameworks',
-      text: 'Actionable coaching tools that rebuild daily rhythms and create healthy, calm household systems.',
-      image: 'https://images.unsplash.com/photo-1507537297725-24a1c029d3ca?q=80&w=1200'
-    },
-    {
-      title: 'Pre-teens Mentorship Pathways',
-      text: 'Structured support for pre-teens and teens that builds confidence, resilience, and leadership skills.',
-      image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=1200'
+      title: "A and A's Dad",
+      text: 'Thank You hope they are making progress in line with the schedule. They enjoyed their sessions.',
+      image: "./logo/logomain.png",
+      imageType: 'logo'
     }
-  ];
+  ]);
   const parentNoticeItems = [
     {
       icon: 'fa-solid fa-leaf',
@@ -82,7 +105,7 @@ export default function App() {
   const homeSlides = [
     {
       title: "Paz Thriving Tribe",
-      subtitle: "Coaching and Mentoring Organizations.",
+      subtitle: "Coaching and Mentoring Organization.",
       image: "./logo/logo2.jpeg",
       imageType: 'logo'
     },
@@ -101,7 +124,7 @@ export default function App() {
       subtitle: "Supportive and Structured approach that helps children, teenagers and young adults develop essential life skills, build self-confidence and navigate life challenges.",
       image: "./image/pic5.png"
     },
-     {
+    {
       title: "                             ",
       subtitle: "                          ",
       image: "./image/pic6.png",
@@ -113,23 +136,23 @@ export default function App() {
   const [services, setServices] = useState({
     family: {
       slug: "family",
-      title: "Family Life Coaching",
-      subtitle: "Family Strategists & Conflict Resolution",
-      description: "Empowering families with behavioral strategies, open structural communication channels, and actionable toolsets to manage conflict and cultivate deep-rooted harmony.",
-      metricCount: "120+ Families Assisted"
+      title: "Thriving Singles",
+      subtitle: "Single Women Empowerment & Personal Development",
+      description: "Empowering single women with personal growth strategies, confidence-building frameworks, and actionable toolsets to navigate life's transitions and cultivate purposeful independence.",
+      metricCount: "120+ Women Empowered"
     },
     marriage: {
       slug: "marriage",
-      title: "Marriage & Relationship Counseling",
-      subtitle: "Professional Counselors & Clear Intake Assessments",
-      description: "Providing premium guidance through structural alignment counseling sessions, detailed intake evaluations, and long-term milestone planning for couples.",
-      metricCount: "450+ Couples Guided"
+      title: "Thriving Women Tribe",
+      subtitle: "Women's Community & Collective Growth",
+      description: "Building thriving communities of women through structured mentorship, shared experiences, and collective empowerment programs designed to strengthen relationships and cultivate lasting sisterhood.",
+      metricCount: "450+ Women Connected"
     },
     children: {
       slug: "children",
-      title: "Children & Teenagers Coaching",
-      subtitle: "Dedicated Mentors & Development Programs",
-      description: "Guiding the next generation via one-on-one professional mentorship frameworks designed to build confidence, self-reliance, and cognitive emotional stability.",
+      title: "Pre-teens & Teens",
+      subtitle: "Dedicated Mentors & Youth Development Programs",
+      description: "Guiding pre-teens and teenagers via one-on-one professional mentorship frameworks designed to build confidence, self-reliance, character development, and cognitive emotional stability.",
       metricCount: "310+ Teens Mentored"
     }
   });
@@ -205,6 +228,10 @@ export default function App() {
   const [formMetric, setFormMetric] = useState('');
   const [cmsSuccessMessage, setCmsSuccessMessage] = useState(null);
   const [selectedAdminTab, setSelectedAdminTab] = useState('content');
+  const [testimonialAuthor, setTestimonialAuthor] = useState('');
+  const [testimonialText, setTestimonialText] = useState('');
+  const [testimonialOrigin, setTestimonialOrigin] = useState('');
+  const [testimonialEditIndex, setTestimonialEditIndex] = useState(null);
   const [programs, setPrograms] = useState([
     { id: 'fam-101', service: 'family', name: 'Family Communication Foundations', duration: '8 weeks', level: 'Beginner', schedule: 'Saturdays 10:00 AM', description: 'Build family communication patterns with practical exercises for every household.' },
     { id: 'fam-102', service: 'family', name: 'Conflict Resolution Mastery', duration: '6 weeks', level: 'Intermediate', schedule: 'Wednesdays 6:00 PM', description: 'Develop the skills needed to de-escalate conflict, rebuild trust, and create healthy family rhythms.' },
@@ -285,7 +312,7 @@ export default function App() {
   }, []);
 
   // --- Auto-Slide Interval Loops ---
-  
+
   useEffect(() => {
     const homeBannerInterval = setInterval(() => {
       setCurrentHomeSlide((prev) => (prev + 1) % homeSlides.length);
@@ -321,7 +348,7 @@ export default function App() {
   useEffect(() => {
     const newsInterval = setInterval(() => {
       setActiveNewsIndex((prevIndex) => (prevIndex + 1) % socialNewsFeed.length);
-    }, 7000); 
+    }, 7000);
     return () => clearInterval(newsInterval);
   }, [socialNewsFeed.length]);
 
@@ -395,8 +422,29 @@ export default function App() {
           submittedAt: item.created_at
         })));
       }
+      // fetch testimonials after other content
+      await fetchTestimonials();
     } catch (err) {
       console.log("Using baseline presentation values while tables initialize.");
+    }
+  };
+
+  const fetchTestimonials = async () => {
+    try {
+      const { data, error } = await supabase.from('tribe_testimonials').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      if (data && data.length > 0) {
+        setPromoSlides(data.map((item) => ({
+          id: item.id,
+          title: item.author || item.title || 'Anonymous',
+          text: item.text || '',
+          origin: item.origin || '',
+          image: item.image || './logo/logomain.png',
+          imageType: item.imageType || 'logo'
+        })));
+      }
+    } catch (err) {
+      console.log('Failed to fetch testimonials:', err);
     }
   };
 
@@ -455,11 +503,109 @@ export default function App() {
           metric_count: formMetric
         })
         .eq('slug', editTarget);
-      
+
       if (error) throw error;
       setCmsSuccessMessage("Ecosystem service menu content synchronized successfully live!");
     } catch (err) {
       setCmsSuccessMessage("Preview saved successfully to layout local view state!");
+    }
+  };
+
+  const handleAddTestimonial = async (e) => {
+    e.preventDefault();
+    setCmsSuccessMessage(null);
+
+    const payload = {
+      title: testimonialAuthor || 'Anonymous',
+      text: testimonialText,
+      origin: testimonialOrigin || '',
+      image: './logo/logomain.png',
+      imageType: 'logo'
+    };
+
+    // If editing an existing testimonial, update it in local state (and attempt DB update)
+      if (testimonialEditIndex !== null && promoSlides[testimonialEditIndex]) {
+      const target = promoSlides[testimonialEditIndex];
+      setPromoSlides((prev) => prev.map((t, i) => (i === testimonialEditIndex ? { ...t, ...payload } : t)));
+
+      // Attempt DB update if record has id
+      try {
+        if (target.id) {
+          const { data, error } = await supabase.from('tribe_testimonials').update({ author: payload.title, origin: payload.origin, text: payload.text }).eq('id', target.id).select().single();
+          if (error) throw error;
+          // update local slide with authoritative DB row
+          setPromoSlides((prev) => prev.map((t, i) => (i === testimonialEditIndex ? {
+            id: data.id,
+            title: data.author || payload.title,
+            text: data.text,
+            origin: data.origin || payload.origin,
+            image: data.image || payload.image,
+            imageType: data.imageType || payload.imageType
+          } : t)));
+          setCmsSuccessMessage('Testimonial updated in database.');
+        } else {
+          setCmsSuccessMessage('Testimonial updated locally.');
+        }
+      } catch (err) {
+        setCmsSuccessMessage('Update applied locally; database update failed.');
+      }
+
+      setTestimonialEditIndex(null);
+    } else {
+      // Add new testimonial
+      setPromoSlides((prev) => [payload, ...prev]);
+      try {
+        const { data, error } = await supabase.from('tribe_testimonials').insert([{ author: payload.title, origin: payload.origin, text: payload.text }]).select().single();
+        if (error) throw error;
+        // prepend authoritative DB row to local slides
+        const created = {
+          id: data.id,
+          title: data.author || payload.title,
+          text: data.text,
+          origin: data.origin || payload.origin,
+          image: data.image || payload.image,
+          imageType: data.imageType || payload.imageType
+        };
+        setPromoSlides((prev) => [created, ...prev]);
+        setCmsSuccessMessage('Testimonial saved to database.');
+      } catch (err) {
+        setCmsSuccessMessage('Testimonial added locally; database insert failed.');
+      }
+    }
+
+    setTestimonialAuthor(''); setTestimonialText(''); setTestimonialOrigin('');
+  };
+
+  const handleStartEditTestimonial = (index) => {
+    const t = promoSlides[index];
+    if (!t) return;
+    setTestimonialAuthor(t.title || '');
+    setTestimonialText(t.text || '');
+    setTestimonialOrigin(t.origin || '');
+    setTestimonialEditIndex(index);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEditTestimonial = () => {
+    setTestimonialAuthor(''); setTestimonialText(''); setTestimonialOrigin(''); setTestimonialEditIndex(null);
+  };
+
+  const handleDeleteTestimonial = async (index) => {
+    const t = promoSlides[index];
+    if (!t) return;
+    // remove locally
+    setPromoSlides((prev) => prev.filter((_, i) => i !== index));
+    // attempt DB delete if id present
+    if (t.id) {
+      try {
+        const { error } = await supabase.from('tribe_testimonials').delete().eq('id', t.id);
+        if (error) throw error;
+        setCmsSuccessMessage('Testimonial deleted from database.');
+        // refresh list
+        await fetchTestimonials();
+      } catch (err) {
+        setCmsSuccessMessage('Testimonial removed locally; database delete failed.');
+      }
     }
   };
 
@@ -673,7 +819,8 @@ export default function App() {
           content: '';
           position: absolute;
           top: 0; left: 0; width: 100%; height: 100%;
-          background: linear-gradient(rgba(13,17,23,${theme === 'dark' ? '0.85' : '0.45'}), rgba(13,17,23,${theme === 'dark' ? '0.98' : '0.75'}));
+          /* Apply a consistent dark translucent overlay so banner text reads clearly */
+          background: linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.45));
         }
         .hero-overlay {
           position: relative;
@@ -682,8 +829,8 @@ export default function App() {
           padding: 4rem 2rem;
           max-width: 1000px;
         }
-        .hero-overlay h1 { font-size: 4.2rem; color: #f0f6fc; margin-bottom: 1rem; font-weight: 800; letter-spacing: -1px; animation: bannerTextFade 0.6s ease-out; }
-        .hero-overlay p { font-size: 1.45rem; color: #c9d1d9; max-width: 900px; margin: 0 auto 2.5rem auto; line-height: 1.6; animation: bannerTextFade 0.8s ease-out; }
+        .hero-overlay h1 { font-size: 4.2rem; color: #ffffff; margin-bottom: 1rem; font-weight: 800; letter-spacing: -1px; animation: bannerTextFade 0.6s ease-out; text-shadow: 0 8px 28px rgba(0,0,0,0.7); }
+        .hero-overlay p { font-size: 1.45rem; color: #ffffff; max-width: 900px; margin: 0 auto 2.5rem auto; line-height: 1.6; animation: bannerTextFade 0.8s ease-out; text-shadow: 0 6px 20px rgba(0,0,0,0.6); }
         @keyframes bannerTextFade { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         
         .hero-scroll-btn { background-color: var(--brand-green); color: white; padding: 1rem 2.5rem; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 1.05rem; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.6rem; }
@@ -720,8 +867,8 @@ export default function App() {
           z-index: 2;
         }
         .hero-overlay { padding: 3rem 1.5rem; }
-        .hero-overlay h1 { font-size: 3.8rem; }
-        .hero-overlay p { font-size: 1.25rem; max-width: 100%; }
+        .hero-overlay h1 { font-size: 3.8rem; color: #ffffff; text-shadow: 0 8px 28px rgba(0,0,0,0.7); }
+        .hero-overlay p { font-size: 1.25rem; max-width: 100%; color: #ffffff; text-shadow: 0 6px 20px rgba(0,0,0,0.6); }
         .hero-scroll-btn { min-width: 220px; }
         .teens-kids-hero { padding: 4rem 2rem; display: flex; align-items: center; justify-content: center; min-height: 320px; box-sizing: border-box; }
         .teens-kids-hero h1 { max-width: 100%; line-height: 1.05; overflow-wrap: break-word; }
@@ -773,6 +920,8 @@ export default function App() {
         .banner-text-package h2 { font-size: 2.4rem; font-weight: 800; color: var(--text-primary); margin: 0; line-height: 1.1; }
         .banner-text-package p { font-size: 1.05rem; line-height: 1.6; color: var(--text-muted); margin: 0; }
         .slide-graphic { width: 45%; height: 100%; border-radius: 12px; background-position: center; background-size: cover; box-shadow: var(--shadow-lg); border: 1px solid var(--border-color); }
+        .testimonial-author { font-size: 0.95rem; color: var(--text-muted); font-weight: 700; margin-top: 0.5rem; text-align: left; }
+        @media (max-width: 768px) { .testimonial-author { text-align: center; margin-top: 0.5rem; } }
         @media (max-width: 768px) { .synchronized-promo-banner { padding: 1.5rem; } .banner-slider { height: auto; min-height: 400px; position: relative; } .banner-slide { position: static !important; display: none; opacity: 1 !important; transform: none !important; transition: none; flex-direction: column; gap: 1.5rem; padding: 1.5rem 0; align-items: stretch; } .banner-slide.active { display: flex; } .banner-text-package { width: 100%; } .slide-graphic { width: 100%; height: 250px; } }
         .banner-controls { position: absolute; right: 18px; bottom: 12px; display: flex; gap: 0.6rem; }
         @media (max-width: 768px) { .banner-controls { position: relative; right: auto; bottom: auto; justify-content: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); } }
@@ -1170,7 +1319,8 @@ export default function App() {
         .choice-option-tile:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.25); }
         .founder-title-tag-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.85)); padding: 2rem 1.5rem 1.5rem 1.5rem; color: white; }
         .founder-title-tag-overlay h4 { margin: 0; font-size: 1.3rem; font-weight: 700; color: #ffffff; }
-        .founder-title-tag-overlay span { font-size: 0.9rem; color: var(--brand-blue); font-weight: 600; }
+        .founder-title-tag-overlay span { display: block; font-size: 0.9rem; color: var(--brand-blue); font-weight: 600; margin-top: 0.25rem; }
+        .founder-title-tag-overlay span:nth-of-type(2) { color: #ffcc66; }
         .founder-interactive-message-box { display: flex; flex-direction: column; gap: 2rem; }
         .founder-msg-nav-row { display: flex; gap: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; flex-wrap: wrap; }
         .founder-nav-pill { background: none; border: none; font-family: inherit; color: var(--text-muted); font-size: 1rem; font-weight: 700; padding: 0.5rem 1rem; cursor: pointer; position: relative; transition: color 0.2s; display: flex; align-items: center; gap: 0.5rem; }
@@ -1313,16 +1463,18 @@ export default function App() {
         .portal-workspace-header { background-color: var(--bg-card); border-bottom: 1px solid var(--border-color); padding: 1.5rem 4rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; box-sizing: border-box; border-radius: 0 0 20px 20px; }
         .dashboard-logout-btn { background: transparent; border: 1px solid var(--brand-green); color: var(--brand-green); padding: 0.75rem 1.25rem; border-radius: 999px; cursor: pointer; font-weight: 700; transition: background-color 0.2s ease, color 0.2s ease; }
         .dashboard-logout-btn:hover { background: var(--brand-green); color: #ffffff; }
-        .dashboard-tab-buttons { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; }
+        .portal-workspace-header-shell { position: sticky; top: 0; z-index: 20; background: var(--bg-main); }
+        .dashboard-tab-buttons { display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem; position: relative; z-index: 20; background: var(--bg-main); padding: 1rem 0; border-bottom: 1px solid var(--border-color); width: 100%; }
         .dashboard-tab-button { padding: 0.95rem 1.4rem; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-weight: 700; cursor: pointer; transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease; }
         .dashboard-tab-button:hover { background: rgba(35,134,54,0.12); border-color: var(--brand-green); color: var(--text-primary); transform: translateY(-1px); }
         .dashboard-tab-button.active { background: var(--accent-primary); border-color: var(--accent-primary); color: #ffffff; }
         .dashboard-tab-button.active:hover { background: #36b560; border-color: #36b560; }
-        .portal-workspace-body-content { padding: 3rem 4rem; width: 100%; box-sizing: border-box; display: grid; gap: 2rem; }
+        .portal-workspace-body-content { padding: 3rem 4rem; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 2rem; }
         .dashboard-editor-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 18px; padding: 3.5rem; box-shadow: var(--shadow-sm); width: 100%; box-sizing: border-box; }
         .cms-creation-form-layout { display: flex; flex-direction: column; gap: 1.75rem; margin-top: 2rem; }
         .form-input-container { display: flex; flex-direction: column; gap: 0.75rem; }
-        .plain-text-input { background-color: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.95rem 1.2rem; border-radius: 12px; font-size: 1rem; width: 100%; box-sizing: border-box; }
+        .plain-text-input { background-color: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 1.1rem 1.35rem; line-height: 1.5; border-radius: 12px; font-size: 1rem; width: 100%; box-sizing: border-box; min-height: 48px; }
+        .plain-text-input:focus { outline: none; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15); }
         .form-submit-action-btn { background-color: var(--brand-green); color: white; padding: 0.9rem 2rem; border-radius: 6px; border: none; font-weight: 700; font-size: 1rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; }
         .form-submit-action-btn:hover { background-color: var(--brand-green-hover); }
         .status-feedback-banner { padding: 1.1rem; background-color: rgba(46,164,79,0.12); border: 1px solid var(--accent-green); color: var(--accent-green); border-radius: 8px; font-weight: 600; text-align: center; }
@@ -1398,8 +1550,8 @@ export default function App() {
               {!showThemeModal && (
                 <div className="float-theme-toggle-container">
                   <div className="theme-toggle-switch-shell" onClick={toggleThemeModeSwitch}>
-                    <span style={{fontSize: '1.1rem'}}>{theme === 'dark' ? '☀️' : '🌙'}</span>
-                    <span style={{fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-primary)'}}>
+                    <span style={{ fontSize: '1.1rem' }}>{theme === 'dark' ? '☀️' : '🌙'}</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
                       {theme === 'dark' ? 'Light' : 'Dark'}
                     </span>
                   </div>
@@ -1417,7 +1569,7 @@ export default function App() {
 
         {/* STICKY HEADER NAVIGATION BAR */}
         <header className="public-navbar">
-          <Link to="/" className="nav-logo-brand-zone" onClick={() => { setNavOpen(false); window.scrollTo({top: 0, behavior: 'smooth'}); }}>
+          <Link to="/" className="nav-logo-brand-zone" onClick={() => { setNavOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
             <img src={theme === 'dark' ? "../logo/logo2.jpeg" : "../logo/logomain.png"} alt="Paz Thriving Tribe logo" className="nav-logo-img" />
             <div className="nav-brand-name">Paz Thriving Tribe</div>
           </Link>
@@ -1425,18 +1577,20 @@ export default function App() {
             <i className={navOpen ? 'fa-solid fa-xmark' : 'fa-solid fa-bars'}></i>
           </button>
           <nav className={`nav-navigation-links ${navOpen ? 'mobile-open' : ''}`}>
-            <Link to="/" className="nav-link-item" onClick={() => { setNavOpen(false); window.scrollTo({top: 0, behavior: 'smooth'}); }}>
+            <Link to="/" className="nav-link-item" onClick={() => { setNavOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
               <i className="fa-solid fa-house"></i> Home
             </Link>
-            <Link to="/services/family" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-people-roof"></i> Family Life
-            </Link>
-            <Link to="/services/marriage" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-heart-crack"></i> Marriage
-            </Link>
             <Link to="/teens-kids-academy" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-child-reaching"></i> Pre-teen & Teens
+              <i className="fa-solid fa-child-reaching"></i> Pre-teens & Teens
             </Link>
+
+            <Link to="/services/marriage" className="nav-link-item" onClick={() => setNavOpen(false)}>
+              <i className="fa-solid fa-heart-crack"></i> Thriving Women
+            </Link>
+            <Link to="/services/family" className="nav-link-item" onClick={() => setNavOpen(false)}>
+              <i className="fa-solid fa-people-roof"></i> Thriving Singles
+            </Link>
+
             <a href="https://pazthrivingtribe.schoolsfocus.net/signin" className="nav-cta-btn" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)}>
               <i className="fa-solid fa-right-to-bracket"></i> Portal
             </a>
@@ -1447,13 +1601,13 @@ export default function App() {
           {/* =========================================================================
              HOME ROUTE (WITH DYNAMIC SLIDING HERO BANNER)
              ========================================================================= */}
-          <Route 
-            path="/" 
+          <Route
+            path="/"
             element={
               <div className="public-website-container">
                 <section className="hero-section" data-aos="fade-down">
-                  <div 
-                    className={`hero-slide-bg ${homeSlides[currentHomeSlide].imageType === 'contain' ? 'hero-bg-contain' : ''}`} 
+                  <div
+                    className={`hero-slide-bg ${homeSlides[currentHomeSlide].imageType === 'contain' ? 'hero-bg-contain' : ''}`}
                     style={{
                       backgroundImage: homeSlides[currentHomeSlide].imageType === 'contain' ? 'none' : `url(${homeSlides[currentHomeSlide].image})`,
                       backgroundSize: homeSlides[currentHomeSlide].imageType === 'logo'
@@ -1496,8 +1650,9 @@ export default function App() {
                   <div className="founder-portrait-frame" data-aos="fade-right">
                     <img src="../image/pic1.jpeg" className="founder-img" alt="Paz Tribe Founder and CEO" />
                     <div className="founder-title-tag-overlay">
-                      <h4>Mrs. Iraoya Roseline</h4>
-                      <span>Founder/Visionair of PTT</span>
+                      <h4>Mrs. Roseline Iraoya </h4>
+                      <span>Lead Coach PTT</span>
+                      <span>Paz Thriving Tribe</span>
                     </div>
                   </div>
 
@@ -1566,9 +1721,9 @@ export default function App() {
                     {promoSlides.map((slide, idx) => (
                       <div key={idx} className={`banner-slide ${idx === currentPromoSlide ? 'active' : ''}`}>
                         <div className="banner-text-package">
-                          <span className="banner-badge"><i className="fa-solid fa-bullseye" style={{ fontSize: '0.8rem' }}></i> Strategic Mission</span>
-                          <h2>{slide.title}</h2>
+                          <span className="banner-badge"><i className="fa-solid fa-bullseye" style={{ fontSize: '0.8rem' }}></i>Client Testimonial</span>
                           <p>{slide.text}</p>
+                          <div className="testimonial-author">{slide.title}</div>
                         </div>
                         {slide.imageType === 'logo' ? (
                           <div className="slide-graphic" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }}>
@@ -1582,7 +1737,7 @@ export default function App() {
 
                     <div className="banner-controls">
                       {promoSlides.map((_, i) => (
-                        <button key={i} className={`banner-dot ${i === currentPromoSlide ? 'active' : ''}`} onClick={() => setCurrentPromoSlide(i)} aria-label={`Go to slide ${i+1}`} />
+                        <button key={i} className={`banner-dot ${i === currentPromoSlide ? 'active' : ''}`} onClick={() => setCurrentPromoSlide(i)} aria-label={`Go to slide ${i + 1}`} />
                       ))}
                     </div>
                   </div>
@@ -1590,8 +1745,8 @@ export default function App() {
 
                 {/* Interactive Gateway Matrix */}
                 <section id="services-explore" className="interactive-tabs-section">
-                  <h2 className="section-title-heading" data-aos="fade-right">Ecosystem Specialty Menus</h2>
-                  <p className="section-subtext">Click on any core module path below to access its deep-dive page layout view, customized banners, and dedicated forms.</p>
+                  <h2 className="section-title-heading" data-aos="fade-right">What we offer</h2>
+                  <p className="section-subtext">Kindly check the options below to explore our services</p>
 
                   <div className="services-routing-grid" data-aos="fade-up">
                     <Link to="/services/family" className="service-gateway-card">
@@ -1758,7 +1913,7 @@ export default function App() {
                   </div>
                 </section>
               </div>
-            } 
+            }
           />
 
           {/* =========================================================================
@@ -1768,22 +1923,22 @@ export default function App() {
           <Route path="/services/:serviceSlug" element={<ServicePageWrapper services={services} programs={programs} onIntakeSubmit={handleServiceIntakeSubmit} />} />
 
           {/* Administrative Gateway Login */}
-          <Route 
-            path="/admin" 
+          <Route
+            path="/admin"
             element={
               !session ? (
                 <div className="auth-page-wrapper">
                   <div className="login-card-layout" data-aos="fade-up">
                     <h2 className="login-brand-title">Admin Gateway</h2>
-                    {authError && <div style={{color: '#f85149', marginBottom: '1.25rem', fontSize: '0.9rem', fontWeight: 'bold'}}>{authError}</div>}
-                    
+                    {authError && <div style={{ color: '#f85149', marginBottom: '1.25rem', fontSize: '0.9rem', fontWeight: 'bold' }}>{authError}</div>}
+
                     <form onSubmit={handleSignIn} className="standard-login-form">
                       <div className="form-input-container">
-                        <label style={{fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '600'}}>Admin Email Account</label>
+                        <label style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '600' }}>Admin Email Account</label>
                         <input ref={emailInputRef} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@paztribe.org" required className="plain-text-input" />
                       </div>
                       <div className="form-input-container">
-                        <label style={{fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '600'}}>Account Password</label>
+                        <label style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '600' }}>Account Password</label>
                         <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required className="plain-text-input" />
                       </div>
                       <button type="submit" className="form-submit-action-btn">Verify Portal Credentials</button>
@@ -1793,90 +1948,128 @@ export default function App() {
               ) : (
                 <Navigate to="/dashboard" replace />
               )
-            } 
+            }
           />
 
           {/* Secure Management Console (CMS Dashboard) */}
-          <Route 
-            path="/dashboard" 
+          <Route
+            path="/dashboard"
             element={
               session ? (
                 <div className="portal-workspace-grid">
                   <aside className="portal-sidebar-panel">
                     <div className="portal-sidebar-title">Ecosystem Admin</div>
                     <nav className="portal-sidebar-links">
-                      <Link to="/" className="sidebar-link-item" style={{textDecoration: 'none'}}>← Exit to Live Website</Link>
+                      <Link to="/" className="sidebar-link-item" style={{ textDecoration: 'none' }}>← Exit to Live Website</Link>
                       <div className="sidebar-link-item active">Core Studio Engine</div>
                     </nav>
                     <button onClick={handleSignOut} className="sidebar-disconnect-btn">Logout to Sign In</button>
                   </aside>
 
                   <div className="portal-main-workspace">
-                    <header className="portal-workspace-header">
-                      <div>
-                        <h2 style={{margin: 0, fontSize: '1.4rem', color: 'var(--text-primary)'}}>Paz Tribe Dynamic Website CMS Engine</h2>
-                        <p style={{margin: '0.5rem 0 0 0', color: 'var(--text-muted)', fontSize: '0.95rem'}}>Secure admin console for content, applicants, and programs.</p>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                        <div style={{background: 'var(--bg-main)', padding: '0.5rem 1rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', border: '1px solid var(--border-color)'}}>{session.user.email}</div>
-                        <button onClick={handleSignOut} className="dashboard-logout-btn">Logout</button>
-                      </div>
-                    </header>
+                    <div className="portal-workspace-header-shell">
+                      <header className="portal-workspace-header">
+                        <div>
+                          <h2 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--text-primary)' }}>Paz Tribe Dynamic Website CMS Engine</h2>
+                          <p style={{ margin: '0.5rem 0 0 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>Secure admin console for content, applicants, and programs.</p>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                          <div style={{ background: 'var(--bg-main)', padding: '0.5rem 1rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', border: '1px solid var(--border-color)' }}>{session.user.email}</div>
+                          <button onClick={handleSignOut} className="dashboard-logout-btn">Logout</button>
+                        </div>
+                      </header>
+
+                      <AdminTabBar selectedTab={selectedAdminTab} onChangeTab={setSelectedAdminTab} />
+                    </div>
 
                     <main className="portal-workspace-body-content">
-                      <div className="dashboard-tab-buttons">
-                        {['content', 'social', 'programs', 'applicants', 'payments'].map((tab) => (
-                          <button
-                            key={tab}
-                            onClick={() => setSelectedAdminTab(tab)}
-                            className={`dashboard-tab-button ${selectedAdminTab === tab ? 'active' : ''}`}
-                          >
-                            {tab === 'content' ? 'Page Content' : tab === 'social' ? 'Social Preview' : tab === 'programs' ? 'Programs' : tab === 'applicants' ? 'Applicants' : 'Payment Settings'}
-                          </button>
-                        ))}
-                      </div>
-
-                      {dashboardMessage && <div className="status-feedback-banner" style={{marginBottom: '1.5rem'}}>{dashboardMessage}</div>}
+                      {dashboardMessage && <div className="status-feedback-banner" style={{ marginBottom: '1.5rem' }}>{dashboardMessage}</div>}
 
                       {selectedAdminTab === 'content' && (
                         <section className="dashboard-editor-card">
-                          <h3 style={{margin: '0 0 0.5rem 0', color: 'var(--text-primary)'}}>Modify Core Specialty Menus Content</h3>
-                          <p style={{color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0}}>Select your menu configuration channel to synchronize text details onto deep pages dynamically.</p>
+                          <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Modify Core Specialty Menus Content</h3>
+                          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Select your menu configuration channel to synchronize text details onto deep pages dynamically.</p>
 
-                          {cmsSuccessMessage && <div className="status-feedback-banner" style={{marginTop: '1.5rem'}}>{cmsSuccessMessage}</div>}
+                          {cmsSuccessMessage && <div className="status-feedback-banner" style={{ marginTop: '1.5rem' }}>{cmsSuccessMessage}</div>}
 
                           <form onSubmit={handleUpdateContentCMS} className="cms-creation-form-layout">
                             <div className="form-input-container">
                               <label style={{ color: 'var(--brand-blue)', fontWeight: '600' }}>Select Targeted Menu Category to Update</label>
                               <select value={editTarget} onChange={(e) => setEditTarget(e.target.value)} className="plain-text-input" style={{ height: '46px', border: '1px solid var(--brand-blue)' }}>
-                                <option value="family">Family Life Coaching</option>
-                                <option value="marriage">Marriage & Relationship Counseling</option>
-                                <option value="children">Children & Teenagers Coaching</option>
+                                <option value="family">Thriving Singles</option>
+                                <option value="marriage">Thriving Women Tribe</option>
+                                <option value="children">Pre-teens & Teens</option>
                               </select>
                             </div>
 
                             <div className="form-input-container">
-                              <label style={{fontWeight: '600'}}>Display Heading Title</label>
+                              <label style={{ fontWeight: '600' }}>Display Heading Title</label>
                               <input type="text" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} className="plain-text-input" required />
                             </div>
 
                             <div className="form-input-container">
-                              <label style={{fontWeight: '600'}}>Subtitle & Specialist Roles</label>
+                              <label style={{ fontWeight: '600' }}>Subtitle & Specialist Roles</label>
                               <input type="text" value={formSubtitle} onChange={(e) => setFormSubtitle(e.target.value)} className="plain-text-input" required />
                             </div>
 
                             <div className="form-input-container">
-                              <label style={{fontWeight: '600'}}>Impact Score / Metric Total Text</label>
+                              <label style={{ fontWeight: '600' }}>Impact Score / Metric Total Text</label>
                               <input type="text" value={formMetric} onChange={(e) => setFormMetric(e.target.value)} className="plain-text-input" required />
                             </div>
 
                             <div className="form-input-container">
-                              <label style={{fontWeight: '600'}}>Detailed Menu Context Description</label>
+                              <label style={{ fontWeight: '600' }}>Detailed Menu Context Description</label>
                               <textarea value={formDesc} onChange={(e) => setFormDesc(e.target.value)} rows="5" className="plain-text-input" style={{ resize: 'vertical', fontFamily: 'inherit' }} required></textarea>
                             </div>
 
                             <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Publish Dynamic Update</button>
                           </form>
+
+                          <div style={{ marginTop: '2rem' }}>
+                            <h4 style={{ marginBottom: '0.75rem' }}>Client Testimonials (Homepage Slider)</h4>
+                            <p style={{ color: 'var(--text-muted)', marginTop: 0 }}>Add or preview client reviews shown in the homepage testimonial slider.</p>
+
+                            {cmsSuccessMessage && <div className="status-feedback-banner" style={{ marginTop: '0.75rem' }}>{cmsSuccessMessage}</div>}
+
+                            <form onSubmit={handleAddTestimonial} className="cms-creation-form-layout" style={{ marginTop: '1rem' }}>
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Client / Author</label>
+                                <input type="text" value={testimonialAuthor} onChange={(e) => setTestimonialAuthor(e.target.value)} className="plain-text-input" placeholder="Author name or tag" />
+                              </div>
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Origin / Tag</label>
+                                <input type="text" value={testimonialOrigin} onChange={(e) => setTestimonialOrigin(e.target.value)} className="plain-text-input" placeholder="e.g., Oniru Client" />
+                              </div>
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Testimonial</label>
+                                <textarea value={testimonialText} onChange={(e) => setTestimonialText(e.target.value)} rows="4" className="plain-text-input" style={{ resize: 'vertical' }} required />
+                              </div>
+                              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                                <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>{testimonialEditIndex !== null ? 'Save Testimonial' : 'Add Testimonial'}</button>
+                                {testimonialEditIndex !== null && (
+                                  <button type="button" onClick={handleCancelEditTestimonial} className="form-cancel-action-btn" style={{ maxWidth: '140px' }}>Cancel</button>
+                                )}
+                              </div>
+                            </form>
+
+                            <div style={{ marginTop: '1.25rem' }}>
+                              <h5 style={{ marginBottom: '0.6rem' }}>Current Testimonials</h5>
+                              <div style={{ display: 'grid', gap: '0.75rem' }}>
+                                {promoSlides.map((t, idx) => (
+                                  <div key={idx} style={{ backgroundColor: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '0.9rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}>
+                                    <div style={{ flex: 1 }}>
+                                      <strong style={{ display: 'block' }}>{t.title}</strong>
+                                      <div style={{ color: 'var(--text-muted)', marginTop: '0.4rem' }}>{t.text.slice(0, 220)}{t.text.length > 220 ? '…' : ''}</div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                      <button onClick={() => handleStartEditTestimonial(idx)} className="form-submit-action-btn" style={{ padding: '0.45rem 0.7rem' }}>Edit</button>
+                                      <button onClick={() => handleDeleteTestimonial(idx)} className="form-cancel-action-btn" style={{ padding: '0.45rem 0.7rem' }}>Delete</button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
                         </section>
                       )}
 
@@ -1885,7 +2078,7 @@ export default function App() {
                           <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Social Media Preview Editor</h3>
                           <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Update the featured social card content and YouTube playback URL displayed on the homepage.</p>
 
-                          {cmsSuccessMessage && <div className="status-feedback-banner" style={{marginTop: '1.5rem'}}>{cmsSuccessMessage}</div>}
+                          {cmsSuccessMessage && <div className="status-feedback-banner" style={{ marginTop: '1.5rem' }}>{cmsSuccessMessage}</div>}
 
                           <form onSubmit={handleUpdateSocialPreview} className="cms-creation-form-layout" style={{ marginTop: '1.5rem' }}>
                             <div className="form-input-container">
@@ -1937,9 +2130,9 @@ export default function App() {
                             <div className="form-input-container">
                               <label style={{ fontWeight: '600' }}>Service Category</label>
                               <select value={programForm.service} onChange={(e) => setProgramForm((prev) => ({ ...prev, service: e.target.value }))} className="plain-text-input" style={{ height: '46px' }}>
-                                <option value="family">Family Life Coaching</option>
-                                <option value="marriage">Marriage & Relationship Counseling</option>
-                                <option value="children">Children & Teenagers Coaching</option>
+                                <option value="family">Thriving Singles</option>
+                                <option value="marriage">Thriving Women Tribe</option>
+                                <option value="children">Pre-teens Mentorship Pathways</option>
                               </select>
                             </div>
 
@@ -2047,10 +2240,10 @@ export default function App() {
 
                       {selectedAdminTab === 'payments' && (
                         <section className="dashboard-editor-card">
-                          <h3 style={{margin: '0 0 0.5rem 0', color: 'var(--text-primary)'}}>Paystack Payment Settings</h3>
-                          <p style={{color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0}}>Configure your Paystack API key and pricing for Pre-teen & Teens Academy program.</p>
+                          <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Paystack Payment Settings</h3>
+                          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Configure your Paystack API key and pricing for Pre-teen & Teens Academy program.</p>
 
-                          {dashboardMessage && <div className="status-feedback-banner" style={{marginTop: '1.5rem'}}>{dashboardMessage}</div>}
+                          {dashboardMessage && <div className="status-feedback-banner" style={{ marginTop: '1.5rem' }}>{dashboardMessage}</div>}
 
                           <form onSubmit={(e) => {
                             e.preventDefault();
@@ -2058,51 +2251,51 @@ export default function App() {
                             setTeensKidsMonthlyFee(parseInt(tempMonthlyFee) || 10000);
                             setDashboardMessage('✓ Payment settings saved successfully!');
                             setTimeout(() => setDashboardMessage(null), 3000);
-                          }} style={{marginTop: '1.5rem'}}>
+                          }} style={{ marginTop: '1.5rem' }}>
                             <div className="form-input-container">
-                              <label style={{fontWeight: '600'}}>Paystack Public Key</label>
-                              <input 
-                                type="text" 
-                                value={tempPaystackKey} 
-                                onChange={(e) => setTempPaystackKey(e.target.value)} 
-                                className="plain-text-input" 
+                              <label style={{ fontWeight: '600' }}>Paystack Public Key</label>
+                              <input
+                                type="text"
+                                value={tempPaystackKey}
+                                onChange={(e) => setTempPaystackKey(e.target.value)}
+                                className="plain-text-input"
                                 placeholder="pk_live_... or pk_test_..."
-                                required 
+                                required
                               />
-                              <small style={{color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block'}}>
+                              <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
                                 Your Paystack public API key. Switch between test and live keys as needed.
                               </small>
                             </div>
 
                             <div className="form-input-container">
-                              <label style={{fontWeight: '600'}}>Program Registration Fee (NGN)</label>
-                              <input 
-                                type="number" 
-                                value={tempMonthlyFee} 
-                                onChange={(e) => setTempMonthlyFee(e.target.value)} 
-                                className="plain-text-input" 
+                              <label style={{ fontWeight: '600' }}>Program Registration Fee (NGN)</label>
+                              <input
+                                type="number"
+                                value={tempMonthlyFee}
+                                onChange={(e) => setTempMonthlyFee(e.target.value)}
+                                className="plain-text-input"
                                 placeholder="10000"
                                 min="1000"
                                 max="1000000"
-                                required 
+                                required
                               />
-                              <small style={{color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block'}}>
+                              <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
                                 Update the academy registration fee for the Pre-teen & Teens program. This value drives the displayed pricing for clients.
                               </small>
                             </div>
 
-                            <button 
-                              type="submit" 
-                              className="form-submit-action-btn" 
-                              style={{marginTop: '1.5rem', width: '100%', maxWidth: '200px'}}
+                            <button
+                              type="submit"
+                              className="form-submit-action-btn"
+                              style={{ marginTop: '1.5rem', width: '100%', maxWidth: '200px' }}
                             >
                               Save Payment Settings
                             </button>
                           </form>
 
-                          <div style={{marginTop: '2rem', padding: '1rem', background: 'var(--bg-main)', borderRadius: '8px', border: '1px solid var(--border-color)'}}>
-                            <h4 style={{margin: '0 0 0.75rem 0', color: 'var(--text-primary)'}}>Current Configuration</h4>
-                            <div style={{display: 'grid', gap: '0.75rem', color: 'var(--text-muted)'}}>
+                          <div style={{ marginTop: '2rem', padding: '1rem', background: 'var(--bg-main)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                            <h4 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Current Configuration</h4>
+                            <div style={{ display: 'grid', gap: '0.75rem', color: 'var(--text-muted)' }}>
                               <span><strong>Active Public Key:</strong> {paystackPublicKey.substring(0, 20)}...</span>
                               <span><strong>Monthly Fee:</strong> ₦{teensKidsMonthlyFee.toLocaleString()}</span>
                               <span><strong>3 Months:</strong> ₦{(teensKidsMonthlyFee * 3).toLocaleString()}</span>
@@ -2118,7 +2311,7 @@ export default function App() {
               ) : (
                 <Navigate to="/admin" replace />
               )
-            } 
+            }
           />
 
           <Route path="*" element={<Navigate to="/" replace />} />
@@ -2128,19 +2321,19 @@ export default function App() {
         <footer className="workspace-fluid-footer">
           <div className="footer-columns-container">
             <div className="footer-brand-column">
-              <Link to="/" className="footer-brand-logo-row" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
+              <Link to="/" className="footer-brand-logo-row" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
                 <div className="footer-vector-badge"><img src="./logo/logomain.png" alt="" /></div>
                 <span className="footer-brand-headline">Paz Thriving Tribe</span>
               </Link>
               <p>Providing dynamic infrastructure tracking networks focused on alignment strategies, professional conflict mitigation solutions, and youth development counseling models.</p>
             </div>
-            
+
             <div className="footer-links-column">
               <h4>Ecosystem Tracks</h4>
               <div className="footer-interactive-links">
-                <Link to="/services/family" className="footer-nav-anchor">Family Life Coaching</Link>
-                <Link to="/services/marriage" className="footer-nav-anchor">Marriage & Couples</Link>
-                <Link to="/services/children" className="footer-nav-anchor">Children & Teenagers</Link>
+                <Link to="/services/family" className="footer-nav-anchor">Thriving Singles</Link>
+                <Link to="/services/marriage" className="footer-nav-anchor">Thriving Women</Link>
+                <Link to="/services/children" className="footer-nav-anchor">Pre-teens & Teens</Link>
               </div>
             </div>
 
@@ -2154,8 +2347,8 @@ export default function App() {
             <div className="footer-links-column">
               <h4>Inquiries</h4>
               <div className="footer-interactive-links">
-                <span style={{fontSize: '0.95rem', color: 'var(--text-muted)'}}><i className="fa-solid fa-location-dot" style={{ marginRight: '5px' }}></i> Lagos Main Campus, Nigeria</span>
-                <span style={{fontSize: '0.95rem', color: 'var(--text-muted)'}}><i className="fa-solid fa-envelope" style={{ marginRight: '5px' }}></i> support@paztribe.org</span>
+                <span style={{ fontSize: '0.95rem', color: 'var(--text-muted)' }}><i className="fa-solid fa-location-dot" style={{ marginRight: '5px' }}></i> Lagos Main Campus, Nigeria</span>
+                <span style={{ fontSize: '0.95rem', color: 'var(--text-muted)' }}><i className="fa-solid fa-envelope" style={{ marginRight: '5px' }}></i> support@paztribe.org</span>
               </div>
             </div>
           </div>
@@ -2163,8 +2356,8 @@ export default function App() {
           <div className="footer-bottom-copyright-strip">
             <p>&copy; 2026 Paz Thriving Tribe. Unified Content Infrastructure Management.</p>
             <div className="footer-regulatory-tags">
-              <span style={{fontSize: '0.9rem', color: 'var(--text-muted)'}}>Privacy Framework</span>
-              <span style={{fontSize: '0.9rem', color: 'var(--text-muted)'}}>System Terms</span>
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Privacy Framework</span>
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>System Terms</span>
             </div>
           </div>
         </footer>
@@ -2249,19 +2442,19 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
 
   const subPageMeta = {
     family: {
-      newsTitle: "Family Dynamics Dispatch",
-      newsText: "New behavioral guide published: 'Navigating Cross-Generational Boundaries inside the Modern Household Structure'.",
-      formSub: "Schedule Family Strategy Intake Consultation Session"
+      newsTitle: "Thriving Singles Update",
+      newsText: "New empowerment guide released: 'Building Confidence & Purpose as an Independent Woman'.",
+      formSub: "Schedule Your Personal Development Consultation"
     },
     marriage: {
-      newsTitle: "Marriage Foundation Brief",
-      newsText: "Upcoming Interactive Couple Milestone Alignment Summit schedule confirmed for next quarter layout cycles.",
-      formSub: "Initiate Private Couple Alignment Relationship Intake"
+      newsTitle: "Women Tribe Connection Brief",
+      newsText: "Upcoming Women's Empowerment Circle meeting scheduled for next month with guest speakers on leadership and sisterhood.",
+      formSub: "Join the Thriving Women Tribe Community"
     },
     children: {
-      newsTitle: "Youth Mentorship Monitor",
-      newsText: "Cognitive stability milestone tracking update released for one-on-one adolescent mentorship program platforms.",
-      formSub: "Enroll Child / Teenager into Cognitive Mentorship Framework"
+      newsTitle: "Pre-teens Mentorship Monitor",
+      newsText: "Cognitive stability milestone tracking update released for one-on-one pre-teen and adolescent mentorship program platforms.",
+      formSub: "Enroll Child / Teenager into Pre-teens Mentorship Pathways"
     }
   }[serviceSlug];
 
@@ -2291,8 +2484,8 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
     <div className="public-website-container">
       {/* DYNAMIC SLIDING TOPIC BANNER */}
       <section className="service-view-hero-banner">
-        <div 
-          className="service-banner-bg" 
+        <div
+          className="service-banner-bg"
           style={{ backgroundImage: `url(${subPageBannerPortfolios[activeSlideIndex]})` }}
         />
         <div className="service-banner-content" key={activeSlideIndex}>
@@ -2311,7 +2504,7 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
           <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '2.5rem', marginTop: '2.5rem' }}>
             <h3 style={{ marginBottom: '1rem', fontWeight: '800' }}>Intake Form Session Request</h3>
             <p style={{ fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '2rem' }}>{subPageMeta.formSub}</p>
-            
+
             {success ? (
               <div className="status-feedback-banner"><i className="fa-solid fa-circle-check"></i> Intake requested successfully. Our specialist counselors will reach out to you within 24 hours.</div>
             ) : (
@@ -2347,7 +2540,7 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
         {/* Dedicated News Column Sidebar */}
         <div className="service-sidebar-news-stack" data-aos="fade-left">
           <div style={{ textTransform: 'uppercase', fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-muted)', letterSpacing: '1px' }}>Topic Channel Feed</div>
-          
+
           <div className="topic-news-card">
             <h5><i className="fa-solid fa-hashtag"></i> {subPageMeta.newsTitle}</h5>
             <h3>Latest Dynamic Update</h3>
@@ -2578,7 +2771,7 @@ function HomeIntakeForm({ onSubmitApplicant }) {
   const [phone, setPhone] = useState('');
   const [track, setTrack] = useState('family');
   const [message, setMessage] = useState('');
-  
+
   const submitForm = async (e) => {
     e.preventDefault();
     if (onSubmitApplicant) {
@@ -2621,9 +2814,9 @@ function HomeIntakeForm({ onSubmitApplicant }) {
         <div className="form-input-container">
           <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Targeted Intake Track Selection</label>
           <select required value={track} onChange={(e) => setTrack(e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
-            <option value="family">Family Life Coaching Framework</option>
-            <option value="marriage">Marriage & Relationship Counseling Framework</option>
-            <option value="children">Children & Teenagers Coaching Framework</option>
+            <option value="family">Thriving Singles</option>
+            <option value="marriage">Thriving Women Tribe</option>
+            <option value="children">Pre-teens Mentorship Pathways</option>
           </select>
         </div>
       </div>
@@ -2661,7 +2854,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
     emergencyContactNumber: '',
     signature: '',
     consentDate: new Date().toISOString().slice(0, 10),
-    track: 'Children & Teenagers Coaching Framework',
+    track: 'Pre-teens Mentorship Pathways',
     amount: 10000
   });
   const [goalAreas, setGoalAreas] = useState({
@@ -2684,6 +2877,13 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
   const [documentFile, setDocumentFile] = useState(null);
   const [passportPreviewUrl, setPassportPreviewUrl] = useState(null);
   const [stepIndex, setStepIndex] = useState(0); // 0 = Thriver info, 1 = Parent+goals+health, 2 = Preview, 3 = Confirmation
+  const passportInputRef = useRef(null);
+
+  const handlePassportPreviewClick = () => {
+    if (passportInputRef.current) {
+      passportInputRef.current.click();
+    }
+  };
 
   const goalLabels = {
     confidenceBuilding: 'Confidence Building',
@@ -2742,7 +2942,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
         emergencyContactNumber: '',
         signature: '',
         consentDate: new Date().toISOString().slice(0, 10),
-        track: 'Children & Teenagers Coaching Framework',
+        track: 'Pre-teens Mentorship Pathways',
         amount: 10000
       }));
       setGoalAreas({
@@ -2835,7 +3035,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
           developmentGoals: selectedGoals.join(', '),
           paymentReference: response.reference,
           paymentStatus: 'success'
-          ,passportFile,
+          , passportFile,
           documentFile
         };
         if (onRegister) await onRegister(registrationData);
@@ -2935,16 +3135,39 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
                 <div className="registration-fields-grid">
                   <div className="passport-upload-row">
                     <div className="passport-upload-preview">
-                      <div className="preview-box">
+                      <div
+                        className="preview-box"
+                        onClick={handlePassportPreviewClick}
+                        onDoubleClick={handlePassportPreviewClick}
+                        style={{ cursor: 'pointer', position: 'relative' }}
+                      >
                         {passportPreviewUrl ? (
                           <img src={passportPreviewUrl} alt="Passport preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                           <div style={{ fontSize: '0.85rem', color: '#6b7280', padding: '0.5rem', textAlign: 'center' }}>Passport preview</div>
                         )}
+                        <div style={{
+                          position: 'absolute',
+                          bottom: '0.5rem',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          background: 'rgba(255, 255, 255, 0.9)',
+                          padding: '0.25rem 0.6rem',
+                          borderRadius: '999px',
+                          fontSize: '0.78rem',
+                          color: '#334155',
+                          pointerEvents: 'none'
+                        }}>
+                          {passportPreviewUrl ? 'Double-click to change photo' : 'Double-click to choose image'}
+                        </div>
                       </div>
-                      <div style={{ marginTop: '0.75rem' }}>
-                        <input type="file" accept="image/*" onChange={(e) => setPassportFile(e.target.files && e.target.files[0] ? e.target.files[0] : null)} className="plain-text-input" />
-                      </div>
+                      <input
+                        ref={passportInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setPassportFile(e.target.files && e.target.files[0] ? e.target.files[0] : null)}
+                        style={{ display: 'none' }}
+                      />
                     </div>
                     <div className="passport-upload-form">
                       <div className="form-input-container">
@@ -3093,9 +3316,9 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
               <div className="form-input-container" style={{ marginBottom: '1rem' }}>
                 <label>Selected Academy Track</label>
                 <select value={formData.track} onChange={(e) => updateField('track', e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
-                  <option>Children & Teenagers Coaching Framework</option>
-                  <option>Family Life Coaching Framework</option>
-                  <option>Marriage & Relationship Counseling Framework</option>
+                  <option>Pre-teens Mentorship Pathways</option>
+                  <option>Thriving Singles</option>
+                  <option>Thriving Women Tribe</option>
                 </select>
               </div>
             </>
