@@ -28,3 +28,11 @@ Required environment variables in production:
 - `ADMIN_EMAILS` — comma-separated list of allowed admin emails (fallback)
 
 If you deploy to Vercel, add these variables in the project dashboard and keep the service role key private. The admin endpoint is available at `/api/admin-update`.
+
+### Supabase production setup
+
+Recommended step: create a `site_admins` table in Supabase and add your admin user(s). This lets the serverless endpoint authenticate admin rights securely.
+
+Use the SQL script in `supabase-admin-setup.sql` to create the admin table and to add a sample RLS policy for applicant submissions.
+
+If you want to lock down other tables too, add Supabase policies that allow only the server-side endpoint to mutate admin-controlled tables and allow public insert for applicant forms.
