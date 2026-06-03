@@ -18,7 +18,12 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return jsonResponse(res, 405, { error: 'Method not allowed' })
   if (!supabaseUrl || !serviceRoleKey) return jsonResponse(res, 500, { error: 'Server misconfigured: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing' })
 
-  const supabase = createClient(supabaseUrl, serviceRoleKey)
+  let supabase
+  try {
+    supabase = createClient(supabaseUrl, serviceRoleKey)
+  } catch (clientErr) {
+    return jsonResponse(res, 500, { error: `Failed to initialize Supabase client: ${clientErr?.message || clientErr}` })
+  }
 
   const authHeader = req.headers.authorization || req.headers['x-access-token'] || ''
   const token = authHeader.replace(/^Bearer\s+/i, '')
@@ -26,8 +31,16 @@ export default async function handler(req, res) {
 
   // Verify token with Supabase to retrieve the authenticated user
   try {
-    const { data: userData, error: userErr } = await supabase.auth.getUser(token)
-    if (userErr || !userData?.user) return jsonResponse(res, 401, { error: 'Invalid or expired access token' })
+    let userData, userErr
+    try {
+      const result = await supabase.auth.getUser(token)
+      userData = result.data
+      userErr = result.error
+    } catch (authErr) {
+      return jsonResponse(res, 401, { error: `Token verification failed: ${authErr?.message || authErr}` })
+    }
+
+    if (userErr || !userData?.user) return jsonResponse(res, 401, { error: `Invalid or expired access token: ${userErr?.message || 'no user data'}` })
 
     const user = userData.user
 
@@ -62,22 +75,26 @@ export default async function handler(req, res) {
     if (!action || !table) return jsonResponse(res, 400, { error: 'Missing action or table' })
 
     let result
-    if (action === 'update') {
-      if (!match) return jsonResponse(res, 400, { error: 'Missing match object for update' })
-      result = await supabase.from(table).update(payload).match(match)
-    } else if (action === 'insert') {
-      result = await supabase.from(table).insert(payload)
-    } else if (action === 'delete') {
-      if (!match) return jsonResponse(res, 400, { error: 'Missing match object for delete' })
-      result = await supabase.from(table).delete().match(match)
-    } else {
-      return jsonResponse(res, 400, { error: 'Unknown action' })
+    try {
+      if (action === 'update') {
+        if (!match) return jsonResponse(res, 400, { error: 'Missing match object for update' })
+        result = await supabase.from(table).update(payload).match(match)
+      } else if (action === 'insert') {
+        result = await supabase.from(table).insert(payload)
+      } else if (action === 'delete') {
+        if (!match) return jsonResponse(res, 400, { error: 'Missing match object for delete' })
+        result = await supabase.from(table).delete().match(match)
+      } else {
+        return jsonResponse(res, 400, { error: 'Unknown action' })
+      }
+    } catch (dbErr) {
+      return jsonResponse(res, 500, { error: `Database operation failed: ${dbErr?.message || dbErr}` })
     }
 
     const { data, error } = result
-    if (error) return jsonResponse(res, 500, { error: error.message || error })
+    if (error) return jsonResponse(res, 500, { error: `Database error: ${error.message || error}` })
     return jsonResponse(res, 200, { data })
   } catch (err) {
-    return jsonResponse(res, 500, { error: err.message || err })
+    return jsonResponse(res, 500, { error: `Unexpected error: ${err?.message || err}`, stack: process.env.NODE_ENV === 'development' ? err?.stack : undefined })
   }
 }
