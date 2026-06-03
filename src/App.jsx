@@ -42,7 +42,7 @@ export default function App() {
       imageType: 'logo'
     },
     {
-      title: 'Oniru Client',
+      title: "A and A's Dad",
       text: 'Thank You hope they are making progress in line with the schedule. They enjoyed their sessions.',
       image: "./logo/logomain.png",
       imageType: 'logo'
@@ -1293,7 +1293,7 @@ export default function App() {
         .choice-option-tile:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.25); }
         .founder-title-tag-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.85)); padding: 2rem 1.5rem 1.5rem 1.5rem; color: white; }
         .founder-title-tag-overlay h4 { margin: 0; font-size: 1.3rem; font-weight: 700; color: #ffffff; }
-        .founder-title-tag-overlay span { font-size: 0.9rem; color: var(--brand-blue); font-weight: 600; }
+        .founder-title-tag-overlay span { display: block; font-size: 0.9rem; color: var(--brand-blue); font-weight: 600; margin-top: 0.25rem; }
         .founder-interactive-message-box { display: flex; flex-direction: column; gap: 2rem; }
         .founder-msg-nav-row { display: flex; gap: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem; flex-wrap: wrap; }
         .founder-nav-pill { background: none; border: none; font-family: inherit; color: var(--text-muted); font-size: 1rem; font-weight: 700; padding: 0.5rem 1rem; cursor: pointer; position: relative; transition: color 0.2s; display: flex; align-items: center; gap: 0.5rem; }
@@ -1622,8 +1622,9 @@ export default function App() {
                   <div className="founder-portrait-frame" data-aos="fade-right">
                     <img src="../image/pic1.jpeg" className="founder-img" alt="Paz Tribe Founder and CEO" />
                     <div className="founder-title-tag-overlay">
-                      <h4>Mrs. Iraoya Roseline</h4>
-                      <span>Founder/Visionair of PTT</span>
+                      <h4>Mrs. Roseline Iraoya </h4>
+                      <span>Lead Coach PTT</span>
+                      <span>Paz Thriving Tribe</span>
                     </div>
                   </div>
 
