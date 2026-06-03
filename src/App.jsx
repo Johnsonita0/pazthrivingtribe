@@ -1322,7 +1322,8 @@ export default function App() {
         .dashboard-editor-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 18px; padding: 3.5rem; box-shadow: var(--shadow-sm); width: 100%; box-sizing: border-box; }
         .cms-creation-form-layout { display: flex; flex-direction: column; gap: 1.75rem; margin-top: 2rem; }
         .form-input-container { display: flex; flex-direction: column; gap: 0.75rem; }
-        .plain-text-input { background-color: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.95rem 1.2rem; border-radius: 12px; font-size: 1rem; width: 100%; box-sizing: border-box; }
+        .plain-text-input { background-color: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 1.1rem 1.35rem; line-height: 1.5; border-radius: 12px; font-size: 1rem; width: 100%; box-sizing: border-box; min-height: 48px; }
+        .plain-text-input:focus { outline: none; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15); }
         .form-submit-action-btn { background-color: var(--brand-green); color: white; padding: 0.9rem 2rem; border-radius: 6px; border: none; font-weight: 700; font-size: 1rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; }
         .form-submit-action-btn:hover { background-color: var(--brand-green-hover); }
         .status-feedback-banner { padding: 1.1rem; background-color: rgba(46,164,79,0.12); border: 1px solid var(--accent-green); color: var(--accent-green); border-radius: 8px; font-weight: 600; text-align: center; }
@@ -2684,6 +2685,13 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
   const [documentFile, setDocumentFile] = useState(null);
   const [passportPreviewUrl, setPassportPreviewUrl] = useState(null);
   const [stepIndex, setStepIndex] = useState(0); // 0 = Thriver info, 1 = Parent+goals+health, 2 = Preview, 3 = Confirmation
+  const passportInputRef = useRef(null);
+
+  const handlePassportPreviewClick = () => {
+    if (passportInputRef.current) {
+      passportInputRef.current.click();
+    }
+  };
 
   const goalLabels = {
     confidenceBuilding: 'Confidence Building',
@@ -2935,16 +2943,39 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
                 <div className="registration-fields-grid">
                   <div className="passport-upload-row">
                     <div className="passport-upload-preview">
-                      <div className="preview-box">
+                      <div
+                        className="preview-box"
+                        onClick={handlePassportPreviewClick}
+                        onDoubleClick={handlePassportPreviewClick}
+                        style={{ cursor: 'pointer', position: 'relative' }}
+                      >
                         {passportPreviewUrl ? (
                           <img src={passportPreviewUrl} alt="Passport preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                           <div style={{ fontSize: '0.85rem', color: '#6b7280', padding: '0.5rem', textAlign: 'center' }}>Passport preview</div>
                         )}
+                        <div style={{
+                          position: 'absolute',
+                          bottom: '0.5rem',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          background: 'rgba(255, 255, 255, 0.9)',
+                          padding: '0.25rem 0.6rem',
+                          borderRadius: '999px',
+                          fontSize: '0.78rem',
+                          color: '#334155',
+                          pointerEvents: 'none'
+                        }}>
+                          {passportPreviewUrl ? 'Double-click to change photo' : 'Double-click to choose image'}
+                        </div>
                       </div>
-                      <div style={{ marginTop: '0.75rem' }}>
-                        <input type="file" accept="image/*" onChange={(e) => setPassportFile(e.target.files && e.target.files[0] ? e.target.files[0] : null)} className="plain-text-input" />
-                      </div>
+                      <input
+                        ref={passportInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setPassportFile(e.target.files && e.target.files[0] ? e.target.files[0] : null)}
+                        style={{ display: 'none' }}
+                      />
                     </div>
                     <div className="passport-upload-form">
                       <div className="form-input-container">
