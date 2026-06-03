@@ -495,21 +495,27 @@ export default function App() {
     }));
 
     try {
-      const { error } = await supabase
-        .from('tribe_services')
-        .update({
-          title: formTitle,
-          subtitle: formSubtitle,
-          description: formDesc,
-          metric_count: formMetric
+      // call secure serverless admin endpoint
+      const res = await fetch('/api/admin-update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token || ''}`
+        },
+        body: JSON.stringify({
+          action: 'update',
+          table: 'tribe_services',
+          payload: { title: formTitle, subtitle: formSubtitle, description: formDesc, metric_count: formMetric },
+          match: { slug: editTarget }
         })
-        .eq('slug', editTarget);
+      });
 
-      if (error) throw error;
-      setCmsSuccessMessage("Ecosystem service menu content synchronized successfully live!");
+      const payloadRes = await res.json();
+      if (!res.ok) throw new Error(payloadRes?.error || 'Admin endpoint failed');
+      setCmsSuccessMessage('Ecosystem service menu content synchronized successfully live!');
     } catch (err) {
-      console.error('Failed to update tribe_services:', err);
-      setCmsSuccessMessage(`Preview saved locally. DB update failed: ${err?.message || err}`);
+      console.error('Admin endpoint failed updating tribe_services:', err);
+      setCmsSuccessMessage(`Preview saved locally. Admin update failed: ${err?.message || err}`);
     }
   };
 
@@ -533,48 +539,46 @@ export default function App() {
       // Attempt DB update if record has id
       try {
         if (target.id) {
-          const { data, error } = await supabase.from('tribe_testimonials').update({ author: payload.title, origin: payload.origin, text: payload.text }).eq('id', target.id).select().single();
-          if (error) throw error;
-          // update local slide with authoritative DB row
+          const res = await fetch('/api/admin-update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+            body: JSON.stringify({ action: 'update', table: 'tribe_testimonials', payload: { author: payload.title, origin: payload.origin, text: payload.text }, match: { id: target.id } })
+          });
+          const jr = await res.json();
+          if (!res.ok) throw new Error(jr?.error || 'Admin endpoint failed');
+          const data = jr.data?.[0] || jr.data;
           setPromoSlides((prev) => prev.map((t, i) => (i === testimonialEditIndex ? {
-            id: data.id,
+            id: data.id || target.id,
             title: data.author || payload.title,
-            text: data.text,
+            text: data.text || payload.text,
             origin: data.origin || payload.origin,
             image: data.image || payload.image,
             imageType: data.imageType || payload.imageType
           } : t)));
           setCmsSuccessMessage('Testimonial updated in database.');
         } else {
-          setCmsSuccessMessage('Testimonial updated locally.');
+          // insert
+          const res = await fetch('/api/admin-update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+            body: JSON.stringify({ action: 'insert', table: 'tribe_testimonials', payload: [{ author: payload.title, origin: payload.origin, text: payload.text }] })
+          });
+          const jr = await res.json();
+          if (!res.ok) throw new Error(jr?.error || 'Admin endpoint failed');
+          const created = Array.isArray(jr.data) ? jr.data[0] : jr.data
+          setPromoSlides((prev) => [created, ...prev]);
+          setCmsSuccessMessage('Testimonial saved to database.');
         }
       } catch (err) {
-        console.error('Failed updating testimonial:', err);
-        setCmsSuccessMessage(`Update applied locally; database update failed: ${err?.message || err}`);
+        console.error('Failed updating/inserting testimonial via admin endpoint:', err);
+        setCmsSuccessMessage(`Update applied locally; admin update failed: ${err?.message || err}`);
       }
 
       setTestimonialEditIndex(null);
     } else {
       // Add new testimonial
       setPromoSlides((prev) => [payload, ...prev]);
-      try {
-        const { data, error } = await supabase.from('tribe_testimonials').insert([{ author: payload.title, origin: payload.origin, text: payload.text }]).select().single();
-        if (error) throw error;
-        // prepend authoritative DB row to local slides
-        const created = {
-          id: data.id,
-          title: data.author || payload.title,
-          text: data.text,
-          origin: data.origin || payload.origin,
-          image: data.image || payload.image,
-          imageType: data.imageType || payload.imageType
-        };
-        setPromoSlides((prev) => [created, ...prev]);
-        setCmsSuccessMessage('Testimonial saved to database.');
-      } catch (err) {
-        console.error('Failed inserting testimonial:', err);
-        setCmsSuccessMessage(`Testimonial added locally; database insert failed: ${err?.message || err}`);
-      }
+      // handled above in combined edit/new branch
     }
 
     setTestimonialAuthor(''); setTestimonialText(''); setTestimonialOrigin('');
@@ -602,14 +606,18 @@ export default function App() {
     // attempt DB delete if id present
     if (t.id) {
       try {
-        const { error } = await supabase.from('tribe_testimonials').delete().eq('id', t.id);
-        if (error) throw error;
+        const res = await fetch('/api/admin-update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+          body: JSON.stringify({ action: 'delete', table: 'tribe_testimonials', match: { id: t.id } })
+        });
+        const jr = await res.json();
+        if (!res.ok) throw new Error(jr?.error || 'Admin endpoint failed');
         setCmsSuccessMessage('Testimonial deleted from database.');
-        // refresh list
         await fetchTestimonials();
       } catch (err) {
-        console.error('Failed deleting testimonial:', err);
-        setCmsSuccessMessage(`Testimonial removed locally; database delete failed: ${err?.message || err}`);
+        console.error('Failed deleting testimonial via admin endpoint:', err);
+        setCmsSuccessMessage(`Testimonial removed locally; admin delete failed: ${err?.message || err}`);
       }
     }
   };
@@ -652,19 +660,17 @@ export default function App() {
     setPrograms((prev) => [newProgram, ...prev]);
 
     try {
-      const { error } = await supabase.from('tribe_programs').insert([{
-        service: programForm.service,
-        title: programForm.title,
-        description: programForm.description,
-        duration: programForm.duration,
-        schedule: programForm.schedule,
-        level: programForm.level
-      }]);//.select();
-      if (error) throw error;
+      const res = await fetch('/api/admin-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+        body: JSON.stringify({ action: 'insert', table: 'tribe_programs', payload: [{ service: programForm.service, title: programForm.title, description: programForm.description, duration: programForm.duration, schedule: programForm.schedule, level: programForm.level }] })
+      });
+      const jr = await res.json();
+      if (!res.ok) throw new Error(jr?.error || 'Admin endpoint failed');
       setDashboardMessage('Program created successfully and available in menu pages.');
     } catch (err) {
-      console.error('Failed creating program:', err);
-      setDashboardMessage(`Program saved locally; DB insert failed: ${err?.message || err}`);
+      console.error('Admin endpoint failed creating program:', err);
+      setDashboardMessage(`Program saved locally; admin insert failed: ${err?.message || err}`);
     }
 
     setProgramForm({ service: 'family', title: '', description: '', duration: '', schedule: '', level: '' });
@@ -675,12 +681,17 @@ export default function App() {
     try {
       const programToRemove = programs.find((p) => p.id === programId);
       if (programToRemove && programToRemove.id) {
-        const { error } = await supabase.from('tribe_programs').delete().eq('id', programToRemove.id);
-        if (error) throw error;
+        const res = await fetch('/api/admin-update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+          body: JSON.stringify({ action: 'delete', table: 'tribe_programs', match: { id: programToRemove.id } })
+        });
+        const jr = await res.json();
+        if (!res.ok) throw new Error(jr?.error || 'Admin endpoint failed');
       }
     } catch (err) {
-      console.error('Failed removing program from DB:', err);
-      setDashboardMessage(`Program removed locally; DB delete failed: ${err?.message || err}`);
+      console.error('Failed removing program via admin endpoint:', err);
+      setDashboardMessage(`Program removed locally; admin delete failed: ${err?.message || err}`);
     }
   };
 
