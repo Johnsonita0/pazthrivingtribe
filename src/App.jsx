@@ -674,7 +674,7 @@ export default function App() {
           position: absolute;
           top: 0; left: 0; width: 100%; height: 100%;
           background: ${theme === 'dark'
-            ? "linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.65))"
+            ? "linear-gradient(rgba(0,0,0,0.78), rgba(0,0,0,0.94))"
             : "linear-gradient(rgba(255,255,255,0.24), rgba(255,255,255,0.08))"};
         }
         .hero-overlay {
@@ -1288,7 +1288,7 @@ export default function App() {
         .footer-columns-container { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 4rem; width: 100%; padding-bottom: 3.5rem; border-bottom: 1px solid var(--border-color); }
         .footer-brand-column { display: flex; flex-direction: column; gap: 1.2rem; }
         .footer-brand-logo-row { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; }
-        .footer-vector-badge { width: 32px; height: 32px; background-color: transparent; color: var(--text-primary); font-weight: 800; display: flex; align-items: center; justify-content: center; border-radius: 6px; overflow: hidden; border: 1px solid var(--border-color); }
+        .footer-vector-badge { width: 32px; height: 32px; background-color: var(--brand-green); color: white; font-weight: 800; display: flex; align-items: center; justify-content: center; border-radius: 6px; overflow: hidden; }
         .footer-vector-badge img { width: 100%; height: 100%; object-fit: contain; display: block; }
         .footer-brand-headline { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.3px; }
         .footer-brand-column p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin: 0; }
@@ -2132,7 +2132,7 @@ export default function App() {
           <div className="footer-columns-container">
             <div className="footer-brand-column">
               <Link to="/" className="footer-brand-logo-row" onClick={() => window.scrollTo({top: 0, behavior: 'smooth'})}>
-                <div className="footer-vector-badge"><img src={theme === 'dark' ? "../logo/logo2.jpeg" : "../logo/logomain.png"} alt="Paz Thriving Tribe logo" /></div>
+                <div className="footer-vector-badge"><img src="./logo/logomain.png" alt="" /></div>
                 <span className="footer-brand-headline">Paz Thriving Tribe</span>
               </Link>
               <p>Providing dynamic infrastructure tracking networks focused on alignment strategies, professional conflict mitigation solutions, and youth development counseling models.</p>
