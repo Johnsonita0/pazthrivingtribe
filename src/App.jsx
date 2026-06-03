@@ -209,16 +209,16 @@ export default function App() {
       title: "Marriage Alignment Frameworks: Annual Summit Highlights",
       summary: "Watch the full 45-minute premium streaming segment breaking down advanced relationship intake assessments, milestone mapping, and interactive couple exercises.",
       timestamp: "Streamed 3 days ago",
-      targetUrl: "https://youtube.com/paztribe"
+      targetUrl: "https://youtube.com/shorts/-vOSeWpU1Xs?feature=share"
     }
   ]);
   const [socialEditTarget, setSocialEditTarget] = useState('YouTube');
   const [socialPreviewTitle, setSocialPreviewTitle] = useState('');
   const [socialPreviewSummary, setSocialPreviewSummary] = useState('');
   const [socialPreviewBadgeText, setSocialPreviewBadgeText] = useState('');
-  const [socialPreviewUrl, setSocialPreviewUrl] = useState('https://youtube.com/paztribe');
-  const [socialPreviewEmbedUrl, setSocialPreviewEmbedUrl] = useState('https://www.youtube.com/embed/pA2IkbBzC_M');
-  const [youtubeEmbedUrl, setYoutubeEmbedUrl] = useState('https://www.youtube.com/embed/pA2IkbBzC_M');
+  const [socialPreviewUrl, setSocialPreviewUrl] = useState('https://youtube.com/shorts/-vOSeWpU1Xs?feature=share');
+  const [socialPreviewEmbedUrl, setSocialPreviewEmbedUrl] = useState('https://www.youtube.com/embed/-vOSeWpU1Xs');
+  const [youtubeEmbedUrl, setYoutubeEmbedUrl] = useState('https://www.youtube.com/embed/-vOSeWpU1Xs');
 
   // --- CMS Admin Form Inputs ---
   const [editTarget, setEditTarget] = useState('family');
