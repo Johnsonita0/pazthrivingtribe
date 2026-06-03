@@ -143,7 +143,7 @@ export default function App() {
     },
     marriage: {
       slug: "marriage",
-      title: "Thriving Women Tribe",
+      title: "Thriving Women",
       subtitle: "Women's Community & Collective Growth",
       description: "Building thriving communities of women through structured mentorship, shared experiences, and collective empowerment programs designed to strengthen relationships and cultivate lasting sisterhood.",
       metricCount: "450+ Women Connected"
@@ -1772,11 +1772,11 @@ export default function App() {
                   <p className="section-subtext">Kindly check the options below to explore our services</p>
 
                   <div className="services-routing-grid" data-aos="fade-up">
-                    <Link to="/services/family" className="service-gateway-card">
+                    <Link to="/services/children" className="service-gateway-card">
                       <div>
-                        <div className="gateway-icon-wrap"><i className="fa-solid fa-people-roof"></i></div>
-                        <h3>{services.family.title}</h3>
-                        <p>{services.family.description}</p>
+                        <div className="gateway-icon-wrap"><i className="fa-solid fa-child-reaching"></i></div>
+                        <h3>{services.children.title}</h3>
+                        <p>{services.children.description}</p>
                       </div>
                       <div className="gateway-footer-action">Open Dedicated View <i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
@@ -1790,11 +1790,11 @@ export default function App() {
                       <div className="gateway-footer-action">Open Dedicated View <i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
 
-                    <Link to="/services/children" className="service-gateway-card">
+                    <Link to="/services/family" className="service-gateway-card">
                       <div>
-                        <div className="gateway-icon-wrap"><i className="fa-solid fa-child-reaching"></i></div>
-                        <h3>{services.children.title}</h3>
-                        <p>{services.children.description}</p>
+                        <div className="gateway-icon-wrap"><i className="fa-solid fa-people-roof"></i></div>
+                        <h3>{services.family.title}</h3>
+                        <p>{services.family.description}</p>
                       </div>
                       <div className="gateway-footer-action">Open Dedicated View <i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
