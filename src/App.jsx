@@ -802,7 +802,7 @@ export default function App() {
         .banner-text-package h2 { font-size: 2.4rem; font-weight: 800; color: var(--text-primary); margin: 0; line-height: 1.1; }
         .banner-text-package p { font-size: 1.05rem; line-height: 1.6; color: var(--text-muted); margin: 0; }
         .slide-graphic { width: 45%; height: 100%; border-radius: 12px; background-position: center; background-size: cover; box-shadow: var(--shadow-lg); border: 1px solid var(--border-color); }
-        .testimonial-author { font-size: 0.95rem; color: var(--text-muted); font-weight: 700; margin-top: auto; text-align: right; }
+        .testimonial-author { font-size: 0.95rem; color: var(--text-muted); font-weight: 700; margin-top: 0.5rem; text-align: left; }
         @media (max-width: 768px) { .testimonial-author { text-align: center; margin-top: 0.5rem; } }
         @media (max-width: 768px) { .synchronized-promo-banner { padding: 1.5rem; } .banner-slider { height: auto; min-height: 400px; position: relative; } .banner-slide { position: static !important; display: none; opacity: 1 !important; transform: none !important; transition: none; flex-direction: column; gap: 1.5rem; padding: 1.5rem 0; align-items: stretch; } .banner-slide.active { display: flex; } .banner-text-package { width: 100%; } .slide-graphic { width: 100%; height: 250px; } }
         .banner-controls { position: absolute; right: 18px; bottom: 12px; display: flex; gap: 0.6rem; }
@@ -1602,16 +1602,14 @@ export default function App() {
                         <div className="banner-text-package">
                           <span className="banner-badge"><i className="fa-solid fa-bullseye" style={{ fontSize: '0.8rem' }}></i>Client Testimonial</span>
                           <p>{slide.text}</p>
+                          <div className="testimonial-author">{slide.title}</div>
                         </div>
                         {slide.imageType === 'logo' ? (
-                          <div className="slide-graphic" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', flexDirection: 'column' }}>
+                          <div className="slide-graphic" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent' }}>
                             <img src={slide.image} alt={slide.title} style={{ width: 220, height: 220, objectFit: 'contain' }} />
-                            <div className="testimonial-author">{slide.title}</div>
                           </div>
                         ) : (
-                          <div className="slide-graphic" style={{ backgroundImage: `url(${slide.image})`, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end' }}>
-                            <div className="testimonial-author">{slide.title}</div>
-                          </div>
+                          <div className="slide-graphic" style={{ backgroundImage: `url(${slide.image})` }} />
                         )}
                       </div>
                     ))}
