@@ -617,7 +617,9 @@ export default function App() {
       if (item.platform !== socialEditTarget) return item;
       return {
         ...item,
-        title: socialPreviewTitle,
+                                  <option value="children">Pre-teens & Teens</option>
+                                  <option value="children">Pre-teens & Teens</option>
+                                  <option value="children">Pre-teens & Teens</option>
         summary: socialPreviewSummary,
         badgeText: socialPreviewBadgeText,
         targetUrl: socialPreviewUrl
@@ -2114,7 +2116,7 @@ export default function App() {
                               <select value={programForm.service} onChange={(e) => setProgramForm((prev) => ({ ...prev, service: e.target.value }))} className="plain-text-input" style={{ height: '46px' }}>
                                 <option value="family">Thriving Singles</option>
                                 <option value="marriage">Thriving Women</option>
-                                <option value="children">Pre-teens Mentorship Pathways</option>
+                                <option value="children">Pre-teens & Teens</option>
                               </select>
                             </div>
 
@@ -2434,9 +2436,9 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
       formSub: "Join the Thriving Women Community"
     },
     children: {
-      newsTitle: "Pre-teens Mentorship Monitor",
+      newsTitle: "Pre-teens & Teens Monitor",
       newsText: "Cognitive stability milestone tracking update released for one-on-one pre-teen and adolescent mentorship program platforms.",
-      formSub: "Enroll Child / Teenager into Pre-teens Mentorship Pathways"
+      formSub: "Enroll Child / Teenager into Pre-teens & Teens"
     }
   }[serviceSlug];
 
@@ -2798,7 +2800,7 @@ function HomeIntakeForm({ onSubmitApplicant }) {
           <select required value={track} onChange={(e) => setTrack(e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
             <option value="family">Thriving Singles</option>
             <option value="marriage">Thriving Women</option>
-            <option value="children">Pre-teens Mentorship Pathways</option>
+            <option value="children">Pre-teens & Teens</option>
           </select>
         </div>
       </div>
@@ -2836,7 +2838,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
     emergencyContactNumber: '',
     signature: '',
     consentDate: new Date().toISOString().slice(0, 10),
-    track: 'Pre-teens Mentorship Pathways',
+    track: 'Pre-teens & Teens',
     amount: 10000
   });
   const [goalAreas, setGoalAreas] = useState({
@@ -2924,7 +2926,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
         emergencyContactNumber: '',
         signature: '',
         consentDate: new Date().toISOString().slice(0, 10),
-        track: 'Pre-teens Mentorship Pathways',
+        track: 'Pre-teens & Teens',
         amount: 10000
       }));
       setGoalAreas({
@@ -2947,7 +2949,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
       setPassportPreviewUrl(null);
       setStepIndex(0);
     }
-  }, [visible]);
+                  <option>Pre-teens & Teens</option>
 
   useEffect(() => {
     if (!passportFile) {
@@ -3298,7 +3300,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
               <div className="form-input-container" style={{ marginBottom: '1rem' }}>
                 <label>Selected Academy Track</label>
                 <select value={formData.track} onChange={(e) => updateField('track', e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
-                  <option>Pre-teens Mentorship Pathways</option>
+                  <option>Pre-teens & Teens</option>
                   <option>Thriving Singles</option>
                   <option>Thriving Women</option>
                 </select>

@@ -232,13 +232,13 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
               Dear Thriver,
             </p>
             <p style={{ fontSize: '1rem', lineHeight: '1.8', color: '#4a5568', marginBottom: '1rem' }}>
-              Welcome to Pre-teens Mentorship Pathways!
+              Welcome to Pre-teens & Teens!
             </p>
             <p style={{ fontSize: '1rem', lineHeight: '1.8', color: '#4a5568', marginBottom: '1rem' }}>
               A place where we help you build positive values, empower you to reach your full potential and thrive.
             </p>
             <p style={{ fontSize: '1rem', lineHeight: '1.8', color: '#4a5568', marginBottom: '1rem' }}>
-              At Pre-teens Mentorship Pathways, you will build confidence, strengthen your character, discover your purpose, and develop the leadership skills needed to shine in your world.
+              At Pre-teens & Teens, you will build confidence, strengthen your character, discover your purpose, and develop the leadership skills needed to shine in your world.
             </p>
             <p style={{ fontSize: '1rem', lineHeight: '1.8', color: '#4a5568', marginBottom: '1.5rem' }}>
               We are excited to walk this journey with you.
@@ -250,7 +250,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
               Coach Roseline Iraoya
             </p>
             <p style={{ fontSize: '0.9rem', lineHeight: '1.4', color: '#4a5568', marginBottom: '1rem', fontStyle: 'italic' }}>
-              Founder, Pre-teens Mentorship Pathways
+              Founder, Pre-teens & Teens
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button
@@ -281,8 +281,8 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
         marginBottom: '3rem'
       }} data-aos="fade-down">
         <div className="teens-kids-hero-content" style={{ maxWidth: '900px', margin: '0 auto' }}>
-          <h1 style={{ fontSize: '2.5rem', fontWeight: '900', marginBottom: '1rem' }}>
-            Pre-teens Mentorship Pathways
+            <h1 style={{ fontSize: '2.5rem', fontWeight: '900', marginBottom: '1rem' }}>
+            Pre-teens & Teens
           </h1>
           <p style={{ fontSize: '1.3rem', fontWeight: '600', marginBottom: '1.5rem', opacity: 0.95 }}>
             Raising Confident, Kind, and Purposeful Leaders
@@ -707,7 +707,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
               }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>✅</div>
                 <h3 style={{ fontWeight: '700', marginBottom: '0.5rem' }}>Payment Successful!</h3>
-                <p>Welcome to Pre-teens Mentorship Pathways! We'll contact you with orientation details.</p>
+                <p>Welcome to Pre-teens & Teens! We'll contact you with orientation details.</p>
               </div>
             ) : paymentStep === 'registration' ? (
               <form onSubmit={handleRegistrationNext}>
