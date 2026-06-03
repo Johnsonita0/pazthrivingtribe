@@ -673,7 +673,9 @@ export default function App() {
           content: '';
           position: absolute;
           top: 0; left: 0; width: 100%; height: 100%;
-          background: linear-gradient(rgba(13,17,23,${theme === 'dark' ? '0.85' : '0.45'}), rgba(13,17,23,${theme === 'dark' ? '0.98' : '0.75'}));
+          background: ${theme === 'dark'
+            ? "linear-gradient(rgba(0,0,0,0.78), rgba(0,0,0,0.94))"
+            : "linear-gradient(rgba(255,255,255,0.24), rgba(255,255,255,0.08))"};
         }
         .hero-overlay {
           position: relative;
