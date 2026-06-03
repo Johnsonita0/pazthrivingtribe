@@ -27,7 +27,11 @@ Required environment variables in production:
 - `SUPABASE_SERVICE_ROLE_KEY` — secret Supabase service role key used by `/api/admin-update`
 - `ADMIN_EMAILS` — comma-separated list of allowed admin emails (fallback)
 
-If you deploy to Vercel, add the `SUPABASE_*` variables in the project dashboard under Environment Variables. Do not use `VITE_SUPABASE_ANON_KEY` as the service role key. The admin endpoint is available at `/api/admin-update`.
+If you deploy to Vercel, add the `SUPABASE_*` variables in the project dashboard under Environment Variables. Do not use `VITE_SUPABASE_ANON_KEY` as the service role key.
+
+Alternate fix: if Vercel does not expose `SUPABASE_SERVICE_ROLE_KEY` to the function, also add `VITE_SUPABASE_SERVICE_ROLE_KEY` with the same service role key value. The admin endpoint will accept either variable name at runtime.
+
+The admin endpoint is available at `/api/admin-update`.
 
 ### Supabase production setup
 

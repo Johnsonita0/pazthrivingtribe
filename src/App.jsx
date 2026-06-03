@@ -644,7 +644,7 @@ export default function App() {
         });
         const jr = await parseAdminResponse(res);
         if (!res.ok) throw new Error(jr?.error || 'Admin endpoint failed');
-        const created = Array.isArray(jr.data) ? jr.data[0] : jr.data;
+        const created = Array.isArray(jr.data) ? jr.data[0] : jr.data
         setPromoSlides((prev) => [created, ...prev]);
         setCmsStatus('Testimonial saved to database.');
       } catch (err) {
@@ -1485,8 +1485,8 @@ export default function App() {
         .sliding-statement-card h3 { font-size: 2.4rem; font-weight: 800; color: var(--text-primary); margin: 0 0 1.2rem 0; letter-spacing: -0.5px; }
         .sliding-statement-card p { font-size: 1.3rem; line-height: 1.75; color: var(--text-muted); margin: 0; max-width: 850px; margin: 0 auto; }
         .slide-dots-indicator-track { display: flex; justify-content: center; gap: 0.75rem; margin-top: 3rem; }
-        .indicator-dot { width: 10px; height: 10px; border-radius: 50%; background-color: var(--border-color); cursor: pointer; transition: all 0.3s ease; border: none; padding: 0; }
-        .indicator-dot.active { background-color: var(--brand-green); width: 28px; border-radius: 5px; }
+        .indicator-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border-color); cursor: pointer; transition: all 0.3s ease; border: none; padding: 0; }
+        .indicator-dot.active { background: var(--brand-green); width: 28px; border-radius: 5px; }
 
         /* EMBEDDED SOCIAL MEDIA NEWS AND UPDATES AUTOMATIC STREAM SCREEN */
         .social-news-stream-section {
@@ -1652,7 +1652,7 @@ export default function App() {
           .portal-main-workspace { height: 100vh; overflow: hidden; }
           .portal-workspace-body-content { padding: 1.5rem; }
           .portal-workspace-header { padding: 1rem 1.5rem; }
-          .dashboard-tab-buttons { padding: 0.75rem 1rem; gap: 0.5rem; }
+          .dashboard-tab-buttons { padding: 0.75rem 1rem; gap: 0.5rem; overflow-x: auto; }
           .dashboard-tab-button { padding: 0.65rem 0.95rem; font-size: 0.85rem; }
           .dashboard-editor-card { padding: 1.5rem; border-radius: 12px; }
           .cms-creation-form-layout { grid-template-columns: 1fr; }
@@ -2053,11 +2053,11 @@ export default function App() {
 
                     <form onSubmit={handleSignIn} className="standard-login-form">
                       <div className="form-input-container">
-                        <label style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '600' }}>Admin Email Account</label>
+                        <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Admin Email Account</label>
                         <input ref={emailInputRef} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@paztribe.org" required className="plain-text-input" />
                       </div>
                       <div className="form-input-container">
-                        <label style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '600' }}>Account Password</label>
+                        <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Account Password</label>
                         <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required className="plain-text-input" />
                       </div>
                       <button type="submit" className="form-submit-action-btn">Verify Portal Credentials</button>
@@ -2212,221 +2212,221 @@ export default function App() {
                               </select>
                             </div>
 
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Social Preview Headline</label>
-                              <input type="text" value={socialPreviewTitle} onChange={(e) => setSocialPreviewTitle(e.target.value)} className="plain-text-input" required />
-                            </div>
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Social Preview Headline</label>
+                                <input type="text" value={socialPreviewTitle} onChange={(e) => setSocialPreviewTitle(e.target.value)} className="plain-text-input" required />
+                              </div>
 
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Preview Description</label>
-                              <textarea value={socialPreviewSummary} onChange={(e) => setSocialPreviewSummary(e.target.value)} rows="4" className="plain-text-input" style={{ resize: 'vertical', fontFamily: 'inherit' }} required />
-                            </div>
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Preview Description</label>
+                                <textarea value={socialPreviewSummary} onChange={(e) => setSocialPreviewSummary(e.target.value)} rows="4" className="plain-text-input" style={{ resize: 'vertical', fontFamily: 'inherit' }} required />
+                              </div>
 
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Action Link URL</label>
-                              <input type="url" value={socialPreviewUrl} onChange={(e) => setSocialPreviewUrl(e.target.value)} className="plain-text-input" required />
-                            </div>
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Action Link URL</label>
+                                <input type="url" value={socialPreviewUrl} onChange={(e) => setSocialPreviewUrl(e.target.value)} className="plain-text-input" required />
+                              </div>
 
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Badge Label</label>
-                              <input type="text" value={socialPreviewBadgeText} onChange={(e) => setSocialPreviewBadgeText(e.target.value)} className="plain-text-input" required />
-                            </div>
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Badge Label</label>
+                                <input type="text" value={socialPreviewBadgeText} onChange={(e) => setSocialPreviewBadgeText(e.target.value)} className="plain-text-input" required />
+                              </div>
 
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>YouTube Embed URL</label>
-                              <input type="url" value={socialPreviewEmbedUrl} onChange={(e) => setSocialPreviewEmbedUrl(e.target.value)} className="plain-text-input" placeholder="https://www.youtube.com/watch?v=..." />
-                              <small style={{ color: 'var(--text-muted)' }}>This URL will be used for the homepage video player when YouTube is selected.</small>
-                            </div>
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>YouTube Embed URL</label>
+                                <input type="url" value={socialPreviewEmbedUrl} onChange={(e) => setSocialPreviewEmbedUrl(e.target.value)} className="plain-text-input" placeholder="https://www.youtube.com/watch?v=..." />
+                                <small style={{ color: 'var(--text-muted)' }}>This URL will be used for the homepage video player when YouTube is selected.</small>
+                              </div>
 
-                            <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Update Social Preview</button>
-                          </form>
-                        </section>
-                      )}
+                              <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Update Social Preview</button>
+                            </form>
+                          </section>
+                        )}
 
-                      {selectedAdminTab === 'programs' && (
-                        <section className="dashboard-editor-card">
-                          <h3 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Create Programs</h3>
-                          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Add new curriculum offerings for any service category and make them available on the customer-facing pages.</p>
+                        {selectedAdminTab === 'programs' && (
+                          <section className="dashboard-editor-card">
+                            <h3 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Create Programs</h3>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Add new curriculum offerings for any service category and make them available on the customer-facing pages.</p>
 
-                          <form onSubmit={handleCreateProgram} className="cms-creation-form-layout" style={{ marginTop: '1.5rem' }}>
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Service Category</label>
-                              <select value={programForm.service} onChange={(e) => setProgramForm((prev) => ({ ...prev, service: e.target.value }))} className="plain-text-input" style={{ height: '46px' }}>
-                                <option value="family">Thriving Singles</option>
-                                <option value="marriage">Thriving Women</option>
-                                <option value="children">Pre-teens & Teens</option>
-                              </select>
-                            </div>
+                            <form onSubmit={handleCreateProgram} className="cms-creation-form-layout" style={{ marginTop: '1.5rem' }}>
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Service Category</label>
+                                <select value={programForm.service} onChange={(e) => setProgramForm((prev) => ({ ...prev, service: e.target.value }))} className="plain-text-input" style={{ height: '46px' }}>
+                                  <option value="family">Thriving Singles</option>
+                                  <option value="marriage">Thriving Women</option>
+                                  <option value="children">Pre-teens & Teens</option>
+                                </select>
+                              </div>
 
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Program Name</label>
-                              <input type="text" value={programForm.title} onChange={(e) => setProgramForm((prev) => ({ ...prev, title: e.target.value }))} className="plain-text-input" required />
-                            </div>
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Program Name</label>
+                                <input type="text" value={programForm.title} onChange={(e) => setProgramForm((prev) => ({ ...prev, title: e.target.value }))} className="plain-text-input" required />
+                              </div>
 
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Program Level / Age Group</label>
-                              <input type="text" value={programForm.level} onChange={(e) => setProgramForm((prev) => ({ ...prev, level: e.target.value }))} className="plain-text-input" required />
-                            </div>
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Program Level / Age Group</label>
+                                <input type="text" value={programForm.level} onChange={(e) => setProgramForm((prev) => ({ ...prev, level: e.target.value }))} className="plain-text-input" required />
+                              </div>
 
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Duration</label>
-                              <input type="text" value={programForm.duration} onChange={(e) => setProgramForm((prev) => ({ ...prev, duration: e.target.value }))} className="plain-text-input" required />
-                            </div>
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Duration</label>
+                                <input type="text" value={programForm.duration} onChange={(e) => setProgramForm((prev) => ({ ...prev, duration: e.target.value }))} className="plain-text-input" required />
+                              </div>
 
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Schedule</label>
-                              <input type="text" value={programForm.schedule} onChange={(e) => setProgramForm((prev) => ({ ...prev, schedule: e.target.value }))} className="plain-text-input" required />
-                            </div>
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Schedule</label>
+                                <input type="text" value={programForm.schedule} onChange={(e) => setProgramForm((prev) => ({ ...prev, schedule: e.target.value }))} className="plain-text-input" required />
+                              </div>
 
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Program Overview</label>
-                              <textarea value={programForm.description} onChange={(e) => setProgramForm((prev) => ({ ...prev, description: e.target.value }))} rows="4" className="plain-text-input" style={{ resize: 'vertical', fontFamily: 'inherit' }} required></textarea>
-                            </div>
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Program Overview</label>
+                                <textarea value={programForm.description} onChange={(e) => setProgramForm((prev) => ({ ...prev, description: e.target.value }))} rows="4" className="plain-text-input" style={{ resize: 'vertical', fontFamily: 'inherit' }} required></textarea>
+                              </div>
 
-                            <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Create Program</button>
-                          </form>
+                              <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Create Program</button>
+                            </form>
 
-                          <div style={{ marginTop: '2rem' }}>
-                            <h4 style={{ marginBottom: '1rem' }}>Programs by Category</h4>
-                            <div style={{ display: 'grid', gap: '1rem' }}>
-                              {programs.map((program) => (
-                                <div key={program.id} style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1rem' }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem' }}>
-                                    <div>
-                                      <strong>{program.name}</strong>
-                                      <div style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>{program.service.toUpperCase()}</div>
+                            <div style={{ marginTop: '2rem' }}>
+                              <h4 style={{ marginBottom: '1rem' }}>Programs by Category</h4>
+                              <div style={{ display: 'grid', gap: '1rem' }}>
+                                {programs.map((program) => (
+                                  <div key={program.id} style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem' }}>
+                                      <div>
+                                        <strong>{program.name}</strong>
+                                        <div style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>{program.service.toUpperCase()}</div>
+                                      </div>
+                                      <button type="button" onClick={() => handleRemoveProgram(program.id)} style={{ background: '#ff4757', color: '#fff', border: 'none', borderRadius: '8px', padding: '0.55rem 0.85rem', cursor: 'pointer' }}>Remove</button>
                                     </div>
-                                    <button type="button" onClick={() => handleRemoveProgram(program.id)} style={{ background: '#ff4757', color: '#fff', border: 'none', borderRadius: '8px', padding: '0.55rem 0.85rem', cursor: 'pointer' }}>Remove</button>
+                                    <p style={{ margin: '0.85rem 0 0 0', color: 'var(--text-muted)' }}>{program.description}</p>
+                                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.92rem' }}>
+                                      <span>{program.duration}</span>
+                                      <span>{program.level}</span>
+                                      <span>{program.schedule}</span>
+                                    </div>
                                   </div>
-                                  <p style={{ margin: '0.85rem 0 0 0', color: 'var(--text-muted)' }}>{program.description}</p>
-                                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.92rem' }}>
-                                    <span>{program.duration}</span>
-                                    <span>{program.level}</span>
-                                    <span>{program.schedule}</span>
-                                  </div>
-                                </div>
-                              ))}
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        </section>
-                      )}
+                          </section>
+                        )}
 
-                      {selectedAdminTab === 'applicants' && (
-                        <section className="dashboard-editor-card">
-                          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
-                            <div>
-                              <h3 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Recent Applicants</h3>
-                              <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Review the latest intake submissions and track their requested service path.</p>
+                        {selectedAdminTab === 'applicants' && (
+                          <section className="dashboard-editor-card">
+                            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+                              <div>
+                                <h3 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Recent Applicants</h3>
+                                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Review the latest intake submissions and track their requested service path.</p>
+                              </div>
+                              <div style={{ color: 'var(--text-primary)', fontWeight: 700, minWidth: '150px' }}>
+                                Total Registered: {applicants.length}
+                              </div>
                             </div>
-                            <div style={{ color: 'var(--text-primary)', fontWeight: 700, minWidth: '150px' }}>
-                              Total Registered: {applicants.length}
-                            </div>
-                          </div>
 
-                          {applicants.length === 0 ? (
-                            <div style={{ marginTop: '1.5rem', padding: '1.5rem', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                              <p style={{ margin: 0, color: 'var(--text-muted)' }}>No applicants have submitted yet.</p>
-                            </div>
-                          ) : (
-                            <div className="applicants-table-wrapper">
-                              <table className="dashboard-table">
-                                <thead>
-                                  <tr>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Phone</th>
-                                    <th>Track</th>
-                                    <th>Status</th>
-                                    <th>Payment Ref</th>
-                                    <th>Submitted</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {applicants.slice(0, 50).map((applicant) => (
-                                    <tr key={applicant.id}>
-                                      <td>{applicant.fullName}</td>
-                                      <td>{applicant.email}</td>
-                                      <td>{applicant.phone}</td>
-                                      <td>{applicant.track}</td>
-                                      <td><span className={`status-pill ${applicant.paymentStatus === 'success' ? 'success' : 'pending'}`}>{applicant.paymentStatus}</span></td>
-                                      <td>{applicant.paymentReference || 'N/A'}</td>
-                                      <td>{new Date(applicant.submittedAt).toLocaleString()}</td>
+                            {applicants.length === 0 ? (
+                              <div style={{ marginTop: '1.5rem', padding: '1.5rem', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                                <p style={{ margin: 0, color: 'var(--text-muted)' }}>No applicants have submitted yet.</p>
+                              </div>
+                            ) : (
+                              <div className="applicants-table-wrapper">
+                                <table className="dashboard-table">
+                                  <thead>
+                                    <tr>
+                                      <th>Name</th>
+                                      <th>Email</th>
+                                      <th>Phone</th>
+                                      <th>Track</th>
+                                      <th>Status</th>
+                                      <th>Payment Ref</th>
+                                      <th>Submitted</th>
                                     </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                                  </thead>
+                                  <tbody>
+                                    {applicants.slice(0, 50).map((applicant) => (
+                                      <tr key={applicant.id}>
+                                        <td>{applicant.fullName}</td>
+                                        <td>{applicant.email}</td>
+                                        <td>{applicant.phone}</td>
+                                        <td>{applicant.track}</td>
+                                        <td><span className={`status-pill ${applicant.paymentStatus === 'success' ? 'success' : 'pending'}`}>{applicant.paymentStatus}</span></td>
+                                        <td>{applicant.paymentReference || 'N/A'}</td>
+                                        <td>{new Date(applicant.submittedAt).toLocaleString()}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </section>
+                        )}
+
+                        {selectedAdminTab === 'payments' && (
+                          <section className="dashboard-editor-card">
+                            <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Paystack Payment Settings</h3>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Configure your Paystack API key and pricing for Pre-teen & Teens Academy program.</p>
+
+                            {dashboardMessage && <div className="status-feedback-banner" style={{ marginTop: '1.5rem' }}>{dashboardMessage}</div>}
+
+                            <form onSubmit={(e) => {
+                              e.preventDefault();
+                              setPaystackPublicKey(tempPaystackKey);
+                              setTeensKidsMonthlyFee(parseInt(tempMonthlyFee) || 10000);
+                              setDashboardMessage('✓ Payment settings saved successfully!');
+                              setTimeout(() => setDashboardMessage(null), 3000);
+                            }} style={{ marginTop: '1.5rem' }}>
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Paystack Public Key</label>
+                                <input
+                                  type="text"
+                                  value={tempPaystackKey}
+                                  onChange={(e) => setTempPaystackKey(e.target.value)}
+                                  className="plain-text-input"
+                                  placeholder="pk_live_... or pk_test_..."
+                                  required
+                                />
+                                <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
+                                  Your Paystack public API key. Switch between test and live keys as needed.
+                                </small>
+                              </div>
+
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Program Registration Fee (NGN)</label>
+                                <input
+                                  type="number"
+                                  value={tempMonthlyFee}
+                                  onChange={(e) => setTempMonthlyFee(e.target.value)}
+                                  className="plain-text-input"
+                                  placeholder="10000"
+                                  min="1000"
+                                  max="1000000"
+                                  required
+                                />
+                                <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
+                                  Update the academy registration fee for the Pre-teen & Teens program. This value drives the displayed pricing for clients.
+                                </small>
+                              </div>
+
+                              <button
+                                type="submit"
+                                className="form-submit-action-btn"
+                                style={{ marginTop: '1.5rem', width: '100%', maxWidth: '200px' }}
+                              >
+                                Save Payment Settings
+                              </button>
+                            </form>
+
+                            <div style={{ marginTop: '2rem', padding: '1rem', background: 'var(--bg-main)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                              <h4 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Current Configuration</h4>
+                              <div style={{ display: 'grid', gap: '0.75rem', color: 'var(--text-muted)' }}>
+                                <span><strong>Active Public Key:</strong> {paystackPublicKey.substring(0, 20)}...</span>
+                                <span><strong>Monthly Fee:</strong> ₦{teensKidsMonthlyFee.toLocaleString()}</span>
+                                <span><strong>3 Months:</strong> ₦{(teensKidsMonthlyFee * 3).toLocaleString()}</span>
+                                <span><strong>6 Months:</strong> ₦{(teensKidsMonthlyFee * 6).toLocaleString()}</span>
+                                <span><strong>12 Months:</strong> ₦{(teensKidsMonthlyFee * 12).toLocaleString()}</span>
+                              </div>
                             </div>
-                          )}
-                        </section>
-                      )}
-
-                      {selectedAdminTab === 'payments' && (
-                        <section className="dashboard-editor-card">
-                          <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Paystack Payment Settings</h3>
-                          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Configure your Paystack API key and pricing for Pre-teen & Teens Academy program.</p>
-
-                          {dashboardMessage && <div className="status-feedback-banner" style={{ marginTop: '1.5rem' }}>{dashboardMessage}</div>}
-
-                          <form onSubmit={(e) => {
-                            e.preventDefault();
-                            setPaystackPublicKey(tempPaystackKey);
-                            setTeensKidsMonthlyFee(parseInt(tempMonthlyFee) || 10000);
-                            setDashboardMessage('✓ Payment settings saved successfully!');
-                            setTimeout(() => setDashboardMessage(null), 3000);
-                          }} style={{ marginTop: '1.5rem' }}>
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Paystack Public Key</label>
-                              <input
-                                type="text"
-                                value={tempPaystackKey}
-                                onChange={(e) => setTempPaystackKey(e.target.value)}
-                                className="plain-text-input"
-                                placeholder="pk_live_... or pk_test_..."
-                                required
-                              />
-                              <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
-                                Your Paystack public API key. Switch between test and live keys as needed.
-                              </small>
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Program Registration Fee (NGN)</label>
-                              <input
-                                type="number"
-                                value={tempMonthlyFee}
-                                onChange={(e) => setTempMonthlyFee(e.target.value)}
-                                className="plain-text-input"
-                                placeholder="10000"
-                                min="1000"
-                                max="1000000"
-                                required
-                              />
-                              <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
-                                Update the academy registration fee for the Pre-teen & Teens program. This value drives the displayed pricing for clients.
-                              </small>
-                            </div>
-
-                            <button
-                              type="submit"
-                              className="form-submit-action-btn"
-                              style={{ marginTop: '1.5rem', width: '100%', maxWidth: '200px' }}
-                            >
-                              Save Payment Settings
-                            </button>
-                          </form>
-
-                          <div style={{ marginTop: '2rem', padding: '1rem', background: 'var(--bg-main)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                            <h4 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Current Configuration</h4>
-                            <div style={{ display: 'grid', gap: '0.75rem', color: 'var(--text-muted)' }}>
-                              <span><strong>Active Public Key:</strong> {paystackPublicKey.substring(0, 20)}...</span>
-                              <span><strong>Monthly Fee:</strong> ₦{teensKidsMonthlyFee.toLocaleString()}</span>
-                              <span><strong>3 Months:</strong> ₦{(teensKidsMonthlyFee * 3).toLocaleString()}</span>
-                              <span><strong>6 Months:</strong> ₦{(teensKidsMonthlyFee * 6).toLocaleString()}</span>
-                              <span><strong>12 Months:</strong> ₦{(teensKidsMonthlyFee * 12).toLocaleString()}</span>
-                            </div>
-                          </div>
-                        </section>
-                      )}
+                          </section>
+                        )}
                     </main>
                   </div>
                 </div>

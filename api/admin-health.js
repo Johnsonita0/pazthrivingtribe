@@ -2,8 +2,11 @@ import { createClient } from '@supabase/supabase-js'
 
 const getEnv = () => ({
   supabaseUrl: process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+  supabaseUrlVite: process.env.VITE_SUPABASE_URL,
   serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
-  adminEmails: process.env.ADMIN_EMAILS || process.env.VITE_ADMIN_EMAILS || ''
+  serviceRoleKeySource: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SUPABASE_SERVICE_ROLE_KEY' : process.env.VITE_SUPABASE_SERVICE_ROLE_KEY ? 'VITE_SUPABASE_SERVICE_ROLE_KEY' : null,
+  adminEmails: process.env.ADMIN_EMAILS || process.env.VITE_ADMIN_EMAILS || '',
+  adminEmailsVite: process.env.VITE_ADMIN_EMAILS || ''
 })
 
 const jsonResponse = (res, status, body) => {
@@ -13,7 +16,7 @@ const jsonResponse = (res, status, body) => {
 }
 
 export default async function handler(req, res) {
-  const { supabaseUrl, serviceRoleKey, adminEmails } = getEnv()
+  const { supabaseUrl, supabaseUrlVite, serviceRoleKey, serviceRoleKeySource, adminEmails, adminEmailsVite } = getEnv()
   if (req.method !== 'GET') {
     return jsonResponse(res, 405, { status: 'error', error: 'Method not allowed', allowed: ['GET'] })
   }
@@ -23,8 +26,17 @@ export default async function handler(req, res) {
       status: 'error',
       error: 'Missing required environment variables',
       missing: {
-        SUPABASE_URL: !supabaseUrl,
-        SUPABASE_SERVICE_ROLE_KEY: !serviceRoleKey
+        SUPABASE_URL: !process.env.SUPABASE_URL,
+        VITE_SUPABASE_URL: !process.env.VITE_SUPABASE_URL,
+        SUPABASE_SERVICE_ROLE_KEY: !process.env.SUPABASE_SERVICE_ROLE_KEY,
+        VITE_SUPABASE_SERVICE_ROLE_KEY: !process.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
+        ADMIN_EMAILS: !process.env.ADMIN_EMAILS,
+        VITE_ADMIN_EMAILS: !process.env.VITE_ADMIN_EMAILS
+      },
+      resolved: {
+        activeSupabaseUrl: Boolean(supabaseUrl),
+        activeServiceRoleKey: Boolean(serviceRoleKey),
+        serviceRoleKeySource
       }
     })
   }
