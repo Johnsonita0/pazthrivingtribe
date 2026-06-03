@@ -1215,14 +1215,15 @@ export default function App() {
         .intake-form-toggle-btn:hover { background: var(--brand-green-hover); }
         .intake-collapsed-note { color: var(--text-muted); margin-top: 1.75rem; padding: 1.5rem 1.25rem; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; }
         .applicants-table-wrapper { width: 100%; overflow-x: auto; margin-top: 1.5rem; }
-        .dashboard-table { width: 100%; border-collapse: collapse; min-width: 860px; }
+        .dashboard-table { width: 100%; border-collapse: collapse; min-width: 100%; }
         .dashboard-table th,
-        .dashboard-table td { padding: 1rem 1rem; border: 1px solid var(--border-color); text-align: left; vertical-align: top; }
+        .dashboard-table td { padding: 0.95rem 0.85rem; border: 1px solid var(--border-color); text-align: left; vertical-align: middle; font-size: 0.9rem; }
         .dashboard-table th { background: var(--bg-main); color: var(--text-primary); font-weight: 700; }
-        .dashboard-table tbody tr:hover { background: rgba(46, 164, 79, 0.08); }
-        .status-pill { display: inline-flex; padding: 0.35rem 0.8rem; border-radius: 999px; font-size: 0.85rem; font-weight: 700; }
+        .dashboard-table tbody tr:hover { background: rgba(46, 164, 79, 0.06); }
+        .applicants-table-wrapper { width: 100%; overflow-x: auto; margin-top: 1.5rem; -webkit-overflow-scrolling: touch; border-radius: 10px; border: 1px solid var(--border-color); }
+        .status-pill { display: inline-flex; padding: 0.35rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 700; }
         .status-pill.success { background: rgba(35, 134, 54, 0.14); color: var(--accent-green); }
-        .status-pill.pending { background: rgba(255, 231, 179, 0.8); color: #b58304; }
+        .status-pill.pending { background: rgba(255, 231, 179, 0.6); color: #b58304; }
 
         /* SERVICE VIEW SLIDING HERO BANNER SPECIFICS */
         .service-view-hero-banner { 
@@ -1451,34 +1452,39 @@ export default function App() {
 
         /* Secure Dashboard Context Panels */
         .portal-workspace-grid { display: grid; grid-template-columns: 300px 1fr; height: 100vh; background-color: var(--bg-main); width: 100% !important; }
-        .portal-sidebar-panel { background-color: var(--bg-card); border-right: 1px solid var(--border-color); padding: 2.5rem 1.75rem; display: flex; flex-direction: column; gap: 1.5rem; overflow-y: auto; }
-        .portal-sidebar-title { font-size: 1.35rem; color: var(--text-primary); font-weight: 700; margin-bottom: 1.5rem; border-left: 4px solid var(--brand-green); padding-left: 0.8rem; }
-        .portal-sidebar-links { display: flex; flex-direction: column; gap: 0.6rem; flex-grow: 1; }
-        .sidebar-link-item { color: var(--text-muted); text-decoration: none; padding: 0.95rem 1.1rem; border-radius: 12px; font-size: 1rem; font-weight: 600; transition: background-color 0.2s ease, color 0.2s ease; }
-        .sidebar-link-item:hover { background-color: rgba(46,164,79,0.08); color: var(--text-primary); }
-        .sidebar-link-item.active { background-color: var(--bg-input); color: var(--text-primary); font-weight: 700; border: 1px solid var(--border-color); }
+        .portal-sidebar-panel { background-color: var(--bg-card); border-right: 1px solid var(--border-color); padding: 2rem 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; overflow-y: auto; }
+        .portal-sidebar-title { font-size: 1.25rem; color: var(--text-primary); font-weight: 700; margin-bottom: 1.25rem; border-left: 3px solid var(--brand-green); padding-left: 0.75rem; }
+        .portal-sidebar-links { display: flex; flex-direction: column; gap: 0.5rem; flex-grow: 1; }
+        .sidebar-link-item { color: var(--text-muted); text-decoration: none; padding: 0.85rem 1rem; border-radius: 10px; font-size: 0.95rem; font-weight: 600; transition: all 0.2s ease; }
+        .sidebar-link-item:hover { background-color: rgba(46,164,79,0.12); color: var(--text-primary); }
+        .sidebar-link-item.active { background-color: var(--brand-green); color: #ffffff; font-weight: 700; }
         .sidebar-disconnect-btn { background-color: #f85149; border: none; color: #fff; padding: 0.85rem 1rem; border-radius: 12px; cursor: pointer; font-weight: 700; transition: background-color 0.2s ease, transform 0.2s ease; }
         .sidebar-disconnect-btn:hover { background-color: #dc3545; transform: translateY(-1px); }
         .portal-main-workspace { display: flex; flex-direction: column; width: 100%; height: 100%; overflow: hidden; }
-        .portal-workspace-header { background-color: var(--bg-card); border-bottom: 1px solid var(--border-color); padding: 1.5rem 4rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; box-sizing: border-box; flex-shrink: 0; }
-        .dashboard-logout-btn { background: transparent; border: 1px solid var(--brand-green); color: var(--brand-green); padding: 0.75rem 1.25rem; border-radius: 999px; cursor: pointer; font-weight: 700; transition: background-color 0.2s ease, color 0.2s ease; }
-        .dashboard-logout-btn:hover { background: var(--brand-green); color: #ffffff; }
+        .portal-workspace-header { background-color: var(--bg-card); border-bottom: 1px solid var(--border-color); padding: 1.25rem 3rem; display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; box-sizing: border-box; flex-shrink: 0; }
+        .dashboard-logout-btn { background: transparent; border: 1px solid var(--brand-green); color: var(--brand-green); padding: 0.65rem 1.1rem; border-radius: 8px; cursor: pointer; font-weight: 700; transition: all 0.2s ease; font-size: 0.9rem; }
+        .dashboard-logout-btn:hover { background: var(--brand-green); color: #ffffff; transform: translateY(-1px); }
         .portal-workspace-header-shell { display: flex; flex-direction: column; flex-shrink: 0; }
         .dashboard-tab-navigation { position: sticky; top: 0; z-index: 20; background: var(--bg-main); flex-shrink: 0; }
-        .dashboard-tab-buttons { display: flex; flex-wrap: wrap; gap: 1rem; padding: 1rem 4rem 1rem 4rem; margin-bottom: 0; position: sticky; top: 0; z-index: 25; background: var(--bg-main); border-bottom: 1px solid var(--border-color); width: 100%; box-sizing: border-box; }
-        .dashboard-tab-button { padding: 0.95rem 1.4rem; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-weight: 700; cursor: pointer; transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease; white-space: nowrap; }
-        .dashboard-tab-button:hover { background: rgba(35,134,54,0.12); border-color: var(--brand-green); color: var(--text-primary); transform: translateY(-1px); }
-        .dashboard-tab-button.active { background: var(--accent-primary); border-color: var(--accent-primary); color: #ffffff; }
+        .dashboard-tab-buttons { display: flex; flex-wrap: wrap; gap: 0.75rem; padding: 1rem 3rem; margin-bottom: 0; position: sticky; top: 0; z-index: 25; background: var(--bg-main); border-bottom: 1px solid var(--border-color); width: 100%; box-sizing: border-box; overflow-x: auto; }
+        .dashboard-tab-button { padding: 0.75rem 1.2rem; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; font-size: 0.95rem; }
+        .dashboard-tab-button:hover { background: rgba(35,134,54,0.08); color: var(--text-primary); border-color: var(--brand-green); }
+        .dashboard-tab-button.active { background: var(--brand-green); border-color: var(--brand-green); color: #ffffff; box-shadow: 0 2px 8px rgba(46,164,79,0.3); }
         .dashboard-tab-button.active:hover { background: #36b560; border-color: #36b560; }
-        .portal-workspace-body-content { padding: 2rem 4rem; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 2rem; flex: 1; overflow-y: auto; }
-        .dashboard-editor-card { position: sticky; top: 0; z-index: 15; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 18px; padding: 3.5rem; box-shadow: var(--shadow-sm); width: 100%; box-sizing: border-box; }
-        .cms-creation-form-layout { display: flex; flex-direction: column; gap: 1.75rem; margin-top: 2rem; }
-        .form-input-container { display: flex; flex-direction: column; gap: 0.75rem; }
-        .plain-text-input { background-color: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 1.1rem 1.35rem; line-height: 1.5; border-radius: 12px; font-size: 1rem; width: 100%; box-sizing: border-box; min-height: 48px; }
-        .plain-text-input:focus { outline: none; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15); }
-        .form-submit-action-btn { background-color: var(--brand-green); color: white; padding: 0.9rem 2rem; border-radius: 6px; border: none; font-weight: 700; font-size: 1rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; }
-        .form-submit-action-btn:hover { background-color: var(--brand-green-hover); }
-        .status-feedback-banner { padding: 1.1rem; background-color: rgba(46,164,79,0.12); border: 1px solid var(--accent-green); color: var(--accent-green); border-radius: 8px; font-weight: 600; text-align: center; }
+        .portal-workspace-body-content { padding: 2rem 3rem; width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 2rem; flex: 1; overflow-y: auto; }
+        .dashboard-editor-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 2.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04); width: 100%; box-sizing: border-box; transition: all 0.2s ease; }
+        .dashboard-editor-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .cms-creation-form-layout { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
+        .form-input-container { display: flex; flex-direction: column; gap: 0.6rem; }
+        .form-input-container label { font-weight: 600; font-size: 0.9rem; color: var(--text-primary); }
+        .plain-text-input { background-color: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-primary); padding: 0.95rem 1.15rem; line-height: 1.5; border-radius: 10px; font-size: 0.95rem; width: 100%; box-sizing: border-box; min-height: 44px; transition: all 0.2s ease; }
+        .plain-text-input:hover { border-color: rgba(46,164,79,0.5); }
+        .plain-text-input:focus { outline: none; border-color: var(--brand-green); box-shadow: 0 0 0 3px rgba(46,164,79,0.1); }
+        .form-submit-action-btn { background-color: var(--brand-green); color: white; padding: 0.85rem 1.8rem; border-radius: 8px; border: none; font-weight: 700; font-size: 0.95rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s ease; }
+        .form-submit-action-btn:hover { background-color: #36b560; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(46,164,79,0.3); }
+        .form-cancel-action-btn { background-color: transparent; color: var(--text-primary); padding: 0.85rem 1.8rem; border-radius: 8px; border: 1px solid var(--border-color); font-weight: 700; font-size: 0.95rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; transition: all 0.2s ease; }
+        .form-cancel-action-btn:hover { background-color: rgba(0,0,0,0.05); border-color: var(--text-muted); transform: translateY(-1px); }
+        .status-feedback-banner { padding: 1rem 1.25rem; background-color: rgba(46,164,79,0.08); border: 1px solid rgba(46,164,79,0.3); color: var(--accent-green); border-radius: 10px; font-weight: 600; text-align: center; font-size: 0.95rem; }
         
         .auth-page-wrapper { display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: var(--bg-main); width: 100% !important; }
         .login-card-layout { background-color: var(--bg-card); border: 1px solid var(--border-color); padding: 3rem 2.5rem; border-radius: 14px; width: 400px; box-shadow: var(--shadow-lg); }
@@ -1512,7 +1518,14 @@ export default function App() {
           .portal-workspace-grid { grid-template-columns: 1fr; height: auto; }
           .portal-sidebar-panel { display: none; }
           .portal-main-workspace { height: 100vh; overflow: hidden; }
-          .portal-workspace-body-content { padding: 2rem 1rem; }
+          .portal-workspace-body-content { padding: 1.5rem; }
+          .portal-workspace-header { padding: 1rem 1.5rem; }
+          .dashboard-tab-buttons { padding: 0.75rem 1rem; gap: 0.5rem; }
+          .dashboard-tab-button { padding: 0.65rem 0.95rem; font-size: 0.85rem; }
+          .dashboard-editor-card { padding: 1.5rem; border-radius: 12px; }
+          .cms-creation-form-layout { grid-template-columns: 1fr; }
+          .dashboard-table th,
+          .dashboard-table td { padding: 0.75rem 0.6rem; font-size: 0.85rem; }
           .public-navbar { padding: 1rem 1.5rem; }
           .hero-section { height: auto; min-height: 72vh; }
           .hero-overlay { padding: 2.2rem 1rem; }
@@ -1522,11 +1535,17 @@ export default function App() {
           .banner-slide { gap: 1.25rem; padding: 1.5rem; }
           .slide-graphic { max-height: 320px; }
           .interactive-tabs-section { padding: 4rem 1.5rem; }
-          .dashboard-tab-buttons { padding: 1rem 1rem; justify-content: flex-start; }
           .intake-form-wrapper { padding: 2.5rem 1.5rem; }
-          .dashboard-editor-card { padding: 2rem; }
-          .dashboard-table { min-width: 100% !important; }
-          .portal-workspace-header { padding: 1.5rem 1.5rem; }
+        }
+        @media (max-width: 640px) {
+          .portal-workspace-body-content { padding: 1rem; }
+          .dashboard-tab-buttons { padding: 0.5rem 0.75rem; gap: 0.4rem; overflow-x: auto; }
+          .dashboard-tab-button { padding: 0.6rem 0.8rem; font-size: 0.8rem; }
+          .dashboard-editor-card { padding: 1.25rem; }
+          .dashboard-table th,
+          .dashboard-table td { padding: 0.6rem 0.5rem; font-size: 0.8rem; }
+          .form-submit-action-btn { padding: 0.75rem 1.4rem; font-size: 0.85rem; }
+          .portal-workspace-header { flex-direction: column; padding: 0.75rem 1rem; }
         }
       `}</style>
 
