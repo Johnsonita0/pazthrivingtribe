@@ -58,19 +58,19 @@ export default function App() {
     {
       title: 'Jojo’s Mom',
       text: "Ms. Rosaline has been a truly exceptional tutor and coach for my 10-year-old daughter. My daughter will have her 9th class this week. From the beginning, she created a fun, warm, and engaging environment that made my daughter genuinely excited for every lesson—often looking forward to it even before it starts. What makes Ms. Rosaline stand out is her real impact. She has played a major role in building my daughter’s personality—developing her sense of responsibility and, most importantly, her inner motivation. Today, my daughter attends her classes because she wants to, not because I ask her to—and that, to me, is incredibly valuable. Through her constant encouragement, positivity, and genuine care, Ms. Rosaline has helped my daughter grow in confidence, independence, self-love, and communication. She also nurtures leadership skills and teaches children how to handle different life situations with confidence and awareness. Her dedication, patience, and uplifting spirit truly make a lasting difference. I’m deeply grateful for her efforts and highly recommend her as an inspiring and impactful life coach for children.",
-      image: "./logo/logomain.png",
+      image: "./logo/logo2.jpeg",
       imageType: 'logo'
     },
     {
       title: 'Chukwunonso',
       text: 'Good evening Coach Roseline thank you for the things you have done for me, my grades are improving now.',
-      image: "./logo/logomain.png",
+      image: "./logo/logo2.jpeg",
       imageType: 'logo'
     },
     {
       title: "A and A's Dad",
       text: 'Thank You hope they are making progress in line with the schedule. They enjoyed their sessions.',
-      image: "./logo/logomain.png",
+      image: "./logo/logo2.jpeg",
       imageType: 'logo'
     }
   ]);
@@ -1841,7 +1841,7 @@ export default function App() {
 
                       {founderActiveTab === 'about' && (
                         <div className="about-org-block">
-                          <h3>About Paz Thriving Tribe</h3>
+                          {/* <h3>About Paz Thriving Tribe</h3> */}
                           <p>
                             Paz Thriving Tribe Coaching and Mentoring Organisation is committed to impacting families, transforming teenagers, positively influencing women, and helping children and young people develop the values, character, and healthy habits they need to thrive and become purposeful leaders.
                           </p>
@@ -1924,7 +1924,7 @@ export default function App() {
                         <h3>{services.marriage.title}</h3>
                         <p>{services.marriage.description}</p>
                       </div>
-                      <div className="gateway-footer-action">Open Dedicated View <i className="fa-solid fa-arrow-trend-up"></i></div>
+                      <div className="gateway-footer-action">Open Dedicated View<i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
 
                     <Link to="/services/family" className="service-gateway-card">
@@ -1933,7 +1933,7 @@ export default function App() {
                         <h3>{services.family.title}</h3>
                         <p>{services.family.description}</p>
                       </div>
-                      <div className="gateway-footer-action">Open Dedicated View <i className="fa-solid fa-arrow-trend-up"></i></div>
+                      <div className="gateway-footer-action">Open Dedicated View<i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
                   </div>
                 </section>
@@ -2078,7 +2078,7 @@ export default function App() {
               session ? (
                 <div className="portal-workspace-grid">
                   <aside className="portal-sidebar-panel">
-                    <div className="portal-sidebar-title">Ecosystem Admin</div>
+                    <div className="portal-sidebar-title">PTT Admin</div>
                     <nav className="portal-sidebar-links">
                       <Link to="/" className="sidebar-link-item" style={{ textDecoration: 'none' }}>← Exit to Live Website</Link>
                       <div className="sidebar-link-item active">Core Studio Engine</div>
