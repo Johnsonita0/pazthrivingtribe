@@ -196,7 +196,7 @@ export default function App() {
       title: "Rebuilding the Foundations of Family Communication",
       summary: "Read our latest exhaustive essay detailing how daily micro-habits and intentional structural conversations can break generational cycle barriers. Over 2.4k community shares this week.",
       timestamp: "Posted 4 hours ago",
-      targetUrl: "https://facebook.com/paztribe"
+      targetUrl: "https://web.facebook.com/profile.php?id=61590838730835"
     },
     {
       platform: "Instagram",
@@ -206,7 +206,7 @@ export default function App() {
       title: "Cognitive Tools for Modern Teenage Mentorship",
       summary: "Slide through our recent visual toolkit graphics outlining three actionable methods to guide teenagers through emotional volatility and self-reliance development milestones.",
       timestamp: "Posted 1 day ago",
-      targetUrl: "https://instagram.com/paztribe"
+      targetUrl: "https://instagram.com/pazthriving"
     },
     // {
     //   platform: "YouTube",
