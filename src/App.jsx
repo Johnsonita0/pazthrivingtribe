@@ -181,8 +181,10 @@ export default function App() {
   const [socialPreviewTitle, setSocialPreviewTitle] = useState('');
   const [socialPreviewSummary, setSocialPreviewSummary] = useState('');
   const [socialPreviewBadgeText, setSocialPreviewBadgeText] = useState('');
+  const [socialPreviewTimestamp, setSocialPreviewTimestamp] = useState('Posted 4 hours ago');
   const [socialPreviewUrl, setSocialPreviewUrl] = useState('https://youtube.com/shorts/-vOSeWpU1Xs?feature=share');
   const [socialPreviewEmbedUrl, setSocialPreviewEmbedUrl] = useState('https://www.youtube.com/embed/-vOSeWpU1Xs');
+  const [socialMetadataLoading, setSocialMetadataLoading] = useState(false);
   const [youtubeEmbedUrl, setYoutubeEmbedUrl] = useState('https://www.youtube.com/embed/-vOSeWpU1Xs');
   
   // --- State for Auto-Sliding Social Media News Updates Screen ---
@@ -271,9 +273,45 @@ export default function App() {
       setSocialPreviewTitle(selected.title);
       setSocialPreviewSummary(selected.summary);
       setSocialPreviewBadgeText(selected.badgeText);
+      setSocialPreviewTimestamp(selected.timestamp || '');
       setSocialPreviewUrl(selected.targetUrl);
+      if (socialEditTarget === 'YouTube') {
+        setSocialPreviewEmbedUrl(selected.embedUrl || selected.targetUrl || '');
+      }
     }
   }, [socialEditTarget, socialNewsFeed]);
+
+  const fetchSocialUrlMetadata = async () => {
+    if (!socialPreviewUrl) {
+      setCmsStatus('Enter a valid URL before fetching metadata.', true);
+      return;
+    }
+
+    setCmsSuccessMessage(null);
+    setCmsErrorMessage(null);
+    setSocialMetadataLoading(true);
+
+    try {
+      const res = await fetch(`/api/fetch-meta?url=${encodeURIComponent(socialPreviewUrl)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Unable to fetch metadata');
+
+      if (data.title) setSocialPreviewTitle(data.title);
+      if (data.summary) setSocialPreviewSummary(data.summary);
+      if (data.timestamp) setSocialPreviewTimestamp(data.timestamp);
+      if (data.embedUrl && socialEditTarget === 'YouTube') {
+        setSocialPreviewEmbedUrl(data.embedUrl);
+        setYoutubeEmbedUrl(data.embedUrl);
+      }
+
+      setCmsStatus('Link metadata loaded. Review and save.');
+    } catch (err) {
+      console.error('Failed fetching metadata:', err);
+      setCmsStatus(`Metadata fetch failed: ${err?.message || err}`, true);
+    } finally {
+      setSocialMetadataLoading(false);
+    }
+  };
 
   // --- Initialization Lifecycle Hook ---
   useEffect(() => {
@@ -707,17 +745,10 @@ export default function App() {
       badgeText: socialPreviewBadgeText,
       title: socialPreviewTitle,
       summary: socialPreviewSummary,
-      timestamp: existingItem?.timestamp || '',
+      timestamp: socialPreviewTimestamp || existingItem?.timestamp || '',
       targetUrl: socialPreviewUrl,
-      embedUrl: socialEditTarget === 'YouTube' ? normalizeYoutubeEmbed(socialPreviewEmbedUrl) : existingItem?.embedUrl
-    };
-
-    setSocialNewsFeed((prev) => {
-      if (prev.some((item) => item.platform === socialEditTarget)) {
-        return prev.map((item) => (item.platform === socialEditTarget ? updatedItem : item));
-      }
-      return [updatedItem, ...prev];
-    });
+      embedUrl: socialEditTarget === 'YouTube' ? normalizeYoutubeEmbed(socialPreviewEmbedUrl || socialPreviewUrl) : existingItem?.embedUrl
+    }
 
     if (socialEditTarget === 'YouTube') {
       setYoutubeEmbedUrl(updatedItem.embedUrl);
@@ -2223,9 +2254,19 @@ export default function App() {
                                 <textarea value={socialPreviewSummary} onChange={(e) => setSocialPreviewSummary(e.target.value)} rows="4" className="plain-text-input" style={{ resize: 'vertical', fontFamily: 'inherit' }} required />
                               </div>
 
+                              <div className="form-input-container" style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
+                                <div style={{ flex: 1 }}>
+                                  <label style={{ fontWeight: '600' }}>Action Link URL</label>
+                                  <input type="url" value={socialPreviewUrl} onChange={(e) => setSocialPreviewUrl(e.target.value)} className="plain-text-input" required />
+                                </div>
+                                <button type="button" onClick={fetchSocialUrlMetadata} className="form-submit-action-btn" style={{ minWidth: '220px' }} disabled={!socialPreviewUrl || socialMetadataLoading}>
+                                  {socialMetadataLoading ? 'Fetching...' : 'Fetch details from URL'}
+                                </button>
+                              </div>
+
                               <div className="form-input-container">
-                                <label style={{ fontWeight: '600' }}>Action Link URL</label>
-                                <input type="url" value={socialPreviewUrl} onChange={(e) => setSocialPreviewUrl(e.target.value)} className="plain-text-input" required />
+                                <label style={{ fontWeight: '600' }}>Post Timestamp</label>
+                                <input type="text" value={socialPreviewTimestamp} onChange={(e) => setSocialPreviewTimestamp(e.target.value)} className="plain-text-input" placeholder="Posted 4 hours ago" />
                               </div>
 
                               <div className="form-input-container">
