@@ -40,6 +40,8 @@ export default function App() {
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [cookieConsentAccepted, setCookieConsentAccepted] = useState(false);
+  const [showCookieBanner, setShowCookieBanner] = useState(false);
   const logoImageUrl = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"%3E%3Crect width="48" height="48" rx="12" fill="%23238636"/%3E%3Ctext x="50%" y="55%" font-size="26" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-weight="700"%3EP%3C/text%3E%3C/svg%3E';
 
   // --- Auth & System Loading States ---
@@ -327,6 +329,14 @@ export default function App() {
       setShowThemeModal(true);
     }
 
+    const savedCookieConsent = localStorage.getItem('paz-tribe-cookie-consent');
+    if (savedCookieConsent === 'accepted') {
+      setCookieConsentAccepted(true);
+      setShowCookieBanner(false);
+    } else {
+      setShowCookieBanner(true);
+    }
+
     AOS.init({
       duration: 800,
       once: true,
@@ -414,6 +424,20 @@ export default function App() {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(nextTheme);
     localStorage.setItem('paz-tribe-theme', nextTheme);
+  };
+
+  const acceptCookieConsent = () => {
+    localStorage.setItem('paz-tribe-cookie-consent', 'accepted');
+    document.cookie = 'paz-tribe-cookie-consent=accepted; path=/; max-age=31536000; Secure; SameSite=Lax';
+    setCookieConsentAccepted(true);
+    setShowCookieBanner(false);
+  };
+
+  const declineCookieConsent = () => {
+    localStorage.setItem('paz-tribe-cookie-consent', 'declined');
+    document.cookie = 'paz-tribe-cookie-consent=declined; path=/; max-age=31536000; Secure; SameSite=Lax';
+    setCookieConsentAccepted(false);
+    setShowCookieBanner(false);
   };
 
   const fetchDynamicWebsiteContent = async () => {
@@ -908,6 +932,77 @@ export default function App() {
         .full-view-app-root-override { padding-top: 72px; }
 
         body { overflow-x: hidden; }
+
+        .cookie-consent-banner {
+          position: fixed;
+          bottom: 18px;
+          left: 18px;
+          right: 18px;
+          max-width: 1140px;
+          margin: 0 auto;
+          background: rgba(18, 23, 30, 0.96);
+          border: 1px solid rgba(255,255,255,0.12);
+          border-radius: 18px;
+          padding: 1rem 1.25rem;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 1rem;
+          align-items: center;
+          justify-content: space-between;
+          z-index: 12000;
+          box-shadow: 0 28px 70px rgba(0, 0, 0, 0.25);
+        }
+
+        .cookie-consent-copy {
+          flex: 1 1 320px;
+          color: #f4f4f4;
+          font-size: 0.96rem;
+          line-height: 1.5;
+        }
+
+        .cookie-consent-actions {
+          display: flex;
+          gap: 0.75rem;
+          flex: 0 0 auto;
+          align-items: center;
+        }
+
+        .cookie-accept-btn,
+        .cookie-decline-btn {
+          border: none;
+          cursor: pointer;
+          border-radius: 999px;
+          padding: 0.78rem 1.2rem;
+          font-weight: 700;
+          transition: transform 0.15s ease, background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .cookie-accept-btn {
+          background: #238636;
+          color: white;
+        }
+
+        .cookie-decline-btn {
+          background: rgba(255,255,255,0.08);
+          color: #d0d7de;
+        }
+
+        .cookie-accept-btn:hover,
+        .cookie-decline-btn:hover {
+          transform: translateY(-1px);
+        }
+
+        @media (max-width: 720px) {
+          .cookie-consent-banner {
+            flex-direction: column;
+            align-items: stretch;
+            padding: 1rem;
+          }
+          .cookie-consent-actions {
+            width: 100%;
+            justify-content: flex-end;
+          }
+        }
 
         /* STICKY HEADER NAVIGATION BAR CONTROLS */
         .public-navbar {
@@ -1711,6 +1806,22 @@ export default function App() {
           .portal-workspace-header { flex-direction: column; padding: 0.75rem 1rem; }
         }
       `}</style>
+
+      {showCookieBanner && (
+        <div className="cookie-consent-banner">
+          <div className="cookie-consent-copy">
+            We use cookies and local storage to improve your experience. By accepting, you allow the site to remember your preferences and help the website work smoothly on future visits.
+          </div>
+          <div className="cookie-consent-actions">
+            <button className="cookie-accept-btn" type="button" onClick={acceptCookieConsent}>
+              Accept Cookies
+            </button>
+            <button className="cookie-decline-btn" type="button" onClick={declineCookieConsent}>
+              Decline
+            </button>
+          </div>
+        </div>
+      )}
 
       {toastMessage && (
         <div className="toast-notification-container">
