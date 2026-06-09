@@ -3,7 +3,29 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 
 export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_update_from_admin', teensKidsMonthlyFee = 10000 }) {
+  const teensHeroSlides = [
+    {
+      eyebrow: 'Pre-teens & Teens Academy',
+      title: 'Building confidence, character, and purpose',
+      text: 'A supportive environment where children and teenagers grow into responsible leaders with strong values, practical life skills, and self-belief.',
+      image: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?q=80&w=1200'
+    },
+    {
+      eyebrow: 'Leadership & personal growth',
+      title: 'Mentorship that helps young people thrive',
+      text: 'From public speaking to emotional resilience, each session is designed to help young people develop confidence and real-life skills.',
+      image: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=1200'
+    },
+    {
+      eyebrow: 'Family and community support',
+      title: 'Practical learning with warmth and structure',
+      text: 'Parents and young people receive clear guidance, encouragement, and progress support in a trusted, value-based space.',
+      image: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?q=80&w=1200'
+    }
+  ];
+
   const [activeTab, setActiveTab] = useState('overview');
+  const [activeHeroSlide, setActiveHeroSlide] = useState(0);
   const [selectedProgram, setSelectedProgram] = useState(null);
   const [showContactForm, setShowContactForm] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -34,11 +56,16 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
   useEffect(() => {
     AOS.init({ duration: 800, offset: 100 });
     window.scrollTo(0, 0);
+    const heroInterval = setInterval(() => {
+      setActiveHeroSlide((prev) => (prev + 1) % teensHeroSlides.length);
+    }, 5500);
     // Load Paystack script
     const script = document.createElement('script');
     script.src = 'https://js.paystack.co/v1/inline.js';
     document.body.appendChild(script);
-  }, []);
+
+    return () => clearInterval(heroInterval);
+  }, [teensHeroSlides.length]);
 
   const corePrograms = [
     {
@@ -273,23 +300,40 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
         </div>
       )}
       {/* HERO BANNER */}
-      <section className="teens-kids-hero" style={{
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white',
-        padding: '4rem 2rem',
-        textAlign: 'center',
-        marginBottom: '3rem'
-      }} data-aos="fade-down">
-        <div className="teens-kids-hero-content" style={{ maxWidth: '900px', margin: '0 auto' }}>
-            <h1 style={{ fontSize: '2.5rem', fontWeight: '900', marginBottom: '1rem' }}>
-            Pre-teens & Teens
-          </h1>
-          <p style={{ fontSize: '1.3rem', fontWeight: '600', marginBottom: '1.5rem', opacity: 0.95 }}>
-            Raising Confident, Kind, and Purposeful Leaders
-          </p>
-          <p style={{ fontSize: '1.05rem', maxWidth: '700px', margin: '0 auto', lineHeight: '1.7', opacity: 0.9 }}>
-            Transforming children and teenagers into emotionally healthy, morally grounded, and purpose-driven leaders who will positively influence their world.
-          </p>
+      <section className="service-view-hero-banner" style={{ minHeight: '460px', marginBottom: '3rem' }} data-aos="fade-down">
+        <div
+          className="service-banner-bg"
+          style={{ backgroundImage: `url(${teensHeroSlides[activeHeroSlide].image})` }}
+        />
+        <div className="service-banner-content" key={activeHeroSlide}>
+          <span className="section-label" style={{ color: '#e7f7ef', textTransform: 'uppercase' }}>{teensHeroSlides[activeHeroSlide].eyebrow}</span>
+          <h1>{teensHeroSlides[activeHeroSlide].title}</h1>
+          <p>{teensHeroSlides[activeHeroSlide].text}</p>
+          <div className="service-banner-controls">
+            <button
+              type="button"
+              className="service-banner-btn"
+              onClick={() => setActiveHeroSlide((prev) => (prev - 1 + teensHeroSlides.length) % teensHeroSlides.length)}
+            >
+              <i className="fa-solid fa-chevron-left"></i>
+            </button>
+            {teensHeroSlides.map((_, index) => (
+              <button
+                key={index}
+                type="button"
+                className={`service-banner-dot ${index === activeHeroSlide ? 'active' : ''}`}
+                aria-label={`Show slide ${index + 1}`}
+                onClick={() => setActiveHeroSlide(index)}
+              />
+            ))}
+            <button
+              type="button"
+              className="service-banner-btn"
+              onClick={() => setActiveHeroSlide((prev) => (prev + 1) % teensHeroSlides.length)}
+            >
+              <i className="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
         </div>
       </section>
 

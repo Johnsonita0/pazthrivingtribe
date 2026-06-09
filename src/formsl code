@@ -197,7 +197,7 @@ export default function App() {
       icon: "fa-solid fa-wand-magic-sparkles"
     }
   ];
-  const [socialEditTarget, setSocialEditTarget] = useState('YouTube');
+ const [socialEditTarget, setSocialEditTarget] = useState('YouTube');
   const [socialPreviewTitle, setSocialPreviewTitle] = useState('');
   const [socialPreviewSummary, setSocialPreviewSummary] = useState('');
   const [socialPreviewBadgeText, setSocialPreviewBadgeText] = useState('');
@@ -206,7 +206,7 @@ export default function App() {
   const [socialPreviewEmbedUrl, setSocialPreviewEmbedUrl] = useState('https://www.youtube.com/embed/-vOSeWpU1Xs');
   const [socialMetadataLoading, setSocialMetadataLoading] = useState(false);
   const [youtubeEmbedUrl, setYoutubeEmbedUrl] = useState('https://www.youtube.com/embed/-vOSeWpU1Xs');
-
+  
   // --- State for Auto-Sliding Social Media News Updates Screen ---
   const [activeNewsIndex, setActiveNewsIndex] = useState(0);
   const [socialNewsFeed, setSocialNewsFeed] = useState([
@@ -241,7 +241,7 @@ export default function App() {
     //   targetUrl: "https://youtube.com/shorts/-vOSeWpU1Xs?feature=share"
     // }
   ]);
-
+ 
 
   // --- CMS Admin Form Inputs ---
   const [editTarget, setEditTarget] = useState('family');
@@ -671,7 +671,7 @@ export default function App() {
     };
 
     // If editing an existing testimonial, update it in local state (and attempt DB update)
-    if (testimonialEditIndex !== null && promoSlides[testimonialEditIndex]) {
+      if (testimonialEditIndex !== null && promoSlides[testimonialEditIndex]) {
       const target = promoSlides[testimonialEditIndex];
       setPromoSlides((prev) => prev.map((t, i) => (i === testimonialEditIndex ? { ...t, ...payload } : t)));
 
@@ -2399,7 +2399,7 @@ export default function App() {
                   <div className="video-feature-grid">
                     <div className="video-feature-copy">
                       <h2>Examine your Thoughts, Words and Actions👌👌</h2>
-                      <p>Your life is shaped by 3 things: your thoughts, your words, and your actions.  In this video, we break down why self-examination matters and how checking
+                      <p>Your life is shaped by 3 things: your thoughts, your words, and your actions.  In this video, we break down why self-examination matters and how checking 
                         these 3 areas can transform your mindset, relationships, and success.</p>
                     </div>
                     <div className="video-embed-wrap">
@@ -2647,231 +2647,231 @@ export default function App() {
                               </select>
                             </div>
 
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Social Preview Headline</label>
-                              <input type="text" value={socialPreviewTitle} onChange={(e) => setSocialPreviewTitle(e.target.value)} className="plain-text-input" required />
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Preview Description</label>
-                              <textarea value={socialPreviewSummary} onChange={(e) => setSocialPreviewSummary(e.target.value)} rows="4" className="plain-text-input" style={{ resize: 'vertical', fontFamily: 'inherit' }} required />
-                            </div>
-
-                            <div className="form-input-container" style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
-                              <div style={{ flex: 1 }}>
-                                <label style={{ fontWeight: '600' }}>Action Link URL</label>
-                                <input type="url" value={socialPreviewUrl} onChange={(e) => setSocialPreviewUrl(e.target.value)} className="plain-text-input" required />
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Social Preview Headline</label>
+                                <input type="text" value={socialPreviewTitle} onChange={(e) => setSocialPreviewTitle(e.target.value)} className="plain-text-input" required />
                               </div>
-                              <button type="button" onClick={fetchSocialUrlMetadata} className="form-submit-action-btn" style={{ minWidth: '220px' }} disabled={!socialPreviewUrl || socialMetadataLoading}>
-                                {socialMetadataLoading ? 'Fetching...' : 'Fetch details from URL'}
-                              </button>
-                            </div>
 
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Post Timestamp</label>
-                              <input type="text" value={socialPreviewTimestamp} onChange={(e) => setSocialPreviewTimestamp(e.target.value)} className="plain-text-input" placeholder="Posted 4 hours ago" />
-                            </div>
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Preview Description</label>
+                                <textarea value={socialPreviewSummary} onChange={(e) => setSocialPreviewSummary(e.target.value)} rows="4" className="plain-text-input" style={{ resize: 'vertical', fontFamily: 'inherit' }} required />
+                              </div>
 
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Badge Label</label>
-                              <input type="text" value={socialPreviewBadgeText} onChange={(e) => setSocialPreviewBadgeText(e.target.value)} className="plain-text-input" required />
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>YouTube Embed URL</label>
-                              <input type="url" value={socialPreviewEmbedUrl} onChange={(e) => setSocialPreviewEmbedUrl(e.target.value)} className="plain-text-input" placeholder="https://www.youtube.com/watch?v=..." />
-                              <small style={{ color: 'var(--text-muted)' }}>This URL will be used for the homepage video player when YouTube is selected.</small>
-                            </div>
-
-                            <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Update Social Preview</button>
-                          </form>
-                        </section>
-                      )}
-
-                      {selectedAdminTab === 'programs' && (
-                        <section className="dashboard-editor-card">
-                          <h3 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Create Programs</h3>
-                          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Add new curriculum offerings for any service category and make them available on the customer-facing pages.</p>
-
-                          <form onSubmit={handleCreateProgram} className="cms-creation-form-layout" style={{ marginTop: '1.5rem' }}>
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Service Category</label>
-                              <select value={programForm.service} onChange={(e) => setProgramForm((prev) => ({ ...prev, service: e.target.value }))} className="plain-text-input" style={{ height: '46px' }}>
-                                <option value="family">Thriving Singles</option>
-                                <option value="marriage">Thriving Women</option>
-                                <option value="children">Pre-teens & Teens</option>
-                              </select>
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Program Name</label>
-                              <input type="text" value={programForm.title} onChange={(e) => setProgramForm((prev) => ({ ...prev, title: e.target.value }))} className="plain-text-input" required />
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Program Level / Age Group</label>
-                              <input type="text" value={programForm.level} onChange={(e) => setProgramForm((prev) => ({ ...prev, level: e.target.value }))} className="plain-text-input" required />
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Duration</label>
-                              <input type="text" value={programForm.duration} onChange={(e) => setProgramForm((prev) => ({ ...prev, duration: e.target.value }))} className="plain-text-input" required />
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Schedule</label>
-                              <input type="text" value={programForm.schedule} onChange={(e) => setProgramForm((prev) => ({ ...prev, schedule: e.target.value }))} className="plain-text-input" required />
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Program Overview</label>
-                              <textarea value={programForm.description} onChange={(e) => setProgramForm((prev) => ({ ...prev, description: e.target.value }))} rows="4" className="plain-text-input" style={{ resize: 'vertical', fontFamily: 'inherit' }} required></textarea>
-                            </div>
-
-                            <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Create Program</button>
-                          </form>
-
-                          <div style={{ marginTop: '2rem' }}>
-                            <h4 style={{ marginBottom: '1rem' }}>Programs by Category</h4>
-                            <div style={{ display: 'grid', gap: '1rem' }}>
-                              {programs.map((program) => (
-                                <div key={program.id} style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1rem' }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem' }}>
-                                    <div>
-                                      <strong>{program.name}</strong>
-                                      <div style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>{program.service.toUpperCase()}</div>
-                                    </div>
-                                    <button type="button" onClick={() => handleRemoveProgram(program.id)} style={{ background: '#ff4757', color: '#fff', border: 'none', borderRadius: '8px', padding: '0.55rem 0.85rem', cursor: 'pointer' }}>Remove</button>
-                                  </div>
-                                  <p style={{ margin: '0.85rem 0 0 0', color: 'var(--text-muted)' }}>{program.description}</p>
-                                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.92rem' }}>
-                                    <span>{program.duration}</span>
-                                    <span>{program.level}</span>
-                                    <span>{program.schedule}</span>
-                                  </div>
+                              <div className="form-input-container" style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
+                                <div style={{ flex: 1 }}>
+                                  <label style={{ fontWeight: '600' }}>Action Link URL</label>
+                                  <input type="url" value={socialPreviewUrl} onChange={(e) => setSocialPreviewUrl(e.target.value)} className="plain-text-input" required />
                                 </div>
-                              ))}
-                            </div>
-                          </div>
-                        </section>
-                      )}
+                                <button type="button" onClick={fetchSocialUrlMetadata} className="form-submit-action-btn" style={{ minWidth: '220px' }} disabled={!socialPreviewUrl || socialMetadataLoading}>
+                                  {socialMetadataLoading ? 'Fetching...' : 'Fetch details from URL'}
+                                </button>
+                              </div>
 
-                      {selectedAdminTab === 'applicants' && (
-                        <section className="dashboard-editor-card">
-                          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
-                            <div>
-                              <h3 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Recent Applicants</h3>
-                              <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Review the latest intake submissions and track their requested service path.</p>
-                            </div>
-                            <div style={{ color: 'var(--text-primary)', fontWeight: 700, minWidth: '150px' }}>
-                              Total Registered: {applicants.length}
-                            </div>
-                          </div>
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Post Timestamp</label>
+                                <input type="text" value={socialPreviewTimestamp} onChange={(e) => setSocialPreviewTimestamp(e.target.value)} className="plain-text-input" placeholder="Posted 4 hours ago" />
+                              </div>
 
-                          {applicants.length === 0 ? (
-                            <div style={{ marginTop: '1.5rem', padding: '1.5rem', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                              <p style={{ margin: 0, color: 'var(--text-muted)' }}>No applicants have submitted yet.</p>
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Badge Label</label>
+                                <input type="text" value={socialPreviewBadgeText} onChange={(e) => setSocialPreviewBadgeText(e.target.value)} className="plain-text-input" required />
+                              </div>
+
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>YouTube Embed URL</label>
+                                <input type="url" value={socialPreviewEmbedUrl} onChange={(e) => setSocialPreviewEmbedUrl(e.target.value)} className="plain-text-input" placeholder="https://www.youtube.com/watch?v=..." />
+                                <small style={{ color: 'var(--text-muted)' }}>This URL will be used for the homepage video player when YouTube is selected.</small>
+                              </div>
+
+                              <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Update Social Preview</button>
+                            </form>
+                          </section>
+                        )}
+
+                        {selectedAdminTab === 'programs' && (
+                          <section className="dashboard-editor-card">
+                            <h3 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Create Programs</h3>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Add new curriculum offerings for any service category and make them available on the customer-facing pages.</p>
+
+                            <form onSubmit={handleCreateProgram} className="cms-creation-form-layout" style={{ marginTop: '1.5rem' }}>
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Service Category</label>
+                                <select value={programForm.service} onChange={(e) => setProgramForm((prev) => ({ ...prev, service: e.target.value }))} className="plain-text-input" style={{ height: '46px' }}>
+                                  <option value="family">Thriving Singles</option>
+                                  <option value="marriage">Thriving Women</option>
+                                  <option value="children">Pre-teens & Teens</option>
+                                </select>
+                              </div>
+
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Program Name</label>
+                                <input type="text" value={programForm.title} onChange={(e) => setProgramForm((prev) => ({ ...prev, title: e.target.value }))} className="plain-text-input" required />
+                              </div>
+
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Program Level / Age Group</label>
+                                <input type="text" value={programForm.level} onChange={(e) => setProgramForm((prev) => ({ ...prev, level: e.target.value }))} className="plain-text-input" required />
+                              </div>
+
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Duration</label>
+                                <input type="text" value={programForm.duration} onChange={(e) => setProgramForm((prev) => ({ ...prev, duration: e.target.value }))} className="plain-text-input" required />
+                              </div>
+
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Schedule</label>
+                                <input type="text" value={programForm.schedule} onChange={(e) => setProgramForm((prev) => ({ ...prev, schedule: e.target.value }))} className="plain-text-input" required />
+                              </div>
+
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Program Overview</label>
+                                <textarea value={programForm.description} onChange={(e) => setProgramForm((prev) => ({ ...prev, description: e.target.value }))} rows="4" className="plain-text-input" style={{ resize: 'vertical', fontFamily: 'inherit' }} required></textarea>
+                              </div>
+
+                              <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Create Program</button>
+                            </form>
+
+                            <div style={{ marginTop: '2rem' }}>
+                              <h4 style={{ marginBottom: '1rem' }}>Programs by Category</h4>
+                              <div style={{ display: 'grid', gap: '1rem' }}>
+                                {programs.map((program) => (
+                                  <div key={program.id} style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem' }}>
+                                      <div>
+                                        <strong>{program.name}</strong>
+                                        <div style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>{program.service.toUpperCase()}</div>
+                                      </div>
+                                      <button type="button" onClick={() => handleRemoveProgram(program.id)} style={{ background: '#ff4757', color: '#fff', border: 'none', borderRadius: '8px', padding: '0.55rem 0.85rem', cursor: 'pointer' }}>Remove</button>
+                                    </div>
+                                    <p style={{ margin: '0.85rem 0 0 0', color: 'var(--text-muted)' }}>{program.description}</p>
+                                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.92rem' }}>
+                                      <span>{program.duration}</span>
+                                      <span>{program.level}</span>
+                                      <span>{program.schedule}</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                          ) : (
-                            <div className="applicants-table-wrapper">
-                              <table className="dashboard-table">
-                                <thead>
-                                  <tr>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Phone</th>
-                                    <th>Track</th>
-                                    <th>Status</th>
-                                    <th>Payment Ref</th>
-                                    <th>Submitted</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {applicants.slice(0, 50).map((applicant) => (
-                                    <tr key={applicant.id}>
-                                      <td>{applicant.fullName}</td>
-                                      <td>{applicant.email}</td>
-                                      <td>{applicant.phone}</td>
-                                      <td>{applicant.track}</td>
-                                      <td><span className={`status-pill ${applicant.paymentStatus === 'success' ? 'success' : 'pending'}`}>{applicant.paymentStatus}</span></td>
-                                      <td>{applicant.paymentReference || 'N/A'}</td>
-                                      <td>{new Date(applicant.submittedAt).toLocaleString()}</td>
+                          </section>
+                        )}
+
+                        {selectedAdminTab === 'applicants' && (
+                          <section className="dashboard-editor-card">
+                            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+                              <div>
+                                <h3 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Recent Applicants</h3>
+                                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Review the latest intake submissions and track their requested service path.</p>
+                              </div>
+                              <div style={{ color: 'var(--text-primary)', fontWeight: 700, minWidth: '150px' }}>
+                                Total Registered: {applicants.length}
+                              </div>
+                            </div>
+
+                            {applicants.length === 0 ? (
+                              <div style={{ marginTop: '1.5rem', padding: '1.5rem', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                                <p style={{ margin: 0, color: 'var(--text-muted)' }}>No applicants have submitted yet.</p>
+                              </div>
+                            ) : (
+                              <div className="applicants-table-wrapper">
+                                <table className="dashboard-table">
+                                  <thead>
+                                    <tr>
+                                      <th>Name</th>
+                                      <th>Email</th>
+                                      <th>Phone</th>
+                                      <th>Track</th>
+                                      <th>Status</th>
+                                      <th>Payment Ref</th>
+                                      <th>Submitted</th>
                                     </tr>
-                                  ))}
-                                </tbody>
-                              </table>
+                                  </thead>
+                                  <tbody>
+                                    {applicants.slice(0, 50).map((applicant) => (
+                                      <tr key={applicant.id}>
+                                        <td>{applicant.fullName}</td>
+                                        <td>{applicant.email}</td>
+                                        <td>{applicant.phone}</td>
+                                        <td>{applicant.track}</td>
+                                        <td><span className={`status-pill ${applicant.paymentStatus === 'success' ? 'success' : 'pending'}`}>{applicant.paymentStatus}</span></td>
+                                        <td>{applicant.paymentReference || 'N/A'}</td>
+                                        <td>{new Date(applicant.submittedAt).toLocaleString()}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </section>
+                        )}
+
+                        {selectedAdminTab === 'payments' && (
+                          <section className="dashboard-editor-card">
+                            <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Paystack Payment Settings</h3>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Configure your Paystack API key and pricing for Pre-teen & Teens Academy program.</p>
+
+                            {dashboardMessage && <div className="status-feedback-banner" style={{ marginTop: '1.5rem' }}>{dashboardMessage}</div>}
+
+                            <form onSubmit={(e) => {
+                              e.preventDefault();
+                              setPaystackPublicKey(tempPaystackKey);
+                              setTeensKidsMonthlyFee(parseInt(tempMonthlyFee) || 10000);
+                              setDashboardMessage('✓ Payment settings saved successfully!');
+                              setTimeout(() => setDashboardMessage(null), 3000);
+                            }} style={{ marginTop: '1.5rem' }}>
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Paystack Public Key</label>
+                                <input
+                                  type="text"
+                                  value={tempPaystackKey}
+                                  onChange={(e) => setTempPaystackKey(e.target.value)}
+                                  className="plain-text-input"
+                                  placeholder="pk_live_... or pk_test_..."
+                                  required
+                                />
+                                <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
+                                  Your Paystack public API key. Switch between test and live keys as needed.
+                                </small>
+                              </div>
+
+                              <div className="form-input-container">
+                                <label style={{ fontWeight: '600' }}>Program Registration Fee (NGN)</label>
+                                <input
+                                  type="number"
+                                  value={tempMonthlyFee}
+                                  onChange={(e) => setTempMonthlyFee(e.target.value)}
+                                  className="plain-text-input"
+                                  placeholder="10000"
+                                  min="1000"
+                                  max="1000000"
+                                  required
+                                />
+                                <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
+                                  Update the academy registration fee for the Pre-teen & Teens program. This value drives the displayed pricing for clients.
+                                </small>
+                              </div>
+
+                              <button
+                                type="submit"
+                                className="form-submit-action-btn"
+                                style={{ marginTop: '1.5rem', width: '100%', maxWidth: '200px' }}
+                              >
+                                Save Payment Settings
+                              </button>
+                            </form>
+
+                            <div style={{ marginTop: '2rem', padding: '1rem', background: 'var(--bg-main)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                              <h4 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Current Configuration</h4>
+                              <div style={{ display: 'grid', gap: '0.75rem', color: 'var(--text-muted)' }}>
+                                <span><strong>Active Public Key:</strong> {paystackPublicKey.substring(0, 20)}...</span>
+                                <span><strong>Monthly Fee:</strong> ₦{teensKidsMonthlyFee.toLocaleString()}</span>
+                                <span><strong>3 Months:</strong> ₦{(teensKidsMonthlyFee * 3).toLocaleString()}</span>
+                                <span><strong>6 Months:</strong> ₦{(teensKidsMonthlyFee * 6).toLocaleString()}</span>
+                                <span><strong>12 Months:</strong> ₦{(teensKidsMonthlyFee * 12).toLocaleString()}</span>
+                              </div>
                             </div>
-                          )}
-                        </section>
-                      )}
-
-                      {selectedAdminTab === 'payments' && (
-                        <section className="dashboard-editor-card">
-                          <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Paystack Payment Settings</h3>
-                          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Configure your Paystack API key and pricing for Pre-teen & Teens Academy program.</p>
-
-                          {dashboardMessage && <div className="status-feedback-banner" style={{ marginTop: '1.5rem' }}>{dashboardMessage}</div>}
-
-                          <form onSubmit={(e) => {
-                            e.preventDefault();
-                            setPaystackPublicKey(tempPaystackKey);
-                            setTeensKidsMonthlyFee(parseInt(tempMonthlyFee) || 10000);
-                            setDashboardMessage('✓ Payment settings saved successfully!');
-                            setTimeout(() => setDashboardMessage(null), 3000);
-                          }} style={{ marginTop: '1.5rem' }}>
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Paystack Public Key</label>
-                              <input
-                                type="text"
-                                value={tempPaystackKey}
-                                onChange={(e) => setTempPaystackKey(e.target.value)}
-                                className="plain-text-input"
-                                placeholder="pk_live_... or pk_test_..."
-                                required
-                              />
-                              <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
-                                Your Paystack public API key. Switch between test and live keys as needed.
-                              </small>
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Program Registration Fee (NGN)</label>
-                              <input
-                                type="number"
-                                value={tempMonthlyFee}
-                                onChange={(e) => setTempMonthlyFee(e.target.value)}
-                                className="plain-text-input"
-                                placeholder="10000"
-                                min="1000"
-                                max="1000000"
-                                required
-                              />
-                              <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
-                                Update the academy registration fee for the Pre-teen & Teens program. This value drives the displayed pricing for clients.
-                              </small>
-                            </div>
-
-                            <button
-                              type="submit"
-                              className="form-submit-action-btn"
-                              style={{ marginTop: '1.5rem', width: '100%', maxWidth: '200px' }}
-                            >
-                              Save Payment Settings
-                            </button>
-                          </form>
-
-                          <div style={{ marginTop: '2rem', padding: '1rem', background: 'var(--bg-main)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                            <h4 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Current Configuration</h4>
-                            <div style={{ display: 'grid', gap: '0.75rem', color: 'var(--text-muted)' }}>
-                              <span><strong>Active Public Key:</strong> {paystackPublicKey.substring(0, 20)}...</span>
-                              <span><strong>Monthly Fee:</strong> ₦{teensKidsMonthlyFee.toLocaleString()}</span>
-                              <span><strong>3 Months:</strong> ₦{(teensKidsMonthlyFee * 3).toLocaleString()}</span>
-                              <span><strong>6 Months:</strong> ₦{(teensKidsMonthlyFee * 6).toLocaleString()}</span>
-                              <span><strong>12 Months:</strong> ₦{(teensKidsMonthlyFee * 12).toLocaleString()}</span>
-                            </div>
-                          </div>
-                        </section>
-                      )}
+                          </section>
+                        )}
                     </main>
                   </div>
                 </div>
@@ -2927,7 +2927,7 @@ export default function App() {
               <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>System Terms</span>
             </div>
           </div>
-        </footer>
+        </footer> 
       </div>
     </>
   );
