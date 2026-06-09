@@ -363,7 +363,7 @@ export default function App() {
     };
   }, []);
 
-  // --- Auto-Slide Interval Loops ---
+  // --- Auto-Slide Interval Loops on homepage bannerHeroSlider---
 
   useEffect(() => {
     const homeBannerInterval = setInterval(() => {
@@ -837,7 +837,7 @@ export default function App() {
       if (!res.ok) throw new Error(jr?.error || 'Admin endpoint failed');
       setDashboardMessage('Program created successfully and available in menu pages.');
     } catch (err) {
-      console.error('Admin endpoint failed creating program:', err);
+      console.error('Admin endpoint failed creating while program:', err);
       setDashboardMessage(`Program saved locally; admin insert failed: ${err?.message || err}`);
     }
 
@@ -887,7 +887,7 @@ export default function App() {
       }]);//.select();
       if (error) throw error;
     } catch (err) {
-      console.error('Failed inserting applicant into DB:', err);
+      console.error('Server down at the moment try again later:', err);
       console.log('Applicant captured locally; Supabase insert unavailable.');
     }
   };
@@ -2597,14 +2597,14 @@ export default function App() {
           <div className="footer-columns-container">
             <div className="footer-brand-column">
               <Link to="/" className="footer-brand-logo-row" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                <div className="footer-vector-badge"><img src="./logo/logomain.png" alt="" /></div>
+                <div className="footer-vector-badge"><img src={theme === 'dark' ? "../logo/logo2.jpeg" : "../logo/logomain.png"} alt="Paz Thriving Tribe logo" className="nav-logo-img" /></div>
                 <span className="footer-brand-headline">Paz Thriving Tribe</span>
               </Link>
               <p>Providing dynamic infrastructure tracking networks focused on alignment strategies, professional conflict mitigation solutions, and youth development counseling models.</p>
             </div>
 
             <div className="footer-links-column">
-              <h4>Ecosystem Tracks</h4>
+              <h4>What we offer</h4>
               <div className="footer-interactive-links">
                 <Link to="/services/family" className="footer-nav-anchor">Thriving Singles</Link>
                 <Link to="/services/marriage" className="footer-nav-anchor">Thriving Women</Link>
@@ -2615,7 +2615,7 @@ export default function App() {
             <div className="footer-links-column">
               <h4>Portals</h4>
               <div className="footer-interactive-links">
-                <Link to="https://pazthrivingtribe.schoolsfocus.net/signin" className="footer-nav-anchor">Main Portal</Link>
+                <Link to="https://pazthrivingtribe.schoolsfocus.net/signin" className="footer-nav-anchor">Academy Portal</Link>
               </div>
             </div>
 
@@ -2629,13 +2629,13 @@ export default function App() {
           </div>
 
           <div className="footer-bottom-copyright-strip">
-            <p>&copy; 2026 Paz Thriving Tribe. Unified Content Infrastructure Management.</p>
+            <p>&copy; 2026 Paz Thriving Tribe.</p>
             <div className="footer-regulatory-tags">
-              <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Privacy Framework</span>
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Privacy</span>
               <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>System Terms</span>
             </div>
           </div>
-        </footer>
+        </footer> 
       </div>
     </>
   );
