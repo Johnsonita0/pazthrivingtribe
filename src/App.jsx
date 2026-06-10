@@ -135,7 +135,7 @@ export default function App() {
     {
       title: "Need Someone to Talk To?",
       subtitle: "Paz Thriving Tribe offers a safe and confidential space where you can talk and be heard.",
-      image: "./image/pic3.png"
+      image: "./image/pic7.png"
     },
     {
       title: "Structured Teens Development Program",
@@ -1136,8 +1136,8 @@ export default function App() {
         /* SLIDING HERO SECTION FRAMEWORKS */
         .hero-section {
           position: relative;
-          height: 100vh;
-          min-height: 420px;
+          min-height: 100svh;
+          height: auto;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1155,8 +1155,8 @@ export default function App() {
           z-index: 1;
         }
         @media (max-width: 420px) {
-          .hero-section { min-height: 240px; }
-          .hero-slide-bg { background-position: center top; }
+          .hero-section { min-height: 100svh; }
+          .hero-slide-bg { background-position: center center !important; background-size: cover !important; }
         }
         .hero-slide-bg::before {
           content: '';
@@ -1172,7 +1172,8 @@ export default function App() {
           justify-content: center;
           width: 100%;
           min-height: 100%;
-          padding: 4rem 1rem;
+          padding: clamp(5rem, 8vh, 6rem) 1rem 2rem;
+          box-sizing: border-box;
         }
         .hero-copy-card {
           width: min(100%, 820px);
@@ -1240,11 +1241,12 @@ export default function App() {
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
-          max-width: 75%;
-          max-height: 75%;
+          max-width: min(92vw, 900px);
+          max-height: 78vh;
           width: auto;
           height: auto;
           object-fit: contain;
+          object-position: center center;
           z-index: 2;
         }
         .hero-overlay { padding: 3rem 1.5rem; }
@@ -1282,8 +1284,8 @@ export default function App() {
           .banner-slider { height: 220px; }
           .slide-graphic { min-height: 160px; max-height: 240px; }
           .slide-graphic img { object-fit: cover; height: 100%; }
-          .hero-bg-contain { background-size: contain !important; background-position: center !important; }
-          .hero-inline-contain-img { max-height: 65%; max-width: 90%; }
+          .hero-bg-contain { background-size: contain !important; background-position: center center !important; }
+          .hero-inline-contain-img { max-height: 70vh; max-width: 92vw; }
           .hero-overlay h1 { font-size: 2rem !important; }
           .hero-overlay p { font-size: 0.95rem !important; }
         }
@@ -2298,11 +2300,11 @@ export default function App() {
                     return (
                       <>
                         <div
-                          className={`hero-slide-bg ${currentSlide.imageType === 'contain' ? 'hero-bg-contain' : ''}`}
+                          className={`hero-slide-bg ${currentSlide.imageType === 'contain' ? 'hero-bg-contain' : ''} ${currentSlide.imageType === 'bottom' ? 'hero-slide-bottom' : ''}`}
                           style={{
                             backgroundImage: currentSlide.imageType === 'contain' ? 'none' : `url(${currentSlide.image})`,
                             backgroundSize: currentSlide.imageType === 'logo' ? 'contain' : 'cover',
-                            backgroundPosition: 'center',
+                            backgroundPosition: currentSlide.imageType === 'bottom' ? 'center bottom' : 'center',
                             backgroundRepeat: 'no-repeat'
                           }}
                         />
