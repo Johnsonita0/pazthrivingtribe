@@ -1085,14 +1085,14 @@ export default function App() {
         .nav-menu-toggle { display: none; background: none; border: none; color: var(--text-primary); font-size: 1.55rem; cursor: pointer; }
 
         /* Floating Controls UI Layer */
-        .float-theme-toggle-container { position: fixed; bottom: 25px; left: 25px; z-index: 9999; }
+        .float-theme-toggle-container { position: fixed; bottom: 18px; left: 18px; z-index: 9999; }
         .theme-toggle-switch-shell {
           display: flex; align-items: center; gap: 0.6rem; cursor: pointer;
           background-color: var(--bg-card); border: 1px solid var(--border-color);
           padding: 0.75rem 1.2rem; border-radius: 30px; box-shadow: var(--shadow-lg);
           animation: bounce-default 2s infinite ease-in-out;
         }
-        .float-whatsapp-container { position: fixed; bottom: 25px; right: 25px; z-index: 9999; }
+        .float-whatsapp-container { position: fixed; bottom: 18px; right: 18px; z-index: 9999; }
         .whatsapp-float-btn {
           display: flex; align-items: center; justify-content: center; background-color: #25D366; color: white; border: none;
           width: 56px; height: 56px; border-radius: 50%; box-shadow: 0 4px 16px rgba(37,211,102,0.4); cursor: pointer; text-decoration: none;
@@ -1132,8 +1132,7 @@ export default function App() {
           content: '';
           position: absolute;
           top: 0; left: 0; width: 100%; height: 100%;
-          /* Apply a consistent dark translucent overlay so banner text reads clearly */
-          background: linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.45));
+          background: linear-gradient(rgba(15, 23, 42, 0.62), rgba(15, 23, 42, 0.28));
         }
         .hero-overlay {
           position: relative;
@@ -1147,22 +1146,39 @@ export default function App() {
         }
         .hero-copy-card {
           width: min(100%, 820px);
-          background: linear-gradient(145deg, rgba(15, 23, 42, 0.78), rgba(17, 24, 39, 0.66));
-          border: 1px solid rgba(255, 255, 255, 0.18);
-          border-radius: 24px;
-          box-shadow: 0 18px 50px rgba(15, 23, 42, 0.35);
+          background: transparent;
+          border: none;
+          border-radius: 0;
+          box-shadow: none;
           padding: 1.25rem 1rem 1.1rem;
           text-align: center;
-          backdrop-filter: blur(10px);
+          backdrop-filter: none;
+          position: relative;
+          z-index: 2;
         }
-        .hero-copy-card h1 { font-size: clamp(2.2rem, 6vw, 4.2rem); color: #ffffff; margin-bottom: 0.75rem; font-weight: 800; letter-spacing: -1px; animation: bannerTextFade 0.6s ease-out; text-shadow: 0 8px 28px rgba(0,0,0,0.7); }
-        .hero-copy-card p { font-size: clamp(1rem, 2vw, 1.35rem); color: #eff6ff; max-width: 760px; margin: 0 auto 1rem auto; line-height: 1.5; animation: bannerTextFade 0.8s ease-out; text-shadow: 0 6px 20px rgba(0,0,0,0.55); }
-        .hero-action-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.75rem; margin-top: 1rem; }
-        .hero-arrow-cluster { display: flex; gap: 0.5rem; }
+        .hero-copy-card h1 { font-size: clamp(2.2rem, 6vw, 4.2rem); color: #ffffff; margin-bottom: 0.75rem; font-weight: 800; letter-spacing: -1px; animation: bannerTextFade 0.6s ease-out; text-shadow: 0 10px 28px rgba(0,0,0,0.85); }
+        .hero-copy-card p { font-size: clamp(1rem, 2vw, 1.35rem); color: #eff6ff; max-width: 760px; margin: 0 auto 1rem auto; line-height: 1.5; animation: bannerTextFade 0.8s ease-out; text-shadow: 0 6px 20px rgba(0,0,0,0.75); }
+        .hero-action-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.75rem; margin-top: 1rem; position: relative; z-index: 2; }
+        .hero-arrow-cluster {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          z-index: 3;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          width: 100%;
+          max-width: none;
+          padding: 0 0.15rem;
+          pointer-events: none;
+        }
         .hero-nav-btn {
-          width: 44px; height: 44px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.24);
-          background: rgba(255,255,255,0.12); color: #ffffff; display: inline-flex; align-items: center; justify-content: center;
-          cursor: pointer; box-shadow: 0 10px 24px rgba(15,23,42,0.25); transition: transform 0.2s ease, background 0.2s ease;
+          width: 48px; height: 48px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.18);
+          background: rgba(15, 23, 42, 0.55); color: #ffffff; display: inline-flex; align-items: center; justify-content: center;
+          cursor: pointer; box-shadow: 0 12px 30px rgba(15,23,42,0.35); transition: transform 0.2s ease, background 0.2s ease;
+          pointer-events: auto;
+          backdrop-filter: blur(6px);
         }
         .hero-nav-btn:hover { background: rgba(255,255,255,0.2); transform: translateY(-1px); }
         .hero-scroll-btn { min-width: 180px; }
@@ -2239,68 +2255,82 @@ export default function App() {
             element={
               <div className="public-website-container">
                 <section className="hero-section" data-aos="fade-down">
-                  <div
-                    className={`hero-slide-bg ${homeSlides[currentHomeSlide].imageType === 'contain' ? 'hero-bg-contain' : ''}`}
-                    style={{
-                      backgroundImage: homeSlides[currentHomeSlide].imageType === 'contain' ? 'none' : `url(${homeSlides[currentHomeSlide].image})`,
-                      backgroundSize: homeSlides[currentHomeSlide].imageType === 'logo'
-                        ? 'contain'
-                        : 'cover',
-                      backgroundPosition: 'center',
-                      backgroundRepeat: 'no-repeat'
-                    }}
-                  />
-                  {homeSlides[currentHomeSlide].imageType === 'contain' && (
-                    <img
-                      src={homeSlides[currentHomeSlide].image}
-                      alt="Banner"
-                      className="hero-inline-contain-img"
-                    />
-                  )}
-                  {homeSlides[currentHomeSlide].imageType !== 'contain' && (
-                    <div className="hero-overlay" key={currentHomeSlide}>
-                      <div className="hero-copy-card">
-                        <h1>{homeSlides[currentHomeSlide].title}</h1>
-                        <p>{homeSlides[currentHomeSlide].subtitle}</p>
-                        <div className="hero-action-row">
-                          <button className="hero-scroll-btn" onClick={() => setShowBookingModal(true)}>
-                            Book Now <i className="fa-solid fa-calendar-check"></i>
-                          </button>
-                          <div className="hero-arrow-cluster" aria-label="Slide navigation">
-                            <button
-                              type="button"
-                              className="hero-nav-btn"
-                              aria-label="Previous slide"
-                              onClick={() => setCurrentHomeSlide((prev) => (prev - 1 + homeSlides.length) % homeSlides.length)}
-                            >
-                              <i className="fa-solid fa-chevron-left"></i>
-                            </button>
-                            <button
-                              type="button"
-                              className="hero-nav-btn"
-                              aria-label="Next slide"
-                              onClick={() => setCurrentHomeSlide((prev) => (prev + 1) % homeSlides.length)}
-                            >
-                              <i className="fa-solid fa-chevron-right"></i>
-                            </button>
+                  {(() => {
+                    const currentSlide = homeSlides[currentHomeSlide];
+                    return (
+                      <>
+                        <div
+                          className={`hero-slide-bg ${currentSlide.imageType === 'contain' ? 'hero-bg-contain' : ''}`}
+                          style={{
+                            backgroundImage: currentSlide.imageType === 'contain' ? 'none' : `url(${currentSlide.image})`,
+                            backgroundSize: currentSlide.imageType === 'logo' ? 'contain' : 'cover',
+                            backgroundPosition: 'center',
+                            backgroundRepeat: 'no-repeat'
+                          }}
+                        />
+                        {currentSlide.imageType === 'contain' && (
+                          <img
+                            src={currentSlide.image}
+                            alt="Banner"
+                            className="hero-inline-contain-img"
+                          />
+                        )}
+                        {currentSlide.imageType !== 'contain' && (
+                          <div className="hero-overlay" key={currentHomeSlide}>
+                            <div className="hero-copy-card">
+                              <h1>{currentSlide.title}</h1>
+                              <p>{currentSlide.subtitle}</p>
+                              <div className="hero-action-row">
+                                <button
+                                  className="hero-scroll-btn"
+                                  onClick={() => {
+                                    if (currentSlide.title === 'Need Someone to Talk To?') {
+                                      setShowBookingModal(true);
+                                    } else {
+                                      setShowRegisterModal(true);
+                                    }
+                                  }}
+                                >
+                                  {currentSlide.title === 'Need Someone to Talk To?' ? 'Book Now' : 'Register Now'}
+                                  <i className={currentSlide.title === 'Need Someone to Talk To?' ? 'fa-solid fa-calendar-check' : 'fa-solid fa-user-plus'}></i>
+                                </button>
+                              </div>
+                            </div>
+                            <div className="hero-arrow-cluster" aria-label="Slide navigation">
+                              <button
+                                type="button"
+                                className="hero-nav-btn"
+                                aria-label="Previous slide"
+                                onClick={() => setCurrentHomeSlide((prev) => (prev - 1 + homeSlides.length) % homeSlides.length)}
+                              >
+                                <i className="fa-solid fa-chevron-left"></i>
+                              </button>
+                              <button
+                                type="button"
+                                className="hero-nav-btn"
+                                aria-label="Next slide"
+                                onClick={() => setCurrentHomeSlide((prev) => (prev + 1) % homeSlides.length)}
+                              >
+                                <i className="fa-solid fa-chevron-right"></i>
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                        )}
+                      </>
+                    );
+                  })()}
                 </section>
-
                 {showBookingModal && (
                   <div
                     style={{
-                      position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.78)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', zIndex: 1100
+                      position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.78)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '1rem 1rem 1.5rem', zIndex: 1100, overflowY: 'auto'
                     }}
                     onClick={() => setShowBookingModal(false)}
                   >
                     <article
                       onClick={(e) => e.stopPropagation()}
                       style={{
-                        width: '100%', maxWidth: '780px', borderRadius: '24px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: '0 24px 60px rgba(15, 23, 42, 0.35)', padding: '1rem', maxHeight: '92vh', overflowY: 'auto'
+                        width: '100%', maxWidth: '780px', borderRadius: '24px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: '0 24px 60px rgba(15, 23, 42, 0.35)', padding: '1rem', maxHeight: 'calc(100vh - 2rem)', overflowY: 'auto', marginTop: '1rem', boxSizing: 'border-box'
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.5rem' }}>
