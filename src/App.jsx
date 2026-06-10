@@ -2269,7 +2269,7 @@ export default function App() {
               <i className="fa-solid fa-hand-holding-heart"></i> Talk & Thrive
             </Link>
             <Link to="/teens-kids-academy" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-child-reaching"></i> Pre-teens
+              <i className="fa-solid fa-child-reaching"></i> Thriving Pre-teens & Teens
             </Link>
             <Link to="/services/family" className="nav-link-item" onClick={() => setNavOpen(false)}>
               <i className="fa-solid fa-people-roof"></i> Thriving Parents
@@ -3173,7 +3173,7 @@ export default function App() {
               <h4>What we offer</h4>
               <div className="footer-interactive-links">
                 <Link to="/care-counseling" className="footer-nav-anchor">Talk & Thrive</Link>
-                <Link to="/services/children" className="footer-nav-anchor">Pre-teens</Link>
+                <Link to="/services/children" className="footer-nav-anchor">Thriving Pre-teens & Teens</Link>
                 <Link to="/services/family" className="footer-nav-anchor">Thriving Parents</Link>
                 <Link to="/services/marriage" className="footer-nav-anchor">Thriving Women</Link>
               </div>
