@@ -203,7 +203,7 @@ export default function App() {
   useEffect(() => {
     const introTimer = window.setInterval(() => {
       setIntroTextMode((currentMode) => (currentMode === 'heading' ? 'paragraph' : 'heading'));
-    }, 7000);
+    }, 9000);
 
     return () => window.clearInterval(introTimer);
   }, []);
@@ -413,14 +413,14 @@ export default function App() {
   useEffect(() => {
     const homeBannerInterval = setInterval(() => {
       setCurrentHomeSlide((prev) => (prev + 1) % homeSlides.length);
-    }, 30000);
+    }, 9000);
     return () => clearInterval(homeBannerInterval);
   }, [homeSlides.length]);
 
   useEffect(() => {
     const promoInterval = setInterval(() => {
       setCurrentPromoSlide((s) => (s + 1) % promoSlides.length);
-    }, 30000);
+    }, 9000);
     return () => clearInterval(promoInterval);
   }, []);
 
@@ -431,21 +431,21 @@ export default function App() {
         const nextIndex = (currentIndex + 1) % founderTabsList.length;
         return founderTabsList[nextIndex];
       });
-    }, 30000);
+    }, 9000);
     return () => clearInterval(founderInterval);
   }, []);
 
   useEffect(() => {
     const slideInterval = setInterval(() => {
       setActiveStatementIndex((prevIndex) => (prevIndex + 1) % statements.length);
-    }, 30000);
+    }, 9000);
     return () => clearInterval(slideInterval);
   }, [statements.length]);
 
   useEffect(() => {
     const newsInterval = setInterval(() => {
       setActiveNewsIndex((prevIndex) => (prevIndex + 1) % socialNewsFeed.length);
-    }, 30000);
+    }, 9000);
     return () => clearInterval(newsInterval);
   }, [socialNewsFeed.length]);
 
@@ -2559,7 +2559,7 @@ export default function App() {
                             <p>We empower children, teenagers, and women to influence others positively, take responsibility, and become agents of positive change.</p>
                           </div>
                           <div className="value-card-element">
-                            <h5><i className="fa-solid fa-seedling"></i> Confidentiality</h5>
+                            <h5><i className="fa-solid fa-user-lock"></i>Confidentiality</h5>
                             <p>We value trust and privacy, ensuring that every individual feels safe, respected, and secure when sharing their thoughts and experiences with us.</p>
                           </div>
                         </div>
@@ -3306,7 +3306,7 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
     if (subPageBannerSlides.length === 0) return;
     const serviceBannerInterval = setInterval(() => {
       setActiveSlideIndex((prev) => (prev + 1) % subPageBannerSlides.length);
-    }, 30000);
+    }, 9000);
     return () => clearInterval(serviceBannerInterval);
   }, [subPageBannerSlides]);
 
@@ -3809,7 +3809,7 @@ function CareCounselingPage() {
   useEffect(() => {
     const counselingInterval = setInterval(() => {
       setActiveCounselingSlide((prev) => (prev + 1) % counselingHeroSlides.length);
-    }, 30000);
+    }, 9000);
 
     return () => clearInterval(counselingInterval);
   }, [counselingHeroSlides.length]);
@@ -3817,7 +3817,7 @@ function CareCounselingPage() {
   useEffect(() => {
     const careFocusInterval = setInterval(() => {
       setActiveCareFocusIndex((prev) => (prev + 1) % careFocusSlides.length);
-    }, 30000);
+    }, 9000);
 
     return () => clearInterval(careFocusInterval);
   }, [careFocusSlides.length]);
