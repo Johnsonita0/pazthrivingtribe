@@ -5,7 +5,7 @@ import 'aos/dist/aos.css';
 export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_update_from_admin', teensKidsMonthlyFee = 10000 }) {
   const teensHeroSlides = [
     {
-      eyebrow: 'Pre-teens & Teens Academy',
+      eyebrow: 'Thriving Pre-teen & Teens Academy',
       title: 'Building confidence, character, and purpose',
       text: 'A supportive environment where children and teenagers grow into responsible leaders with strong values, practical life skills, and self-belief.',
       image: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?q=80&w=1200'
@@ -259,13 +259,13 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
               Dear Thriver,
             </p>
             <p style={{ fontSize: '1rem', lineHeight: '1.8', color: '#4a5568', marginBottom: '1rem' }}>
-              Welcome to Pre-teens & Teens!
+              Welcome to Thriving Pre-teen & Teens!
             </p>
             <p style={{ fontSize: '1rem', lineHeight: '1.8', color: '#4a5568', marginBottom: '1rem' }}>
               A place where we help you build positive values, empower you to reach your full potential and thrive.
             </p>
             <p style={{ fontSize: '1rem', lineHeight: '1.8', color: '#4a5568', marginBottom: '1rem' }}>
-              At Pre-teens & Teens, you will build confidence, strengthen your character, discover your purpose, and develop the leadership skills needed to shine in your world.
+              At Thriving Pre-teen & Teens, you will build confidence, strengthen your character, discover your purpose, and develop the leadership skills needed to shine in your world.
             </p>
             <p style={{ fontSize: '1rem', lineHeight: '1.8', color: '#4a5568', marginBottom: '1.5rem' }}>
               We are excited to walk this journey with you.
@@ -277,7 +277,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
               Coach Roseline Iraoya
             </p>
             <p style={{ fontSize: '0.9rem', lineHeight: '1.4', color: '#4a5568', marginBottom: '1rem', fontStyle: 'italic' }}>
-              Founder, Pre-teens & Teens
+              Founder, Thriving Pre-teen & Teens
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button
@@ -751,7 +751,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
               }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>✅</div>
                 <h3 style={{ fontWeight: '700', marginBottom: '0.5rem' }}>Payment Successful!</h3>
-                <p>Welcome to Pre-teens & Teens! We'll contact you with orientation details.</p>
+                <p>Welcome to Thriving Pre-teen & Teens! We'll contact you with orientation details.</p>
               </div>
             ) : paymentStep === 'registration' ? (
               <form onSubmit={handleRegistrationNext}>

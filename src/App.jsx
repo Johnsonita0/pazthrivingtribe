@@ -132,7 +132,7 @@ export default function App() {
       subtitle: "Empowering you with core values to reach your full potential.",
       image: "./image/pic3.png"
     },
-     {
+    {
       title: "Need Someone to Talk To?",
       subtitle: "Paz Thriving Tribe offers a safe and confidential space where you can talk and be heard.",
       image: "./image/pic3.png"
@@ -186,7 +186,7 @@ export default function App() {
     },
     children: {
       slug: "children",
-      title: "Pre-teens & Teens",
+      title: "Thriving Pre-teen & Teens",
       subtitle: "Dedicated Mentors & Youth Development Programs",
       description: "Guiding pre-teens and teenagers via one-on-one professional mentorship frameworks designed to build confidence, self-reliance, character development, and cognitive emotional stability.",
       metricCount: "310+ Teens Mentored"
@@ -2265,18 +2265,17 @@ export default function App() {
             <Link to="/" className="nav-link-item" onClick={() => { setNavOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
               <i className="fa-solid fa-house"></i> Home
             </Link>
-            <Link to="/teens-kids-academy" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-child-reaching"></i> Pre-teens & Teens
+            <Link to="/care-counseling" className="nav-link-item" onClick={() => setNavOpen(false)}>
+              <i className="fa-solid fa-hand-holding-heart"></i> Talk & Thrive
             </Link>
-
-            <Link to="/services/marriage" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-heart-crack"></i> Thriving Women
+            <Link to="/teens-kids-academy" className="nav-link-item" onClick={() => setNavOpen(false)}>
+              <i className="fa-solid fa-child-reaching"></i> Pre-teens
             </Link>
             <Link to="/services/family" className="nav-link-item" onClick={() => setNavOpen(false)}>
               <i className="fa-solid fa-people-roof"></i> Thriving Parents
             </Link>
-            <Link to="/care-counseling" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-hand-holding-heart"></i> Talk & Thrive
+            <Link to="/services/marriage" className="nav-link-item" onClick={() => setNavOpen(false)}>
+              <i className="fa-solid fa-heart-crack"></i> Thriving Women
             </Link>
 
             <a href="https://pazthrivingtribe.schoolsfocus.net/signin" className="nav-cta-btn" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)}>
@@ -2502,7 +2501,7 @@ export default function App() {
                   <div className="founder-portrait-frame" data-aos="fade-right">
                     <img src="../image/pic1.jpeg" className="founder-img" alt="Paz Tribe Founder and CEO" />
                     <div className="founder-title-tag-overlay">
-                      <h4>Mrs. Roseline Iraoya </h4>
+                      <h4>Roseline Iraoya </h4>
                       <span>Lead Coach</span>
                       <span>Paz Thriving Tribe</span>
                     </div>
@@ -2527,7 +2526,7 @@ export default function App() {
                           <p className="speech-quote-text">
                             "The lead consultant at Paz Thriving Tribe Academy, a life coaching organization. A certified children's life coach and member of the Chartered Institute of Mentoring and Coaching in Nigeria."
                           </p>
-                          <div className="speech-signature">— Executive Speech Address, Leader Council</div>
+                          <div className="speech-signature">Coach Roseline Iraoya, <br /> Lead Coach, <br /> Paz Thriving Tribe</div>
                         </div>
                       )}
 
@@ -2535,11 +2534,14 @@ export default function App() {
                         <div className="about-org-block">
                           {/* <h3>About Paz Thriving Tribe</h3> */}
                           <p>
-                            Paz Thriving Tribe Coaching and Mentoring Organisation is committed to impacting families, transforming teenagers, positively influencing women, and helping children and young people develop the values, character, and healthy habits they need to thrive and become purposeful leaders.
+                            Paz Thriving Tribe Coaching, Mentoring and Counselling Organisation is committed to
+                            impacting individuals, families, transforming teenagers, positively influencing women,
+                            and helping children and young people develop the values, character, and healthy
+                            habits they need to thrive and become purposeful leaders.
                           </p>
-                          <p className="tagline">
+                          {/* <p className="tagline">
                             Tagline: Transforming Lives, Building Character, Raising Leaders
-                          </p>
+                          </p> */}
 
                         </div>
                       )}
@@ -2602,6 +2604,15 @@ export default function App() {
                   <p className="section-subtext">Choose the area that fits your current season and discover a tailored path for growth, mentoring, and support.</p>
 
                   <div className="services-routing-grid" data-aos="fade-up">
+                    <Link to="/care-counseling" className="service-gateway-card">
+                      <div>
+                        <div className="gateway-icon-wrap"><i className="fa-solid fa-hand-holding-heart"></i></div>
+                        <h3>Talk & Thrive</h3>
+                        <p>Dedicated counseling, coaching, and emotional support services for individual, parents, teens, women, and young adults who want guidance and a safe place to grow.</p>
+                      </div>
+                      <div className="gateway-footer-action">Read more<i className="fa-solid fa-arrow-trend-up"></i></div>
+                    </Link>
+
                     <Link to="/services/children" className="service-gateway-card">
                       <div>
                         <div className="gateway-icon-wrap"><i className="fa-solid fa-child-reaching"></i></div>
@@ -2609,15 +2620,6 @@ export default function App() {
                         <p>{services.children.description}</p>
                       </div>
                       <div className="gateway-footer-action">Read more <i className="fa-solid fa-arrow-trend-up"></i></div>
-                    </Link>
-
-                    <Link to="/services/marriage" className="service-gateway-card">
-                      <div>
-                        <div className="gateway-icon-wrap"><i className="fa-solid fa-heart-crack"></i></div>
-                        <h3>{services.marriage.title}</h3>
-                        <p>{services.marriage.description}</p>
-                      </div>
-                      <div className="gateway-footer-action">Read more<i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
 
                     <Link to="/services/family" className="service-gateway-card">
@@ -2629,11 +2631,11 @@ export default function App() {
                       <div className="gateway-footer-action">Read more<i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
 
-                    <Link to="/care-counseling" className="service-gateway-card">
+                    <Link to="/services/marriage" className="service-gateway-card">
                       <div>
-                        <div className="gateway-icon-wrap"><i className="fa-solid fa-hand-holding-heart"></i></div>
-                        <h3>Paz Thriving Talk & Thrive Centre</h3>
-                        <p>Dedicated counseling, coaching, and emotional support services for parents, teens, women, and young adults who want guidance and a safe place to grow.</p>
+                        <div className="gateway-icon-wrap"><i className="fa-solid fa-heart-crack"></i></div>
+                        <h3>{services.marriage.title}</h3>
+                        <p>{services.marriage.description}</p>
                       </div>
                       <div className="gateway-footer-action">Read more<i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
@@ -2822,7 +2824,7 @@ export default function App() {
                               <select value={editTarget} onChange={(e) => setEditTarget(e.target.value)} className="plain-text-input" style={{ height: '46px', border: '1px solid var(--brand-blue)' }}>
                                 <option value="family">Thriving Parents</option>
                                 <option value="marriage">Thriving Women</option>
-                                <option value="children">Pre-teens & Teens</option>
+                                <option value="children">Thriving Pre-teen & Teens</option>
                               </select>
                             </div>
 
@@ -2968,7 +2970,7 @@ export default function App() {
                               <select value={programForm.service} onChange={(e) => setProgramForm((prev) => ({ ...prev, service: e.target.value }))} className="plain-text-input" style={{ height: '46px' }}>
                                 <option value="family">Thriving Parents</option>
                                 <option value="marriage">Thriving Women</option>
-                                <option value="children">Pre-teens & Teens</option>
+                                <option value="children">Thriving Pre-teen & Teens</option>
                               </select>
                             </div>
 
@@ -3161,18 +3163,19 @@ export default function App() {
                 <div className="footer-vector-badge"><img src={theme === 'dark' ? "../logo/logo2.jpeg" : "../logo/logomain.png"} alt="Paz Thriving Tribe logo" className="nav-logo-img" /></div>
                 <span className="footer-brand-headline">Paz Thriving Tribe</span>
               </Link>
-              <p>Paz Thriving Tribe Coaching, Mentoring and Counselling Organisation is committed to 
-                impacting individuals, families, transforming teenagers, positively influencing women, 
-                and helping children and young people develop the values, character, and healthy 
+              <p>Paz Thriving Tribe Coaching, Mentoring and Counselling Organisation is committed to
+                impacting individuals, families, transforming teenagers, positively influencing women,
+                and helping children and young people develop the values, character, and healthy
                 habits they need to thrive and become purposeful leaders.</p>
             </div>
 
             <div className="footer-links-column">
               <h4>What we offer</h4>
               <div className="footer-interactive-links">
+                <Link to="/care-counseling" className="footer-nav-anchor">Talk & Thrive</Link>
+                <Link to="/services/children" className="footer-nav-anchor">Pre-teens</Link>
                 <Link to="/services/family" className="footer-nav-anchor">Thriving Parents</Link>
                 <Link to="/services/marriage" className="footer-nav-anchor">Thriving Women</Link>
-                <Link to="/services/children" className="footer-nav-anchor">Pre-teens & Teens</Link>
               </div>
             </div>
 
@@ -3336,9 +3339,9 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
       formSub: "Join the Thriving Women Community"
     },
     children: {
-      newsTitle: "Pre-teens & Teens Monitor",
+      newsTitle: "Thriving Pre-teen & Teens Monitor",
       newsText: "Cognitive stability milestone tracking update released for one-on-one pre-teen and adolescent mentorship program platforms.",
-      formSub: "Enroll Child / Teenager into Pre-teens & Teens"
+      formSub: "Enroll Child / Teenager into Thriving Pre-teen & Teens"
     }
   }[serviceSlug];
 
@@ -3979,7 +3982,7 @@ function CareCounselingPage() {
             <span className="section-label">Talk & Thrive</span>
             <h1 className="section-title-heading" style={{ textAlign: 'left', marginBottom: '0.2rem' }}>Support that feels calm, confidential, and practical.</h1>
             <p className="section-subtext" style={{ textAlign: 'left', marginBottom: '0', fontSize: '1rem' }}>
-             Talk & Thrive Sessions provide a safe, confidential, and supportive space where you can freely express yourself, share your burdens and gain clarity
+              Talk & Thrive Sessions provide a safe, confidential, and supportive space where you can freely express yourself, share your burdens and gain clarity
             </p>
           </div>
 
@@ -4263,7 +4266,7 @@ function HomeIntakeForm({ onSubmitApplicant }) {
           <select required value={track} onChange={(e) => setTrack(e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
             <option value="family">Thriving Parents</option>
             <option value="marriage">Thriving Women</option>
-            <option value="children">Pre-teens & Teens</option>
+            <option value="children">Thriving Pre-teen & Teens</option>
           </select>
         </div>
       </div>
@@ -4301,7 +4304,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
     emergencyContactNumber: '',
     signature: '',
     consentDate: new Date().toISOString().slice(0, 10),
-    track: 'Pre-teens & Teens',
+    track: 'Thriving Pre-teen & Teens',
     amount: 10000
   });
   const [goalAreas, setGoalAreas] = useState({
@@ -4389,7 +4392,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
         emergencyContactNumber: '',
         signature: '',
         consentDate: new Date().toISOString().slice(0, 10),
-        track: 'Pre-teens & Teens',
+        track: 'Thriving Pre-teen & Teens',
         amount: 10000
       }));
       setGoalAreas({
@@ -4763,7 +4766,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
               <div className="form-input-container" style={{ marginBottom: '1rem' }}>
                 <label>Selected Academy Track</label>
                 <select value={formData.track} onChange={(e) => updateField('track', e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
-                  <option>Pre-teens & Teens</option>
+                  <option>Thriving Pre-teen & Teens</option>
                   <option>Thriving Parents</option>
                   <option>Thriving Women</option>
                 </select>

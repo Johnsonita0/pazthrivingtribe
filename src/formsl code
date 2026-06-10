@@ -40,6 +40,7 @@ export default function App() {
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [showBookingModal, setShowBookingModal] = useState(false);
   const [cookieConsentAccepted, setCookieConsentAccepted] = useState(false);
   const [showCookieBanner, setShowCookieBanner] = useState(false);
   const logoImageUrl = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"%3E%3Crect width="48" height="48" rx="12" fill="%23238636"/%3E%3Ctext x="50%" y="55%" font-size="26" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-weight="700"%3EP%3C/text%3E%3C/svg%3E';
@@ -52,6 +53,16 @@ export default function App() {
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState(null);
   const [enrollments, setEnrollments] = useState({});
+  const [bookingForm, setBookingForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    clientType: 'Individual',
+    sessionType: 'Virtual',
+    preferredTime: 'Any time',
+    concern: ''
+  });
+  const [bookingSubmitted, setBookingSubmitted] = useState(false);
 
   // --- Sliding Hero Banner States (Main Page) ---
   const [currentHomeSlide, setCurrentHomeSlide] = useState(0);
@@ -107,7 +118,7 @@ export default function App() {
   const homeSlides = [
     {
       title: "Paz Thriving Tribe",
-      subtitle: "Coaching and Mentoring Organization.",
+      subtitle: "Coaching, Mentoring and Counselling Organization.",
       image: "./logo/logo2.jpeg",
       imageType: 'logo'
     },
@@ -119,6 +130,11 @@ export default function App() {
     {
       title: "Coaching and Mentoring",
       subtitle: "Empowering you with core values to reach your full potential.",
+      image: "./image/pic3.png"
+    },
+    {
+      title: "Need Someone to Talk To?",
+      subtitle: "Paz Thriving Tribe offers a safe and confidential space where you can talk and be heard.",
       image: "./image/pic3.png"
     },
     {
@@ -156,7 +172,7 @@ export default function App() {
   const [services, setServices] = useState({
     family: {
       slug: "family",
-      title: "Thriving Singles",
+      title: "Thriving Parents",
       subtitle: "Single Women Empowerment & Personal Development",
       description: "Empowering single women with personal growth strategies, confidence-building frameworks, and actionable toolsets to navigate life's transitions and cultivate purposeful independence.",
       metricCount: "120+ Women Empowered"
@@ -181,6 +197,17 @@ export default function App() {
   const [founderActiveTab, setFounderActiveTab] = useState('speech');
   const founderTabsList = ['speech', 'about', 'values'];
 
+  // --- Rotating Intro Text for the Highlights Section ---
+  const [introTextMode, setIntroTextMode] = useState('heading');
+
+  useEffect(() => {
+    const introTimer = window.setInterval(() => {
+      setIntroTextMode((currentMode) => (currentMode === 'heading' ? 'paragraph' : 'heading'));
+    }, 9000);
+
+    return () => window.clearInterval(introTimer);
+  }, []);
+
   // --- State for Auto-Sliding Mission & Vision Statements ---
   const [activeStatementIndex, setActiveStatementIndex] = useState(0);
   const statements = [
@@ -197,7 +224,7 @@ export default function App() {
       icon: "fa-solid fa-wand-magic-sparkles"
     }
   ];
- const [socialEditTarget, setSocialEditTarget] = useState('YouTube');
+  const [socialEditTarget, setSocialEditTarget] = useState('YouTube');
   const [socialPreviewTitle, setSocialPreviewTitle] = useState('');
   const [socialPreviewSummary, setSocialPreviewSummary] = useState('');
   const [socialPreviewBadgeText, setSocialPreviewBadgeText] = useState('');
@@ -206,7 +233,7 @@ export default function App() {
   const [socialPreviewEmbedUrl, setSocialPreviewEmbedUrl] = useState('https://www.youtube.com/embed/-vOSeWpU1Xs');
   const [socialMetadataLoading, setSocialMetadataLoading] = useState(false);
   const [youtubeEmbedUrl, setYoutubeEmbedUrl] = useState('https://www.youtube.com/embed/-vOSeWpU1Xs');
-  
+
   // --- State for Auto-Sliding Social Media News Updates Screen ---
   const [activeNewsIndex, setActiveNewsIndex] = useState(0);
   const [socialNewsFeed, setSocialNewsFeed] = useState([
@@ -241,7 +268,7 @@ export default function App() {
     //   targetUrl: "https://youtube.com/shorts/-vOSeWpU1Xs?feature=share"
     // }
   ]);
- 
+
 
   // --- CMS Admin Form Inputs ---
   const [editTarget, setEditTarget] = useState('family');
@@ -386,14 +413,14 @@ export default function App() {
   useEffect(() => {
     const homeBannerInterval = setInterval(() => {
       setCurrentHomeSlide((prev) => (prev + 1) % homeSlides.length);
-    }, 6000);
+    }, 9000);
     return () => clearInterval(homeBannerInterval);
   }, [homeSlides.length]);
 
   useEffect(() => {
     const promoInterval = setInterval(() => {
       setCurrentPromoSlide((s) => (s + 1) % promoSlides.length);
-    }, 6000);
+    }, 9000);
     return () => clearInterval(promoInterval);
   }, []);
 
@@ -404,21 +431,21 @@ export default function App() {
         const nextIndex = (currentIndex + 1) % founderTabsList.length;
         return founderTabsList[nextIndex];
       });
-    }, 6000);
+    }, 9000);
     return () => clearInterval(founderInterval);
   }, []);
 
   useEffect(() => {
     const slideInterval = setInterval(() => {
       setActiveStatementIndex((prevIndex) => (prevIndex + 1) % statements.length);
-    }, 5000);
+    }, 9000);
     return () => clearInterval(slideInterval);
   }, [statements.length]);
 
   useEffect(() => {
     const newsInterval = setInterval(() => {
       setActiveNewsIndex((prevIndex) => (prevIndex + 1) % socialNewsFeed.length);
-    }, 7000);
+    }, 9000);
     return () => clearInterval(newsInterval);
   }, [socialNewsFeed.length]);
 
@@ -671,7 +698,7 @@ export default function App() {
     };
 
     // If editing an existing testimonial, update it in local state (and attempt DB update)
-      if (testimonialEditIndex !== null && promoSlides[testimonialEditIndex]) {
+    if (testimonialEditIndex !== null && promoSlides[testimonialEditIndex]) {
       const target = promoSlides[testimonialEditIndex];
       setPromoSlides((prev) => prev.map((t, i) => (i === testimonialEditIndex ? { ...t, ...payload } : t)));
 
@@ -881,6 +908,47 @@ export default function App() {
     }
   };
 
+  const handleHeroBookingSubmit = async (event) => {
+    event.preventDefault();
+
+    const message = [
+      `Client type: ${bookingForm.clientType}`,
+      `Session type: ${bookingForm.sessionType}`,
+      `Preferred time: ${bookingForm.preferredTime}`,
+      `Concern: ${bookingForm.concern}`
+    ].join(' | ');
+
+    try {
+      const { error } = await supabase.from('tribe_applicants').insert([{
+        full_name: bookingForm.name,
+        email: bookingForm.email,
+        phone: bookingForm.phone,
+        track: 'talk-thrive',
+        message
+      }]);
+
+      if (error) throw error;
+
+      setBookingSubmitted(true);
+      setToastMessage('Booking request sent successfully. We will follow up shortly.');
+      setToastType('success');
+    } catch (err) {
+      console.error('Home banner booking submission failed:', err);
+      await addApplicant({
+        fullName: bookingForm.name,
+        email: bookingForm.email,
+        phone: bookingForm.phone,
+        track: 'talk-thrive',
+        message
+      });
+      setBookingSubmitted(true);
+      setToastMessage('Booking request saved locally. We will follow up shortly.');
+      setToastType('success');
+    } finally {
+      setBookingForm({ name: '', email: '', phone: '', clientType: 'Individual', sessionType: 'Virtual', preferredTime: 'Any time', concern: '' });
+    }
+  };
+
   const addApplicant = async (applicant) => {
     const newApplicant = {
       id: `app-${Date.now()}`,
@@ -1047,14 +1115,14 @@ export default function App() {
         .nav-menu-toggle { display: none; background: none; border: none; color: var(--text-primary); font-size: 1.55rem; cursor: pointer; }
 
         /* Floating Controls UI Layer */
-        .float-theme-toggle-container { position: fixed; bottom: 25px; left: 25px; z-index: 9999; }
+        .float-theme-toggle-container { position: fixed; bottom: 18px; left: 18px; z-index: 9999; }
         .theme-toggle-switch-shell {
           display: flex; align-items: center; gap: 0.6rem; cursor: pointer;
           background-color: var(--bg-card); border: 1px solid var(--border-color);
           padding: 0.75rem 1.2rem; border-radius: 30px; box-shadow: var(--shadow-lg);
           animation: bounce-default 2s infinite ease-in-out;
         }
-        .float-whatsapp-container { position: fixed; bottom: 25px; right: 25px; z-index: 9999; }
+        .float-whatsapp-container { position: fixed; bottom: 18px; right: 18px; z-index: 9999; }
         .whatsapp-float-btn {
           display: flex; align-items: center; justify-content: center; background-color: #25D366; color: white; border: none;
           width: 56px; height: 56px; border-radius: 50%; box-shadow: 0 4px 16px rgba(37,211,102,0.4); cursor: pointer; text-decoration: none;
@@ -1094,18 +1162,56 @@ export default function App() {
           content: '';
           position: absolute;
           top: 0; left: 0; width: 100%; height: 100%;
-          /* Apply a consistent dark translucent overlay so banner text reads clearly */
-          background: linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.45));
+          background: linear-gradient(rgba(15, 23, 42, 0.62), rgba(15, 23, 42, 0.28));
         }
         .hero-overlay {
           position: relative;
           z-index: 2;
-          text-align: center;
-          padding: 4rem 2rem;
-          max-width: 1000px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          min-height: 100%;
+          padding: 4rem 1rem;
         }
-        .hero-overlay h1 { font-size: 4.2rem; color: #ffffff; margin-bottom: 1rem; font-weight: 800; letter-spacing: -1px; animation: bannerTextFade 0.6s ease-out; text-shadow: 0 8px 28px rgba(0,0,0,0.7); }
-        .hero-overlay p { font-size: 1.45rem; color: #ffffff; max-width: 900px; margin: 0 auto 2.5rem auto; line-height: 1.6; animation: bannerTextFade 0.8s ease-out; text-shadow: 0 6px 20px rgba(0,0,0,0.6); }
+        .hero-copy-card {
+          width: min(100%, 820px);
+          background: transparent;
+          border: none;
+          border-radius: 0;
+          box-shadow: none;
+          padding: 1.25rem 1rem 1.1rem;
+          text-align: center;
+          backdrop-filter: none;
+          position: relative;
+          z-index: 2;
+        }
+        .hero-copy-card h1 { font-size: clamp(2.2rem, 6vw, 4.2rem); color: #ffffff; margin-bottom: 0.75rem; font-weight: 800; letter-spacing: -1px; animation: bannerTextFade 0.6s ease-out; text-shadow: 0 10px 28px rgba(0,0,0,0.85); }
+        .hero-copy-card p { font-size: clamp(1rem, 2vw, 1.35rem); color: #eff6ff; max-width: 760px; margin: 0 auto 1rem auto; line-height: 1.5; animation: bannerTextFade 0.8s ease-out; text-shadow: 0 6px 20px rgba(0,0,0,0.75); }
+        .hero-action-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.75rem; margin-top: 1rem; position: relative; z-index: 2; }
+        .hero-arrow-cluster {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          transform: translate(-50%, -50%);
+          z-index: 3;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          width: 100%;
+          max-width: none;
+          padding: 0 0.15rem;
+          pointer-events: none;
+        }
+        .hero-nav-btn {
+          width: 48px; height: 48px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.18);
+          background: rgba(15, 23, 42, 0.55); color: #ffffff; display: inline-flex; align-items: center; justify-content: center;
+          cursor: pointer; box-shadow: 0 12px 30px rgba(15,23,42,0.35); transition: transform 0.2s ease, background 0.2s ease;
+          pointer-events: auto;
+          backdrop-filter: blur(6px);
+        }
+        .hero-nav-btn:hover { background: rgba(255,255,255,0.2); transform: translateY(-1px); }
+        .hero-scroll-btn { min-width: 180px; }
         @keyframes bannerTextFade { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         
         .hero-scroll-btn { background-color: var(--brand-green); color: white; padding: 1rem 2.5rem; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 1.05rem; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.6rem; }
@@ -1714,6 +1820,15 @@ export default function App() {
           box-sizing: border-box;
         }
         .section-intro-shell { max-width: 1100px; margin: 0 auto 2.5rem; text-align: center; }
+        .rotating-intro-shell { position: relative; }
+        .rotating-intro-copy {
+          animation: introRotateIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+          transform-style: preserve-3d;
+        }
+        @keyframes introRotateIn {
+          0% { opacity: 0; transform: rotateX(-20deg) translateY(8px); }
+          100% { opacity: 1; transform: rotateX(0deg) translateY(0); }
+        }
         .section-intro-shell h2 {
           margin: 0.75rem auto 0.75rem;
           max-width: 860px;
@@ -1809,9 +1924,9 @@ export default function App() {
           overflow: hidden;
           border-radius: 18px;
           padding: 1rem;
-           background: var(--bg-card);
+          background: var(--bg-card);
           border: 1px solid var(--border-color);
-          box-shadow: var(--shadow-sm);
+          box-shadow: none;
           transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
         }
         .care-animated-box::after {
@@ -1823,7 +1938,7 @@ export default function App() {
           transition: opacity 0.25s ease;
           pointer-events: none;
         }
-        .care-animated-box:hover { transform: translateY(-4px); border-color: rgba(153, 231, 206, 0.28); box-shadow: 0 24px 42px rgba(0, 0, 0, 0.18); }
+        .care-animated-box:hover { transform: translateY(-2px); border-color: var(--border-color); box-shadow: var(--shadow-sm); }
         .care-animated-box:hover::after { opacity: 1; }
         .care-animated-box h3 { font-size: 1.02rem; margin: 0 0 0.35rem 0; color: var(--text-primary); }
         .care-animated-box p { color: var(--text-muted); line-height: 1.6; font-size: 0.95rem; margin: 0; }
@@ -1850,20 +1965,20 @@ export default function App() {
           border-radius: 18px;
           padding: 1.25rem;
           background: var(--bg-card);
-          box-shadow: var(--shadow-sm);
+          box-shadow: none;
           transition: transform 0.2s ease, border-color 0.2s ease;
         }
-        .care-counseling-card:hover { transform: translateY(-2px); border-color: rgba(153, 231, 206, 0.24); }
+        .care-counseling-card:hover { transform: translateY(-1px); border-color: var(--border-color); box-shadow: var(--shadow-sm); }
         .care-counseling-card h3 { font-size: 1.15rem; margin: 0 0 0.75rem 0; color: var(--text-primary); }
         .care-counseling-card p { color: var(--text-muted); line-height: 1.65; font-size: 0.98rem; margin: 0 0 0.85rem 0; }
         .care-counseling-card ul { margin: 0; padding-left: 1rem; color: var(--text-muted); line-height: 1.6; }
         .why-it-matters-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.9rem; margin-top: 0.75rem; }
         .why-it-matters-card {
-          border: 1px solid rgba(35, 134, 54, 0.14);
+          border: 1px solid var(--border-color);
           border-radius: 16px;
           padding: 1rem;
-          background: linear-gradient(145deg, rgba(255,255,255,0.96), rgba(243, 250, 247, 0.92));
-          box-shadow: 0 18px 32px rgba(15, 23, 42, 0.08);
+          background: var(--bg-card);
+          box-shadow: var(--shadow-sm);
           transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
         }
         .why-it-matters-card:hover { transform: translateY(-3px); border-color: rgba(35, 134, 54, 0.28); box-shadow: 0 22px 35px rgba(15, 23, 42, 0.12); }
@@ -1885,7 +2000,12 @@ export default function App() {
         .why-it-matters-card p { margin: 0; color: var(--text-muted); font-size: 0.9rem; line-height: 1.55; }
         @media (max-width: 992px) { .why-it-matters-grid { grid-template-columns: 1fr 1fr; } }
         @media (max-width: 640px) { .why-it-matters-grid { grid-template-columns: 1fr; } }
-        .care-focus-surface { background: linear-gradient(145deg, var(--bg-card), rgba(255,255,255,0.94)); border-color: rgba(35, 134, 54, 0.12); }
+        .care-focus-surface {
+          background: var(--bg-main);
+          border: 1px solid var(--border-color);
+          color: var(--text-primary);
+          box-shadow: none;
+        }
         .care-focus-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
         .care-focus-copy { flex: 1 1 360px; min-width: 0; }
         .care-focus-copy h3 { font-size: 1.2rem; line-height: 1.35; margin: 0.2rem 0 0.45rem 0; }
@@ -1909,17 +2029,22 @@ export default function App() {
         .care-focus-dot { width: 10px; height: 10px; border-radius: 999px; border: none; background: var(--border-color); cursor: pointer; padding: 0; }
         .care-focus-dot.active { background: var(--brand-green); width: 28px; border-radius: 999px; box-shadow: 0 0 0 4px rgba(35, 134, 54, 0.12); }
         .care-counseling-card li + li { margin-top: 0.35rem; }
-        .care-focus-card { background: linear-gradient(145deg, rgba(6, 22, 27, 0.98), rgba(15, 42, 51, 0.96)); border: 1px solid rgba(153, 231, 206, 0.14); box-shadow: 0 18px 40px rgba(8, 18, 24, 0.28); }
+        .care-focus-card {
+          background: var(--bg-card);
+          border: 1px solid var(--border-color);
+          box-shadow: var(--shadow-sm);
+          color: var(--text-primary);
+        }
         .care-focus-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
         .care-focus-copy { flex: 1 1 320px; min-width: 0; }
-        .care-focus-copy h3 { font-size: 1.18rem; line-height: 1.35; margin: 0.45rem 0 0.35rem; }
-        .care-focus-copy p { color: #dfe9ef; }
+        .care-focus-copy h3 { font-size: 1.18rem; line-height: 1.35; margin: 0.45rem 0 0.35rem; color: var(--text-primary); }
+        .care-focus-copy p { color: var(--text-muted); }
         .care-focus-controls { display: flex; justify-content: flex-end; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-        .care-focus-helper { color: #d6e6ec; font-size: 0.88rem; margin-top: 0.45rem; opacity: 0.92; }
+        .care-focus-helper { color: var(--text-muted); font-size: 0.88rem; margin-top: 0.45rem; opacity: 1; }
         .care-chip-list { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
         .care-chip-list span { display: inline-flex; align-items: center; padding: 0.45rem 0.75rem; border-radius: 999px; background: rgba(35,134,54,0.12); color: var(--text-primary); border: 1px solid rgba(35,134,54,0.18); font-size: 0.9rem; font-weight: 600; }
         .care-services-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-top: 1rem; }
-        .care-mini-card { border: 1px solid var(--border-color); border-radius: 16px; padding: 0.95rem; background-color: var(--bg-main); color: var(--text-primary); font-weight: 700; font-size: 0.95rem; }
+        .care-mini-card { border: 1px solid var(--border-color); border-radius: 16px; padding: 0.95rem; background-color: var(--bg-card); color: var(--text-primary); font-weight: 700; font-size: 0.95rem; box-shadow: none; }
         .care-mini-card small { display: block; color: var(--text-muted); font-weight: 500; margin-top: 0.35rem; }
         @media (max-width: 992px) { .care-counseling-grid { grid-template-columns: 1fr; } .care-services-strip { grid-template-columns: 1fr 1fr; } }
         @media (max-width: 768px) {
@@ -2148,10 +2273,10 @@ export default function App() {
               <i className="fa-solid fa-heart-crack"></i> Thriving Women
             </Link>
             <Link to="/services/family" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-people-roof"></i> Thriving Singles
+              <i className="fa-solid fa-people-roof"></i> Thriving Parents
             </Link>
             <Link to="/care-counseling" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-hand-holding-heart"></i> Care & Counseling
+              <i className="fa-solid fa-hand-holding-heart"></i> Talk & Thrive
             </Link>
 
             <a href="https://pazthrivingtribe.schoolsfocus.net/signin" className="nav-cta-btn" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)}>
@@ -2169,34 +2294,169 @@ export default function App() {
             element={
               <div className="public-website-container">
                 <section className="hero-section" data-aos="fade-down">
-                  <div
-                    className={`hero-slide-bg ${homeSlides[currentHomeSlide].imageType === 'contain' ? 'hero-bg-contain' : ''}`}
-                    style={{
-                      backgroundImage: homeSlides[currentHomeSlide].imageType === 'contain' ? 'none' : `url(${homeSlides[currentHomeSlide].image})`,
-                      backgroundSize: homeSlides[currentHomeSlide].imageType === 'logo'
-                        ? 'contain'
-                        : 'cover',
-                      backgroundPosition: 'center',
-                      backgroundRepeat: 'no-repeat'
-                    }}
-                  />
-                  {homeSlides[currentHomeSlide].imageType === 'contain' && (
-                    <img
-                      src={homeSlides[currentHomeSlide].image}
-                      alt="Banner"
-                      className="hero-inline-contain-img"
-                    />
-                  )}
-                  {homeSlides[currentHomeSlide].imageType !== 'contain' && (
-                    <div className="hero-overlay" key={currentHomeSlide}>
-                      <h1>{homeSlides[currentHomeSlide].title}</h1>
-                      <p>{homeSlides[currentHomeSlide].subtitle}</p>
-                      <button className="hero-scroll-btn" onClick={() => setShowRegisterModal(true)}>
-                        Register Now <i className="fa-solid fa-user-plus"></i>
-                      </button>
-                    </div>
-                  )}
+                  {(() => {
+                    const currentSlide = homeSlides[currentHomeSlide];
+                    return (
+                      <>
+                        <div
+                          className={`hero-slide-bg ${currentSlide.imageType === 'contain' ? 'hero-bg-contain' : ''}`}
+                          style={{
+                            backgroundImage: currentSlide.imageType === 'contain' ? 'none' : `url(${currentSlide.image})`,
+                            backgroundSize: currentSlide.imageType === 'logo' ? 'contain' : 'cover',
+                            backgroundPosition: 'center',
+                            backgroundRepeat: 'no-repeat'
+                          }}
+                        />
+                        {currentSlide.imageType === 'contain' && (
+                          <img
+                            src={currentSlide.image}
+                            alt="Banner"
+                            className="hero-inline-contain-img"
+                          />
+                        )}
+                        {currentSlide.imageType !== 'contain' && (
+                          <div className="hero-overlay" key={currentHomeSlide}>
+                            <div className="hero-copy-card">
+                              <h1>{currentSlide.title}</h1>
+                              <p>{currentSlide.subtitle}</p>
+                              <div className="hero-action-row">
+                                <button
+                                  className="hero-scroll-btn"
+                                  onClick={() => {
+                                    if (currentSlide.title === 'Need Someone to Talk To?') {
+                                      setShowBookingModal(true);
+                                    } else {
+                                      setShowRegisterModal(true);
+                                    }
+                                  }}
+                                >
+                                  {currentSlide.title === 'Need Someone to Talk To?' ? 'Book Now' : 'Register Now'}
+                                  <i className={currentSlide.title === 'Need Someone to Talk To?' ? 'fa-solid fa-calendar-check' : 'fa-solid fa-user-plus'}></i>
+                                </button>
+                              </div>
+                            </div>
+                            <div className="hero-arrow-cluster" aria-label="Slide navigation">
+                              <button
+                                type="button"
+                                className="hero-nav-btn"
+                                aria-label="Previous slide"
+                                onClick={() => setCurrentHomeSlide((prev) => (prev - 1 + homeSlides.length) % homeSlides.length)}
+                              >
+                                <i className="fa-solid fa-chevron-left"></i>
+                              </button>
+                              <button
+                                type="button"
+                                className="hero-nav-btn"
+                                aria-label="Next slide"
+                                onClick={() => setCurrentHomeSlide((prev) => (prev + 1) % homeSlides.length)}
+                              >
+                                <i className="fa-solid fa-chevron-right"></i>
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </section>
+                {showBookingModal && (
+                  <div
+                    style={{
+                      position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.78)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '5.5rem 1rem 2rem', zIndex: 2147483647, overflowY: 'auto', WebkitOverflowScrolling: 'touch'
+                    }}
+                    onClick={() => setShowBookingModal(false)}
+                  >
+                    <article
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        width: '100%', maxWidth: '780px', borderRadius: '24px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: '0 24px 60px rgba(15, 23, 42, 0.35)', padding: '1rem 1rem 1.1rem', maxHeight: 'min(920px, calc(100vh - 5rem))', overflowY: 'auto', marginTop: '0', marginBottom: '1rem', boxSizing: 'border-box', position: 'relative'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.5rem' }}>
+                        <div>
+                          <span className="care-pill">Talk & Thrive booking</span>
+                          <h3 style={{ margin: '0.35rem 0 0.35rem', fontSize: '1.2rem' }}>Book your counseling session</h3>
+                          <p style={{ margin: 0, color: 'var(--text-muted)', lineHeight: 1.45 }}>
+                            Use this quick form to request your session. The details are sent to the admin dashboard for follow-up.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowBookingModal(false)}
+                          style={{ border: '1px solid var(--border-color)', background: 'transparent', borderRadius: '999px', width: '40px', height: '40px', color: 'var(--text-primary)', cursor: 'pointer' }}
+                          aria-label="Close booking form"
+                        >
+                          <i className="fa-solid fa-xmark"></i>
+                        </button>
+                      </div>
+
+                      {bookingSubmitted ? (
+                        <div className="status-feedback-banner" style={{ marginTop: '0.5rem' }}>
+                          <i className="fa-solid fa-circle-check"></i> Your booking request has been received and saved for admin follow-up.
+                        </div>
+                      ) : (
+                        <form onSubmit={handleHeroBookingSubmit} className="cms-creation-form-layout" style={{ marginTop: '0.7rem' }}>
+                          <div className="registration-fields-grid">
+                            <div className="form-input-container">
+                              <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Full Name</label>
+                              <input type="text" required value={bookingForm.name} onChange={(e) => setBookingForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Enter your full name" className="plain-text-input" />
+                            </div>
+                            <div className="form-input-container">
+                              <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Email Address</label>
+                              <input type="email" required value={bookingForm.email} onChange={(e) => setBookingForm((prev) => ({ ...prev, email: e.target.value }))} placeholder="you@example.com" className="plain-text-input" />
+                            </div>
+                          </div>
+                          <div className="registration-fields-grid">
+                            <div className="form-input-container">
+                              <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Phone Number</label>
+                              <input type="tel" required value={bookingForm.phone} onChange={(e) => setBookingForm((prev) => ({ ...prev, phone: e.target.value }))} placeholder="+234..." className="plain-text-input" />
+                            </div>
+                            <div className="form-input-container">
+                              <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Client Type</label>
+                              <select value={bookingForm.clientType} onChange={(e) => setBookingForm((prev) => ({ ...prev, clientType: e.target.value }))} className="plain-text-input">
+                                <option value="Individual">Individual</option>
+                                <option value="Parent">Parent / Guardian</option>
+                                <option value="Teen">Teen</option>
+                                <option value="Woman">Woman / Young Adult</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className="registration-fields-grid">
+                            <div className="form-input-container">
+                              <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Session Type</label>
+                              <select value={bookingForm.sessionType} onChange={(e) => setBookingForm((prev) => ({ ...prev, sessionType: e.target.value }))} className="plain-text-input">
+                                <option value="Virtual">Virtual</option>
+                                <option value="In-person">In-person</option>
+                                <option value="Hybrid">Hybrid</option>
+                              </select>
+                            </div>
+                            <div className="form-input-container">
+                              <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Preferred Time</label>
+                              <select value={bookingForm.preferredTime} onChange={(e) => setBookingForm((prev) => ({ ...prev, preferredTime: e.target.value }))} className="plain-text-input">
+                                <option value="Any time">Any time</option>
+                                <option value="Morning">Morning</option>
+                                <option value="Afternoon">Afternoon</option>
+                                <option value="Evening">Evening</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className="form-input-container">
+                            <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>What would you like support with?</label>
+                            <textarea rows="5" required value={bookingForm.concern} onChange={(e) => setBookingForm((prev) => ({ ...prev, concern: e.target.value }))} placeholder="Share what you need help with." className="plain-text-input" style={{ resize: 'vertical' }} />
+                          </div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '0.75rem' }}>
+                            <button type="submit" className="form-submit-action-btn" style={{ minWidth: '220px' }}>
+                              <i className="fa-solid fa-paper-plane"></i> Send Booking Request
+                            </button>
+                            <button type="button" onClick={() => setShowBookingModal(false)} className="btn-secondary" style={{ padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                              Close
+                            </button>
+                          </div>
+                        </form>
+                      )}
+                    </article>
+                  </div>
+                )}
 
                 {showRegisterModal && (
                   <ThriverRegistrationModal
@@ -2210,10 +2470,19 @@ export default function App() {
                 )}
 
                 <section className="program-highlights-section" data-aos="fade-up">
-                  <div className="section-intro-shell">
-                    <span className="section-label">A clearer path to growth</span>
-                    <h2>Support that is structured, human, and easy to follow.</h2>
-                    <p>From personal growth and family support to youth mentoring, we create a clear path for every client who is ready to move forward with confidence.</p>
+                  <div key={introTextMode} className="section-intro-shell rotating-intro-shell">
+                    <span className="section-label">Paz Thriving Tribe brings you peace.</span>
+                    {introTextMode === 'heading' ? (
+                      <>
+                        <h2 className="rotating-intro-copy">When you experience peace within, you are better able to grow, overcome challenges, discover purpose, and thrive.</h2>
+                        <p className="rotating-intro-copy">Through coaching, mentoring and counselling, we help individuals build the confidence, character, and clarity they need to thrive.</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="rotating-intro-copy">When you experience peace within, you are better able to grow, overcome challenges, discover purpose, and thrive.</p>
+                        <h2 className="rotating-intro-copy">Through coaching, mentoring and counselling, we help individuals build the confidence, character, and clarity they need to thrive.</h2>
+                      </>
+                    )}
                   </div>
 
                   <div className="highlight-grid">
@@ -2233,7 +2502,7 @@ export default function App() {
                   <div className="founder-portrait-frame" data-aos="fade-right">
                     <img src="../image/pic1.jpeg" className="founder-img" alt="Paz Tribe Founder and CEO" />
                     <div className="founder-title-tag-overlay">
-                      <h4>Mrs. Roseline Iraoya </h4>
+                      <h4>Roseline Iraoya </h4>
                       <span>Lead Coach</span>
                       <span>Paz Thriving Tribe</span>
                     </div>
@@ -2258,7 +2527,7 @@ export default function App() {
                           <p className="speech-quote-text">
                             "The lead consultant at Paz Thriving Tribe Academy, a life coaching organization. A certified children's life coach and member of the Chartered Institute of Mentoring and Coaching in Nigeria."
                           </p>
-                          <div className="speech-signature">— Executive Speech Address, Leader Council</div>
+                          <div className="speech-signature">Coach Roseline Iraoya, <br /> Lead Coach, <br /> Paz Thriving Tribe</div>
                         </div>
                       )}
 
@@ -2266,11 +2535,14 @@ export default function App() {
                         <div className="about-org-block">
                           {/* <h3>About Paz Thriving Tribe</h3> */}
                           <p>
-                            Paz Thriving Tribe Coaching and Mentoring Organisation is committed to impacting families, transforming teenagers, positively influencing women, and helping children and young people develop the values, character, and healthy habits they need to thrive and become purposeful leaders.
+                            Paz Thriving Tribe Coaching, Mentoring and Counselling Organisation is committed to
+                            impacting individuals, families, transforming teenagers, positively influencing women,
+                            and helping children and young people develop the values, character, and healthy
+                            habits they need to thrive and become purposeful leaders.
                           </p>
-                          <p className="tagline">
+                          {/* <p className="tagline">
                             Tagline: Transforming Lives, Building Character, Raising Leaders
-                          </p>
+                          </p> */}
 
                         </div>
                       )}
@@ -2290,8 +2562,8 @@ export default function App() {
                             <p>We empower children, teenagers, and women to influence others positively, take responsibility, and become agents of positive change.</p>
                           </div>
                           <div className="value-card-element">
-                            <h5><i className="fa-solid fa-seedling"></i> Growth</h5>
-                            <p>We believe everyone has the potential to improve. Through learning, coaching, and mentoring, we help people develop the habits and mindset needed to thrive.</p>
+                            <h5><i className="fa-solid fa-user-lock"></i>Confidentiality</h5>
+                            <p>We value trust and privacy, ensuring that every individual feels safe, respected, and secure when sharing their thoughts and experiences with us.</p>
                           </div>
                         </div>
                       )}
@@ -2339,7 +2611,7 @@ export default function App() {
                         <h3>{services.children.title}</h3>
                         <p>{services.children.description}</p>
                       </div>
-                      <div className="gateway-footer-action">Open Dedicated View <i className="fa-solid fa-arrow-trend-up"></i></div>
+                      <div className="gateway-footer-action">Read more <i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
 
                     <Link to="/services/marriage" className="service-gateway-card">
@@ -2348,7 +2620,7 @@ export default function App() {
                         <h3>{services.marriage.title}</h3>
                         <p>{services.marriage.description}</p>
                       </div>
-                      <div className="gateway-footer-action">Open Dedicated View<i className="fa-solid fa-arrow-trend-up"></i></div>
+                      <div className="gateway-footer-action">Read more<i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
 
                     <Link to="/services/family" className="service-gateway-card">
@@ -2357,16 +2629,16 @@ export default function App() {
                         <h3>{services.family.title}</h3>
                         <p>{services.family.description}</p>
                       </div>
-                      <div className="gateway-footer-action">Open Dedicated View<i className="fa-solid fa-arrow-trend-up"></i></div>
+                      <div className="gateway-footer-action">Read more<i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
 
                     <Link to="/care-counseling" className="service-gateway-card">
                       <div>
                         <div className="gateway-icon-wrap"><i className="fa-solid fa-hand-holding-heart"></i></div>
-                        <h3>Paz Thriving Care & Counseling Centre</h3>
+                        <h3>Paz Thriving Talk & Thrive Centre</h3>
                         <p>Dedicated counseling, coaching, and emotional support services for parents, teens, women, and young adults who want guidance and a safe place to grow.</p>
                       </div>
-                      <div className="gateway-footer-action">Open Dedicated View<i className="fa-solid fa-arrow-trend-up"></i></div>
+                      <div className="gateway-footer-action">Read more<i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
                   </div>
                 </section>
@@ -2399,7 +2671,7 @@ export default function App() {
                   <div className="video-feature-grid">
                     <div className="video-feature-copy">
                       <h2>Examine your Thoughts, Words and Actions👌👌</h2>
-                      <p>Your life is shaped by 3 things: your thoughts, your words, and your actions.  In this video, we break down why self-examination matters and how checking 
+                      <p>Your life is shaped by 3 things: your thoughts, your words, and your actions.  In this video, we break down why self-examination matters and how checking
                         these 3 areas can transform your mindset, relationships, and success.</p>
                     </div>
                     <div className="video-embed-wrap">
@@ -2551,7 +2823,7 @@ export default function App() {
                             <div className="form-input-container">
                               <label style={{ color: 'var(--brand-blue)', fontWeight: '600' }}>Select Targeted Menu Category to Update</label>
                               <select value={editTarget} onChange={(e) => setEditTarget(e.target.value)} className="plain-text-input" style={{ height: '46px', border: '1px solid var(--brand-blue)' }}>
-                                <option value="family">Thriving Singles</option>
+                                <option value="family">Thriving Parents</option>
                                 <option value="marriage">Thriving Women</option>
                                 <option value="children">Pre-teens & Teens</option>
                               </select>
@@ -2647,231 +2919,231 @@ export default function App() {
                               </select>
                             </div>
 
-                              <div className="form-input-container">
-                                <label style={{ fontWeight: '600' }}>Social Preview Headline</label>
-                                <input type="text" value={socialPreviewTitle} onChange={(e) => setSocialPreviewTitle(e.target.value)} className="plain-text-input" required />
-                              </div>
-
-                              <div className="form-input-container">
-                                <label style={{ fontWeight: '600' }}>Preview Description</label>
-                                <textarea value={socialPreviewSummary} onChange={(e) => setSocialPreviewSummary(e.target.value)} rows="4" className="plain-text-input" style={{ resize: 'vertical', fontFamily: 'inherit' }} required />
-                              </div>
-
-                              <div className="form-input-container" style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
-                                <div style={{ flex: 1 }}>
-                                  <label style={{ fontWeight: '600' }}>Action Link URL</label>
-                                  <input type="url" value={socialPreviewUrl} onChange={(e) => setSocialPreviewUrl(e.target.value)} className="plain-text-input" required />
-                                </div>
-                                <button type="button" onClick={fetchSocialUrlMetadata} className="form-submit-action-btn" style={{ minWidth: '220px' }} disabled={!socialPreviewUrl || socialMetadataLoading}>
-                                  {socialMetadataLoading ? 'Fetching...' : 'Fetch details from URL'}
-                                </button>
-                              </div>
-
-                              <div className="form-input-container">
-                                <label style={{ fontWeight: '600' }}>Post Timestamp</label>
-                                <input type="text" value={socialPreviewTimestamp} onChange={(e) => setSocialPreviewTimestamp(e.target.value)} className="plain-text-input" placeholder="Posted 4 hours ago" />
-                              </div>
-
-                              <div className="form-input-container">
-                                <label style={{ fontWeight: '600' }}>Badge Label</label>
-                                <input type="text" value={socialPreviewBadgeText} onChange={(e) => setSocialPreviewBadgeText(e.target.value)} className="plain-text-input" required />
-                              </div>
-
-                              <div className="form-input-container">
-                                <label style={{ fontWeight: '600' }}>YouTube Embed URL</label>
-                                <input type="url" value={socialPreviewEmbedUrl} onChange={(e) => setSocialPreviewEmbedUrl(e.target.value)} className="plain-text-input" placeholder="https://www.youtube.com/watch?v=..." />
-                                <small style={{ color: 'var(--text-muted)' }}>This URL will be used for the homepage video player when YouTube is selected.</small>
-                              </div>
-
-                              <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Update Social Preview</button>
-                            </form>
-                          </section>
-                        )}
-
-                        {selectedAdminTab === 'programs' && (
-                          <section className="dashboard-editor-card">
-                            <h3 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Create Programs</h3>
-                            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Add new curriculum offerings for any service category and make them available on the customer-facing pages.</p>
-
-                            <form onSubmit={handleCreateProgram} className="cms-creation-form-layout" style={{ marginTop: '1.5rem' }}>
-                              <div className="form-input-container">
-                                <label style={{ fontWeight: '600' }}>Service Category</label>
-                                <select value={programForm.service} onChange={(e) => setProgramForm((prev) => ({ ...prev, service: e.target.value }))} className="plain-text-input" style={{ height: '46px' }}>
-                                  <option value="family">Thriving Singles</option>
-                                  <option value="marriage">Thriving Women</option>
-                                  <option value="children">Pre-teens & Teens</option>
-                                </select>
-                              </div>
-
-                              <div className="form-input-container">
-                                <label style={{ fontWeight: '600' }}>Program Name</label>
-                                <input type="text" value={programForm.title} onChange={(e) => setProgramForm((prev) => ({ ...prev, title: e.target.value }))} className="plain-text-input" required />
-                              </div>
-
-                              <div className="form-input-container">
-                                <label style={{ fontWeight: '600' }}>Program Level / Age Group</label>
-                                <input type="text" value={programForm.level} onChange={(e) => setProgramForm((prev) => ({ ...prev, level: e.target.value }))} className="plain-text-input" required />
-                              </div>
-
-                              <div className="form-input-container">
-                                <label style={{ fontWeight: '600' }}>Duration</label>
-                                <input type="text" value={programForm.duration} onChange={(e) => setProgramForm((prev) => ({ ...prev, duration: e.target.value }))} className="plain-text-input" required />
-                              </div>
-
-                              <div className="form-input-container">
-                                <label style={{ fontWeight: '600' }}>Schedule</label>
-                                <input type="text" value={programForm.schedule} onChange={(e) => setProgramForm((prev) => ({ ...prev, schedule: e.target.value }))} className="plain-text-input" required />
-                              </div>
-
-                              <div className="form-input-container">
-                                <label style={{ fontWeight: '600' }}>Program Overview</label>
-                                <textarea value={programForm.description} onChange={(e) => setProgramForm((prev) => ({ ...prev, description: e.target.value }))} rows="4" className="plain-text-input" style={{ resize: 'vertical', fontFamily: 'inherit' }} required></textarea>
-                              </div>
-
-                              <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Create Program</button>
-                            </form>
-
-                            <div style={{ marginTop: '2rem' }}>
-                              <h4 style={{ marginBottom: '1rem' }}>Programs by Category</h4>
-                              <div style={{ display: 'grid', gap: '1rem' }}>
-                                {programs.map((program) => (
-                                  <div key={program.id} style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1rem' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem' }}>
-                                      <div>
-                                        <strong>{program.name}</strong>
-                                        <div style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>{program.service.toUpperCase()}</div>
-                                      </div>
-                                      <button type="button" onClick={() => handleRemoveProgram(program.id)} style={{ background: '#ff4757', color: '#fff', border: 'none', borderRadius: '8px', padding: '0.55rem 0.85rem', cursor: 'pointer' }}>Remove</button>
-                                    </div>
-                                    <p style={{ margin: '0.85rem 0 0 0', color: 'var(--text-muted)' }}>{program.description}</p>
-                                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.92rem' }}>
-                                      <span>{program.duration}</span>
-                                      <span>{program.level}</span>
-                                      <span>{program.schedule}</span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </section>
-                        )}
-
-                        {selectedAdminTab === 'applicants' && (
-                          <section className="dashboard-editor-card">
-                            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
-                              <div>
-                                <h3 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Recent Applicants</h3>
-                                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Review the latest intake submissions and track their requested service path.</p>
-                              </div>
-                              <div style={{ color: 'var(--text-primary)', fontWeight: 700, minWidth: '150px' }}>
-                                Total Registered: {applicants.length}
-                              </div>
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>Social Preview Headline</label>
+                              <input type="text" value={socialPreviewTitle} onChange={(e) => setSocialPreviewTitle(e.target.value)} className="plain-text-input" required />
                             </div>
 
-                            {applicants.length === 0 ? (
-                              <div style={{ marginTop: '1.5rem', padding: '1.5rem', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                                <p style={{ margin: 0, color: 'var(--text-muted)' }}>No applicants have submitted yet.</p>
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>Preview Description</label>
+                              <textarea value={socialPreviewSummary} onChange={(e) => setSocialPreviewSummary(e.target.value)} rows="4" className="plain-text-input" style={{ resize: 'vertical', fontFamily: 'inherit' }} required />
+                            </div>
+
+                            <div className="form-input-container" style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
+                              <div style={{ flex: 1 }}>
+                                <label style={{ fontWeight: '600' }}>Action Link URL</label>
+                                <input type="url" value={socialPreviewUrl} onChange={(e) => setSocialPreviewUrl(e.target.value)} className="plain-text-input" required />
                               </div>
-                            ) : (
-                              <div className="applicants-table-wrapper">
-                                <table className="dashboard-table">
-                                  <thead>
-                                    <tr>
-                                      <th>Name</th>
-                                      <th>Email</th>
-                                      <th>Phone</th>
-                                      <th>Track</th>
-                                      <th>Status</th>
-                                      <th>Payment Ref</th>
-                                      <th>Submitted</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {applicants.slice(0, 50).map((applicant) => (
-                                      <tr key={applicant.id}>
-                                        <td>{applicant.fullName}</td>
-                                        <td>{applicant.email}</td>
-                                        <td>{applicant.phone}</td>
-                                        <td>{applicant.track}</td>
-                                        <td><span className={`status-pill ${applicant.paymentStatus === 'success' ? 'success' : 'pending'}`}>{applicant.paymentStatus}</span></td>
-                                        <td>{applicant.paymentReference || 'N/A'}</td>
-                                        <td>{new Date(applicant.submittedAt).toLocaleString()}</td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            )}
-                          </section>
-                        )}
-
-                        {selectedAdminTab === 'payments' && (
-                          <section className="dashboard-editor-card">
-                            <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Paystack Payment Settings</h3>
-                            <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Configure your Paystack API key and pricing for Pre-teen & Teens Academy program.</p>
-
-                            {dashboardMessage && <div className="status-feedback-banner" style={{ marginTop: '1.5rem' }}>{dashboardMessage}</div>}
-
-                            <form onSubmit={(e) => {
-                              e.preventDefault();
-                              setPaystackPublicKey(tempPaystackKey);
-                              setTeensKidsMonthlyFee(parseInt(tempMonthlyFee) || 10000);
-                              setDashboardMessage('✓ Payment settings saved successfully!');
-                              setTimeout(() => setDashboardMessage(null), 3000);
-                            }} style={{ marginTop: '1.5rem' }}>
-                              <div className="form-input-container">
-                                <label style={{ fontWeight: '600' }}>Paystack Public Key</label>
-                                <input
-                                  type="text"
-                                  value={tempPaystackKey}
-                                  onChange={(e) => setTempPaystackKey(e.target.value)}
-                                  className="plain-text-input"
-                                  placeholder="pk_live_... or pk_test_..."
-                                  required
-                                />
-                                <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
-                                  Your Paystack public API key. Switch between test and live keys as needed.
-                                </small>
-                              </div>
-
-                              <div className="form-input-container">
-                                <label style={{ fontWeight: '600' }}>Program Registration Fee (NGN)</label>
-                                <input
-                                  type="number"
-                                  value={tempMonthlyFee}
-                                  onChange={(e) => setTempMonthlyFee(e.target.value)}
-                                  className="plain-text-input"
-                                  placeholder="10000"
-                                  min="1000"
-                                  max="1000000"
-                                  required
-                                />
-                                <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
-                                  Update the academy registration fee for the Pre-teen & Teens program. This value drives the displayed pricing for clients.
-                                </small>
-                              </div>
-
-                              <button
-                                type="submit"
-                                className="form-submit-action-btn"
-                                style={{ marginTop: '1.5rem', width: '100%', maxWidth: '200px' }}
-                              >
-                                Save Payment Settings
+                              <button type="button" onClick={fetchSocialUrlMetadata} className="form-submit-action-btn" style={{ minWidth: '220px' }} disabled={!socialPreviewUrl || socialMetadataLoading}>
+                                {socialMetadataLoading ? 'Fetching...' : 'Fetch details from URL'}
                               </button>
-                            </form>
-
-                            <div style={{ marginTop: '2rem', padding: '1rem', background: 'var(--bg-main)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                              <h4 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Current Configuration</h4>
-                              <div style={{ display: 'grid', gap: '0.75rem', color: 'var(--text-muted)' }}>
-                                <span><strong>Active Public Key:</strong> {paystackPublicKey.substring(0, 20)}...</span>
-                                <span><strong>Monthly Fee:</strong> ₦{teensKidsMonthlyFee.toLocaleString()}</span>
-                                <span><strong>3 Months:</strong> ₦{(teensKidsMonthlyFee * 3).toLocaleString()}</span>
-                                <span><strong>6 Months:</strong> ₦{(teensKidsMonthlyFee * 6).toLocaleString()}</span>
-                                <span><strong>12 Months:</strong> ₦{(teensKidsMonthlyFee * 12).toLocaleString()}</span>
-                              </div>
                             </div>
-                          </section>
-                        )}
+
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>Post Timestamp</label>
+                              <input type="text" value={socialPreviewTimestamp} onChange={(e) => setSocialPreviewTimestamp(e.target.value)} className="plain-text-input" placeholder="Posted 4 hours ago" />
+                            </div>
+
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>Badge Label</label>
+                              <input type="text" value={socialPreviewBadgeText} onChange={(e) => setSocialPreviewBadgeText(e.target.value)} className="plain-text-input" required />
+                            </div>
+
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>YouTube Embed URL</label>
+                              <input type="url" value={socialPreviewEmbedUrl} onChange={(e) => setSocialPreviewEmbedUrl(e.target.value)} className="plain-text-input" placeholder="https://www.youtube.com/watch?v=..." />
+                              <small style={{ color: 'var(--text-muted)' }}>This URL will be used for the homepage video player when YouTube is selected.</small>
+                            </div>
+
+                            <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Update Social Preview</button>
+                          </form>
+                        </section>
+                      )}
+
+                      {selectedAdminTab === 'programs' && (
+                        <section className="dashboard-editor-card">
+                          <h3 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Create Programs</h3>
+                          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Add new curriculum offerings for any service category and make them available on the customer-facing pages.</p>
+
+                          <form onSubmit={handleCreateProgram} className="cms-creation-form-layout" style={{ marginTop: '1.5rem' }}>
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>Service Category</label>
+                              <select value={programForm.service} onChange={(e) => setProgramForm((prev) => ({ ...prev, service: e.target.value }))} className="plain-text-input" style={{ height: '46px' }}>
+                                <option value="family">Thriving Parents</option>
+                                <option value="marriage">Thriving Women</option>
+                                <option value="children">Pre-teens & Teens</option>
+                              </select>
+                            </div>
+
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>Program Name</label>
+                              <input type="text" value={programForm.title} onChange={(e) => setProgramForm((prev) => ({ ...prev, title: e.target.value }))} className="plain-text-input" required />
+                            </div>
+
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>Program Level / Age Group</label>
+                              <input type="text" value={programForm.level} onChange={(e) => setProgramForm((prev) => ({ ...prev, level: e.target.value }))} className="plain-text-input" required />
+                            </div>
+
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>Duration</label>
+                              <input type="text" value={programForm.duration} onChange={(e) => setProgramForm((prev) => ({ ...prev, duration: e.target.value }))} className="plain-text-input" required />
+                            </div>
+
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>Schedule</label>
+                              <input type="text" value={programForm.schedule} onChange={(e) => setProgramForm((prev) => ({ ...prev, schedule: e.target.value }))} className="plain-text-input" required />
+                            </div>
+
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>Program Overview</label>
+                              <textarea value={programForm.description} onChange={(e) => setProgramForm((prev) => ({ ...prev, description: e.target.value }))} rows="4" className="plain-text-input" style={{ resize: 'vertical', fontFamily: 'inherit' }} required></textarea>
+                            </div>
+
+                            <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Create Program</button>
+                          </form>
+
+                          <div style={{ marginTop: '2rem' }}>
+                            <h4 style={{ marginBottom: '1rem' }}>Programs by Category</h4>
+                            <div style={{ display: 'grid', gap: '1rem' }}>
+                              {programs.map((program) => (
+                                <div key={program.id} style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1rem' }}>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem' }}>
+                                    <div>
+                                      <strong>{program.name}</strong>
+                                      <div style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>{program.service.toUpperCase()}</div>
+                                    </div>
+                                    <button type="button" onClick={() => handleRemoveProgram(program.id)} style={{ background: '#ff4757', color: '#fff', border: 'none', borderRadius: '8px', padding: '0.55rem 0.85rem', cursor: 'pointer' }}>Remove</button>
+                                  </div>
+                                  <p style={{ margin: '0.85rem 0 0 0', color: 'var(--text-muted)' }}>{program.description}</p>
+                                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.92rem' }}>
+                                    <span>{program.duration}</span>
+                                    <span>{program.level}</span>
+                                    <span>{program.schedule}</span>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </section>
+                      )}
+
+                      {selectedAdminTab === 'applicants' && (
+                        <section className="dashboard-editor-card">
+                          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
+                            <div>
+                              <h3 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Recent Applicants</h3>
+                              <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Review the latest intake submissions and track their requested service path.</p>
+                            </div>
+                            <div style={{ color: 'var(--text-primary)', fontWeight: 700, minWidth: '150px' }}>
+                              Total Registered: {applicants.length}
+                            </div>
+                          </div>
+
+                          {applicants.length === 0 ? (
+                            <div style={{ marginTop: '1.5rem', padding: '1.5rem', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                              <p style={{ margin: 0, color: 'var(--text-muted)' }}>No applicants have submitted yet.</p>
+                            </div>
+                          ) : (
+                            <div className="applicants-table-wrapper">
+                              <table className="dashboard-table">
+                                <thead>
+                                  <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Track</th>
+                                    <th>Status</th>
+                                    <th>Payment Ref</th>
+                                    <th>Submitted</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {applicants.slice(0, 50).map((applicant) => (
+                                    <tr key={applicant.id}>
+                                      <td>{applicant.fullName}</td>
+                                      <td>{applicant.email}</td>
+                                      <td>{applicant.phone}</td>
+                                      <td>{applicant.track}</td>
+                                      <td><span className={`status-pill ${applicant.paymentStatus === 'success' ? 'success' : 'pending'}`}>{applicant.paymentStatus}</span></td>
+                                      <td>{applicant.paymentReference || 'N/A'}</td>
+                                      <td>{new Date(applicant.submittedAt).toLocaleString()}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </section>
+                      )}
+
+                      {selectedAdminTab === 'payments' && (
+                        <section className="dashboard-editor-card">
+                          <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Paystack Payment Settings</h3>
+                          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Configure your Paystack API key and pricing for Pre-teen & Teens Academy program.</p>
+
+                          {dashboardMessage && <div className="status-feedback-banner" style={{ marginTop: '1.5rem' }}>{dashboardMessage}</div>}
+
+                          <form onSubmit={(e) => {
+                            e.preventDefault();
+                            setPaystackPublicKey(tempPaystackKey);
+                            setTeensKidsMonthlyFee(parseInt(tempMonthlyFee) || 10000);
+                            setDashboardMessage('✓ Payment settings saved successfully!');
+                            setTimeout(() => setDashboardMessage(null), 3000);
+                          }} style={{ marginTop: '1.5rem' }}>
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>Paystack Public Key</label>
+                              <input
+                                type="text"
+                                value={tempPaystackKey}
+                                onChange={(e) => setTempPaystackKey(e.target.value)}
+                                className="plain-text-input"
+                                placeholder="pk_live_... or pk_test_..."
+                                required
+                              />
+                              <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
+                                Your Paystack public API key. Switch between test and live keys as needed.
+                              </small>
+                            </div>
+
+                            <div className="form-input-container">
+                              <label style={{ fontWeight: '600' }}>Program Registration Fee (NGN)</label>
+                              <input
+                                type="number"
+                                value={tempMonthlyFee}
+                                onChange={(e) => setTempMonthlyFee(e.target.value)}
+                                className="plain-text-input"
+                                placeholder="10000"
+                                min="1000"
+                                max="1000000"
+                                required
+                              />
+                              <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
+                                Update the academy registration fee for the Pre-teen & Teens program. This value drives the displayed pricing for clients.
+                              </small>
+                            </div>
+
+                            <button
+                              type="submit"
+                              className="form-submit-action-btn"
+                              style={{ marginTop: '1.5rem', width: '100%', maxWidth: '200px' }}
+                            >
+                              Save Payment Settings
+                            </button>
+                          </form>
+
+                          <div style={{ marginTop: '2rem', padding: '1rem', background: 'var(--bg-main)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                            <h4 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Current Configuration</h4>
+                            <div style={{ display: 'grid', gap: '0.75rem', color: 'var(--text-muted)' }}>
+                              <span><strong>Active Public Key:</strong> {paystackPublicKey.substring(0, 20)}...</span>
+                              <span><strong>Monthly Fee:</strong> ₦{teensKidsMonthlyFee.toLocaleString()}</span>
+                              <span><strong>3 Months:</strong> ₦{(teensKidsMonthlyFee * 3).toLocaleString()}</span>
+                              <span><strong>6 Months:</strong> ₦{(teensKidsMonthlyFee * 6).toLocaleString()}</span>
+                              <span><strong>12 Months:</strong> ₦{(teensKidsMonthlyFee * 12).toLocaleString()}</span>
+                            </div>
+                          </div>
+                        </section>
+                      )}
                     </main>
                   </div>
                 </div>
@@ -2892,13 +3164,16 @@ export default function App() {
                 <div className="footer-vector-badge"><img src={theme === 'dark' ? "../logo/logo2.jpeg" : "../logo/logomain.png"} alt="Paz Thriving Tribe logo" className="nav-logo-img" /></div>
                 <span className="footer-brand-headline">Paz Thriving Tribe</span>
               </Link>
-              <p>Providing dynamic infrastructure tracking networks focused on alignment strategies, professional conflict mitigation solutions, and youth development counseling models.</p>
+              <p>Paz Thriving Tribe Coaching, Mentoring and Counselling Organisation is committed to
+                impacting individuals, families, transforming teenagers, positively influencing women,
+                and helping children and young people develop the values, character, and healthy
+                habits they need to thrive and become purposeful leaders.</p>
             </div>
 
             <div className="footer-links-column">
               <h4>What we offer</h4>
               <div className="footer-interactive-links">
-                <Link to="/services/family" className="footer-nav-anchor">Thriving Singles</Link>
+                <Link to="/services/family" className="footer-nav-anchor">Thriving Parents</Link>
                 <Link to="/services/marriage" className="footer-nav-anchor">Thriving Women</Link>
                 <Link to="/services/children" className="footer-nav-anchor">Pre-teens & Teens</Link>
               </div>
@@ -2927,7 +3202,7 @@ export default function App() {
               <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>System Terms</span>
             </div>
           </div>
-        </footer> 
+        </footer>
       </div>
     </>
   );
@@ -3034,7 +3309,7 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
     if (subPageBannerSlides.length === 0) return;
     const serviceBannerInterval = setInterval(() => {
       setActiveSlideIndex((prev) => (prev + 1) % subPageBannerSlides.length);
-    }, 5500);
+    }, 9000);
     return () => clearInterval(serviceBannerInterval);
   }, [subPageBannerSlides]);
 
@@ -3054,7 +3329,7 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
 
   const subPageMeta = {
     family: {
-      newsTitle: "Thriving Singles Update",
+      newsTitle: "Thriving Parents Update",
       newsText: "New empowerment guide released: 'Building Confidence & Purpose as an Independent Woman'.",
       formSub: "Schedule Your Personal Development Consultation"
     },
@@ -3103,7 +3378,12 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
           style={{ backgroundImage: `url(${currentBannerSlide?.image || ''})` }}
         />
         <div className="service-banner-content" key={activeSlideIndex}>
-          <span className="section-label" style={{ color: '#dff7e8', textTransform: 'uppercase' }}>{currentBannerSlide?.eyebrow || activeService.title}</span>
+          <span
+            className="section-label"
+            style={{ color: '#ffffff', textTransform: 'uppercase', textShadow: '0 2px 10px rgba(0, 0, 0, 0.65)' }}
+          >
+            {currentBannerSlide?.eyebrow || activeService.title}
+          </span>
           <h1 data-aos="zoom-in">{currentBannerSlide?.title || activeService.title}</h1>
           <p data-aos="fade-up" data-aos-delay="100">{currentBannerSlide?.text || activeService.subtitle}</p>
           <div className="service-banner-controls">
@@ -3406,7 +3686,7 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
 function CareCounselingPage() {
   const counselingHeroSlides = [
     {
-      eyebrow: 'Care & Counseling',
+      eyebrow: 'Talk & Thrive',
       title: 'A calm, respectful place to talk and grow',
       text: 'For parents, teens, women, and young adults who want guidance, encouragement, and a trusted place to be heard.',
       image: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=1200'
@@ -3428,7 +3708,7 @@ function CareCounselingPage() {
   const directMessagePoints = [
     'If you are looking for a safe, respectful place to talk, we are here for you.',
     'You do not have to carry stress, confusion, or emotional strain alone.',
-    'Our support is designed to help you feel heard, guided, and motivated to move forward.'
+    'Book a session with our inhouse counselor today!'
   ];
 
   const serviceAreas = [
@@ -3485,13 +3765,54 @@ function CareCounselingPage() {
 
   const [activeCounselingSlide, setActiveCounselingSlide] = useState(0);
   const [activeCareFocusIndex, setActiveCareFocusIndex] = useState(0);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [bookingForm, setBookingForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    clientType: 'Individual',
+    sessionType: 'Virtual',
+    preferredTime: 'Any time',
+    concern: ''
+  });
+  const [bookingSubmitted, setBookingSubmitted] = useState(false);
 
   const currentCareFocusSlide = careFocusSlides[activeCareFocusIndex];
+
+  const handleBookingSubmit = async (event) => {
+    event.preventDefault();
+
+    const message = [
+      `Client type: ${bookingForm.clientType}`,
+      `Session type: ${bookingForm.sessionType}`,
+      `Preferred time: ${bookingForm.preferredTime}`,
+      `Concern: ${bookingForm.concern}`
+    ].join(' | ');
+
+    try {
+      const { error } = await supabase.from('tribe_applicants').insert([{
+        full_name: bookingForm.name,
+        email: bookingForm.email,
+        phone: bookingForm.phone,
+        track: 'talk-thrive',
+        message
+      }]);
+
+      if (error) throw error;
+
+      setBookingSubmitted(true);
+      setBookingForm({ name: '', email: '', phone: '', clientType: 'Individual', sessionType: 'Virtual', preferredTime: 'Any time', concern: '' });
+    } catch (err) {
+      console.error('Talk & Thrive booking submission failed:', err);
+      setBookingSubmitted(false);
+      alert('We could not save your booking right now. Please try again shortly.');
+    }
+  };
 
   useEffect(() => {
     const counselingInterval = setInterval(() => {
       setActiveCounselingSlide((prev) => (prev + 1) % counselingHeroSlides.length);
-    }, 5500);
+    }, 9000);
 
     return () => clearInterval(counselingInterval);
   }, [counselingHeroSlides.length]);
@@ -3499,20 +3820,132 @@ function CareCounselingPage() {
   useEffect(() => {
     const careFocusInterval = setInterval(() => {
       setActiveCareFocusIndex((prev) => (prev + 1) % careFocusSlides.length);
-    }, 5000);
+    }, 9000);
 
     return () => clearInterval(careFocusInterval);
   }, [careFocusSlides.length]);
 
   return (
     <div className="public-website-container">
+      <style>{`
+        .talk-thrive-booking-backdrop {
+          position: fixed;
+          inset: 0;
+          background: linear-gradient(145deg, rgba(2, 6, 23, 0.82), rgba(15, 23, 42, 0.82));
+          backdrop-filter: blur(8px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1rem;
+          z-index: 1100;
+        }
+
+        .talk-thrive-booking-card {
+          width: 100%;
+          max-width: 860px;
+          border-radius: 24px;
+          background:
+            linear-gradient(145deg, rgba(255,255,255,0.98), rgba(248,250,252,0.96));
+          border: 1px solid rgba(148, 163, 184, 0.22);
+          box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
+          padding: 1.1rem;
+          max-height: 92vh;
+          overflow-y: auto;
+        }
+
+        .talk-thrive-booking-card .care-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(16, 185, 129, 0.12));
+          border: 1px solid rgba(148, 163, 184, 0.25);
+          color: var(--text-primary);
+        }
+
+        .talk-thrive-modal-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 1rem;
+        }
+
+        .talk-thrive-note-card {
+          display: grid;
+          gap: 0.35rem;
+          padding: 0.9rem;
+          border-radius: 16px;
+          background: linear-gradient(145deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.92));
+          border: 1px solid rgba(148, 163, 184, 0.24);
+        }
+
+        .talk-thrive-note-card strong {
+          color: var(--text-primary);
+          font-size: 0.92rem;
+        }
+
+        .talk-thrive-note-card span {
+          color: var(--text-muted);
+          font-size: 0.9rem;
+          line-height: 1.35;
+        }
+
+        .talk-thrive-modal-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.75rem;
+          margin-top: 0.85rem;
+        }
+
+        .talk-thrive-modal-actions button {
+          flex: 1 1 auto;
+          min-width: 180px;
+        }
+
+        @media (max-width: 768px) {
+          .talk-thrive-booking-card {
+            border-radius: 18px;
+            padding: 0.95rem;
+          }
+
+          .talk-thrive-modal-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .talk-thrive-modal-actions {
+            flex-direction: column-reverse;
+          }
+
+          .talk-thrive-modal-actions button {
+            width: 100%;
+            min-width: 0;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .talk-thrive-booking-card h3 {
+            font-size: 1.06rem;
+          }
+
+          .talk-thrive-booking-card p {
+            font-size: 0.95rem;
+          }
+
+          .talk-thrive-note-card {
+            padding: 0.75rem;
+          }
+        }
+      `}</style>
       <section className="service-view-hero-banner" data-aos="fade-up" style={{ minHeight: '460px', marginTop: '0.75rem' }}>
         <div
           className="service-banner-bg"
           style={{ backgroundImage: `url(${counselingHeroSlides[activeCounselingSlide].image})` }}
         />
         <div className="service-banner-content" key={activeCounselingSlide}>
-          <span className="section-label" style={{ color: '#e7f7ef', textTransform: 'uppercase' }}>{counselingHeroSlides[activeCounselingSlide].eyebrow}</span>
+          <span
+            className="section-label"
+            style={{ color: '#ffffff', textTransform: 'uppercase', textShadow: '0 2px 10px rgba(0, 0, 0, 0.65)' }}
+          >
+            {counselingHeroSlides[activeCounselingSlide].eyebrow}
+          </span>
           <h1>{counselingHeroSlides[activeCounselingSlide].title}</h1>
           <p>{counselingHeroSlides[activeCounselingSlide].text}</p>
           <div className="service-banner-controls">
@@ -3546,10 +3979,10 @@ function CareCounselingPage() {
       <section className="care-counseling-section" data-aos="fade-up" style={{ paddingTop: '1rem' }}>
         <div className="care-counseling-shell">
           <div className="care-intro-block">
-            <span className="section-label">Care & Counseling</span>
-            <h1 className="section-title-heading" style={{ textAlign: 'left', marginBottom: '0.2rem' }}>Support that feels calm, respectful, and practical.</h1>
+            <span className="section-label">Talk & Thrive</span>
+            <h1 className="section-title-heading" style={{ textAlign: 'left', marginBottom: '0.2rem' }}>Support that feels calm, confidential, and practical.</h1>
             <p className="section-subtext" style={{ textAlign: 'left', marginBottom: '0', fontSize: '1rem' }}>
-              We offer a clear, supportive space where clients can find guidance, reassurance, and practical next steps.
+              Talk & Thrive Sessions provide a safe, confidential, and supportive space where you can freely express yourself, share your burdens and gain clarity
             </p>
           </div>
 
@@ -3558,17 +3991,17 @@ function CareCounselingPage() {
               <article className="care-animated-box" data-aos="fade-up" data-aos-delay="100">
                 <span className="care-pill">Support</span>
                 <h3>Guidance for real-life pressure</h3>
-                <p>Our Care & Counseling arm offers a respectful space to process stress, relationships, and emotional strain with clarity and care.</p>
+                <p>Our Talk & Thrive session offers a confidential and warm space to onboarding and hear our clients out.</p>
               </article>
               <article className="care-animated-box" data-aos="fade-up" data-aos-delay="180">
                 <span className="care-pill">Approach</span>
                 <h3>Warm, practical, and personal</h3>
-                <p>Every session is designed to help clients feel heard, encouraged, and better equipped to move forward with confidence.</p>
+                <p>Every session is designed to help clients feel heard, encouraged, and better equipped.</p>
               </article>
               <article className="care-animated-box" data-aos="fade-up" data-aos-delay="260">
                 <span className="care-pill">Outcome</span>
                 <h3>Support that strengthens the whole journey</h3>
-                <p>This service is part of the Paz Thriving Tribe experience, helping people grow with steadiness, confidence, and hope.</p>
+                <p>Emotion Relief, Clarity, Practical Guidance, Renewed Confidence, Peace and a clear path forward.</p>
               </article>
             </div>
           </div>
@@ -3576,12 +4009,12 @@ function CareCounselingPage() {
           <div className="care-section-block">
             <article className="care-counseling-card care-animated-box" data-aos="fade-up" data-aos-delay="320" style={{ borderRadius: '20px' }}>
               <span className="care-pill">Why it matters</span>
-              <h3>Support that feels steady, personal, and practical</h3>
+              <h3>Support that feels steady, confidential, personal, and practical</h3>
               <p style={{ marginBottom: '0.95rem' }}>
                 Whether you are managing stress, family pressure, or a life transition, our counseling support is designed to help you feel heard, calm, and confident about your next step.
               </p>
 
-              <div className="why-it-matters-grid">
+              {/* <div className="why-it-matters-grid">
                 <article className="why-it-matters-card" data-aos="fade-up" data-aos-delay="120">
                   <span className="why-it-matters-icon">01</span>
                   <h4>Gentle guidance</h4>
@@ -3597,7 +4030,7 @@ function CareCounselingPage() {
                   <h4>Client-centered care</h4>
                   <p>A professional experience shaped around dignity, trust, and a steady path to growth.</p>
                 </article>
-              </div>
+              </div> */}
             </article>
           </div>
 
@@ -3638,14 +4071,140 @@ function CareCounselingPage() {
               </div>
 
               <div className="care-services-strip" style={{ marginTop: '1rem' }}>
-                {currentCareFocusSlide.items.map((item) => (
-                  <article key={item} className="care-mini-card" data-aos="fade-up" data-aos-delay="120">
+                {currentCareFocusSlide.items.map((item, index) => (
+                  <article key={`${item}-${index}`} className="care-mini-card" data-aos="fade-up" data-aos-delay="120">
                     {item}
+                    {item === 'Book a session with our inhouse counselor today!' && (
+                      <button
+                        type="button"
+                        className="form-submit-action-btn"
+                        style={{ width: '100%', marginTop: '0.9rem' }}
+                        onClick={() => {
+                          setBookingSubmitted(false);
+                          setIsBookingModalOpen(true);
+                        }}
+                      >
+                        Book Now
+                      </button>
+                    )}
                   </article>
                 ))}
               </div>
             </article>
           </div>
+
+          {isBookingModalOpen && (
+            <div
+              className="talk-thrive-booking-backdrop"
+              onClick={() => setIsBookingModalOpen(false)}
+            >
+              <article
+                className="talk-thrive-booking-card"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.6rem' }}>
+                  <div>
+                    <span className="care-pill">Talk & Thrive booking</span>
+                    <h3 style={{ margin: '0.35rem 0 0.35rem', fontSize: '1.35rem' }}>Request a counseling session</h3>
+                    <p style={{ margin: 0, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                      Share your details here and your request will be captured in the admin dashboard for follow-up.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsBookingModalOpen(false)}
+                    style={{
+                      border: '1px solid var(--border-color)',
+                      background: 'transparent',
+                      color: 'var(--text-primary)',
+                      borderRadius: '999px',
+                      width: '40px',
+                      height: '40px',
+                      cursor: 'pointer',
+                      fontSize: '1rem'
+                    }}
+                    aria-label="Close booking form"
+                  >
+                    <i className="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+
+                <div className="talk-thrive-note-card" style={{ marginBottom: '1rem' }}>
+                  <strong>What happens next?</strong>
+                  <span>We capture your request in the same applicant flow used by the admin dashboard and contact you through the details you provide.</span>
+                </div>
+
+                {bookingSubmitted ? (
+                  <div className="status-feedback-banner" style={{ marginTop: '0.5rem' }}>
+                    <i className="fa-solid fa-circle-check"></i> Your booking request has been saved and sent to the admin dashboard for follow-up.
+                  </div>
+                ) : (
+                  <form onSubmit={handleBookingSubmit} className="cms-creation-form-layout" style={{ marginTop: '0.5rem' }}>
+                    <div className="talk-thrive-modal-grid">
+                      <div className="form-input-container">
+                        <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Full Name</label>
+                        <input type="text" required value={bookingForm.name} onChange={(e) => setBookingForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Enter your full name" className="plain-text-input" />
+                      </div>
+                      <div className="form-input-container">
+                        <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Email Address</label>
+                        <input type="email" required value={bookingForm.email} onChange={(e) => setBookingForm((prev) => ({ ...prev, email: e.target.value }))} placeholder="you@example.com" className="plain-text-input" />
+                      </div>
+                    </div>
+
+                    <div className="talk-thrive-modal-grid">
+                      <div className="form-input-container">
+                        <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Phone Number</label>
+                        <input type="tel" required value={bookingForm.phone} onChange={(e) => setBookingForm((prev) => ({ ...prev, phone: e.target.value }))} placeholder="+234..." className="plain-text-input" />
+                      </div>
+                      <div className="form-input-container">
+                        <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Client Type</label>
+                        <select value={bookingForm.clientType} onChange={(e) => setBookingForm((prev) => ({ ...prev, clientType: e.target.value }))} className="plain-text-input">
+                          <option value="Individual">Individual</option>
+                          <option value="Parent">Parent / Guardian</option>
+                          <option value="Teen">Teen</option>
+                          <option value="Woman">Woman / Young Adult</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="talk-thrive-modal-grid">
+                      <div className="form-input-container">
+                        <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Session Type</label>
+                        <select value={bookingForm.sessionType} onChange={(e) => setBookingForm((prev) => ({ ...prev, sessionType: e.target.value }))} className="plain-text-input">
+                          <option value="Virtual">Virtual</option>
+                          <option value="In-person">In-person</option>
+                          <option value="Hybrid">Hybrid</option>
+                        </select>
+                      </div>
+                      <div className="form-input-container">
+                        <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Preferred Time</label>
+                        <select value={bookingForm.preferredTime} onChange={(e) => setBookingForm((prev) => ({ ...prev, preferredTime: e.target.value }))} className="plain-text-input">
+                          <option value="Any time">Any time</option>
+                          <option value="Morning">Morning</option>
+                          <option value="Afternoon">Afternoon</option>
+                          <option value="Evening">Evening</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="form-input-container">
+                      <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>What would you like support with?</label>
+                      <textarea rows="5" required value={bookingForm.concern} onChange={(e) => setBookingForm((prev) => ({ ...prev, concern: e.target.value }))} placeholder="Share a brief overview of your needs, goals, or concerns." className="plain-text-input" style={{ resize: 'vertical' }} />
+                    </div>
+
+                    <div className="talk-thrive-modal-actions">
+                      <button type="submit" className="form-submit-action-btn" style={{ minWidth: '220px' }}>
+                        <i className="fa-solid fa-paper-plane"></i> Send Booking Request
+                      </button>
+                      <button type="button" onClick={() => setIsBookingModalOpen(false)} className="care-focus-btn" style={{ background: 'transparent' }}>
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </article>
+            </div>
+          )}
         </div>
       </section>
     </div>
@@ -3705,7 +4264,7 @@ function HomeIntakeForm({ onSubmitApplicant }) {
         <div className="form-input-container">
           <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Targeted Intake Track Selection</label>
           <select required value={track} onChange={(e) => setTrack(e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
-            <option value="family">Thriving Singles</option>
+            <option value="family">Thriving Parents</option>
             <option value="marriage">Thriving Women</option>
             <option value="children">Pre-teens & Teens</option>
           </select>
@@ -4208,7 +4767,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
                 <label>Selected Academy Track</label>
                 <select value={formData.track} onChange={(e) => updateField('track', e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
                   <option>Pre-teens & Teens</option>
-                  <option>Thriving Singles</option>
+                  <option>Thriving Parents</option>
                   <option>Thriving Women</option>
                 </select>
               </div>
