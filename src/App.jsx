@@ -40,6 +40,7 @@ export default function App() {
   const [showThemeModal, setShowThemeModal] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  const [showBookingModal, setShowBookingModal] = useState(false);
   const [cookieConsentAccepted, setCookieConsentAccepted] = useState(false);
   const [showCookieBanner, setShowCookieBanner] = useState(false);
   const logoImageUrl = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"%3E%3Crect width="48" height="48" rx="12" fill="%23238636"/%3E%3Ctext x="50%" y="55%" font-size="26" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-weight="700"%3EP%3C/text%3E%3C/svg%3E';
@@ -52,6 +53,16 @@ export default function App() {
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState(null);
   const [enrollments, setEnrollments] = useState({});
+  const [bookingForm, setBookingForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    clientType: 'Individual',
+    sessionType: 'Virtual',
+    preferredTime: 'Any time',
+    concern: ''
+  });
+  const [bookingSubmitted, setBookingSubmitted] = useState(false);
 
   // --- Sliding Hero Banner States (Main Page) ---
   const [currentHomeSlide, setCurrentHomeSlide] = useState(0);
@@ -107,7 +118,7 @@ export default function App() {
   const homeSlides = [
     {
       title: "Paz Thriving Tribe",
-      subtitle: "Coaching and Mentoring Organization.",
+      subtitle: "Coaching, Mentoring and Councelling Organization.",
       image: "./logo/logo2.jpeg",
       imageType: 'logo'
     },
@@ -119,6 +130,11 @@ export default function App() {
     {
       title: "Coaching and Mentoring",
       subtitle: "Empowering you with core values to reach your full potential.",
+      image: "./image/pic3.png"
+    },
+     {
+      title: "Need Someone to Talk To?",
+      subtitle: "Paz Thriving Tribe offers a safe and confidential space where you can talk and be heard.",
       image: "./image/pic3.png"
     },
     {
@@ -881,6 +897,28 @@ export default function App() {
     }
   };
 
+  const handleHeroBookingSubmit = async (event) => {
+    event.preventDefault();
+
+    const message = [
+      `Client type: ${bookingForm.clientType}`,
+      `Session type: ${bookingForm.sessionType}`,
+      `Preferred time: ${bookingForm.preferredTime}`,
+      `Concern: ${bookingForm.concern}`
+    ].join(' | ');
+
+    await addApplicant({
+      fullName: bookingForm.name,
+      email: bookingForm.email,
+      phone: bookingForm.phone,
+      track: 'talk-thrive',
+      message
+    });
+
+    setBookingSubmitted(true);
+    setBookingForm({ name: '', email: '', phone: '', clientType: 'Individual', sessionType: 'Virtual', preferredTime: 'Any time', concern: '' });
+  };
+
   const addApplicant = async (applicant) => {
     const newApplicant = {
       id: `app-${Date.now()}`,
@@ -1100,12 +1138,34 @@ export default function App() {
         .hero-overlay {
           position: relative;
           z-index: 2;
-          text-align: center;
-          padding: 4rem 2rem;
-          max-width: 1000px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          min-height: 100%;
+          padding: 4rem 1rem;
         }
-        .hero-overlay h1 { font-size: 4.2rem; color: #ffffff; margin-bottom: 1rem; font-weight: 800; letter-spacing: -1px; animation: bannerTextFade 0.6s ease-out; text-shadow: 0 8px 28px rgba(0,0,0,0.7); }
-        .hero-overlay p { font-size: 1.45rem; color: #ffffff; max-width: 900px; margin: 0 auto 2.5rem auto; line-height: 1.6; animation: bannerTextFade 0.8s ease-out; text-shadow: 0 6px 20px rgba(0,0,0,0.6); }
+        .hero-copy-card {
+          width: min(100%, 820px);
+          background: linear-gradient(145deg, rgba(15, 23, 42, 0.78), rgba(17, 24, 39, 0.66));
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          border-radius: 24px;
+          box-shadow: 0 18px 50px rgba(15, 23, 42, 0.35);
+          padding: 1.25rem 1rem 1.1rem;
+          text-align: center;
+          backdrop-filter: blur(10px);
+        }
+        .hero-copy-card h1 { font-size: clamp(2.2rem, 6vw, 4.2rem); color: #ffffff; margin-bottom: 0.75rem; font-weight: 800; letter-spacing: -1px; animation: bannerTextFade 0.6s ease-out; text-shadow: 0 8px 28px rgba(0,0,0,0.7); }
+        .hero-copy-card p { font-size: clamp(1rem, 2vw, 1.35rem); color: #eff6ff; max-width: 760px; margin: 0 auto 1rem auto; line-height: 1.5; animation: bannerTextFade 0.8s ease-out; text-shadow: 0 6px 20px rgba(0,0,0,0.55); }
+        .hero-action-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.75rem; margin-top: 1rem; }
+        .hero-arrow-cluster { display: flex; gap: 0.5rem; }
+        .hero-nav-btn {
+          width: 44px; height: 44px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.24);
+          background: rgba(255,255,255,0.12); color: #ffffff; display: inline-flex; align-items: center; justify-content: center;
+          cursor: pointer; box-shadow: 0 10px 24px rgba(15,23,42,0.25); transition: transform 0.2s ease, background 0.2s ease;
+        }
+        .hero-nav-btn:hover { background: rgba(255,255,255,0.2); transform: translateY(-1px); }
+        .hero-scroll-btn { min-width: 180px; }
         @keyframes bannerTextFade { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         
         .hero-scroll-btn { background-color: var(--brand-green); color: white; padding: 1rem 2.5rem; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 1.05rem; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.6rem; }
@@ -2199,14 +2259,135 @@ export default function App() {
                   )}
                   {homeSlides[currentHomeSlide].imageType !== 'contain' && (
                     <div className="hero-overlay" key={currentHomeSlide}>
-                      <h1>{homeSlides[currentHomeSlide].title}</h1>
-                      <p>{homeSlides[currentHomeSlide].subtitle}</p>
-                      <button className="hero-scroll-btn" onClick={() => setShowRegisterModal(true)}>
-                        Register Now <i className="fa-solid fa-user-plus"></i>
-                      </button>
+                      <div className="hero-copy-card">
+                        <h1>{homeSlides[currentHomeSlide].title}</h1>
+                        <p>{homeSlides[currentHomeSlide].subtitle}</p>
+                        <div className="hero-action-row">
+                          <button className="hero-scroll-btn" onClick={() => setShowBookingModal(true)}>
+                            Book Now <i className="fa-solid fa-calendar-check"></i>
+                          </button>
+                          <div className="hero-arrow-cluster" aria-label="Slide navigation">
+                            <button
+                              type="button"
+                              className="hero-nav-btn"
+                              aria-label="Previous slide"
+                              onClick={() => setCurrentHomeSlide((prev) => (prev - 1 + homeSlides.length) % homeSlides.length)}
+                            >
+                              <i className="fa-solid fa-chevron-left"></i>
+                            </button>
+                            <button
+                              type="button"
+                              className="hero-nav-btn"
+                              aria-label="Next slide"
+                              onClick={() => setCurrentHomeSlide((prev) => (prev + 1) % homeSlides.length)}
+                            >
+                              <i className="fa-solid fa-chevron-right"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </section>
+
+                {showBookingModal && (
+                  <div
+                    style={{
+                      position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.78)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', zIndex: 1100
+                    }}
+                    onClick={() => setShowBookingModal(false)}
+                  >
+                    <article
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        width: '100%', maxWidth: '780px', borderRadius: '24px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: '0 24px 60px rgba(15, 23, 42, 0.35)', padding: '1rem', maxHeight: '92vh', overflowY: 'auto'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.5rem' }}>
+                        <div>
+                          <span className="care-pill">Talk & Thrive booking</span>
+                          <h3 style={{ margin: '0.35rem 0 0.35rem', fontSize: '1.2rem' }}>Book your counseling session</h3>
+                          <p style={{ margin: 0, color: 'var(--text-muted)', lineHeight: 1.45 }}>
+                            Use this quick form to request your session. The details are sent to the admin dashboard for follow-up.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowBookingModal(false)}
+                          style={{ border: '1px solid var(--border-color)', background: 'transparent', borderRadius: '999px', width: '40px', height: '40px', color: 'var(--text-primary)', cursor: 'pointer' }}
+                          aria-label="Close booking form"
+                        >
+                          <i className="fa-solid fa-xmark"></i>
+                        </button>
+                      </div>
+
+                      {bookingSubmitted ? (
+                        <div className="status-feedback-banner" style={{ marginTop: '0.5rem' }}>
+                          <i className="fa-solid fa-circle-check"></i> Your booking request has been received and saved for admin follow-up.
+                        </div>
+                      ) : (
+                        <form onSubmit={handleHeroBookingSubmit} className="cms-creation-form-layout" style={{ marginTop: '0.7rem' }}>
+                          <div className="registration-fields-grid">
+                            <div className="form-input-container">
+                              <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Full Name</label>
+                              <input type="text" required value={bookingForm.name} onChange={(e) => setBookingForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Enter your full name" className="plain-text-input" />
+                            </div>
+                            <div className="form-input-container">
+                              <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Email Address</label>
+                              <input type="email" required value={bookingForm.email} onChange={(e) => setBookingForm((prev) => ({ ...prev, email: e.target.value }))} placeholder="you@example.com" className="plain-text-input" />
+                            </div>
+                          </div>
+                          <div className="registration-fields-grid">
+                            <div className="form-input-container">
+                              <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Phone Number</label>
+                              <input type="tel" required value={bookingForm.phone} onChange={(e) => setBookingForm((prev) => ({ ...prev, phone: e.target.value }))} placeholder="+234..." className="plain-text-input" />
+                            </div>
+                            <div className="form-input-container">
+                              <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Client Type</label>
+                              <select value={bookingForm.clientType} onChange={(e) => setBookingForm((prev) => ({ ...prev, clientType: e.target.value }))} className="plain-text-input">
+                                <option value="Individual">Individual</option>
+                                <option value="Parent">Parent / Guardian</option>
+                                <option value="Teen">Teen</option>
+                                <option value="Woman">Woman / Young Adult</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className="registration-fields-grid">
+                            <div className="form-input-container">
+                              <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Session Type</label>
+                              <select value={bookingForm.sessionType} onChange={(e) => setBookingForm((prev) => ({ ...prev, sessionType: e.target.value }))} className="plain-text-input">
+                                <option value="Virtual">Virtual</option>
+                                <option value="In-person">In-person</option>
+                                <option value="Hybrid">Hybrid</option>
+                              </select>
+                            </div>
+                            <div className="form-input-container">
+                              <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Preferred Time</label>
+                              <select value={bookingForm.preferredTime} onChange={(e) => setBookingForm((prev) => ({ ...prev, preferredTime: e.target.value }))} className="plain-text-input">
+                                <option value="Any time">Any time</option>
+                                <option value="Morning">Morning</option>
+                                <option value="Afternoon">Afternoon</option>
+                                <option value="Evening">Evening</option>
+                              </select>
+                            </div>
+                          </div>
+                          <div className="form-input-container">
+                            <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>What would you like support with?</label>
+                            <textarea rows="5" required value={bookingForm.concern} onChange={(e) => setBookingForm((prev) => ({ ...prev, concern: e.target.value }))} placeholder="Share what you need help with." className="plain-text-input" style={{ resize: 'vertical' }} />
+                          </div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '0.75rem' }}>
+                            <button type="submit" className="form-submit-action-btn" style={{ minWidth: '220px' }}>
+                              <i className="fa-solid fa-paper-plane"></i> Send Booking Request
+                            </button>
+                            <button type="button" onClick={() => setShowBookingModal(false)} className="btn-secondary" style={{ padding: '0.8rem 1rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                              Close
+                            </button>
+                          </div>
+                        </form>
+                      )}
+                    </article>
+                  </div>
+                )}
 
                 {showRegisterModal && (
                   <ThriverRegistrationModal
@@ -2902,7 +3083,10 @@ export default function App() {
                 <div className="footer-vector-badge"><img src={theme === 'dark' ? "../logo/logo2.jpeg" : "../logo/logomain.png"} alt="Paz Thriving Tribe logo" className="nav-logo-img" /></div>
                 <span className="footer-brand-headline">Paz Thriving Tribe</span>
               </Link>
-              <p>Providing dynamic infrastructure tracking networks focused on alignment strategies, professional conflict mitigation solutions, and youth development counseling models.</p>
+              <p>Paz Thriving Tribe Coaching, Mentoring and Councelling Organisation is committed to 
+                impacting individuals, families, transforming teenagers, positively influencing women, 
+                and helping children and young people develop the values, character, and healthy 
+                habits they need to thrive and become purposeful leaders.</p>
             </div>
 
             <div className="footer-links-column">
@@ -3443,7 +3627,7 @@ function CareCounselingPage() {
   const directMessagePoints = [
     'If you are looking for a safe, respectful place to talk, we are here for you.',
     'You do not have to carry stress, confusion, or emotional strain alone.',
-    'Our support is designed to help you feel heard, guided, and motivated to move forward.'
+    'Book a session with our inhouse counselor today!'
   ];
 
   const serviceAreas = [
@@ -3500,8 +3684,49 @@ function CareCounselingPage() {
 
   const [activeCounselingSlide, setActiveCounselingSlide] = useState(0);
   const [activeCareFocusIndex, setActiveCareFocusIndex] = useState(0);
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [bookingForm, setBookingForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    clientType: 'Individual',
+    sessionType: 'Virtual',
+    preferredTime: 'Any time',
+    concern: ''
+  });
+  const [bookingSubmitted, setBookingSubmitted] = useState(false);
 
   const currentCareFocusSlide = careFocusSlides[activeCareFocusIndex];
+
+  const handleBookingSubmit = async (event) => {
+    event.preventDefault();
+
+    const message = [
+      `Client type: ${bookingForm.clientType}`,
+      `Session type: ${bookingForm.sessionType}`,
+      `Preferred time: ${bookingForm.preferredTime}`,
+      `Concern: ${bookingForm.concern}`
+    ].join(' | ');
+
+    try {
+      const { error } = await supabase.from('tribe_applicants').insert([{
+        full_name: bookingForm.name,
+        email: bookingForm.email,
+        phone: bookingForm.phone,
+        track: 'talk-thrive',
+        message
+      }]);
+
+      if (error) throw error;
+
+      setBookingSubmitted(true);
+      setBookingForm({ name: '', email: '', phone: '', clientType: 'Individual', sessionType: 'Virtual', preferredTime: 'Any time', concern: '' });
+    } catch (err) {
+      console.error('Talk & Thrive booking submission failed:', err);
+      setBookingSubmitted(false);
+      alert('We could not save your booking right now. Please try again shortly.');
+    }
+  };
 
   useEffect(() => {
     const counselingInterval = setInterval(() => {
@@ -3521,6 +3746,113 @@ function CareCounselingPage() {
 
   return (
     <div className="public-website-container">
+      <style>{`
+        .talk-thrive-booking-backdrop {
+          position: fixed;
+          inset: 0;
+          background: linear-gradient(145deg, rgba(2, 6, 23, 0.82), rgba(15, 23, 42, 0.82));
+          backdrop-filter: blur(8px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1rem;
+          z-index: 1100;
+        }
+
+        .talk-thrive-booking-card {
+          width: 100%;
+          max-width: 860px;
+          border-radius: 24px;
+          background:
+            linear-gradient(145deg, rgba(255,255,255,0.98), rgba(248,250,252,0.96));
+          border: 1px solid rgba(148, 163, 184, 0.22);
+          box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
+          padding: 1.1rem;
+          max-height: 92vh;
+          overflow-y: auto;
+        }
+
+        .talk-thrive-booking-card .care-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.12), rgba(16, 185, 129, 0.12));
+          border: 1px solid rgba(148, 163, 184, 0.25);
+          color: var(--text-primary);
+        }
+
+        .talk-thrive-modal-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 1rem;
+        }
+
+        .talk-thrive-note-card {
+          display: grid;
+          gap: 0.35rem;
+          padding: 0.9rem;
+          border-radius: 16px;
+          background: linear-gradient(145deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.92));
+          border: 1px solid rgba(148, 163, 184, 0.24);
+        }
+
+        .talk-thrive-note-card strong {
+          color: var(--text-primary);
+          font-size: 0.92rem;
+        }
+
+        .talk-thrive-note-card span {
+          color: var(--text-muted);
+          font-size: 0.9rem;
+          line-height: 1.35;
+        }
+
+        .talk-thrive-modal-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.75rem;
+          margin-top: 0.85rem;
+        }
+
+        .talk-thrive-modal-actions button {
+          flex: 1 1 auto;
+          min-width: 180px;
+        }
+
+        @media (max-width: 768px) {
+          .talk-thrive-booking-card {
+            border-radius: 18px;
+            padding: 0.95rem;
+          }
+
+          .talk-thrive-modal-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .talk-thrive-modal-actions {
+            flex-direction: column-reverse;
+          }
+
+          .talk-thrive-modal-actions button {
+            width: 100%;
+            min-width: 0;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .talk-thrive-booking-card h3 {
+            font-size: 1.06rem;
+          }
+
+          .talk-thrive-booking-card p {
+            font-size: 0.95rem;
+          }
+
+          .talk-thrive-note-card {
+            padding: 0.75rem;
+          }
+        }
+      `}</style>
       <section className="service-view-hero-banner" data-aos="fade-up" style={{ minHeight: '460px', marginTop: '0.75rem' }}>
         <div
           className="service-banner-bg"
@@ -3567,9 +3899,9 @@ function CareCounselingPage() {
         <div className="care-counseling-shell">
           <div className="care-intro-block">
             <span className="section-label">Talk & Thrive</span>
-            <h1 className="section-title-heading" style={{ textAlign: 'left', marginBottom: '0.2rem' }}>Support that feels calm, respectful, and practical.</h1>
+            <h1 className="section-title-heading" style={{ textAlign: 'left', marginBottom: '0.2rem' }}>Support that feels calm, confidential, and practical.</h1>
             <p className="section-subtext" style={{ textAlign: 'left', marginBottom: '0', fontSize: '1rem' }}>
-              We offer a clear, supportive space where clients can find guidance, reassurance, and practical next steps.
+             Talk & Thrive Sessions provide a safe, confidential, and supportive space where you can freely express yourself, share your burdens and gain clarity
             </p>
           </div>
 
@@ -3578,17 +3910,17 @@ function CareCounselingPage() {
               <article className="care-animated-box" data-aos="fade-up" data-aos-delay="100">
                 <span className="care-pill">Support</span>
                 <h3>Guidance for real-life pressure</h3>
-                <p>Our Care & Counseling arm offers a respectful space to process stress, relationships, and emotional strain with clarity and care.</p>
+                <p>Our Talk & Thrive session offers a confidential and warm space to onboarding and hear our clients out.</p>
               </article>
               <article className="care-animated-box" data-aos="fade-up" data-aos-delay="180">
                 <span className="care-pill">Approach</span>
                 <h3>Warm, practical, and personal</h3>
-                <p>Every session is designed to help clients feel heard, encouraged, and better equipped to move forward with confidence.</p>
+                <p>Every session is designed to help clients feel heard, encouraged, and better equipped.</p>
               </article>
               <article className="care-animated-box" data-aos="fade-up" data-aos-delay="260">
                 <span className="care-pill">Outcome</span>
                 <h3>Support that strengthens the whole journey</h3>
-                <p>This service is part of the Paz Thriving Tribe experience, helping people grow with steadiness, confidence, and hope.</p>
+                <p>Emotion Relief, Clarity, Practical Guidance, Renewed Confidence, Peace and a clear path forward.</p>
               </article>
             </div>
           </div>
@@ -3596,12 +3928,12 @@ function CareCounselingPage() {
           <div className="care-section-block">
             <article className="care-counseling-card care-animated-box" data-aos="fade-up" data-aos-delay="320" style={{ borderRadius: '20px' }}>
               <span className="care-pill">Why it matters</span>
-              <h3>Support that feels steady, personal, and practical</h3>
+              <h3>Support that feels steady, confidential, personal, and practical</h3>
               <p style={{ marginBottom: '0.95rem' }}>
                 Whether you are managing stress, family pressure, or a life transition, our counseling support is designed to help you feel heard, calm, and confident about your next step.
               </p>
 
-              <div className="why-it-matters-grid">
+              {/* <div className="why-it-matters-grid">
                 <article className="why-it-matters-card" data-aos="fade-up" data-aos-delay="120">
                   <span className="why-it-matters-icon">01</span>
                   <h4>Gentle guidance</h4>
@@ -3617,7 +3949,7 @@ function CareCounselingPage() {
                   <h4>Client-centered care</h4>
                   <p>A professional experience shaped around dignity, trust, and a steady path to growth.</p>
                 </article>
-              </div>
+              </div> */}
             </article>
           </div>
 
@@ -3658,14 +3990,140 @@ function CareCounselingPage() {
               </div>
 
               <div className="care-services-strip" style={{ marginTop: '1rem' }}>
-                {currentCareFocusSlide.items.map((item) => (
-                  <article key={item} className="care-mini-card" data-aos="fade-up" data-aos-delay="120">
+                {currentCareFocusSlide.items.map((item, index) => (
+                  <article key={`${item}-${index}`} className="care-mini-card" data-aos="fade-up" data-aos-delay="120">
                     {item}
+                    {item === 'Book a session with our inhouse counselor today!' && (
+                      <button
+                        type="button"
+                        className="form-submit-action-btn"
+                        style={{ width: '100%', marginTop: '0.9rem' }}
+                        onClick={() => {
+                          setBookingSubmitted(false);
+                          setIsBookingModalOpen(true);
+                        }}
+                      >
+                        Book Now
+                      </button>
+                    )}
                   </article>
                 ))}
               </div>
             </article>
           </div>
+
+          {isBookingModalOpen && (
+            <div
+              className="talk-thrive-booking-backdrop"
+              onClick={() => setIsBookingModalOpen(false)}
+            >
+              <article
+                className="talk-thrive-booking-card"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.6rem' }}>
+                  <div>
+                    <span className="care-pill">Talk & Thrive booking</span>
+                    <h3 style={{ margin: '0.35rem 0 0.35rem', fontSize: '1.35rem' }}>Request a counseling session</h3>
+                    <p style={{ margin: 0, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                      Share your details here and your request will be captured in the admin dashboard for follow-up.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsBookingModalOpen(false)}
+                    style={{
+                      border: '1px solid var(--border-color)',
+                      background: 'transparent',
+                      color: 'var(--text-primary)',
+                      borderRadius: '999px',
+                      width: '40px',
+                      height: '40px',
+                      cursor: 'pointer',
+                      fontSize: '1rem'
+                    }}
+                    aria-label="Close booking form"
+                  >
+                    <i className="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+
+                <div className="talk-thrive-note-card" style={{ marginBottom: '1rem' }}>
+                  <strong>What happens next?</strong>
+                  <span>We capture your request in the same applicant flow used by the admin dashboard and contact you through the details you provide.</span>
+                </div>
+
+                {bookingSubmitted ? (
+                  <div className="status-feedback-banner" style={{ marginTop: '0.5rem' }}>
+                    <i className="fa-solid fa-circle-check"></i> Your booking request has been saved and sent to the admin dashboard for follow-up.
+                  </div>
+                ) : (
+                  <form onSubmit={handleBookingSubmit} className="cms-creation-form-layout" style={{ marginTop: '0.5rem' }}>
+                    <div className="talk-thrive-modal-grid">
+                      <div className="form-input-container">
+                        <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Full Name</label>
+                        <input type="text" required value={bookingForm.name} onChange={(e) => setBookingForm((prev) => ({ ...prev, name: e.target.value }))} placeholder="Enter your full name" className="plain-text-input" />
+                      </div>
+                      <div className="form-input-container">
+                        <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Email Address</label>
+                        <input type="email" required value={bookingForm.email} onChange={(e) => setBookingForm((prev) => ({ ...prev, email: e.target.value }))} placeholder="you@example.com" className="plain-text-input" />
+                      </div>
+                    </div>
+
+                    <div className="talk-thrive-modal-grid">
+                      <div className="form-input-container">
+                        <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Phone Number</label>
+                        <input type="tel" required value={bookingForm.phone} onChange={(e) => setBookingForm((prev) => ({ ...prev, phone: e.target.value }))} placeholder="+234..." className="plain-text-input" />
+                      </div>
+                      <div className="form-input-container">
+                        <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Client Type</label>
+                        <select value={bookingForm.clientType} onChange={(e) => setBookingForm((prev) => ({ ...prev, clientType: e.target.value }))} className="plain-text-input">
+                          <option value="Individual">Individual</option>
+                          <option value="Parent">Parent / Guardian</option>
+                          <option value="Teen">Teen</option>
+                          <option value="Woman">Woman / Young Adult</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="talk-thrive-modal-grid">
+                      <div className="form-input-container">
+                        <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Session Type</label>
+                        <select value={bookingForm.sessionType} onChange={(e) => setBookingForm((prev) => ({ ...prev, sessionType: e.target.value }))} className="plain-text-input">
+                          <option value="Virtual">Virtual</option>
+                          <option value="In-person">In-person</option>
+                          <option value="Hybrid">Hybrid</option>
+                        </select>
+                      </div>
+                      <div className="form-input-container">
+                        <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Preferred Time</label>
+                        <select value={bookingForm.preferredTime} onChange={(e) => setBookingForm((prev) => ({ ...prev, preferredTime: e.target.value }))} className="plain-text-input">
+                          <option value="Any time">Any time</option>
+                          <option value="Morning">Morning</option>
+                          <option value="Afternoon">Afternoon</option>
+                          <option value="Evening">Evening</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="form-input-container">
+                      <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>What would you like support with?</label>
+                      <textarea rows="5" required value={bookingForm.concern} onChange={(e) => setBookingForm((prev) => ({ ...prev, concern: e.target.value }))} placeholder="Share a brief overview of your needs, goals, or concerns." className="plain-text-input" style={{ resize: 'vertical' }} />
+                    </div>
+
+                    <div className="talk-thrive-modal-actions">
+                      <button type="submit" className="form-submit-action-btn" style={{ minWidth: '220px' }}>
+                        <i className="fa-solid fa-paper-plane"></i> Send Booking Request
+                      </button>
+                      <button type="button" onClick={() => setIsBookingModalOpen(false)} className="care-focus-btn" style={{ background: 'transparent' }}>
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </article>
+            </div>
+          )}
         </div>
       </section>
     </div>
