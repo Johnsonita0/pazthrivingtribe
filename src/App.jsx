@@ -2579,7 +2579,7 @@ export default function App() {
                         <h3>{services.children.title}</h3>
                         <p>{services.children.description}</p>
                       </div>
-                      <div className="gateway-footer-action">Open Dedicated View <i className="fa-solid fa-arrow-trend-up"></i></div>
+                      <div className="gateway-footer-action">Read more <i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
 
                     <Link to="/services/marriage" className="service-gateway-card">
@@ -2588,7 +2588,7 @@ export default function App() {
                         <h3>{services.marriage.title}</h3>
                         <p>{services.marriage.description}</p>
                       </div>
-                      <div className="gateway-footer-action">Open Dedicated View<i className="fa-solid fa-arrow-trend-up"></i></div>
+                      <div className="gateway-footer-action">Read more<i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
 
                     <Link to="/services/family" className="service-gateway-card">
@@ -2597,7 +2597,7 @@ export default function App() {
                         <h3>{services.family.title}</h3>
                         <p>{services.family.description}</p>
                       </div>
-                      <div className="gateway-footer-action">Open Dedicated View<i className="fa-solid fa-arrow-trend-up"></i></div>
+                      <div className="gateway-footer-action">Read more<i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
 
                     <Link to="/care-counseling" className="service-gateway-card">
@@ -2606,7 +2606,7 @@ export default function App() {
                         <h3>Paz Thriving Talk & Thrive Centre</h3>
                         <p>Dedicated counseling, coaching, and emotional support services for parents, teens, women, and young adults who want guidance and a safe place to grow.</p>
                       </div>
-                      <div className="gateway-footer-action">Open Dedicated View<i className="fa-solid fa-arrow-trend-up"></i></div>
+                      <div className="gateway-footer-action">Read more<i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
                   </div>
                 </section>
