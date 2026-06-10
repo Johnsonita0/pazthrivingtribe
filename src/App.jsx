@@ -197,6 +197,17 @@ export default function App() {
   const [founderActiveTab, setFounderActiveTab] = useState('speech');
   const founderTabsList = ['speech', 'about', 'values'];
 
+  // --- Rotating Intro Text for the Highlights Section ---
+  const [introTextMode, setIntroTextMode] = useState('heading');
+
+  useEffect(() => {
+    const introTimer = window.setInterval(() => {
+      setIntroTextMode((currentMode) => (currentMode === 'heading' ? 'paragraph' : 'heading'));
+    }, 7000);
+
+    return () => window.clearInterval(introTimer);
+  }, []);
+
   // --- State for Auto-Sliding Mission & Vision Statements ---
   const [activeStatementIndex, setActiveStatementIndex] = useState(0);
   const statements = [
@@ -1809,6 +1820,15 @@ export default function App() {
           box-sizing: border-box;
         }
         .section-intro-shell { max-width: 1100px; margin: 0 auto 2.5rem; text-align: center; }
+        .rotating-intro-shell { position: relative; }
+        .rotating-intro-copy {
+          animation: introRotateIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+          transform-style: preserve-3d;
+        }
+        @keyframes introRotateIn {
+          0% { opacity: 0; transform: rotateX(-20deg) translateY(8px); }
+          100% { opacity: 1; transform: rotateX(0deg) translateY(0); }
+        }
         .section-intro-shell h2 {
           margin: 0.75rem auto 0.75rem;
           max-width: 860px;
@@ -2450,10 +2470,19 @@ export default function App() {
                 )}
 
                 <section className="program-highlights-section" data-aos="fade-up">
-                  <div className="section-intro-shell">
-                    <span className="section-label">A clearer path to growth</span>
-                    <h2>Support that is structured, human, and easy to follow.</h2>
-                    <p>From personal growth and family support to youth mentoring, we create a clear path for every client who is ready to move forward with confidence.</p>
+                  <div key={introTextMode} className="section-intro-shell rotating-intro-shell">
+                    <span className="section-label">Paz Thriving Tribe brings you peace.</span>
+                    {introTextMode === 'heading' ? (
+                      <>
+                        <h2 className="rotating-intro-copy">When you experience peace within, you are better able to grow, overcome challenges, discover purpose, and thrive.</h2>
+                        <p className="rotating-intro-copy">Through coaching, mentoring and counselling, we help individuals build the confidence, character, and clarity they need to thrive.</p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="rotating-intro-copy">When you experience peace within, you are better able to grow, overcome challenges, discover purpose, and thrive.</p>
+                        <h2 className="rotating-intro-copy">Through coaching, mentoring and counselling, we help individuals build the confidence, character, and clarity they need to thrive.</h2>
+                      </>
+                    )}
                   </div>
 
                   <div className="highlight-grid">
@@ -2530,8 +2559,8 @@ export default function App() {
                             <p>We empower children, teenagers, and women to influence others positively, take responsibility, and become agents of positive change.</p>
                           </div>
                           <div className="value-card-element">
-                            <h5><i className="fa-solid fa-seedling"></i> Growth</h5>
-                            <p>We believe everyone has the potential to improve. Through learning, coaching, and mentoring, we help people develop the habits and mindset needed to thrive.</p>
+                            <h5><i className="fa-solid fa-seedling"></i> Confidentiality</h5>
+                            <p>We value trust and privacy, ensuring that every individual feels safe, respected, and secure when sharing their thoughts and experiences with us.</p>
                           </div>
                         </div>
                       )}
