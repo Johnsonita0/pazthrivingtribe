@@ -135,8 +135,7 @@ export default function App() {
     {
       title: "Need Someone to Talk To?",
       subtitle: "Paz Thriving Tribe offers a safe and confidential space where you can talk and be heard.",
-      image: "./image/pic7.png",
-      imageType: 'contain'
+      image: "./image/pic7.png"
     },
     {
       title: "Structured Teens Development Program",
@@ -1158,17 +1157,6 @@ export default function App() {
         @media (max-width: 420px) {
           .hero-section { min-height: 100svh; }
           .hero-slide-bg { background-position: center center !important; background-size: cover !important; }
-          .hero-slide-bg.hero-slide-pic7 {
-            min-height: 100svh;
-            background-size: cover !important;
-            background-position: center 8% !important;
-            background-repeat: no-repeat !important;
-            background-attachment: scroll !important;
-          }
-          .hero-overlay {
-            padding-top: 4.4rem !important;
-            padding-bottom: 2rem !important;
-          }
         }
         .hero-slide-bg::before {
           content: '';
@@ -1261,10 +1249,6 @@ export default function App() {
           object-position: center center;
           z-index: 2;
         }
-        .hero-inline-contain-img.hero-inline-pic7 {
-          max-width: min(88vw, 520px);
-          max-height: 72vh;
-        }
         .hero-overlay { padding: 3rem 1.5rem; }
         .hero-overlay h1 { font-size: 3.8rem; color: #ffffff; text-shadow: 0 8px 28px rgba(0,0,0,0.7); }
         .hero-overlay p { font-size: 1.25rem; max-width: 100%; color: #ffffff; text-shadow: 0 6px 20px rgba(0,0,0,0.6); }
@@ -1302,11 +1286,6 @@ export default function App() {
           .slide-graphic img { object-fit: cover; height: 100%; }
           .hero-bg-contain { background-size: contain !important; background-position: center center !important; }
           .hero-inline-contain-img { max-height: 70vh; max-width: 92vw; }
-          .hero-inline-contain-img.hero-inline-pic7 {
-            max-width: 82vw;
-            max-height: 58vh;
-            top: 50%;
-          }
           .hero-overlay h1 { font-size: 2rem !important; }
           .hero-overlay p { font-size: 0.95rem !important; }
         }
@@ -2333,7 +2312,7 @@ export default function App() {
                           <img
                             src={currentSlide.image}
                             alt="Banner"
-                            className={`hero-inline-contain-img ${currentSlide.image === './image/pic7.png' ? 'hero-inline-pic7' : ''}`}
+                            className="hero-inline-contain-img"
                           />
                         )}
                         {currentSlide.imageType !== 'contain' && (
