@@ -1157,6 +1157,21 @@ export default function App() {
         @media (max-width: 420px) {
           .hero-section { min-height: 100svh; }
           .hero-slide-bg { background-position: center center !important; background-size: cover !important; }
+          .hero-slide-bg.hero-slide-pic7 {
+            background-size: 100% auto !important;
+            background-position: center top !important;
+            background-repeat: no-repeat !important;
+            background-attachment: scroll !important;
+          }
+          .hero-slide-bg.hero-slide-pic7 + .hero-inline-contain-img,
+          .hero-inline-contain-img {
+            max-width: 92vw !important;
+            max-height: 62vh !important;
+            width: auto !important;
+            height: auto !important;
+            object-fit: contain !important;
+            top: 46% !important;
+          }
         }
         .hero-slide-bg::before {
           content: '';
@@ -2300,7 +2315,7 @@ export default function App() {
                     return (
                       <>
                         <div
-                          className={`hero-slide-bg ${currentSlide.imageType === 'contain' ? 'hero-bg-contain' : ''} ${currentSlide.imageType === 'bottom' ? 'hero-slide-bottom' : ''}`}
+                          className={`hero-slide-bg ${currentSlide.imageType === 'contain' ? 'hero-bg-contain' : ''} ${currentSlide.imageType === 'bottom' ? 'hero-slide-bottom' : ''} ${currentSlide.image === './image/pic7.png' ? 'hero-slide-pic7' : ''}`}
                           style={{
                             backgroundImage: currentSlide.imageType === 'contain' ? 'none' : `url(${currentSlide.image})`,
                             backgroundSize: currentSlide.imageType === 'logo' ? 'contain' : 'cover',
