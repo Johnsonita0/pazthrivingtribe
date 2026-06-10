@@ -1158,19 +1158,15 @@ export default function App() {
           .hero-section { min-height: 100svh; }
           .hero-slide-bg { background-position: center center !important; background-size: cover !important; }
           .hero-slide-bg.hero-slide-pic7 {
-            background-size: 100% auto !important;
-            background-position: center top !important;
+            min-height: 100svh;
+            background-size: cover !important;
+            background-position: center 8% !important;
             background-repeat: no-repeat !important;
             background-attachment: scroll !important;
           }
-          .hero-slide-bg.hero-slide-pic7 + .hero-inline-contain-img,
-          .hero-inline-contain-img {
-            max-width: 92vw !important;
-            max-height: 62vh !important;
-            width: auto !important;
-            height: auto !important;
-            object-fit: contain !important;
-            top: 46% !important;
+          .hero-overlay {
+            padding-top: 4.4rem !important;
+            padding-bottom: 2rem !important;
           }
         }
         .hero-slide-bg::before {
