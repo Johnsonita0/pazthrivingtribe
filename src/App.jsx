@@ -174,7 +174,7 @@ export default function App() {
       slug: "family",
       title: "Thriving Parents",
       subtitle: "Single Women Empowerment & Personal Development",
-      description: "Empowering single women with personal growth strategies, confidence-building frameworks, and actionable toolsets to navigate life's transitions and cultivate purposeful independence.",
+      description: "We equip you with practical parenting training, guide, and a supportive community to raise children who will thrive.We achieve this through sessions, real talk, tools you can use at home for a result oriented journey.",
       metricCount: "120+ Women Empowered"
     },
     marriage: {
