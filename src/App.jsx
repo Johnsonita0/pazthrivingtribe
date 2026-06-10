@@ -118,7 +118,7 @@ export default function App() {
   const homeSlides = [
     {
       title: "Paz Thriving Tribe",
-      subtitle: "Coaching, Mentoring and Councelling Organization.",
+      subtitle: "Coaching, Mentoring and Counselling Organization.",
       image: "./logo/logo2.jpeg",
       imageType: 'logo'
     },
@@ -172,7 +172,7 @@ export default function App() {
   const [services, setServices] = useState({
     family: {
       slug: "family",
-      title: "Thriving Singles",
+      title: "Thriving Parents",
       subtitle: "Single Women Empowerment & Personal Development",
       description: "Empowering single women with personal growth strategies, confidence-building frameworks, and actionable toolsets to navigate life's transitions and cultivate purposeful independence.",
       metricCount: "120+ Women Empowered"
@@ -907,16 +907,35 @@ export default function App() {
       `Concern: ${bookingForm.concern}`
     ].join(' | ');
 
-    await addApplicant({
-      fullName: bookingForm.name,
-      email: bookingForm.email,
-      phone: bookingForm.phone,
-      track: 'talk-thrive',
-      message
-    });
+    try {
+      const { error } = await supabase.from('tribe_applicants').insert([{
+        full_name: bookingForm.name,
+        email: bookingForm.email,
+        phone: bookingForm.phone,
+        track: 'talk-thrive',
+        message
+      }]);
 
-    setBookingSubmitted(true);
-    setBookingForm({ name: '', email: '', phone: '', clientType: 'Individual', sessionType: 'Virtual', preferredTime: 'Any time', concern: '' });
+      if (error) throw error;
+
+      setBookingSubmitted(true);
+      setToastMessage('Booking request sent successfully. We will follow up shortly.');
+      setToastType('success');
+    } catch (err) {
+      console.error('Home banner booking submission failed:', err);
+      await addApplicant({
+        fullName: bookingForm.name,
+        email: bookingForm.email,
+        phone: bookingForm.phone,
+        track: 'talk-thrive',
+        message
+      });
+      setBookingSubmitted(true);
+      setToastMessage('Booking request saved locally. We will follow up shortly.');
+      setToastType('success');
+    } finally {
+      setBookingForm({ name: '', email: '', phone: '', clientType: 'Individual', sessionType: 'Virtual', preferredTime: 'Any time', concern: '' });
+    }
   };
 
   const addApplicant = async (applicant) => {
@@ -2234,7 +2253,7 @@ export default function App() {
               <i className="fa-solid fa-heart-crack"></i> Thriving Women
             </Link>
             <Link to="/services/family" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-people-roof"></i> Thriving Singles
+              <i className="fa-solid fa-people-roof"></i> Thriving Parents
             </Link>
             <Link to="/care-counseling" className="nav-link-item" onClick={() => setNavOpen(false)}>
               <i className="fa-solid fa-hand-holding-heart"></i> Talk & Thrive
@@ -2323,14 +2342,14 @@ export default function App() {
                 {showBookingModal && (
                   <div
                     style={{
-                      position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.78)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '1rem 1rem 1.5rem', zIndex: 1100, overflowY: 'auto'
+                      position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.78)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '5.5rem 1rem 2rem', zIndex: 2147483647, overflowY: 'auto', WebkitOverflowScrolling: 'touch'
                     }}
                     onClick={() => setShowBookingModal(false)}
                   >
                     <article
                       onClick={(e) => e.stopPropagation()}
                       style={{
-                        width: '100%', maxWidth: '780px', borderRadius: '24px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: '0 24px 60px rgba(15, 23, 42, 0.35)', padding: '1rem', maxHeight: 'calc(100vh - 2rem)', overflowY: 'auto', marginTop: '1rem', boxSizing: 'border-box'
+                        width: '100%', maxWidth: '780px', borderRadius: '24px', background: 'var(--bg-card)', border: '1px solid var(--border-color)', boxShadow: '0 24px 60px rgba(15, 23, 42, 0.35)', padding: '1rem 1rem 1.1rem', maxHeight: 'min(920px, calc(100vh - 5rem))', overflowY: 'auto', marginTop: '0', marginBottom: '1rem', boxSizing: 'border-box', position: 'relative'
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem', marginBottom: '0.5rem' }}>
@@ -2772,7 +2791,7 @@ export default function App() {
                             <div className="form-input-container">
                               <label style={{ color: 'var(--brand-blue)', fontWeight: '600' }}>Select Targeted Menu Category to Update</label>
                               <select value={editTarget} onChange={(e) => setEditTarget(e.target.value)} className="plain-text-input" style={{ height: '46px', border: '1px solid var(--brand-blue)' }}>
-                                <option value="family">Thriving Singles</option>
+                                <option value="family">Thriving Parents</option>
                                 <option value="marriage">Thriving Women</option>
                                 <option value="children">Pre-teens & Teens</option>
                               </select>
@@ -2918,7 +2937,7 @@ export default function App() {
                             <div className="form-input-container">
                               <label style={{ fontWeight: '600' }}>Service Category</label>
                               <select value={programForm.service} onChange={(e) => setProgramForm((prev) => ({ ...prev, service: e.target.value }))} className="plain-text-input" style={{ height: '46px' }}>
-                                <option value="family">Thriving Singles</option>
+                                <option value="family">Thriving Parents</option>
                                 <option value="marriage">Thriving Women</option>
                                 <option value="children">Pre-teens & Teens</option>
                               </select>
@@ -3113,7 +3132,7 @@ export default function App() {
                 <div className="footer-vector-badge"><img src={theme === 'dark' ? "../logo/logo2.jpeg" : "../logo/logomain.png"} alt="Paz Thriving Tribe logo" className="nav-logo-img" /></div>
                 <span className="footer-brand-headline">Paz Thriving Tribe</span>
               </Link>
-              <p>Paz Thriving Tribe Coaching, Mentoring and Councelling Organisation is committed to 
+              <p>Paz Thriving Tribe Coaching, Mentoring and Counselling Organisation is committed to 
                 impacting individuals, families, transforming teenagers, positively influencing women, 
                 and helping children and young people develop the values, character, and healthy 
                 habits they need to thrive and become purposeful leaders.</p>
@@ -3122,7 +3141,7 @@ export default function App() {
             <div className="footer-links-column">
               <h4>What we offer</h4>
               <div className="footer-interactive-links">
-                <Link to="/services/family" className="footer-nav-anchor">Thriving Singles</Link>
+                <Link to="/services/family" className="footer-nav-anchor">Thriving Parents</Link>
                 <Link to="/services/marriage" className="footer-nav-anchor">Thriving Women</Link>
                 <Link to="/services/children" className="footer-nav-anchor">Pre-teens & Teens</Link>
               </div>
@@ -3278,7 +3297,7 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
 
   const subPageMeta = {
     family: {
-      newsTitle: "Thriving Singles Update",
+      newsTitle: "Thriving Parents Update",
       newsText: "New empowerment guide released: 'Building Confidence & Purpose as an Independent Woman'.",
       formSub: "Schedule Your Personal Development Consultation"
     },
@@ -4213,7 +4232,7 @@ function HomeIntakeForm({ onSubmitApplicant }) {
         <div className="form-input-container">
           <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Targeted Intake Track Selection</label>
           <select required value={track} onChange={(e) => setTrack(e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
-            <option value="family">Thriving Singles</option>
+            <option value="family">Thriving Parents</option>
             <option value="marriage">Thriving Women</option>
             <option value="children">Pre-teens & Teens</option>
           </select>
@@ -4716,7 +4735,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
                 <label>Selected Academy Track</label>
                 <select value={formData.track} onChange={(e) => updateField('track', e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
                   <option>Pre-teens & Teens</option>
-                  <option>Thriving Singles</option>
+                  <option>Thriving Parents</option>
                   <option>Thriving Women</option>
                 </select>
               </div>
