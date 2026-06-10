@@ -386,14 +386,14 @@ export default function App() {
   useEffect(() => {
     const homeBannerInterval = setInterval(() => {
       setCurrentHomeSlide((prev) => (prev + 1) % homeSlides.length);
-    }, 6000);
+    }, 30000);
     return () => clearInterval(homeBannerInterval);
   }, [homeSlides.length]);
 
   useEffect(() => {
     const promoInterval = setInterval(() => {
       setCurrentPromoSlide((s) => (s + 1) % promoSlides.length);
-    }, 6000);
+    }, 30000);
     return () => clearInterval(promoInterval);
   }, []);
 
@@ -404,21 +404,21 @@ export default function App() {
         const nextIndex = (currentIndex + 1) % founderTabsList.length;
         return founderTabsList[nextIndex];
       });
-    }, 6000);
+    }, 30000);
     return () => clearInterval(founderInterval);
   }, []);
 
   useEffect(() => {
     const slideInterval = setInterval(() => {
       setActiveStatementIndex((prevIndex) => (prevIndex + 1) % statements.length);
-    }, 5000);
+    }, 30000);
     return () => clearInterval(slideInterval);
   }, [statements.length]);
 
   useEffect(() => {
     const newsInterval = setInterval(() => {
       setActiveNewsIndex((prevIndex) => (prevIndex + 1) % socialNewsFeed.length);
-    }, 7000);
+    }, 30000);
     return () => clearInterval(newsInterval);
   }, [socialNewsFeed.length]);
 
@@ -1809,9 +1809,9 @@ export default function App() {
           overflow: hidden;
           border-radius: 18px;
           padding: 1rem;
-           background: var(--bg-card);
+          background: var(--bg-card);
           border: 1px solid var(--border-color);
-          box-shadow: var(--shadow-sm);
+          box-shadow: none;
           transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
         }
         .care-animated-box::after {
@@ -1823,7 +1823,7 @@ export default function App() {
           transition: opacity 0.25s ease;
           pointer-events: none;
         }
-        .care-animated-box:hover { transform: translateY(-4px); border-color: rgba(153, 231, 206, 0.28); box-shadow: 0 24px 42px rgba(0, 0, 0, 0.18); }
+        .care-animated-box:hover { transform: translateY(-2px); border-color: var(--border-color); box-shadow: var(--shadow-sm); }
         .care-animated-box:hover::after { opacity: 1; }
         .care-animated-box h3 { font-size: 1.02rem; margin: 0 0 0.35rem 0; color: var(--text-primary); }
         .care-animated-box p { color: var(--text-muted); line-height: 1.6; font-size: 0.95rem; margin: 0; }
@@ -1850,20 +1850,20 @@ export default function App() {
           border-radius: 18px;
           padding: 1.25rem;
           background: var(--bg-card);
-          box-shadow: var(--shadow-sm);
+          box-shadow: none;
           transition: transform 0.2s ease, border-color 0.2s ease;
         }
-        .care-counseling-card:hover { transform: translateY(-2px); border-color: rgba(153, 231, 206, 0.24); }
+        .care-counseling-card:hover { transform: translateY(-1px); border-color: var(--border-color); box-shadow: var(--shadow-sm); }
         .care-counseling-card h3 { font-size: 1.15rem; margin: 0 0 0.75rem 0; color: var(--text-primary); }
         .care-counseling-card p { color: var(--text-muted); line-height: 1.65; font-size: 0.98rem; margin: 0 0 0.85rem 0; }
         .care-counseling-card ul { margin: 0; padding-left: 1rem; color: var(--text-muted); line-height: 1.6; }
         .why-it-matters-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.9rem; margin-top: 0.75rem; }
         .why-it-matters-card {
-          border: 1px solid rgba(35, 134, 54, 0.14);
+          border: 1px solid var(--border-color);
           border-radius: 16px;
           padding: 1rem;
-          background: linear-gradient(145deg, rgba(255,255,255,0.96), rgba(243, 250, 247, 0.92));
-          box-shadow: 0 18px 32px rgba(15, 23, 42, 0.08);
+          background: var(--bg-card);
+          box-shadow: var(--shadow-sm);
           transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
         }
         .why-it-matters-card:hover { transform: translateY(-3px); border-color: rgba(35, 134, 54, 0.28); box-shadow: 0 22px 35px rgba(15, 23, 42, 0.12); }
@@ -1885,7 +1885,12 @@ export default function App() {
         .why-it-matters-card p { margin: 0; color: var(--text-muted); font-size: 0.9rem; line-height: 1.55; }
         @media (max-width: 992px) { .why-it-matters-grid { grid-template-columns: 1fr 1fr; } }
         @media (max-width: 640px) { .why-it-matters-grid { grid-template-columns: 1fr; } }
-        .care-focus-surface { background: linear-gradient(145deg, var(--bg-card), rgba(255,255,255,0.94)); border-color: rgba(35, 134, 54, 0.12); }
+        .care-focus-surface {
+          background: var(--bg-main);
+          border: 1px solid var(--border-color);
+          color: var(--text-primary);
+          box-shadow: none;
+        }
         .care-focus-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
         .care-focus-copy { flex: 1 1 360px; min-width: 0; }
         .care-focus-copy h3 { font-size: 1.2rem; line-height: 1.35; margin: 0.2rem 0 0.45rem 0; }
@@ -1909,17 +1914,22 @@ export default function App() {
         .care-focus-dot { width: 10px; height: 10px; border-radius: 999px; border: none; background: var(--border-color); cursor: pointer; padding: 0; }
         .care-focus-dot.active { background: var(--brand-green); width: 28px; border-radius: 999px; box-shadow: 0 0 0 4px rgba(35, 134, 54, 0.12); }
         .care-counseling-card li + li { margin-top: 0.35rem; }
-        .care-focus-card { background: linear-gradient(145deg, rgba(6, 22, 27, 0.98), rgba(15, 42, 51, 0.96)); border: 1px solid rgba(153, 231, 206, 0.14); box-shadow: 0 18px 40px rgba(8, 18, 24, 0.28); }
+        .care-focus-card {
+          background: var(--bg-card);
+          border: 1px solid var(--border-color);
+          box-shadow: var(--shadow-sm);
+          color: var(--text-primary);
+        }
         .care-focus-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
         .care-focus-copy { flex: 1 1 320px; min-width: 0; }
-        .care-focus-copy h3 { font-size: 1.18rem; line-height: 1.35; margin: 0.45rem 0 0.35rem; }
-        .care-focus-copy p { color: #dfe9ef; }
+        .care-focus-copy h3 { font-size: 1.18rem; line-height: 1.35; margin: 0.45rem 0 0.35rem; color: var(--text-primary); }
+        .care-focus-copy p { color: var(--text-muted); }
         .care-focus-controls { display: flex; justify-content: flex-end; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-        .care-focus-helper { color: #d6e6ec; font-size: 0.88rem; margin-top: 0.45rem; opacity: 0.92; }
+        .care-focus-helper { color: var(--text-muted); font-size: 0.88rem; margin-top: 0.45rem; opacity: 1; }
         .care-chip-list { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
         .care-chip-list span { display: inline-flex; align-items: center; padding: 0.45rem 0.75rem; border-radius: 999px; background: rgba(35,134,54,0.12); color: var(--text-primary); border: 1px solid rgba(35,134,54,0.18); font-size: 0.9rem; font-weight: 600; }
         .care-services-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin-top: 1rem; }
-        .care-mini-card { border: 1px solid var(--border-color); border-radius: 16px; padding: 0.95rem; background-color: var(--bg-main); color: var(--text-primary); font-weight: 700; font-size: 0.95rem; }
+        .care-mini-card { border: 1px solid var(--border-color); border-radius: 16px; padding: 0.95rem; background-color: var(--bg-card); color: var(--text-primary); font-weight: 700; font-size: 0.95rem; box-shadow: none; }
         .care-mini-card small { display: block; color: var(--text-muted); font-weight: 500; margin-top: 0.35rem; }
         @media (max-width: 992px) { .care-counseling-grid { grid-template-columns: 1fr; } .care-services-strip { grid-template-columns: 1fr 1fr; } }
         @media (max-width: 768px) {
@@ -2151,7 +2161,7 @@ export default function App() {
               <i className="fa-solid fa-people-roof"></i> Thriving Singles
             </Link>
             <Link to="/care-counseling" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-hand-holding-heart"></i> Care & Counseling
+              <i className="fa-solid fa-hand-holding-heart"></i> Talk & Thrive
             </Link>
 
             <a href="https://pazthrivingtribe.schoolsfocus.net/signin" className="nav-cta-btn" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)}>
@@ -2363,7 +2373,7 @@ export default function App() {
                     <Link to="/care-counseling" className="service-gateway-card">
                       <div>
                         <div className="gateway-icon-wrap"><i className="fa-solid fa-hand-holding-heart"></i></div>
-                        <h3>Paz Thriving Care & Counseling Centre</h3>
+                        <h3>Paz Thriving Talk & Thrive Centre</h3>
                         <p>Dedicated counseling, coaching, and emotional support services for parents, teens, women, and young adults who want guidance and a safe place to grow.</p>
                       </div>
                       <div className="gateway-footer-action">Open Dedicated View<i className="fa-solid fa-arrow-trend-up"></i></div>
@@ -3034,7 +3044,7 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
     if (subPageBannerSlides.length === 0) return;
     const serviceBannerInterval = setInterval(() => {
       setActiveSlideIndex((prev) => (prev + 1) % subPageBannerSlides.length);
-    }, 5500);
+    }, 30000);
     return () => clearInterval(serviceBannerInterval);
   }, [subPageBannerSlides]);
 
@@ -3103,7 +3113,12 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
           style={{ backgroundImage: `url(${currentBannerSlide?.image || ''})` }}
         />
         <div className="service-banner-content" key={activeSlideIndex}>
-          <span className="section-label" style={{ color: '#dff7e8', textTransform: 'uppercase' }}>{currentBannerSlide?.eyebrow || activeService.title}</span>
+          <span
+            className="section-label"
+            style={{ color: '#ffffff', textTransform: 'uppercase', textShadow: '0 2px 10px rgba(0, 0, 0, 0.65)' }}
+          >
+            {currentBannerSlide?.eyebrow || activeService.title}
+          </span>
           <h1 data-aos="zoom-in">{currentBannerSlide?.title || activeService.title}</h1>
           <p data-aos="fade-up" data-aos-delay="100">{currentBannerSlide?.text || activeService.subtitle}</p>
           <div className="service-banner-controls">
@@ -3406,7 +3421,7 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
 function CareCounselingPage() {
   const counselingHeroSlides = [
     {
-      eyebrow: 'Care & Counseling',
+      eyebrow: 'Talk & Thrive',
       title: 'A calm, respectful place to talk and grow',
       text: 'For parents, teens, women, and young adults who want guidance, encouragement, and a trusted place to be heard.',
       image: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?q=80&w=1200'
@@ -3491,7 +3506,7 @@ function CareCounselingPage() {
   useEffect(() => {
     const counselingInterval = setInterval(() => {
       setActiveCounselingSlide((prev) => (prev + 1) % counselingHeroSlides.length);
-    }, 5500);
+    }, 30000);
 
     return () => clearInterval(counselingInterval);
   }, [counselingHeroSlides.length]);
@@ -3499,7 +3514,7 @@ function CareCounselingPage() {
   useEffect(() => {
     const careFocusInterval = setInterval(() => {
       setActiveCareFocusIndex((prev) => (prev + 1) % careFocusSlides.length);
-    }, 5000);
+    }, 30000);
 
     return () => clearInterval(careFocusInterval);
   }, [careFocusSlides.length]);
@@ -3512,7 +3527,12 @@ function CareCounselingPage() {
           style={{ backgroundImage: `url(${counselingHeroSlides[activeCounselingSlide].image})` }}
         />
         <div className="service-banner-content" key={activeCounselingSlide}>
-          <span className="section-label" style={{ color: '#e7f7ef', textTransform: 'uppercase' }}>{counselingHeroSlides[activeCounselingSlide].eyebrow}</span>
+          <span
+            className="section-label"
+            style={{ color: '#ffffff', textTransform: 'uppercase', textShadow: '0 2px 10px rgba(0, 0, 0, 0.65)' }}
+          >
+            {counselingHeroSlides[activeCounselingSlide].eyebrow}
+          </span>
           <h1>{counselingHeroSlides[activeCounselingSlide].title}</h1>
           <p>{counselingHeroSlides[activeCounselingSlide].text}</p>
           <div className="service-banner-controls">
@@ -3546,7 +3566,7 @@ function CareCounselingPage() {
       <section className="care-counseling-section" data-aos="fade-up" style={{ paddingTop: '1rem' }}>
         <div className="care-counseling-shell">
           <div className="care-intro-block">
-            <span className="section-label">Care & Counseling</span>
+            <span className="section-label">Talk & Thrive</span>
             <h1 className="section-title-heading" style={{ textAlign: 'left', marginBottom: '0.2rem' }}>Support that feels calm, respectful, and practical.</h1>
             <p className="section-subtext" style={{ textAlign: 'left', marginBottom: '0', fontSize: '1rem' }}>
               We offer a clear, supportive space where clients can find guidance, reassurance, and practical next steps.
