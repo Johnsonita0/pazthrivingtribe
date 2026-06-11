@@ -135,7 +135,8 @@ export default function App() {
     {
       title: "Need Someone to Talk To?",
       subtitle: "Paz Thriving Tribe offers a safe and confidential space where you can talk and be heard.",
-      image: "./image/pic7.png"
+      image: "./image/pic7.png",
+      slideClassName: 'hero-slide-pic7'
     },
     {
       title: "Structured Teens Development Program",
@@ -1235,6 +1236,11 @@ export default function App() {
         .preview-item { display: grid; grid-template-columns: minmax(140px, 1fr) 1fr; gap: 0.75rem; align-items: start; padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb; font-size: 0.95rem; }
 
         .hero-slide-bg { background-position: center center; background-size: cover; }
+        .hero-slide-pic7 {
+          background-position: center 18%;
+          background-size: 112% auto;
+          background-repeat: no-repeat;
+        }
         .hero-bg-contain { background-size: contain !important; background-position: center center !important; background-repeat: no-repeat !important; }
         .hero-inline-contain-img {
           position: absolute;
@@ -1257,6 +1263,11 @@ export default function App() {
         .teens-kids-hero h1 { max-width: 100%; line-height: 1.05; overflow-wrap: break-word; }
         .teens-kids-hero p { font-size: 1.2rem; max-width: 100%; line-height: 1.6; overflow-wrap: break-word; }
         @media (max-width: 768px) {
+          .hero-slide-pic7 {
+            background-position: center 15%;
+            background-size: 115% auto;
+            min-height: 78vh;
+          }
           .teens-kids-hero { padding: 1.75rem 1rem; text-align: center; min-height: 240px; align-items: center; }
           .teens-kids-hero h1 { font-size: 2rem; line-height: 1.05; }
           .teens-kids-hero p { font-size: 0.98rem; }
@@ -1278,6 +1289,11 @@ export default function App() {
           .registration-confirmation-actions { grid-template-columns: 1fr; }
         }
         @media (max-width: 420px) {
+          .hero-slide-pic7 {
+            background-position: center 10%;
+            background-size: 130% auto;
+            min-height: 72vh;
+          }
           .teens-kids-hero { padding: 1rem 0.75rem; min-height: 260px; }
           .teens-kids-hero h1 { font-size: 1.6rem; }
           .teens-kids-hero p { font-size: 0.9rem; }
@@ -2300,7 +2316,7 @@ export default function App() {
                     return (
                       <>
                         <div
-                          className={`hero-slide-bg ${currentSlide.imageType === 'contain' ? 'hero-bg-contain' : ''} ${currentSlide.imageType === 'bottom' ? 'hero-slide-bottom' : ''} ${currentSlide.image === './image/pic7.png' ? 'hero-slide-pic7' : ''}`}
+                          className={`hero-slide-bg ${currentSlide.imageType === 'contain' ? 'hero-bg-contain' : ''} ${currentSlide.imageType === 'bottom' ? 'hero-slide-bottom' : ''} ${currentSlide.slideClassName || ''}`}
                           style={{
                             backgroundImage: currentSlide.imageType === 'contain' ? 'none' : `url(${currentSlide.image})`,
                             backgroundSize: currentSlide.imageType === 'logo' ? 'contain' : 'cover',
