@@ -1237,6 +1237,7 @@ export default function App() {
 
         .hero-slide-bg { background-position: center center; background-size: cover; }
         .hero-slide-pic7 {
+          background-image: url("./image/pic7.png");
           background-position: center 18%;
           background-size: 112% auto;
           background-repeat: no-repeat;
@@ -1264,8 +1265,9 @@ export default function App() {
         .teens-kids-hero p { font-size: 1.2rem; max-width: 100%; line-height: 1.6; overflow-wrap: break-word; }
         @media (max-width: 768px) {
           .hero-slide-pic7 {
-            background-position: center 15%;
-            background-size: 115% auto;
+            background-image: url("./image/pic8.png") !important;
+            background-position: center center;
+            background-size: cover;
             min-height: 78vh;
           }
           .teens-kids-hero { padding: 1.75rem 1rem; text-align: center; min-height: 240px; align-items: center; }
