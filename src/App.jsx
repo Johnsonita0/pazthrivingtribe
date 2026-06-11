@@ -1206,8 +1206,8 @@ export default function App() {
           position: relative;
           z-index: 2;
         }
-        .hero-copy-card h1 { font-size: 7.25rem !important; color: #ffffff; margin-bottom: 1rem; font-weight: 900; letter-spacing: -1px; animation: bannerTextFade 0.6s ease-out; text-shadow: 0 12px 32px rgba(0,0,0,0.92); line-height: 1.01; }
-        .hero-copy-card p { font-size: 2.2rem !important; color: #eff6ff; max-width: 980px; margin: 0 auto 1rem auto; line-height: 1.55; animation: bannerTextFade 0.8s ease-out; text-shadow: 0 8px 24px rgba(0,0,0,0.82); }
+        .hero-copy-card h1 { font-size: clamp(2.6rem, 5vw, 4.8rem); color: #ffffff; margin-bottom: 1rem; font-weight: 900; letter-spacing: -1px; animation: bannerTextFade 0.6s ease-out; text-shadow: 0 12px 32px rgba(0,0,0,0.92); line-height: 1.01; }
+        .hero-copy-card p { font-size: clamp(1rem, 2vw, 1.35rem); color: #eff6ff; max-width: 980px; margin: 0 auto 1rem auto; line-height: 1.55; animation: bannerTextFade 0.8s ease-out; text-shadow: 0 8px 24px rgba(0,0,0,0.82); }
         .hero-action-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.75rem; margin-top: 1rem; position: relative; z-index: 2; }
         .hero-arrow-cluster {
           position: absolute;
@@ -1275,13 +1275,17 @@ export default function App() {
           z-index: 2;
         }
         .hero-overlay { padding: 3rem 1.5rem; }
-        .hero-overlay h1 { font-size: 7.25rem !important; line-height: 1.02; color: #ffffff; text-shadow: 0 12px 32px rgba(0,0,0,0.92); }
-        .hero-overlay p { font-size: 2.2rem !important; line-height: 1.55; max-width: 100%; color: #ffffff; text-shadow: 0 8px 24px rgba(0,0,0,0.82); }
+        .hero-overlay h1 { font-size: clamp(2.6rem, 5vw, 4.8rem); line-height: 1.02; color: #ffffff; text-shadow: 0 12px 32px rgba(0,0,0,0.92); }
+        .hero-overlay p { font-size: clamp(1rem, 2vw, 1.35rem); line-height: 1.55; max-width: 100%; color: #ffffff; text-shadow: 0 8px 24px rgba(0,0,0,0.82); }
         .hero-scroll-btn { min-width: 220px; }
         .teens-kids-hero { padding: 4rem 2rem; display: flex; align-items: center; justify-content: center; min-height: 320px; box-sizing: border-box; }
         .teens-kids-hero h1 { max-width: 100%; line-height: 1.05; overflow-wrap: break-word; }
         .teens-kids-hero p { font-size: 1.2rem; max-width: 100%; line-height: 1.6; overflow-wrap: break-word; }
         @media (max-width: 768px) {
+          .hero-copy-card h1 { font-size: 2.2rem !important; line-height: 1.08; }
+          .hero-copy-card p { font-size: 0.98rem !important; line-height: 1.45; }
+          .hero-overlay h1 { font-size: 2.2rem !important; line-height: 1.08; }
+          .hero-overlay p { font-size: 0.98rem !important; line-height: 1.45; }
           .hero-slide-pic7 {
             background-image: url("./image/pic8.png") !important;
             background-position: center center;
