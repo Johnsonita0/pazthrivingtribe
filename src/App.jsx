@@ -1257,8 +1257,8 @@ export default function App() {
           z-index: 2;
         }
         .hero-overlay { padding: 3rem 1.5rem; }
-        .hero-overlay h1 { font-size: 3.8rem; color: #ffffff; text-shadow: 0 8px 28px rgba(0,0,0,0.7); }
-        .hero-overlay p { font-size: 1.25rem; max-width: 100%; color: #ffffff; text-shadow: 0 6px 20px rgba(0,0,0,0.6); }
+        .hero-overlay h1 { font-size: 4.6rem; line-height: 1.02; color: #ffffff; text-shadow: 0 10px 30px rgba(0,0,0,0.82); }
+        .hero-overlay p { font-size: 1.5rem; line-height: 1.55; max-width: 100%; color: #ffffff; text-shadow: 0 7px 22px rgba(0,0,0,0.72); }
         .hero-scroll-btn { min-width: 220px; }
         .teens-kids-hero { padding: 4rem 2rem; display: flex; align-items: center; justify-content: center; min-height: 320px; box-sizing: border-box; }
         .teens-kids-hero h1 { max-width: 100%; line-height: 1.05; overflow-wrap: break-word; }
