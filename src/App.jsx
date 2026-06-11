@@ -1291,9 +1291,17 @@ export default function App() {
         @media (max-width: 420px) {
           .hero-slide-pic7 {
             background-position: center 10%;
-            background-size: 130% auto;
+            background-size: 140% auto;
             min-height: 72vh;
           }
+        }
+        @media (max-width: 380px) {
+          .hero-slide-pic7 {
+            background-position: center 12%;
+            background-size: 150% auto;
+            min-height: 68vh;
+          }
+        }
           .teens-kids-hero { padding: 1rem 0.75rem; min-height: 260px; }
           .teens-kids-hero h1 { font-size: 1.6rem; }
           .teens-kids-hero p { font-size: 0.9rem; }
