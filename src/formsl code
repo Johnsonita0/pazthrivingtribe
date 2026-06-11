@@ -135,7 +135,8 @@ export default function App() {
     {
       title: "Need Someone to Talk To?",
       subtitle: "Paz Thriving Tribe offers a safe and confidential space where you can talk and be heard.",
-      image: "./image/pic3.png"
+      image: "./image/pic7.png",
+      slideClassName: 'hero-slide-pic7'
     },
     {
       title: "Structured Teens Development Program",
@@ -174,7 +175,7 @@ export default function App() {
       slug: "family",
       title: "Thriving Parents",
       subtitle: "Single Women Empowerment & Personal Development",
-      description: "Empowering single women with personal growth strategies, confidence-building frameworks, and actionable toolsets to navigate life's transitions and cultivate purposeful independence.",
+      description: "We equip you with practical parenting training, guide, and a supportive community to raise children who will thrive.We achieve this through sessions, real talk, tools you can use at home for a result oriented journey.",
       metricCount: "120+ Women Empowered"
     },
     marriage: {
@@ -186,7 +187,7 @@ export default function App() {
     },
     children: {
       slug: "children",
-      title: "Pre-teens & Teens",
+      title: "Thriving Pre-teen & Teens",
       subtitle: "Dedicated Mentors & Youth Development Programs",
       description: "Guiding pre-teens and teenagers via one-on-one professional mentorship frameworks designed to build confidence, self-reliance, character development, and cognitive emotional stability.",
       metricCount: "310+ Teens Mentored"
@@ -1136,8 +1137,8 @@ export default function App() {
         /* SLIDING HERO SECTION FRAMEWORKS */
         .hero-section {
           position: relative;
-          height: 100vh;
-          min-height: 420px;
+          min-height: 100svh;
+          height: auto;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1155,8 +1156,8 @@ export default function App() {
           z-index: 1;
         }
         @media (max-width: 420px) {
-          .hero-section { min-height: 240px; }
-          .hero-slide-bg { background-position: center top; }
+          .hero-section { min-height: 100svh; }
+          .hero-slide-bg { background-position: center center !important; background-size: cover !important; }
         }
         .hero-slide-bg::before {
           content: '';
@@ -1172,7 +1173,8 @@ export default function App() {
           justify-content: center;
           width: 100%;
           min-height: 100%;
-          padding: 4rem 1rem;
+          padding: clamp(5rem, 8vh, 6rem) 1rem 2rem;
+          box-sizing: border-box;
         }
         .hero-copy-card {
           width: min(100%, 820px);
@@ -1234,17 +1236,23 @@ export default function App() {
         .preview-item { display: grid; grid-template-columns: minmax(140px, 1fr) 1fr; gap: 0.75rem; align-items: start; padding: 0.75rem 0; border-bottom: 1px solid #e5e7eb; font-size: 0.95rem; }
 
         .hero-slide-bg { background-position: center center; background-size: cover; }
+        .hero-slide-pic7 {
+          background-position: center 18%;
+          background-size: 112% auto;
+          background-repeat: no-repeat;
+        }
         .hero-bg-contain { background-size: contain !important; background-position: center center !important; background-repeat: no-repeat !important; }
         .hero-inline-contain-img {
           position: absolute;
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
-          max-width: 75%;
-          max-height: 75%;
+          max-width: min(92vw, 900px);
+          max-height: 78vh;
           width: auto;
           height: auto;
           object-fit: contain;
+          object-position: center center;
           z-index: 2;
         }
         .hero-overlay { padding: 3rem 1.5rem; }
@@ -1255,6 +1263,11 @@ export default function App() {
         .teens-kids-hero h1 { max-width: 100%; line-height: 1.05; overflow-wrap: break-word; }
         .teens-kids-hero p { font-size: 1.2rem; max-width: 100%; line-height: 1.6; overflow-wrap: break-word; }
         @media (max-width: 768px) {
+          .hero-slide-pic7 {
+            background-position: center 15%;
+            background-size: 115% auto;
+            min-height: 78vh;
+          }
           .teens-kids-hero { padding: 1.75rem 1rem; text-align: center; min-height: 240px; align-items: center; }
           .teens-kids-hero h1 { font-size: 2rem; line-height: 1.05; }
           .teens-kids-hero p { font-size: 0.98rem; }
@@ -1276,14 +1289,27 @@ export default function App() {
           .registration-confirmation-actions { grid-template-columns: 1fr; }
         }
         @media (max-width: 420px) {
+          .hero-slide-pic7 {
+            background-position: center 10%;
+            background-size: 140% auto;
+            min-height: 72vh;
+          }
+        }
+        @media (max-width: 380px) {
+          .hero-slide-pic7 {
+            background-position: center 12%;
+            background-size: 150% auto;
+            min-height: 68vh;
+          }
+        }
           .teens-kids-hero { padding: 1rem 0.75rem; min-height: 260px; }
           .teens-kids-hero h1 { font-size: 1.6rem; }
           .teens-kids-hero p { font-size: 0.9rem; }
           .banner-slider { height: 220px; }
           .slide-graphic { min-height: 160px; max-height: 240px; }
           .slide-graphic img { object-fit: cover; height: 100%; }
-          .hero-bg-contain { background-size: contain !important; background-position: center !important; }
-          .hero-inline-contain-img { max-height: 65%; max-width: 90%; }
+          .hero-bg-contain { background-size: contain !important; background-position: center center !important; }
+          .hero-inline-contain-img { max-height: 70vh; max-width: 92vw; }
           .hero-overlay h1 { font-size: 2rem !important; }
           .hero-overlay p { font-size: 0.95rem !important; }
         }
@@ -2265,18 +2291,17 @@ export default function App() {
             <Link to="/" className="nav-link-item" onClick={() => { setNavOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
               <i className="fa-solid fa-house"></i> Home
             </Link>
-            <Link to="/teens-kids-academy" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-child-reaching"></i> Pre-teens & Teens
+            <Link to="/care-counseling" className="nav-link-item" onClick={() => setNavOpen(false)}>
+              <i className="fa-solid fa-hand-holding-heart"></i> Talk & Thrive
             </Link>
-
-            <Link to="/services/marriage" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-heart-crack"></i> Thriving Women
+            <Link to="/teens-kids-academy" className="nav-link-item" onClick={() => setNavOpen(false)}>
+              <i className="fa-solid fa-child-reaching"></i> Thriving Pre-teens & Teens
             </Link>
             <Link to="/services/family" className="nav-link-item" onClick={() => setNavOpen(false)}>
               <i className="fa-solid fa-people-roof"></i> Thriving Parents
             </Link>
-            <Link to="/care-counseling" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-hand-holding-heart"></i> Talk & Thrive
+            <Link to="/services/marriage" className="nav-link-item" onClick={() => setNavOpen(false)}>
+              <i className="fa-solid fa-heart-crack"></i> Thriving Women
             </Link>
 
             <a href="https://pazthrivingtribe.schoolsfocus.net/signin" className="nav-cta-btn" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)}>
@@ -2299,11 +2324,11 @@ export default function App() {
                     return (
                       <>
                         <div
-                          className={`hero-slide-bg ${currentSlide.imageType === 'contain' ? 'hero-bg-contain' : ''}`}
+                          className={`hero-slide-bg ${currentSlide.imageType === 'contain' ? 'hero-bg-contain' : ''} ${currentSlide.imageType === 'bottom' ? 'hero-slide-bottom' : ''} ${currentSlide.slideClassName || ''}`}
                           style={{
                             backgroundImage: currentSlide.imageType === 'contain' ? 'none' : `url(${currentSlide.image})`,
                             backgroundSize: currentSlide.imageType === 'logo' ? 'contain' : 'cover',
-                            backgroundPosition: 'center',
+                            backgroundPosition: currentSlide.imageType === 'bottom' ? 'center bottom' : 'center',
                             backgroundRepeat: 'no-repeat'
                           }}
                         />
@@ -2605,6 +2630,15 @@ export default function App() {
                   <p className="section-subtext">Choose the area that fits your current season and discover a tailored path for growth, mentoring, and support.</p>
 
                   <div className="services-routing-grid" data-aos="fade-up">
+                    <Link to="/care-counseling" className="service-gateway-card">
+                      <div>
+                        <div className="gateway-icon-wrap"><i className="fa-solid fa-hand-holding-heart"></i></div>
+                        <h3>Talk & Thrive</h3>
+                        <p>Dedicated counseling, coaching, and emotional support services for individual, parents, teens, women, and young adults who want guidance and a safe place to grow.</p>
+                      </div>
+                      <div className="gateway-footer-action">Read more<i className="fa-solid fa-arrow-trend-up"></i></div>
+                    </Link>
+
                     <Link to="/services/children" className="service-gateway-card">
                       <div>
                         <div className="gateway-icon-wrap"><i className="fa-solid fa-child-reaching"></i></div>
@@ -2612,15 +2646,6 @@ export default function App() {
                         <p>{services.children.description}</p>
                       </div>
                       <div className="gateway-footer-action">Read more <i className="fa-solid fa-arrow-trend-up"></i></div>
-                    </Link>
-
-                    <Link to="/services/marriage" className="service-gateway-card">
-                      <div>
-                        <div className="gateway-icon-wrap"><i className="fa-solid fa-heart-crack"></i></div>
-                        <h3>{services.marriage.title}</h3>
-                        <p>{services.marriage.description}</p>
-                      </div>
-                      <div className="gateway-footer-action">Read more<i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
 
                     <Link to="/services/family" className="service-gateway-card">
@@ -2632,11 +2657,11 @@ export default function App() {
                       <div className="gateway-footer-action">Read more<i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
 
-                    <Link to="/care-counseling" className="service-gateway-card">
+                    <Link to="/services/marriage" className="service-gateway-card">
                       <div>
-                        <div className="gateway-icon-wrap"><i className="fa-solid fa-hand-holding-heart"></i></div>
-                        <h3>Paz Thriving Talk & Thrive Centre</h3>
-                        <p>Dedicated counseling, coaching, and emotional support services for parents, teens, women, and young adults who want guidance and a safe place to grow.</p>
+                        <div className="gateway-icon-wrap"><i className="fa-solid fa-heart-crack"></i></div>
+                        <h3>{services.marriage.title}</h3>
+                        <p>{services.marriage.description}</p>
                       </div>
                       <div className="gateway-footer-action">Read more<i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
@@ -2825,7 +2850,7 @@ export default function App() {
                               <select value={editTarget} onChange={(e) => setEditTarget(e.target.value)} className="plain-text-input" style={{ height: '46px', border: '1px solid var(--brand-blue)' }}>
                                 <option value="family">Thriving Parents</option>
                                 <option value="marriage">Thriving Women</option>
-                                <option value="children">Pre-teens & Teens</option>
+                                <option value="children">Thriving Pre-teen & Teens</option>
                               </select>
                             </div>
 
@@ -2971,7 +2996,7 @@ export default function App() {
                               <select value={programForm.service} onChange={(e) => setProgramForm((prev) => ({ ...prev, service: e.target.value }))} className="plain-text-input" style={{ height: '46px' }}>
                                 <option value="family">Thriving Parents</option>
                                 <option value="marriage">Thriving Women</option>
-                                <option value="children">Pre-teens & Teens</option>
+                                <option value="children">Thriving Pre-teen & Teens</option>
                               </select>
                             </div>
 
@@ -3173,9 +3198,10 @@ export default function App() {
             <div className="footer-links-column">
               <h4>What we offer</h4>
               <div className="footer-interactive-links">
+                <Link to="/care-counseling" className="footer-nav-anchor">Talk & Thrive</Link>
+                <Link to="/services/children" className="footer-nav-anchor">Thriving Pre-teens & Teens</Link>
                 <Link to="/services/family" className="footer-nav-anchor">Thriving Parents</Link>
                 <Link to="/services/marriage" className="footer-nav-anchor">Thriving Women</Link>
-                <Link to="/services/children" className="footer-nav-anchor">Pre-teens & Teens</Link>
               </div>
             </div>
 
@@ -3339,9 +3365,9 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
       formSub: "Join the Thriving Women Community"
     },
     children: {
-      newsTitle: "Pre-teens & Teens Monitor",
+      newsTitle: "Thriving Pre-teen & Teens Monitor",
       newsText: "Cognitive stability milestone tracking update released for one-on-one pre-teen and adolescent mentorship program platforms.",
-      formSub: "Enroll Child / Teenager into Pre-teens & Teens"
+      formSub: "Enroll Child / Teenager into Thriving Pre-teen & Teens"
     }
   }[serviceSlug];
 
@@ -4266,7 +4292,7 @@ function HomeIntakeForm({ onSubmitApplicant }) {
           <select required value={track} onChange={(e) => setTrack(e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
             <option value="family">Thriving Parents</option>
             <option value="marriage">Thriving Women</option>
-            <option value="children">Pre-teens & Teens</option>
+            <option value="children">Thriving Pre-teen & Teens</option>
           </select>
         </div>
       </div>
@@ -4304,7 +4330,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
     emergencyContactNumber: '',
     signature: '',
     consentDate: new Date().toISOString().slice(0, 10),
-    track: 'Pre-teens & Teens',
+    track: 'Thriving Pre-teen & Teens',
     amount: 10000
   });
   const [goalAreas, setGoalAreas] = useState({
@@ -4392,7 +4418,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
         emergencyContactNumber: '',
         signature: '',
         consentDate: new Date().toISOString().slice(0, 10),
-        track: 'Pre-teens & Teens',
+        track: 'Thriving Pre-teen & Teens',
         amount: 10000
       }));
       setGoalAreas({
@@ -4766,7 +4792,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
               <div className="form-input-container" style={{ marginBottom: '1rem' }}>
                 <label>Selected Academy Track</label>
                 <select value={formData.track} onChange={(e) => updateField('track', e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
-                  <option>Pre-teens & Teens</option>
+                  <option>Thriving Pre-teen & Teens</option>
                   <option>Thriving Parents</option>
                   <option>Thriving Women</option>
                 </select>
