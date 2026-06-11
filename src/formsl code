@@ -1099,20 +1099,38 @@ export default function App() {
           box-shadow: var(--shadow-sm); width: 100% !important; box-sizing: border-box;
           backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
         }
-        .nav-logo-brand-zone { display: flex; align-items: center; gap: 0.85rem; text-decoration: none; }
-        .nav-logo-img { width: 52px; height: 52px; border-radius: 12px; object-fit: cover; background-color: transparent; border: none; }
+        .nav-logo-brand-zone { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; min-width: 0; }
+        .nav-logo-img { width: 48px; height: 48px; border-radius: 12px; object-fit: cover; background-color: transparent; border: none; }
         .platform-badge-nav.active { transform: translateY(-1px); font-weight: 800; }
         .nav-vector-logo { width: 36px; height: 36px; background-color: var(--brand-green); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: white; font-size: 1.2rem; }
-        .nav-brand-name { font-size: 1.4rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.3px; }
-        .nav-navigation-links { display: flex; gap: 1.5rem; align-items: center; }
+        .nav-brand-name { font-size: 1.15rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.3px; white-space: nowrap; }
+        .nav-navigation-links { display: flex; gap: 1rem; align-items: center; }
         .nav-navigation-links.mobile-open { display: flex; position: fixed; top: 70px; left: 0; right: 0; width: 100vw; flex-direction: column; align-items: stretch; justify-content: flex-start; background-color: var(--bg-nav); padding: 1.5rem 1.5rem 2.5rem; border-top: 1px solid var(--border-color); z-index: 997; height: calc(100vh - 70px); overflow-y: auto; box-shadow: 0 12px 40px rgba(0,0,0,0.12); }
         .nav-navigation-links.mobile-open .nav-link-item,
         .nav-navigation-links.mobile-open .nav-cta-btn { width: 100%; }
         .nav-navigation-links.mobile-open .nav-link-item { padding: 1rem 0; }
-        .nav-link-item { color: var(--text-muted); text-decoration: none; font-size: 0.95rem; font-weight: 600; background: none; border: none; cursor: pointer; padding: 0.75rem 0; font-family: inherit; transition: color 0.2s ease; display: flex; align-items: center; gap: 0.4rem; }
+        .nav-link-item { color: var(--text-muted); text-decoration: none; font-size: 0.88rem; font-weight: 600; background: none; border: none; cursor: pointer; padding: 0.65rem 0; font-family: inherit; transition: color 0.2s ease; display: flex; align-items: center; gap: 0.35rem; white-space: nowrap; }
         .nav-link-item:hover { color: var(--text-primary); }
-        .nav-cta-btn { background-color: var(--brand-green); color: white; padding: 0.6rem 1.25rem; border: none; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem; }
-        .nav-cta-btn:hover { background-color: var(--brand-green-hover); }
+        .nav-cta-btn {
+          background-color: var(--brand-green); color: white;
+          padding: 0.55rem 0.75rem;
+          border: none; border-radius: 6px;
+          text-decoration: none; font-weight: 600; font-size: 0.9rem;
+          display: inline-flex; align-items: center; justify-content: center;
+          gap: 0.45rem; white-space: nowrap;
+          min-width: 2.6rem;
+          overflow: hidden;
+          transition: min-width 0.18s ease, padding 0.18s ease;
+        }
+        .nav-cta-btn span { display: inline-block; max-width: 0; opacity: 0; overflow: hidden; transition: max-width 0.18s ease, opacity 0.18s ease; }
+        .nav-cta-btn:hover,
+        .nav-cta-btn:focus-visible {
+          min-width: 6.4rem;
+          padding: 0.55rem 0.95rem;
+          background-color: var(--brand-green-hover);
+        }
+        .nav-cta-btn:hover span,
+        .nav-cta-btn:focus-visible span { max-width: 6rem; opacity: 1; }
         .nav-menu-toggle { display: none; background: none; border: none; color: var(--text-primary); font-size: 1.55rem; cursor: pointer; }
 
         /* Floating Controls UI Layer */
@@ -1177,7 +1195,7 @@ export default function App() {
           box-sizing: border-box;
         }
         .hero-copy-card {
-          width: min(100%, 820px);
+          width: min(100%, 1100px);
           background: transparent;
           border: none;
           border-radius: 0;
@@ -1188,8 +1206,8 @@ export default function App() {
           position: relative;
           z-index: 2;
         }
-        .hero-copy-card h1 { font-size: clamp(2.2rem, 6vw, 4.2rem); color: #ffffff; margin-bottom: 0.75rem; font-weight: 800; letter-spacing: -1px; animation: bannerTextFade 0.6s ease-out; text-shadow: 0 10px 28px rgba(0,0,0,0.85); }
-        .hero-copy-card p { font-size: clamp(1rem, 2vw, 1.35rem); color: #eff6ff; max-width: 760px; margin: 0 auto 1rem auto; line-height: 1.5; animation: bannerTextFade 0.8s ease-out; text-shadow: 0 6px 20px rgba(0,0,0,0.75); }
+        .hero-copy-card h1 { font-size: 7.25rem !important; color: #ffffff; margin-bottom: 1rem; font-weight: 900; letter-spacing: -1px; animation: bannerTextFade 0.6s ease-out; text-shadow: 0 12px 32px rgba(0,0,0,0.92); line-height: 1.01; }
+        .hero-copy-card p { font-size: 2.2rem !important; color: #eff6ff; max-width: 980px; margin: 0 auto 1rem auto; line-height: 1.55; animation: bannerTextFade 0.8s ease-out; text-shadow: 0 8px 24px rgba(0,0,0,0.82); }
         .hero-action-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.75rem; margin-top: 1rem; position: relative; z-index: 2; }
         .hero-arrow-cluster {
           position: absolute;
@@ -1237,6 +1255,7 @@ export default function App() {
 
         .hero-slide-bg { background-position: center center; background-size: cover; }
         .hero-slide-pic7 {
+          background-image: url("./image/pic7.png");
           background-position: center 18%;
           background-size: 112% auto;
           background-repeat: no-repeat;
@@ -1256,16 +1275,17 @@ export default function App() {
           z-index: 2;
         }
         .hero-overlay { padding: 3rem 1.5rem; }
-        .hero-overlay h1 { font-size: 3.8rem; color: #ffffff; text-shadow: 0 8px 28px rgba(0,0,0,0.7); }
-        .hero-overlay p { font-size: 1.25rem; max-width: 100%; color: #ffffff; text-shadow: 0 6px 20px rgba(0,0,0,0.6); }
+        .hero-overlay h1 { font-size: 7.25rem !important; line-height: 1.02; color: #ffffff; text-shadow: 0 12px 32px rgba(0,0,0,0.92); }
+        .hero-overlay p { font-size: 2.2rem !important; line-height: 1.55; max-width: 100%; color: #ffffff; text-shadow: 0 8px 24px rgba(0,0,0,0.82); }
         .hero-scroll-btn { min-width: 220px; }
         .teens-kids-hero { padding: 4rem 2rem; display: flex; align-items: center; justify-content: center; min-height: 320px; box-sizing: border-box; }
         .teens-kids-hero h1 { max-width: 100%; line-height: 1.05; overflow-wrap: break-word; }
         .teens-kids-hero p { font-size: 1.2rem; max-width: 100%; line-height: 1.6; overflow-wrap: break-word; }
         @media (max-width: 768px) {
           .hero-slide-pic7 {
-            background-position: center 15%;
-            background-size: 115% auto;
+            background-image: url("./image/pic8.png") !important;
+            background-position: center center;
+            background-size: cover;
             min-height: 78vh;
           }
           .teens-kids-hero { padding: 1.75rem 1rem; text-align: center; min-height: 240px; align-items: center; }
@@ -2192,8 +2212,10 @@ export default function App() {
           .public-navbar { padding: 1rem 1.5rem; }
           .hero-section { height: auto; min-height: 72vh; }
           .hero-overlay { padding: 2.2rem 1rem; }
-          .hero-overlay h1 { font-size: 2.8rem; }
-          .hero-overlay p { font-size: 1.1rem; line-height: 1.5; }
+          .hero-copy-card h1 { font-size: 3.6rem !important; }
+          .hero-copy-card p { font-size: 1.35rem !important; line-height: 1.5; }
+          .hero-overlay h1 { font-size: 3.6rem !important; }
+          .hero-overlay p { font-size: 1.35rem !important; line-height: 1.5; }
           .hero-scroll-btn { width: 100%; justify-content: center; }
           .banner-slide { gap: 1.25rem; padding: 1.5rem; }
           .slide-graphic { max-height: 320px; }
@@ -2305,7 +2327,8 @@ export default function App() {
             </Link>
 
             <a href="https://pazthrivingtribe.schoolsfocus.net/signin" className="nav-cta-btn" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-right-to-bracket"></i> Portal
+              <i className="fa-solid fa-right-to-bracket" aria-hidden="true"></i>
+              <span>Portal</span>
             </a>
           </nav>
         </header>
