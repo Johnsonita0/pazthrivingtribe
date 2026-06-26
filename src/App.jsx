@@ -309,7 +309,7 @@ export default function App() {
 
   // --- Paystack Integration Settings ---
   const [paystackPublicKey, setPaystackPublicKey] = useState('pk_test_demo_key_update_from_admin');
-  const [teensKidsMonthlyFee, setTeensKidsMonthlyFee] = useState(10000);
+  const [teensKidsMonthlyFee, setTeensKidsMonthlyFee] = useState(30000);
   const [tempPaystackKey, setTempPaystackKey] = useState(paystackPublicKey);
   const [tempMonthlyFee, setTempMonthlyFee] = useState(teensKidsMonthlyFee);
 
@@ -944,7 +944,7 @@ export default function App() {
       });
       setBookingSubmitted(true);
       setToastMessage('Booking request saved locally. We will follow up shortly.');
-      setToastType('success');
+      setToastType('success'); 
     } finally {
       setBookingForm({ name: '', email: '', phone: '', clientType: 'Individual', sessionType: 'Virtual', preferredTime: 'Any time', concern: '' });
     }
@@ -972,8 +972,8 @@ export default function App() {
         track: newApplicant.track,
         message: newApplicant.message
       }]);//.select();
-      if (error) throw error;
-    } catch (err) {
+      if (error) throw error; 
+    } catch (err) { 
       console.error('Server down at the moment try again later:', err);
       console.log('Applicant captured locally; Supabase insert unavailable.');
     }
@@ -2124,7 +2124,7 @@ export default function App() {
         .footer-columns-container { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 4rem; width: 100%; padding-bottom: 3.5rem; border-bottom: 1px solid var(--border-color); }
         .footer-brand-column { display: flex; flex-direction: column; gap: 1.2rem; }
         .footer-brand-logo-row { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; }
-        .footer-vector-badge { width: 32px; height: 32px; background-color: var(--brand-green); color: white; font-weight: 800; display: flex; align-items: center; justify-content: center; border-radius: 6px; overflow: hidden; }
+        .footer-vector-badge { width: 50px; height: 50px; font-weight: 800; display: flex; align-items: center; justify-content: center; border-radius: 6px; overflow: hidden; }
         .footer-vector-badge img { width: 100%; height: 100%; object-fit: contain; display: block; }
         .footer-brand-headline { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.3px; }
         .footer-brand-column p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin: 0; }
@@ -2552,7 +2552,7 @@ export default function App() {
 
                 <section id="founder-suite" className="founder-executive-suite" data-aos="fade-up">
                   <div className="founder-portrait-frame" data-aos="fade-right">
-                    <img src="../image/pic1.jpeg" className="founder-img" alt="Paz Tribe Founder and CEO" />
+                    <img src="../image/pic1.jpeg" className="founder-img" alt="Paz Tribe CEO" />
                     <div className="founder-title-tag-overlay">
                       <h4>Roseline Iraoya </h4>
                       <span>Lead Coach</span>
@@ -2563,7 +2563,7 @@ export default function App() {
                   <div className="founder-interactive-message-box" data-aos="fade-left">
                     <nav className="founder-msg-nav-row">
                       <button className={`founder-nav-pill ${founderActiveTab === 'speech' ? 'active' : ''}`} onClick={() => setFounderActiveTab('speech')}>
-                        <i className="fa-solid fa-microphone"></i> From the Founder's Desk
+                        <i className="fa-solid fa-microphone"></i> From the Lead Consultant Desk
                       </button>
                       <button className={`founder-nav-pill ${founderActiveTab === 'about' ? 'active' : ''}`} onClick={() => setFounderActiveTab('about')}>
                         <i className="fa-solid fa-building"></i> About Paz Thriving Tribe
@@ -3139,7 +3139,7 @@ export default function App() {
                           <form onSubmit={(e) => {
                             e.preventDefault();
                             setPaystackPublicKey(tempPaystackKey);
-                            setTeensKidsMonthlyFee(parseInt(tempMonthlyFee) || 10000);
+                            setTeensKidsMonthlyFee(parseInt(tempMonthlyFee) || 30000);
                             setDashboardMessage('✓ Payment settings saved successfully!');
                             setTimeout(() => setDashboardMessage(null), 3000);
                           }} style={{ marginTop: '1.5rem' }}>
@@ -3213,7 +3213,7 @@ export default function App() {
           <div className="footer-columns-container">
             <div className="footer-brand-column">
               <Link to="/" className="footer-brand-logo-row" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                <div className="footer-vector-badge"><img src={theme === 'dark' ? "../logo/logo2.jpeg" : "../logo/logomain.png"} alt="Paz Thriving Tribe logo" className="nav-logo-img" /></div>
+                <div className="footer-vector-badge"><img src={theme === 'dark' ? "../logo/logo2.jpeg" : "../logo/logomain.png"} alt="PTT logo" className="nav-logo-img" /></div>
                 <span className="footer-brand-headline">Paz Thriving Tribe</span>
               </Link>
               <p>Paz Thriving Tribe Coaching, Mentoring and Counselling Organisation is committed to
@@ -3477,10 +3477,10 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
           <p>{activeService.description}</p>
 
           <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '2.5rem', marginTop: '2.5rem' }}>
-            <h3 style={{ marginBottom: '1rem', fontWeight: '800' }}>Intake Form Session Request</h3>
-            <p style={{ fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '2rem' }}>{subPageMeta.formSub}</p>
+            <h3 style={{ marginBottom: '1rem', fontWeight: '800' }}></h3>
+            {/* <p style={{ fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '2rem' }}>{subPageMeta.formSub}</p> */}
 
-            {success ? (
+            {/* {success ? (
               <div className="status-feedback-banner"><i className="fa-solid fa-circle-check"></i> Intake requested successfully. Our specialist counselors will reach out to you within 24 hours.</div>
             ) : (
               <form onSubmit={handleFormSubmit} className="cms-creation-form-layout" style={{ marginTop: 0 }}>
@@ -3508,7 +3508,7 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
                 </div>
                 <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '280px' }}><i className="fa-solid fa-paper-plane"></i> Submit Intake Request</button>
               </form>
-            )}
+            )} */}
           </div>
         </div>
 
@@ -3538,9 +3538,9 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
             <i className="fa-solid fa-graduation-cap" style={{ marginRight: '0.5rem', color: 'var(--accent-primary)' }}></i>
             {servicePrograms.title}
           </h2>
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '3rem', fontSize: '1.1rem' }} data-aos="fade-up">
+          {/* <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '3rem', fontSize: '1.1rem' }} data-aos="fade-up">
             Explore our comprehensive curriculum designed specifically for {activeService.title.toLowerCase()}
-          </p>
+          </p> */}
 
           <div style={{
             display: 'grid',
@@ -4360,6 +4360,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
     track: 'Thriving Pre-teen & Teens',
     amount: 10000
   });
+
   const [goalAreas, setGoalAreas] = useState({
     confidenceBuilding: true,
     publicSpeaking: false,
@@ -4370,7 +4371,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
     goalSetting: false,
     positiveCharacter: false,
     financialLiteracy: false,
-    others: false
+    others: false,
   });
   const [otherGoal, setOtherGoal] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
@@ -4645,23 +4646,23 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
                         style={{ cursor: 'pointer', position: 'relative' }}
                       >
                         {passportPreviewUrl ? (
-                          <img src={passportPreviewUrl} alt="Passport preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={passportPreviewUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
-                          <div style={{ fontSize: '0.85rem', color: '#6b7280', padding: '0.5rem', textAlign: 'center' }}>Passport preview</div>
+                          <div style={{ fontSize: '0.85rem', color: '#6b7280', padding: '0.5rem', textAlign: 'center' }}></div>
                         )}
                         <div style={{
                           position: 'absolute',
                           bottom: '0.5rem',
                           left: '50%',
-                          transform: 'translateX(-50%)',
-                          background: 'rgba(255, 255, 255, 0.9)',
+                          transform: 'translateX(-100%)',
+                          background: 'rgba(255, 255, 255, 0.42)',
                           padding: '0.25rem 0.6rem',
                           borderRadius: '999px',
                           fontSize: '0.78rem',
-                          color: '#334155',
-                          pointerEvents: 'none'
+                          color: '#0507086e',
+                          pointerEvents: 'Cursor',
                         }}>
-                          {passportPreviewUrl ? 'Double-click to change photo' : 'Double-click to choose image'}
+                          {passportPreviewUrl ? 'Change Photo' : 'Double-click to choose image'}
                         </div>
                       </div>
                       <input
@@ -4900,7 +4901,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
               <button type="button" className="form-submit-action-btn" onClick={handlePayLater} disabled={loading} style={{ background: '#f6ad55', borderColor: '#f6ad55' }}>
                 <i className="fa-solid fa-money-bill-transfer"></i> Pay Later
               </button>
-              <button type="button" className="form-cancel-action-btn" onClick={onClose} style={{ background: 'transparent', border: '1px solid var(--border-color)', padding: '0.6rem 1rem' }}>
+              <button type="button" className="form-cancel-action-tn" onClick={onClose} style={{ background: 'transparent', border: '1px solid var(--border-color)', padding: '0.6rem 1rem' }}>
                 Close
               </button>
             </div>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 
-export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_update_from_admin', teensKidsMonthlyFee = 10000 }) {
+export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_update_from_admin', teensKidsMonthlyFee = 30000 }) {
   const teensHeroSlides = [
     {
       eyebrow: 'Thriving Pre-teen & Teens Academy',
@@ -277,7 +277,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
               Coach Roseline Iraoya
             </p>
             <p style={{ fontSize: '0.9rem', lineHeight: '1.4', color: '#4a5568', marginBottom: '1rem', fontStyle: 'italic' }}>
-              Founder, Thriving Pre-teen & Teens
+              Lead Coach, Thriving Pre-teen & Teens
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button
@@ -519,7 +519,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
       </section>
 
       {/* PRICING & REGISTRATION */}
-      <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '3rem 2rem', marginBottom: '3rem' }}>
+      {/* <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '3rem 2rem', marginBottom: '3rem' }}>
         <h2 style={{ fontSize: '2rem', fontWeight: '900', marginBottom: '2rem', textAlign: 'center' }}>
           Registration & Pricing
         </h2>
@@ -538,7 +538,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
             textAlign: 'center'
           }}>
             <h4 style={{ fontSize: '1.3rem', fontWeight: '700', marginBottom: '1rem' }}>Registration Fee</h4>
-            <p style={{ fontSize: '2rem', fontWeight: '900', color: '#667eea', marginBottom: '0.5rem' }}>₦10,000</p>
+            <p style={{ fontSize: '2rem', fontWeight: '900', color: '#667eea', marginBottom: '0.5rem' }}>₦30,000</p>
             <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>One-time enrollment</p>
           </div>
           <div data-aos="fade-left" style={{
@@ -553,7 +553,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
             <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Basic program access</p>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* QUARTERLY EVENTS */}
       <section style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', padding: '3rem 2rem', marginBottom: '3rem' }}>
@@ -575,7 +575,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
                 border: '1px solid rgba(255, 255, 255, 0.2)',
                 backdropFilter: 'blur(10px)'
               }}>
-                <p style={{ fontSize: '1rem', fontWeight: '600' }}>🎉 {event}</p>
+                <p style={{ fontSize: '1rem', fontWeight: '600' }}>{event}</p>
               </div>
             ))}
           </div>
@@ -599,10 +599,10 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
             border: '1px solid var(--border-color)',
             textAlign: 'center'
           }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>👩‍🏫</div>
-            <h4 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '0.5rem' }}>Coach Roseline Iraoya</h4>
-            <p style={{ color: '#667eea', fontWeight: '600', marginBottom: '0.5rem' }}>Founder & Lead Coach</p>
-            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Certified Children and Teen Coach, passionate about raising emotionally healthy children</p>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}></div>
+            <h4 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '0.5rem' }}>COACH ROSELINE IRAOYA</h4>
+            <p style={{ color: '#667eea', fontWeight: '600', marginBottom: '0.5rem' }}>Lead Coach</p>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Certified Children and Teen Coach, passionate about helping children and teens build positive values.</p>
           </div>
           <div data-aos="fade-up" data-aos-delay="50" style={{
             background: 'var(--bg-secondary)',
@@ -611,15 +611,12 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
             border: '1px solid var(--border-color)',
             textAlign: 'center'
           }}>
-            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎭</div>
-            <h4 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '0.5rem' }}>Supporting Team</h4>
-            <p style={{ color: '#764ba2', fontWeight: '600', marginBottom: '1rem' }}>Expert Facilitators</p>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}></div>
+            <h4 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '0.5rem' }}>SUPPORTING TEAM</h4>
+            <p style={{ color: '#667eea', fontWeight: '600', marginBottom: '1rem' }}>Expert Facilitators</p>
             <ul style={{ listStyle: 'none', padding: 0, fontSize: '0.9rem', color: 'var(--text-muted)' }}>
-              <li>Assistant Coaches</li>
-              <li>Dance Instructor</li>
-              <li>Drama Facilitator</li>
-              <li>Administrative Officer</li>
-            </ul>
+              <li>Assistant Coaches, Dance Instructor, Drama Facilitator and, Administrative Officer</li>
+                 </ul>
           </div>
         </div>
       </section>
@@ -681,7 +678,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
       </section>
 
       {/* AFFIRMATION SECTION */}
-      <section style={{
+      {/* <section style={{
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         color: 'white',
         padding: '3rem 2rem',
@@ -704,7 +701,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
         }}>
           "I am special. So special. There is nothing regular about me. Nothing average about my life. Nothing common about my existence. I carry greatness in my spirit. I carry excellence in my mind. I carry light everywhere I go. I am irresistible. My presence cannot be ignored. My value cannot be hidden. My impact cannot be denied."
         </p>
-      </section>
+      </section> */}
 
       {/* CONTACT & ENROLLMENT CTA */}
       <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '3rem 2rem', marginBottom: '3rem', textAlign: 'center' }}>
@@ -732,7 +729,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
             onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
             onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
           >
-            🎯 Enroll Your Child Now
+            Enroll Your Child Now
           </button>
         ) : showPaymentModal ? (
           <div data-aos="fade-up" style={{
@@ -898,7 +895,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
                     cursor: 'pointer'
                   }}
                 >
-                  Cancel
+                  Cancel Payment
                 </button>
               </form>
             ) : (
@@ -1150,7 +1147,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
                     cursor: 'pointer'
                   }}
                 >
-                  Close
+                  Collapse Form 
                 </button>
               </form>
             )}
@@ -1180,8 +1177,8 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
             <p style={{ color: '#667eea', fontWeight: '600' }}>08037383820 | 09077219215</p>
           </div>
           <div>
-            <p style={{ fontWeight: '700', marginBottom: '0.5rem' }}>Founder</p>
-            <p style={{ color: '#764ba2', fontWeight: '600' }}>Coach Roseline Iraoya</p>
+            <p style={{ fontWeight: '700', marginBottom: '0.5rem' }}>Lead Consultant</p>
+            <p style={{ color: '#667eea', fontWeight: '600' }}>Coach Roseline Iraoya</p>
           </div>
           <div>
             <p style={{ fontWeight: '700', marginBottom: '0.5rem' }}>Session Day</p>
