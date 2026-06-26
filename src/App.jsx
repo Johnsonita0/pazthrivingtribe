@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Link, Navigate, useParams, useNavigate } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 import AOS from 'aos';
@@ -2239,6 +2239,72 @@ export default function App() {
           .dashboard-table td { padding: 0.6rem 0.5rem; font-size: 0.8rem; }
           .form-submit-action-btn { padding: 0.75rem 1.4rem; font-size: 0.85rem; }
           .portal-workspace-header { flex-direction: column; padding: 0.75rem 1rem; }
+        }
+
+        @media (max-width: 1024px) {
+          .public-navbar { padding: 1rem 2rem; }
+          .hero-overlay { padding: 4.5rem 1.5rem 2rem; }
+          .hero-copy-card h1 { font-size: clamp(2.2rem, 4.5vw, 3.2rem); }
+          .hero-copy-card p { font-size: clamp(1rem, 2.2vw, 1.2rem); }
+          .interactive-tabs-section { padding: 5rem 2rem; }
+          .service-gateway-card { padding: 2rem; }
+          .video-feature-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+          .workspace-fluid-footer { padding: 4rem 2rem 2rem; }
+          .footer-columns-container { gap: 2rem; }
+          .login-card-layout { width: min(92vw, 400px); }
+        }
+
+        @media (max-width: 768px) {
+          .full-view-app-root-override { padding-top: 64px; }
+          .public-navbar { padding: 0.85rem 1rem; }
+          .nav-logo-img { width: 42px; height: 42px; }
+          .nav-brand-name { font-size: 0.95rem; }
+          .nav-navigation-links.mobile-open { top: 64px; height: calc(100vh - 64px); padding: 1rem 1rem 1.75rem; }
+          .hero-overlay { padding: 3.5rem 1rem 1.5rem; }
+          .hero-action-row { flex-direction: column; }
+          .hero-scroll-btn { width: 100%; justify-content: center; }
+          .hero-nav-btn { width: 40px; height: 40px; }
+          .synchronized-promo-banner { padding: 2.5rem 1rem; gap: 1.5rem; }
+          .banner-slide { flex-direction: column; padding: 1.25rem; gap: 1rem; }
+          .slide-graphic { width: 100%; min-height: 240px; max-height: 260px; }
+          .interactive-tabs-section { padding: 3.5rem 1rem; }
+          .services-routing-grid { gap: 1rem; }
+          .service-gateway-card { padding: 1.5rem; }
+          .service-gateway-card h3 { font-size: 1.3rem; }
+          .service-gateway-card p { font-size: 0.98rem; }
+          .video-feature-copy h2 { font-size: 1.7rem; line-height: 1.2; }
+          .social-news-header-zone { gap: 1rem; }
+          .platform-badge-nav { width: 100%; justify-content: center; }
+          .social-news-broadcast-anchor-card { padding: 1.35rem; }
+          .workspace-fluid-footer { padding: 3rem 1rem 1.5rem; margin-top: 3rem; }
+          .footer-bottom-copyright-strip { align-items: flex-start; }
+          .footer-regulatory-tags { flex-wrap: wrap; gap: 0.8rem; }
+          .portal-workspace-header { flex-direction: column; align-items: flex-start; }
+          .portal-workspace-body-content { padding: 1rem; }
+          .dashboard-editor-card { padding: 1.25rem; }
+          .login-card-layout { width: min(94vw, 420px); padding: 1.5rem 1rem; }
+          .standard-login-form { gap: 1rem; }
+          .cms-creation-form-layout { gap: 1rem; }
+          .dashboard-table th,
+          .dashboard-table td { padding: 0.7rem 0.55rem; font-size: 0.8rem; }
+        }
+
+        @media (max-width: 480px) {
+          .public-navbar { padding: 0.8rem 0.9rem; }
+          .nav-logo-brand-zone { gap: 0.45rem; }
+          .nav-brand-name { font-size: 0.87rem; max-width: 160px; line-height: 1.2; }
+          .hero-copy-card h1 { font-size: clamp(2rem, 8vw, 2.6rem); }
+          .hero-copy-card p { font-size: 0.95rem; }
+          .hero-scroll-btn { min-width: 0; width: 100%; padding: 0.9rem 1.2rem; }
+          .service-gateway-card { padding: 1.25rem; }
+          .service-gateway-card h3 { font-size: 1.2rem; }
+          .banner-text-package p { font-size: 0.95rem; }
+          .banner-controls { gap: 0.4rem; }
+          .platform-badge-nav { font-size: 0.8rem; padding: 0.7rem 0.8rem; }
+          .workspace-fluid-footer { padding: 2.5rem 0.9rem 1.25rem; }
+          .footer-brand-headline { font-size: 1.1rem; }
+          .portal-workspace-header h2 { font-size: 1.1rem; }
+          .dashboard-tab-button { padding: 0.55rem 0.75rem; font-size: 0.75rem; }
         }
       `}</style>
 
