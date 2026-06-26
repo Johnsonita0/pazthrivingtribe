@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
+import ThriverRegistrationModal from './ThriverRegistrationModal';
 
 export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_update_from_admin', teensKidsMonthlyFee = 30000 }) {
   const teensHeroSlides = [
@@ -29,6 +30,17 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
   const [activeHeroSlide, setActiveHeroSlide] = useState(0);
   const [selectedProgram, setSelectedProgram] = useState(null);
   const [showWelcomeModal, setShowWelcomeModal] = useState(true);
+  const [heroPopupMode, setHeroPopupMode] = useState(null);
+  const [bookingForm, setBookingForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    clientType: 'Individual',
+    sessionType: 'Virtual',
+    preferredTime: 'Any time',
+    concern: ''
+  });
+  const [bookingSubmitted, setBookingSubmitted] = useState(false);
 
   useEffect(() => {
     AOS.init({ duration: 800, offset: 100 });
@@ -39,6 +51,23 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
 
     return () => clearInterval(heroInterval);
   }, [teensHeroSlides.length]);
+
+  useEffect(() => {
+    document.body.style.overflow = heroPopupMode ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [heroPopupMode]);
+
+  const openRegistrationPopup = (mode = 'register') => {
+    setHeroPopupMode(mode);
+    setBookingSubmitted(false);
+  };
+
+  const closeRegistrationPopup = () => {
+    setHeroPopupMode(null);
+    setBookingSubmitted(false);
+  };
 
   const corePrograms = [
     {
@@ -196,6 +225,30 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
           </div>
         </div>
       )}
+
+      {heroPopupMode && (
+        <ThriverRegistrationModal
+          visible={Boolean(heroPopupMode)}
+          mode={heroPopupMode}
+          onClose={closeRegistrationPopup}
+          onRegister={async () => {
+            setHeroPopupMode(null);
+          }}
+          paystackPublicKey={paystackPublicKey}
+          bookingForm={bookingForm}
+          setBookingForm={setBookingForm}
+          bookingSubmitted={bookingSubmitted}
+          handleHeroBookingSubmit={(e) => {
+            e.preventDefault();
+            setBookingSubmitted(true);
+            setTimeout(() => {
+              setHeroPopupMode(null);
+              setBookingSubmitted(false);
+            }, 1400);
+          }}
+        />
+      )}
+
       {/* HERO BANNER */}
       <section className="service-view-hero-banner" style={{ minHeight: '460px', marginBottom: '3rem' }} data-aos="fade-down">
         <div
@@ -206,7 +259,32 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
           <span className="section-label" style={{ color: '#e7f7ef', textTransform: 'uppercase' }}>{teensHeroSlides[activeHeroSlide].eyebrow}</span>
           <h1>{teensHeroSlides[activeHeroSlide].title}</h1>
           <p>{teensHeroSlides[activeHeroSlide].text}</p>
-          <div className="service-banner-controls">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '1.5rem' }}>
+            <button
+              type="button"
+              onClick={openRegistrationPopup}
+              style={{
+                background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                color: 'white',
+                border: 'none',
+                padding: '0.95rem 1.8rem',
+                borderRadius: '999px',
+                fontSize: '1rem',
+                fontWeight: '700',
+                cursor: 'pointer'
+              }}
+            >
+              Register Now
+            </button>
+            <button
+              type="button"
+              className="service-banner-btn"
+              onClick={() => setActiveHeroSlide((prev) => (prev - 1 + teensHeroSlides.length) % teensHeroSlides.length)}
+            >
+              <i className="fa-solid fa-chevron-left"></i>
+            </button>
+          </div>
+          <div className="service-banner-controls" style={{ marginTop: '1.5rem' }}>
             <button
               type="button"
               className="service-banner-btn"
@@ -611,15 +689,41 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
           <p style={{ maxWidth: '640px', color: 'var(--text-muted)', fontSize: '1.05rem', lineHeight: '1.7', margin: 0 }}>
-           Kindly use any of the buttons below to register or book a session. For any inquiries, please contact us via phone or email.
+            Kindly use any of the buttons below to register or book a session. For any inquiries, please contact us via phone or email.
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'center' }}>
-            <Link to="/" className="form-submit-action-btn" style={{ minWidth: '220px', textDecoration: 'none', textAlign: 'center' }}>
+            <button
+              type="button"
+              onClick={() => openRegistrationPopup('register')}
+              style={{
+                minWidth: '220px',
+                padding: '0.95rem 1.5rem',
+                borderRadius: '999px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                color: 'white',
+                fontWeight: '700',
+                cursor: 'pointer'
+              }}
+            >
               Register Now
-            </Link>
-            <Link to="/care-counseling" className="form-submit-action-btn" style={{ minWidth: '220px', textDecoration: 'none', textAlign: 'center' }}>
+            </button>
+            <button
+              type="button"
+              onClick={() => openRegistrationPopup('booking')}
+              style={{
+                minWidth: '220px',
+                padding: '0.95rem 1.5rem',
+                borderRadius: '999px',
+                border: '1px solid #667eea',
+                background: 'white',
+                color: '#1e293b',
+                fontWeight: '700',
+                cursor: 'pointer'
+              }}
+            >
               Book Now
-            </Link>
+            </button>
           </div>
         </div>
       </section>

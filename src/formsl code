@@ -309,7 +309,7 @@ export default function App() {
 
   // --- Paystack Integration Settings ---
   const [paystackPublicKey, setPaystackPublicKey] = useState('pk_test_demo_key_update_from_admin');
-  const [teensKidsMonthlyFee, setTeensKidsMonthlyFee] = useState(10000);
+  const [teensKidsMonthlyFee, setTeensKidsMonthlyFee] = useState(30000);
   const [tempPaystackKey, setTempPaystackKey] = useState(paystackPublicKey);
   const [tempMonthlyFee, setTempMonthlyFee] = useState(teensKidsMonthlyFee);
 
@@ -944,7 +944,7 @@ export default function App() {
       });
       setBookingSubmitted(true);
       setToastMessage('Booking request saved locally. We will follow up shortly.');
-      setToastType('success');
+      setToastType('success'); 
     } finally {
       setBookingForm({ name: '', email: '', phone: '', clientType: 'Individual', sessionType: 'Virtual', preferredTime: 'Any time', concern: '' });
     }
@@ -972,8 +972,8 @@ export default function App() {
         track: newApplicant.track,
         message: newApplicant.message
       }]);//.select();
-      if (error) throw error;
-    } catch (err) {
+      if (error) throw error; 
+    } catch (err) { 
       console.error('Server down at the moment try again later:', err);
       console.log('Applicant captured locally; Supabase insert unavailable.');
     }
@@ -1206,8 +1206,8 @@ export default function App() {
           position: relative;
           z-index: 2;
         }
-        .hero-copy-card h1 { font-size: 7.25rem !important; color: #ffffff; margin-bottom: 1rem; font-weight: 900; letter-spacing: -1px; animation: bannerTextFade 0.6s ease-out; text-shadow: 0 12px 32px rgba(0,0,0,0.92); line-height: 1.01; }
-        .hero-copy-card p { font-size: 2.2rem !important; color: #eff6ff; max-width: 980px; margin: 0 auto 1rem auto; line-height: 1.55; animation: bannerTextFade 0.8s ease-out; text-shadow: 0 8px 24px rgba(0,0,0,0.82); }
+        .hero-copy-card h1 { font-size: clamp(2.6rem, 5vw, 4.8rem); color: #ffffff; margin-bottom: 1rem; font-weight: 900; letter-spacing: -1px; animation: bannerTextFade 0.6s ease-out; text-shadow: 0 12px 32px rgba(0,0,0,0.92); line-height: 1.01; }
+        .hero-copy-card p { font-size: clamp(1rem, 2vw, 1.35rem); color: #eff6ff; max-width: 980px; margin: 0 auto 1rem auto; line-height: 1.55; animation: bannerTextFade 0.8s ease-out; text-shadow: 0 8px 24px rgba(0,0,0,0.82); }
         .hero-action-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.75rem; margin-top: 1rem; position: relative; z-index: 2; }
         .hero-arrow-cluster {
           position: absolute;
@@ -1275,13 +1275,17 @@ export default function App() {
           z-index: 2;
         }
         .hero-overlay { padding: 3rem 1.5rem; }
-        .hero-overlay h1 { font-size: 7.25rem !important; line-height: 1.02; color: #ffffff; text-shadow: 0 12px 32px rgba(0,0,0,0.92); }
-        .hero-overlay p { font-size: 2.2rem !important; line-height: 1.55; max-width: 100%; color: #ffffff; text-shadow: 0 8px 24px rgba(0,0,0,0.82); }
+        .hero-overlay h1 { font-size: clamp(2.6rem, 5vw, 4.8rem); line-height: 1.02; color: #ffffff; text-shadow: 0 12px 32px rgba(0,0,0,0.92); }
+        .hero-overlay p { font-size: clamp(1rem, 2vw, 1.35rem); line-height: 1.55; max-width: 100%; color: #ffffff; text-shadow: 0 8px 24px rgba(0,0,0,0.82); }
         .hero-scroll-btn { min-width: 220px; }
         .teens-kids-hero { padding: 4rem 2rem; display: flex; align-items: center; justify-content: center; min-height: 320px; box-sizing: border-box; }
         .teens-kids-hero h1 { max-width: 100%; line-height: 1.05; overflow-wrap: break-word; }
         .teens-kids-hero p { font-size: 1.2rem; max-width: 100%; line-height: 1.6; overflow-wrap: break-word; }
         @media (max-width: 768px) {
+          .hero-copy-card h1 { font-size: 2.2rem !important; line-height: 1.08; }
+          .hero-copy-card p { font-size: 0.98rem !important; line-height: 1.45; }
+          .hero-overlay h1 { font-size: 2.2rem !important; line-height: 1.08; }
+          .hero-overlay p { font-size: 0.98rem !important; line-height: 1.45; }
           .hero-slide-pic7 {
             background-image: url("./image/pic8.png") !important;
             background-position: center center;
@@ -2120,7 +2124,7 @@ export default function App() {
         .footer-columns-container { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 4rem; width: 100%; padding-bottom: 3.5rem; border-bottom: 1px solid var(--border-color); }
         .footer-brand-column { display: flex; flex-direction: column; gap: 1.2rem; }
         .footer-brand-logo-row { display: flex; align-items: center; gap: 0.75rem; text-decoration: none; }
-        .footer-vector-badge { width: 32px; height: 32px; background-color: var(--brand-green); color: white; font-weight: 800; display: flex; align-items: center; justify-content: center; border-radius: 6px; overflow: hidden; }
+        .footer-vector-badge { width: 50px; height: 50px; font-weight: 800; display: flex; align-items: center; justify-content: center; border-radius: 6px; overflow: hidden; }
         .footer-vector-badge img { width: 100%; height: 100%; object-fit: contain; display: block; }
         .footer-brand-headline { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.3px; }
         .footer-brand-column p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin: 0; }
@@ -2235,6 +2239,72 @@ export default function App() {
           .dashboard-table td { padding: 0.6rem 0.5rem; font-size: 0.8rem; }
           .form-submit-action-btn { padding: 0.75rem 1.4rem; font-size: 0.85rem; }
           .portal-workspace-header { flex-direction: column; padding: 0.75rem 1rem; }
+        }
+
+        @media (max-width: 1024px) {
+          .public-navbar { padding: 1rem 2rem; }
+          .hero-overlay { padding: 4.5rem 1.5rem 2rem; }
+          .hero-copy-card h1 { font-size: clamp(2.2rem, 4.5vw, 3.2rem); }
+          .hero-copy-card p { font-size: clamp(1rem, 2.2vw, 1.2rem); }
+          .interactive-tabs-section { padding: 5rem 2rem; }
+          .service-gateway-card { padding: 2rem; }
+          .video-feature-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+          .workspace-fluid-footer { padding: 4rem 2rem 2rem; }
+          .footer-columns-container { gap: 2rem; }
+          .login-card-layout { width: min(92vw, 400px); }
+        }
+
+        @media (max-width: 768px) {
+          .full-view-app-root-override { padding-top: 64px; }
+          .public-navbar { padding: 0.85rem 1rem; }
+          .nav-logo-img { width: 42px; height: 42px; }
+          .nav-brand-name { font-size: 0.95rem; }
+          .nav-navigation-links.mobile-open { top: 64px; height: calc(100vh - 64px); padding: 1rem 1rem 1.75rem; }
+          .hero-overlay { padding: 3.5rem 1rem 1.5rem; }
+          .hero-action-row { flex-direction: column; }
+          .hero-scroll-btn { width: 100%; justify-content: center; }
+          .hero-nav-btn { width: 40px; height: 40px; }
+          .synchronized-promo-banner { padding: 2.5rem 1rem; gap: 1.5rem; }
+          .banner-slide { flex-direction: column; padding: 1.25rem; gap: 1rem; }
+          .slide-graphic { width: 100%; min-height: 240px; max-height: 260px; }
+          .interactive-tabs-section { padding: 3.5rem 1rem; }
+          .services-routing-grid { gap: 1rem; }
+          .service-gateway-card { padding: 1.5rem; }
+          .service-gateway-card h3 { font-size: 1.3rem; }
+          .service-gateway-card p { font-size: 0.98rem; }
+          .video-feature-copy h2 { font-size: 1.7rem; line-height: 1.2; }
+          .social-news-header-zone { gap: 1rem; }
+          .platform-badge-nav { width: 100%; justify-content: center; }
+          .social-news-broadcast-anchor-card { padding: 1.35rem; }
+          .workspace-fluid-footer { padding: 3rem 1rem 1.5rem; margin-top: 3rem; }
+          .footer-bottom-copyright-strip { align-items: flex-start; }
+          .footer-regulatory-tags { flex-wrap: wrap; gap: 0.8rem; }
+          .portal-workspace-header { flex-direction: column; align-items: flex-start; }
+          .portal-workspace-body-content { padding: 1rem; }
+          .dashboard-editor-card { padding: 1.25rem; }
+          .login-card-layout { width: min(94vw, 420px); padding: 1.5rem 1rem; }
+          .standard-login-form { gap: 1rem; }
+          .cms-creation-form-layout { gap: 1rem; }
+          .dashboard-table th,
+          .dashboard-table td { padding: 0.7rem 0.55rem; font-size: 0.8rem; }
+        }
+
+        @media (max-width: 480px) {
+          .public-navbar { padding: 0.8rem 0.9rem; }
+          .nav-logo-brand-zone { gap: 0.45rem; }
+          .nav-brand-name { font-size: 0.87rem; max-width: 160px; line-height: 1.2; }
+          .hero-copy-card h1 { font-size: clamp(2rem, 8vw, 2.6rem); }
+          .hero-copy-card p { font-size: 0.95rem; }
+          .hero-scroll-btn { min-width: 0; width: 100%; padding: 0.9rem 1.2rem; }
+          .service-gateway-card { padding: 1.25rem; }
+          .service-gateway-card h3 { font-size: 1.2rem; }
+          .banner-text-package p { font-size: 0.95rem; }
+          .banner-controls { gap: 0.4rem; }
+          .platform-badge-nav { font-size: 0.8rem; padding: 0.7rem 0.8rem; }
+          .workspace-fluid-footer { padding: 2.5rem 0.9rem 1.25rem; }
+          .footer-brand-headline { font-size: 1.1rem; }
+          .portal-workspace-header h2 { font-size: 1.1rem; }
+          .dashboard-tab-button { padding: 0.55rem 0.75rem; font-size: 0.75rem; }
         }
       `}</style>
 
@@ -2548,7 +2618,7 @@ export default function App() {
 
                 <section id="founder-suite" className="founder-executive-suite" data-aos="fade-up">
                   <div className="founder-portrait-frame" data-aos="fade-right">
-                    <img src="../image/pic1.jpeg" className="founder-img" alt="Paz Tribe Founder and CEO" />
+                    <img src="../image/pic1.jpeg" className="founder-img" alt="Paz Tribe CEO" />
                     <div className="founder-title-tag-overlay">
                       <h4>Roseline Iraoya </h4>
                       <span>Lead Coach</span>
@@ -2559,7 +2629,7 @@ export default function App() {
                   <div className="founder-interactive-message-box" data-aos="fade-left">
                     <nav className="founder-msg-nav-row">
                       <button className={`founder-nav-pill ${founderActiveTab === 'speech' ? 'active' : ''}`} onClick={() => setFounderActiveTab('speech')}>
-                        <i className="fa-solid fa-microphone"></i> From the Founder's Desk
+                        <i className="fa-solid fa-microphone"></i> From the Lead Consultant Desk
                       </button>
                       <button className={`founder-nav-pill ${founderActiveTab === 'about' ? 'active' : ''}`} onClick={() => setFounderActiveTab('about')}>
                         <i className="fa-solid fa-building"></i> About Paz Thriving Tribe
@@ -3135,7 +3205,7 @@ export default function App() {
                           <form onSubmit={(e) => {
                             e.preventDefault();
                             setPaystackPublicKey(tempPaystackKey);
-                            setTeensKidsMonthlyFee(parseInt(tempMonthlyFee) || 10000);
+                            setTeensKidsMonthlyFee(parseInt(tempMonthlyFee) || 30000);
                             setDashboardMessage('✓ Payment settings saved successfully!');
                             setTimeout(() => setDashboardMessage(null), 3000);
                           }} style={{ marginTop: '1.5rem' }}>
@@ -3209,7 +3279,7 @@ export default function App() {
           <div className="footer-columns-container">
             <div className="footer-brand-column">
               <Link to="/" className="footer-brand-logo-row" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                <div className="footer-vector-badge"><img src={theme === 'dark' ? "../logo/logo2.jpeg" : "../logo/logomain.png"} alt="Paz Thriving Tribe logo" className="nav-logo-img" /></div>
+                <div className="footer-vector-badge"><img src={theme === 'dark' ? "../logo/logo2.jpeg" : "../logo/logomain.png"} alt="PTT logo" className="nav-logo-img" /></div>
                 <span className="footer-brand-headline">Paz Thriving Tribe</span>
               </Link>
               <p>Paz Thriving Tribe Coaching, Mentoring and Counselling Organisation is committed to
@@ -3473,10 +3543,10 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
           <p>{activeService.description}</p>
 
           <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '2.5rem', marginTop: '2.5rem' }}>
-            <h3 style={{ marginBottom: '1rem', fontWeight: '800' }}>Intake Form Session Request</h3>
-            <p style={{ fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '2rem' }}>{subPageMeta.formSub}</p>
+            <h3 style={{ marginBottom: '1rem', fontWeight: '800' }}></h3>
+            {/* <p style={{ fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '2rem' }}>{subPageMeta.formSub}</p> */}
 
-            {success ? (
+            {/* {success ? (
               <div className="status-feedback-banner"><i className="fa-solid fa-circle-check"></i> Intake requested successfully. Our specialist counselors will reach out to you within 24 hours.</div>
             ) : (
               <form onSubmit={handleFormSubmit} className="cms-creation-form-layout" style={{ marginTop: 0 }}>
@@ -3504,7 +3574,7 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
                 </div>
                 <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '280px' }}><i className="fa-solid fa-paper-plane"></i> Submit Intake Request</button>
               </form>
-            )}
+            )} */}
           </div>
         </div>
 
@@ -3534,9 +3604,9 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
             <i className="fa-solid fa-graduation-cap" style={{ marginRight: '0.5rem', color: 'var(--accent-primary)' }}></i>
             {servicePrograms.title}
           </h2>
-          <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '3rem', fontSize: '1.1rem' }} data-aos="fade-up">
+          {/* <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '3rem', fontSize: '1.1rem' }} data-aos="fade-up">
             Explore our comprehensive curriculum designed specifically for {activeService.title.toLowerCase()}
-          </p>
+          </p> */}
 
           <div style={{
             display: 'grid',
@@ -4356,6 +4426,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
     track: 'Thriving Pre-teen & Teens',
     amount: 10000
   });
+
   const [goalAreas, setGoalAreas] = useState({
     confidenceBuilding: true,
     publicSpeaking: false,
@@ -4366,7 +4437,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
     goalSetting: false,
     positiveCharacter: false,
     financialLiteracy: false,
-    others: false
+    others: false,
   });
   const [otherGoal, setOtherGoal] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
@@ -4641,23 +4712,23 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
                         style={{ cursor: 'pointer', position: 'relative' }}
                       >
                         {passportPreviewUrl ? (
-                          <img src={passportPreviewUrl} alt="Passport preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={passportPreviewUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
-                          <div style={{ fontSize: '0.85rem', color: '#6b7280', padding: '0.5rem', textAlign: 'center' }}>Passport preview</div>
+                          <div style={{ fontSize: '0.85rem', color: '#6b7280', padding: '0.5rem', textAlign: 'center' }}></div>
                         )}
                         <div style={{
                           position: 'absolute',
                           bottom: '0.5rem',
                           left: '50%',
-                          transform: 'translateX(-50%)',
-                          background: 'rgba(255, 255, 255, 0.9)',
+                          transform: 'translateX(-100%)',
+                          background: 'rgba(255, 255, 255, 0.42)',
                           padding: '0.25rem 0.6rem',
                           borderRadius: '999px',
                           fontSize: '0.78rem',
-                          color: '#334155',
-                          pointerEvents: 'none'
+                          color: '#0507086e',
+                          pointerEvents: 'Cursor',
                         }}>
-                          {passportPreviewUrl ? 'Double-click to change photo' : 'Double-click to choose image'}
+                          {passportPreviewUrl ? 'Change Photo' : 'Double-click to choose image'}
                         </div>
                       </div>
                       <input
@@ -4896,7 +4967,7 @@ function ThriverRegistrationModal({ visible, onClose, onRegister, paystackPublic
               <button type="button" className="form-submit-action-btn" onClick={handlePayLater} disabled={loading} style={{ background: '#f6ad55', borderColor: '#f6ad55' }}>
                 <i className="fa-solid fa-money-bill-transfer"></i> Pay Later
               </button>
-              <button type="button" className="form-cancel-action-btn" onClick={onClose} style={{ background: 'transparent', border: '1px solid var(--border-color)', padding: '0.6rem 1rem' }}>
+              <button type="button" className="form-cancel-action-tn" onClick={onClose} style={{ background: 'transparent', border: '1px solid var(--border-color)', padding: '0.6rem 1rem' }}>
                 Close
               </button>
             </div>
