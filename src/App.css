@@ -332,6 +332,217 @@ body, html {
 .toast-notification {
   pointer-events: auto;
   max-width: 360px;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+}
+
+/* =========================================================================
+   INSPIRING PARAGRAPHS CAROUSEL (Within section-intro-shell)
+   ========================================================================= */
+
+.inspiring-paragraphs-carousel {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  align-items: center;
+  width: 100%;
+  margin-top: 1.5rem;
+}
+
+.inspiring-cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.inspiring-paragraph-card {
+  background: linear-gradient(135deg, #161b22 0%, #0d1117 100%);
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.inspiring-paragraph-card:hover {
+  border-color: #2ea44f;
+  box-shadow: 0 8px 30px rgba(46, 164, 79, 0.2);
+  transform: translateY(-4px);
+}
+
+.inspiring-card-title {
+  color: #2ea44f;
+  margin: 0 0 1rem 0;
+  line-height: 1.4;
+}
+
+.inspiring-card-title-h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.inspiring-card-title-p {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.inspiring-card-text {
+  font-size: 1rem;
+  color: #c9d1d9;
+  line-height: 1.7;
+  margin: 0;
+  font-weight: 400;
+}
+
+.inspiring-paragraph-card-primary {
+  min-height: 300px;
+}
+
+.inspiring-paragraph-card-secondary {
+  min-height: 240px;
+}
+
+/* Carousel Controls */
+.inspiring-carousel-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.inspiring-nav-btn {
+  background: linear-gradient(135deg, #2ea44f 0%, #26a148 100%);
+  color: white;
+  border: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(46, 164, 79, 0.3);
+  padding: 0;
+}
+
+.inspiring-nav-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 20px rgba(46, 164, 79, 0.5);
+}
+
+.inspiring-nav-btn:active {
+  transform: scale(0.95);
+}
+
+/* Dots Navigation */
+.inspiring-dots {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.inspiring-dots .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #30363d;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.inspiring-dots .dot:hover {
+  background: #484f58;
+  transform: scale(1.2);
+}
+
+.inspiring-dots .dot.active {
+  background: #2ea44f;
+  width: 32px;
+  border-radius: 6px;
+  box-shadow: 0 0 10px rgba(46, 164, 79, 0.4);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .inspiring-cards-container {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .inspiring-paragraph-card {
+    padding: 1.5rem;
+    min-height: 240px;
+  }
+
+  .inspiring-carousel-controls {
+    gap: 1rem;
+  }
+
+  .inspiring-nav-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+
+  .inspiring-dots .dot {
+    width: 10px;
+    height: 10px;
+  }
+
+  .inspiring-dots .dot.active {
+    width: 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .inspiring-cards-container {
+    gap: 0.75rem;
+  }
+
+  .inspiring-paragraph-card {
+    padding: 1.25rem;
+    min-height: 220px;
+  }
+
+  .inspiring-card-title {
+    font-size: 1.1rem;
+  }
+
+  .inspiring-card-text {
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  .inspiring-carousel-controls {
+    gap: 0.75rem;
+  }
+
+  .inspiring-nav-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+  }
+}
+}
   padding: 0.95rem 1rem;
   border-radius: 14px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
