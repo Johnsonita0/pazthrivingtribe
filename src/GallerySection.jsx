@@ -89,10 +89,13 @@ export default function GallerySection({ theme }) {
   }, [trackWidth]);
 
   const extendedItems = [...galleryItems, ...galleryItems];
-  const cardWidth = 100 / slidesPerView;
+  const isCompact = slidesPerView <= 2;
+  const cardWidth = slidesPerView === 1 ? 100 : 100 / slidesPerView;
   const trackStyle = {
     display: 'flex',
     gap: '0.75rem',
+    width: 'max-content',
+    minWidth: '100%',
     transform: `translateX(-${translateX}px)`,
     transition: 'none',
   };
@@ -129,28 +132,29 @@ export default function GallerySection({ theme }) {
     border: `1px solid ${isDark ? 'rgba(255,255,255,0.14)' : 'rgba(15,23,42,0.14)'}`,
     boxShadow: isDark ? '0 16px 38px rgba(0,0,0,0.18)' : '0 10px 24px rgba(15,23,42,0.12)',
     background: `linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 8%, transparent 92%, rgba(255,255,255,0.04) 100%), var(--bg-card)`,
-    minHeight: '260px',
+    minHeight: isCompact ? '220px' : '260px',
   };
 
   const imageStyle = {
     width: '100%',
-    height: '180px',
+    height: isCompact ? '160px' : '180px',
     objectFit: 'cover',
     display: 'block',
   };
 
   const captionStyle = {
-    padding: '0.85rem 0.9rem 0.95rem',
+    padding: isCompact ? '0.85rem 0.85rem 0.9rem' : '0.85rem 0.9rem 0.95rem',
     background: isDark ? 'rgba(0,0,0,0.78)' : 'rgba(255,255,255,0.92)',
     color: isDark ? '#f8fafc' : '#16212a',
     display: 'flex',
     flexDirection: 'column',
     gap: '0.3rem',
+    minHeight: isCompact ? '110px' : '120px',
   };
 
   const overlayTitleStyle = {
     margin: 0,
-    fontSize: '1rem',
+    fontSize: isCompact ? '0.95rem' : '1rem',
     fontWeight: 700,
     lineHeight: 1.1,
     letterSpacing: '0.01em',
@@ -158,7 +162,7 @@ export default function GallerySection({ theme }) {
 
   const overlayDescriptionStyle = {
     margin: 0,
-    fontSize: '0.86rem',
+    fontSize: isCompact ? '0.84rem' : '0.86rem',
     lineHeight: 1.2,
     opacity: 0.92,
     color: isDark ? '#d9e2ec' : '#57606a',
@@ -230,13 +234,14 @@ export default function GallerySection({ theme }) {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '0.5rem 0.85rem',
+    padding: isCompact ? '0.55rem 0.75rem' : '0.5rem 0.85rem',
     borderRadius: '999px',
     border: `1px solid ${isDark ? 'rgba(255,255,255,0.18)' : 'rgba(15,23,42,0.16)'}`,
     background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(15,23,42,0.08)',
     color: isDark ? '#f8fafc' : '#111827',
     cursor: 'pointer',
     fontSize: '0.9rem',
+    width: isCompact ? '100%' : 'auto',
   };
 
   const getTruncatedDescription = (text) => {
