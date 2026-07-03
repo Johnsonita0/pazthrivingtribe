@@ -41,6 +41,10 @@ export default function App() {
   // --- Theme Management States ---
   const [theme, setTheme] = useState('dark');
   const [showThemeModal, setShowThemeModal] = useState(false);
+  const [showFloatingActions, setShowFloatingActions] = useState(false);
+  const [floatingHintIndex, setFloatingHintIndex] = useState(0);
+  const [showFloatingHint, setShowFloatingHint] = useState(true);
+  const floatingActionRef = useRef(null);
   const [navOpen, setNavOpen] = useState(false);
   const [heroPopupMode, setHeroPopupMode] = useState(null); // 'register' | 'booking' | null
   const [cookieConsentAccepted, setCookieConsentAccepted] = useState(false);
@@ -558,6 +562,49 @@ export default function App() {
     setTheme(nextTheme);
     localStorage.setItem('paz-tribe-theme', nextTheme);
   };
+
+  const toggleFloatingActions = () => {
+    setShowFloatingActions((prev) => !prev);
+  };
+
+  const closeFloatingActions = () => {
+    setShowFloatingActions(false);
+  };
+
+  useEffect(() => {
+    setFloatingHintIndex(0);
+    setShowFloatingHint(true);
+
+    const hintTimeout = window.setTimeout(() => {
+      setShowFloatingHint(false);
+    }, 4500);
+
+    return () => {
+      window.clearTimeout(hintTimeout);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (showFloatingActions) {
+      setShowFloatingHint(false);
+    }
+  }, [showFloatingActions]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (floatingActionRef.current && !floatingActionRef.current.contains(event.target)) {
+        setShowFloatingActions(false);
+      }
+    };
+
+    if (showFloatingActions) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showFloatingActions]);
 
   const acceptCookieConsent = () => {
     localStorage.setItem('paz-tribe-cookie-consent', 'accepted');
@@ -1231,18 +1278,106 @@ export default function App() {
         .nav-menu-toggle { display: none; background: none; border: none; color: var(--text-primary); font-size: 1.55rem; cursor: pointer; }
 
         /* Floating Controls UI Layer */
-        .float-theme-toggle-container { position: fixed; bottom: 18px; left: 18px; z-index: 9999; }
-        .theme-toggle-switch-shell {
-          display: flex; align-items: center; gap: 0.6rem; cursor: pointer;
-          background-color: var(--bg-card); border: 1px solid var(--border-color);
-          padding: 0.75rem 1.2rem; border-radius: 30px; box-shadow: var(--shadow-lg);
-          animation: bounce-default 2s infinite ease-in-out;
+        .floating-action-shell {
+          position: fixed;
+          bottom: 18px;
+          right: 18px;
+          z-index: 9999;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 0.75rem;
         }
-        .float-whatsapp-container { position: fixed; bottom: 18px; right: 18px; z-index: 9999; }
-        .whatsapp-float-btn {
-          display: flex; align-items: center; justify-content: center; background-color: #25D366; color: white; border: none;
-          width: 56px; height: 56px; border-radius: 50%; box-shadow: 0 4px 16px rgba(37,211,102,0.4); cursor: pointer; text-decoration: none;
-          animation: bounce-default 2s infinite ease-in-out;
+        .floating-action-trigger {
+          width: 56px;
+          height: 56px;
+          border-radius: 50%;
+          border: none;
+          background-color: var(--brand-green);
+          color: white;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 8px 24px rgba(46, 164, 79, 0.35);
+          cursor: pointer;
+          transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+        }
+        .floating-action-trigger:hover,
+        .floating-action-trigger.active {
+          transform: translateY(-2px);
+          background-color: #1f9b46;
+        }
+        .floating-action-hint {
+          position: absolute;
+          right: 100%;
+          top: 50%;
+          transform: translate(10px, -50%);
+          padding: 0.5rem 0.85rem;
+          border-radius: 999px;
+          background: rgba(4, 120, 87, 0.92);
+          color: #f8fafc;
+          font-size: 0.85rem;
+          font-weight: 600;
+          white-space: nowrap;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.4s ease, transform 0.4s ease;
+          box-shadow: 0 14px 36px rgba(0, 0, 0, 0.25);
+        }
+        .floating-action-hint.visible {
+          opacity: 1;
+          transform: translate(0, -50%);
+        }
+        .floating-action-menu {
+          display: none;
+          flex-direction: column;
+          align-items: stretch;
+          gap: 0.75rem;
+          background: rgba(12, 18, 24, 0.95);
+          padding: 0.75rem;
+          border-radius: 18px;
+          border: 1px solid rgba(255,255,255,0.08);
+          box-shadow: 0 14px 40px rgba(0, 0, 0, 0.25);
+          min-width: 180px;
+        }
+        .floating-action-menu.visible {
+          display: flex;
+        }
+        .floating-action-item {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 0.8rem 1rem;
+          border-radius: 14px;
+          background: rgba(255,255,255,0.06);
+          color: var(--text-primary);
+          text-decoration: none;
+          border: 1px solid rgba(255,255,255,0.08);
+          cursor: pointer;
+          transition: background 0.2s ease, transform 0.2s ease;
+        }
+        .floating-action-item:hover {
+          background: rgba(255,255,255,0.12);
+          transform: translateX(-2px);
+        }
+        .floating-action-item span {
+          font-size: 0.9rem;
+          font-weight: 600;
+        }
+        .floating-action-item.theme-action {
+          background: rgba(255,255,255,0.08);
+          color: white;
+        }
+        .floating-action-item.theme-action span {
+          color: white;
+        }
+        .floating-action-item.whatsapp-action {
+          color: white;
+          background: #25D366;
+          border-color: rgba(255,255,255,0.18);
+        }
+        .floating-action-item.whatsapp-action i {
+          font-size: 1.1rem;
         }
         @keyframes bounce-default { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
@@ -2590,21 +2725,45 @@ export default function App() {
           <Route path="/dashboard" element={null} />
           <Route path="*" element={
             <>
-              {!showThemeModal && (
-                <div className="float-theme-toggle-container">
-                  <div className="theme-toggle-switch-shell" onClick={toggleThemeModeSwitch}>
-                    <span style={{ fontSize: '1.1rem' }}>{theme === 'dark' ? '☀️' : '🌙'}</span>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-primary)' }}>
-                      {theme === 'dark' ? 'Light' : 'Dark'}
-                    </span>
-                  </div>
-                </div>
-              )}
+              <div className="floating-action-shell" ref={floatingActionRef}>
+                <button
+                  type="button"
+                  className={`floating-action-trigger ${showFloatingActions ? 'active' : ''}`}
+                  onClick={toggleFloatingActions}
+                  aria-label="Open quick actions"
+                >
+                  <i className="fa-solid fa-ellipsis-h"></i>
+                </button>
 
-              <div className="float-whatsapp-container">
-                <a href="https://wa.me/2348123456789" target="_blank" rel="noopener noreferrer" className="whatsapp-float-btn">
-                  <i className="fa-brands fa-whatsapp"></i>
-                </a>
+                <div className={`floating-action-hint ${showFloatingHint ? 'visible' : ''}`}>
+                  {['Theme mode', 'WhatsApp'][floatingHintIndex]}
+                </div>
+
+                <div className={`floating-action-menu ${showFloatingActions ? 'visible' : ''}`}>
+                  <button
+                    type="button"
+                    className="floating-action-item theme-action"
+                    onClick={() => {
+                      toggleThemeModeSwitch();
+                      closeFloatingActions();
+                    }}
+                    style={{ color: theme === 'dark' ? 'white' : 'white' }}
+                  >
+                    <span>{theme === 'dark' ? '☀️' : '🌙'}</span>
+                    <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
+                  </button>
+
+                  <a
+                    href="https://wa.me/2348123456789"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="floating-action-item whatsapp-action"
+                    onClick={closeFloatingActions}
+                  >
+                    <i className="fa-brands fa-whatsapp"></i>
+                    <span>WhatsApp</span>
+                  </a>
+                </div>
               </div>
             </>
           } />
