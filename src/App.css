@@ -258,6 +258,24 @@ body, html {
   border-radius: 8px;
 }
 
+@keyframes galleryScroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes galleryPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  40%, 60% {
+    transform: scale(1.08);
+  }
+}
+
 .portal-welcome-notification-card h3 {
   margin-top: 0;
   margin-bottom: 0.5rem;
