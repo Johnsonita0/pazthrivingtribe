@@ -21,6 +21,20 @@ export default function GetNotifiedModal({
   const [email, setEmail] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
   const [submitStatus, setSubmitStatus] = React.useState(null); // 'success' or 'error'
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const updateMobile = () => setIsMobile(window.innerWidth <= 480);
+    updateMobile();
+    window.addEventListener('resize', updateMobile);
+    return () => window.removeEventListener('resize', updateMobile);
+  }, []);
+
+  const submitBtnStyle = {
+    ...styles.emailSubmitBtn,
+    opacity: isLoading ? 0.7 : 1,
+    width: isMobile ? '100%' : 'auto',
+  };
 
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
@@ -117,7 +131,7 @@ export default function GetNotifiedModal({
           />
           <button 
             type="submit" 
-            style={{...styles.emailSubmitBtn, opacity: isLoading ? 0.7 : 1}}
+            style={submitBtnStyle}
             disabled={isLoading}
           >
             {isLoading ? 'Sending...' : 'Send'}
@@ -178,11 +192,13 @@ const styles = {
   },
   emailForm: {
     display: 'flex',
+    flexWrap: 'wrap',
     gap: '0.75rem',
     marginTop: '1.5rem',
   },
   emailInput: {
-    flex: 1,
+    flex: '1 1 220px',
+    minWidth: 0,
     padding: '0.95rem 1rem',
     border: '1px solid var(--border-color)',
     borderRadius: '10px',
@@ -192,6 +208,7 @@ const styles = {
     transition: 'all 0.2s ease',
   },
   emailSubmitBtn: {
+    flex: '0 0 auto',
     padding: '0.95rem 1.5rem',
     background: 'var(--brand-green)',
     color: 'white',
