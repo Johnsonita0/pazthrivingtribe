@@ -3562,11 +3562,11 @@ export default function App() {
               <form className="contact-form-wrapper">
                 <div className="form-input-container">
                   <label>Your Name</label>
-                  <input type="text" placeholder="John Doe" required />
+                  <input type="text" placeholder="Johnson Ime " required />
                 </div>
                 <div className="form-input-container">
                   <label>Email Address</label>
-                  <input type="email" placeholder="john@example.com" required />
+                  <input type="email" placeholder="johnson@example.com" required />
                 </div>
                 <div className="form-input-container">
                   <label>Subject</label>
