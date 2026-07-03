@@ -5,6 +5,8 @@ import AOS from 'aos';
 import 'aos/dist/aos.css';
 import TeensKidsMenu from './TeensKidsMenu';
 import ThriverRegistrationModal from './ThriverRegistrationModal';
+import NotFoundPage from './NotFoundPage';
+import ComingSoonPage from './ComingSoonPage';
 
 function AdminTabBar({ selectedTab, onChangeTab }) {
   const adminTabs = [
@@ -67,6 +69,9 @@ export default function App() {
   // --- Sliding Hero Banner States (Main Page) ---
   const [currentHomeSlide, setCurrentHomeSlide] = useState(0);
   const [currentPromoSlide, setCurrentPromoSlide] = useState(0);
+  const [selectedReview, setSelectedReview] = useState(null);
+  const [expandedFaqIndex, setExpandedFaqIndex] = useState(0);
+  const [promoSlideAutoPlay, setPromoSlideAutoPlay] = useState(true);
   const [promoSlides, setPromoSlides] = useState([
     {
       title: 'Jojo’s Mom',
@@ -112,6 +117,33 @@ export default function App() {
       icon: 'fa-solid fa-handshake-angle',
       title: 'More aligned family teamwork',
       description: 'Every household member becomes a partner in the journey, creating steady momentum across home life.',
+    }
+  ];
+
+  const faqItems = [
+    {
+      question: 'How do I get started with Paz Thriving Tribe coaching?',
+      answer: 'Getting started is simple! Visit our services page, select the program that fits your needs (Talk & Thrive, Teens Academy, Children Services, etc.), and fill out the intake form. Our team will reach out within 24-48 hours to confirm your session details and answer any questions.'
+    },
+    {
+      question: 'What are your coaching session rates and payment options?',
+      answer: 'Our pricing varies by program and session type. We offer flexible payment plans including monthly subscriptions, quarterly packages, and one-time sessions. For detailed pricing information, please contact us directly or visit the specific program page you\'re interested in.'
+    },
+    {
+      question: 'Are sessions conducted online or in-person?',
+      answer: 'We offer both online and in-person sessions to accommodate your schedule and preferences. During booking, you can select your preferred session format. Virtual sessions are conducted via secure video conferencing, and in-person sessions are available at select locations.'
+    },
+    {
+      question: 'Is everything discussed in coaching sessions confidential?',
+      answer: 'Absolutely. Confidentiality is a core value at Paz Thriving Tribe. Everything shared during coaching sessions is strictly confidential, except in cases where there\'s risk of harm. We maintain professional privacy standards and GDPR compliance in all interactions.'
+    },
+    {
+      question: 'How long does it take to see results from coaching?',
+      answer: 'Results vary based on individual circumstances and goals. Many clients notice positive shifts in their mindset and behavior within 2-4 weeks. Deeper transformation typically emerges over 8-12 weeks of consistent engagement. We\'re committed to supporting your journey at your pace.'
+    },
+    {
+      question: 'Can I book a session for my teenager or child?',
+      answer: 'Yes! We offer specialized programs for teenagers (Thriving Pre-teens & Teens Academy) and children (Thriving Children Services). These programs are tailored to age-appropriate needs with parental involvement options. Book through our services page or contact us for guidance on the best fit for your child.'
     }
   ];
 
@@ -419,11 +451,12 @@ export default function App() {
   }, [homeSlides.length]);
 
   useEffect(() => {
+    if (!promoSlideAutoPlay) return;
     const promoInterval = setInterval(() => {
       setCurrentPromoSlide((s) => (s + 1) % promoSlides.length);
     }, 9000);
     return () => clearInterval(promoInterval);
-  }, []);
+  }, [promoSlideAutoPlay, promoSlides.length]);
 
   useEffect(() => {
     const founderInterval = setInterval(() => {
@@ -484,6 +517,16 @@ export default function App() {
     document.cookie = 'paz-tribe-cookie-consent=declined; path=/; max-age=31536000; Secure; SameSite=Lax';
     setCookieConsentAccepted(false);
     setShowCookieBanner(false);
+  };
+
+  const handlePrevReview = () => {
+    setCurrentPromoSlide((prev) => (prev - 1 + promoSlides.length) % promoSlides.length);
+    setPromoSlideAutoPlay(false);
+  };
+
+  const handleNextReview = () => {
+    setCurrentPromoSlide((prev) => (prev + 1) % promoSlides.length);
+    setPromoSlideAutoPlay(false);
   };
 
   const fetchDynamicWebsiteContent = async () => {
@@ -1355,10 +1398,29 @@ export default function App() {
         @media (max-width: 768px) { .testimonial-author { text-align: center; margin-top: 0.5rem; } }
         @media (max-width: 768px) { .synchronized-promo-banner { padding: 1.25rem; } .banner-slider { height: auto; min-height: auto; position: relative; } .banner-slide { position: static !important; display: none; opacity: 1 !important; transform: none !important; transition: none; flex-direction: column; gap: 1rem; padding: 1rem; align-items: stretch; } .banner-slide.active { display: flex; } .banner-text-package { width: 100%; gap: 0.75rem; } .banner-badge { font-size: 0.75rem; padding: 0.3rem 0.8rem; } .banner-text-package p { font-size: 0.9rem; line-height: 1.5; } .slide-graphic { width: 100%; height: 180px; margin: 0.5rem 0 0 0; } }
         @media (max-width: 480px) { .synchronized-promo-banner { padding: 0.75rem; } .banner-slide { padding: 0.75rem; gap: 0.6rem; } .banner-text-package { gap: 0.5rem; } .banner-badge { font-size: 0.65rem; padding: 0.25rem 0.6rem; i { font-size: 0.65rem; } } .banner-text-package p { font-size: 0.8rem; line-height: 1.4; } .slide-graphic { height: 140px; } }
-        .banner-controls { position: absolute; right: 18px; bottom: 12px; display: flex; gap: 0.6rem; }
-        @media (max-width: 768px) { .banner-controls { position: relative; right: auto; bottom: auto; justify-content: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); } }
-        .banner-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border-color); cursor: pointer; border: none; }
+        .banner-controls { position: absolute; right: 18px; bottom: 12px; display: flex; gap: 1rem; align-items: center; }
+        .banner-dots-wrapper { display: flex; gap: 0.6rem; }
+        .banner-arrow { width: 40px; height: 40px; border-radius: 50%; background: rgba(34, 197, 94, 0.2); border: 1px solid var(--brand-green); color: var(--brand-green); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; font-size: 1rem; }
+        .banner-arrow:hover { background: var(--brand-green); color: #fff; transform: scale(1.1); }
+        @media (max-width: 768px) { .banner-controls { position: relative; right: auto; bottom: auto; justify-content: center; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border-color); gap: 0.75rem; } .banner-arrow { width: 36px; height: 36px; font-size: 0.9rem; } .read-more-btn { font-size: 0.9rem; } }
+        @media (max-width: 480px) { .banner-controls { gap: 0.5rem; } .banner-arrow { width: 32px; height: 32px; font-size: 0.8rem; } .banner-dots-wrapper { gap: 0.4rem; } }
+        .banner-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border-color); cursor: pointer; border: none; transition: all 0.2s ease; }
+        .banner-dot:hover { background: rgba(34, 197, 94, 0.5); }
         .banner-dot.active { background: var(--brand-green); width: 28px; border-radius: 5px; }
+        .review-text { margin: 0; line-height: 1.6; color: var(--text-primary); }
+        .read-more-btn { background: transparent; border: none; color: var(--brand-green); font-weight: 600; cursor: pointer; margin-top: 0.75rem; font-size: 0.95rem; display: inline-flex; align-items: center; transition: all 0.2s ease; }
+        .read-more-btn:hover { transform: translateX(4px); }
+        .review-modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 10001; padding: 1rem; margin-top: 70px; }
+        .review-modal-content { background: var(--bg-card); border-radius: 16px; padding: 2rem; max-width: 600px; width: 100%; max-height: 80vh; overflow-y: auto; position: relative; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); animation: modalSlideIn 0.3s ease; }
+        @keyframes modalSlideIn { from { opacity: 0; transform: scale(0.95) translateY(-20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        .review-modal-close { position: absolute; top: 1.25rem; right: 1.25rem; background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.2rem; color: var(--text-primary); transition: all 0.2s ease; }
+        .review-modal-close:hover { background: var(--brand-green); border-color: var(--brand-green); color: #fff; }
+        .review-modal-header { margin-bottom: 1.5rem; }
+        .review-modal-badge { display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(34, 197, 94, 0.1); color: var(--brand-green); padding: 0.5rem 1rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.75rem; }
+        .review-modal-header h3 { margin: 0.75rem 0 0 0; font-size: 1.4rem; color: var(--text-primary); }
+        .review-modal-text { margin: 0; line-height: 1.8; color: var(--text-primary); font-size: 1rem; }
+        @media (max-width: 768px) { .review-modal-content { padding: 1.5rem; max-height: 70vh; } .review-modal-close { width: 36px; height: 36px; font-size: 1rem; } .review-modal-header h3 { font-size: 1.2rem; } .review-modal-text { font-size: 0.95rem; } }
+        @media (max-width: 480px) { .review-modal-overlay { padding: 0.5rem; } .review-modal-content { padding: 1rem; border-radius: 12px; max-height: 75vh; } .review-modal-badge { font-size: 0.8rem; padding: 0.4rem 0.8rem; } .review-modal-header h3 { font-size: 1.1rem; } .review-modal-text { font-size: 0.9rem; line-height: 1.6; } }
 
         /* INTENTIONAL DEDICATED REGISTRATION INTAKE SHIELDS */
         .intake-registration-section { width: 100% !important; background-color: var(--bg-card); border-bottom: 1px solid var(--border-color); padding: 6rem 4rem; box-sizing: border-box; }
@@ -1852,6 +1914,56 @@ export default function App() {
         .broadcast-action-footer i { transition: transform 0.2s; }
         .social-news-broadcast-anchor-card:hover .broadcast-action-footer i { transform: translateX(5px); }
 
+        /* FAQ Section Styles */
+        .faq-main-section { width: 100% !important; background-color: var(--bg-main); padding: 6rem 4rem; box-sizing: border-box; }
+        .faq-container-wrapper { max-width: 900px; margin: 0 auto; }
+        .faq-header-block { text-align: center; margin-bottom: 3rem; }
+        .faq-section-label { display: inline-block; font-size: 0.85rem; font-weight: 700; color: var(--brand-green); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem; }
+        .faq-header-block h2 { font-size: 2.6rem; font-weight: 800; color: var(--text-primary); margin: 0.5rem 0 1rem 0; }
+        .faq-header-block p { font-size: 1.1rem; color: var(--text-muted); margin: 0; line-height: 1.6; }
+        
+        .faq-accordion-wrapper { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem; }
+        .faq-item-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; transition: all 0.2s ease; }
+        .faq-item-card:hover { border-color: var(--brand-green); box-shadow: 0 4px 12px rgba(34, 197, 94, 0.1); }
+        
+        .faq-question-button { width: 100%; padding: 1.25rem 1.5rem; background: transparent; border: none; text-align: left; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 1rem; transition: all 0.2s ease; font-family: inherit; }
+        .faq-question-button:hover { background: var(--bg-main); }
+        .faq-question-button.active { background: rgba(34, 197, 94, 0.08); }
+        .faq-question-text { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); }
+        
+        .faq-toggle-icon { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; color: var(--brand-green); transition: transform 0.3s ease; flex-shrink: 0; }
+        .faq-question-button.active .faq-toggle-icon { transform: rotate(180deg); }
+        
+        .faq-answer-content { padding: 0 1.5rem 1.25rem 1.5rem; background: var(--bg-main); animation: slideDown 0.2s ease; }
+        @keyframes slideDown { from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 500px; } }
+        .faq-answer-content p { margin: 0; font-size: 1rem; color: var(--text-muted); line-height: 1.7; }
+        
+        .faq-cta-footer { text-align: center; padding-top: 1.5rem; border-top: 1px solid var(--border-color); }
+        .faq-cta-footer p { margin: 0 0 0.75rem 0; font-size: 1rem; color: var(--text-muted); }
+        .faq-contact-link { display: inline-block; color: var(--brand-green); font-weight: 700; text-decoration: none; transition: all 0.2s ease; }
+        .faq-contact-link:hover { gap: 0.5rem; }
+        
+        @media (max-width: 768px) {
+          .faq-main-section { padding: 4rem 1.5rem; }
+          .faq-header-block h2 { font-size: 1.8rem; }
+          .faq-header-block p { font-size: 1rem; }
+          .faq-question-button { padding: 1rem 1.25rem; }
+          .faq-question-text { font-size: 1rem; }
+          .faq-answer-content { padding: 0 1.25rem 1rem 1.25rem; }
+        }
+        
+        @media (max-width: 480px) {
+          .faq-main-section { padding: 3rem 1rem; }
+          .faq-header-block { margin-bottom: 2rem; }
+          .faq-header-block h2 { font-size: 1.5rem; }
+          .faq-header-block p { font-size: 0.95rem; }
+          .faq-item-card { border-radius: 10px; }
+          .faq-question-button { padding: 0.9rem 1rem; }
+          .faq-question-text { font-size: 0.95rem; }
+          .faq-answer-content { padding: 0 1rem 0.9rem 1rem; }
+          .faq-answer-content p { font-size: 0.9rem; }
+        }
+
         .youtube-video-feature-section { width: 100% !important; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 24px; padding: 3rem 4rem; box-sizing: border-box; margin: 2rem 0; }
         .video-feature-grid { display: grid; grid-template-columns: 1.2fr 1.8fr; gap: 2rem; align-items: center; }
         .video-feature-copy h2 { margin: 0 0 1rem 0; font-size: 2.4rem; line-height: 1.1; color: var(--text-primary); }
@@ -2119,6 +2231,49 @@ export default function App() {
         @media (max-width: 992px) { .parent-notice-grid { grid-template-columns: 1fr 1fr; } }
         @media (max-width: 768px) { .parent-notice-grid { grid-template-columns: 1fr; } .parent-notice-section { padding: 3rem 1.5rem; } }
 
+        /* Contact Us Section Styles */
+        .contact-us-section { width: 100% !important; background-color: var(--bg-main); padding: 6rem 4rem; box-sizing: border-box; }
+        .contact-container-wrapper { max-width: 1200px; margin: 0 auto; }
+        .contact-header-block { text-align: center; margin-bottom: 3rem; }
+        .contact-section-label { display: inline-block; font-size: 0.85rem; font-weight: 700; color: var(--brand-green); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem; }
+        .contact-header-block h2 { font-size: 2.6rem; font-weight: 800; color: var(--text-primary); margin: 0.5rem 0 1rem 0; }
+        .contact-header-block p { font-size: 1.1rem; color: var(--text-muted); margin: 0; line-height: 1.6; max-width: 600px; margin: 0 auto; }
+        
+        .contact-content-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: start; }
+        .contact-info-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+        .contact-info-item { display: flex; gap: 1.5rem; align-items: flex-start; }
+        .contact-icon-box { width: 60px; height: 60px; background: rgba(34, 197, 94, 0.1); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--brand-green); font-size: 1.5rem; flex-shrink: 0; }
+        .contact-info-details h4 { margin: 0 0 0.5rem 0; font-size: 1.1rem; color: var(--text-primary); }
+        .contact-info-details p { margin: 0; font-size: 1rem; color: var(--text-muted); }
+        
+        .contact-form-wrapper { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 2rem; display: flex; flex-direction: column; gap: 1.25rem; }
+        .contact-form-wrapper .form-input-container { display: flex; flex-direction: column; gap: 0.5rem; }
+        .contact-form-wrapper label { font-weight: 600; color: var(--text-primary); font-size: 0.95rem; }
+        .contact-form-wrapper input, .contact-form-wrapper textarea { background: var(--bg-main); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem 1rem; font-family: inherit; font-size: 1rem; color: var(--text-primary); transition: border-color 0.2s ease; }
+        .contact-form-wrapper input:focus, .contact-form-wrapper textarea:focus { outline: none; border-color: var(--brand-green); box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1); }
+        .contact-submit-btn { background: var(--brand-green); color: white; padding: 0.85rem 2rem; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 1rem; transition: all 0.2s ease; align-self: flex-start; margin-top: 0.5rem; }
+        .contact-submit-btn:hover { background: #047857; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3); }
+        
+        @media (max-width: 768px) {
+          .contact-us-section { padding: 4rem 1.5rem; }
+          .contact-header-block h2 { font-size: 1.8rem; }
+          .contact-header-block p { font-size: 1rem; }
+          .contact-content-grid { grid-template-columns: 1fr; gap: 2.5rem; }
+          .contact-form-wrapper { padding: 1.5rem; }
+        }
+        
+        @media (max-width: 480px) {
+          .contact-us-section { padding: 3rem 1rem; }
+          .contact-header-block h2 { font-size: 1.5rem; }
+          .contact-header-block p { font-size: 0.95rem; }
+          .contact-info-item { gap: 1rem; }
+          .contact-icon-box { width: 50px; height: 50px; font-size: 1.25rem; }
+          .contact-info-details h4 { font-size: 1rem; }
+          .contact-info-details p { font-size: 0.9rem; }
+          .contact-form-wrapper { padding: 1rem; gap: 1rem; }
+          .contact-submit-btn { padding: 0.75rem 1.5rem; font-size: 0.9rem; }
+        }
+
         /* Multi-Column Workspace Footer Layer */
         .workspace-fluid-footer { width: 100% !important; background-color: var(--bg-card); border-top: 1px solid var(--border-color); padding: 5rem 4rem 2.5rem 4rem; box-sizing: border-box; margin-top: 6rem; }
         .footer-columns-container { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 4rem; width: 100%; padding-bottom: 3.5rem; border-bottom: 1px solid var(--border-color); }
@@ -2128,6 +2283,31 @@ export default function App() {
         .footer-vector-badge img { width: 100%; height: 100%; object-fit: contain; display: block; }
         .footer-brand-headline { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.3px; }
         .footer-brand-column p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin: 0; }
+        .footer-social-links { display: flex; gap: 1rem; margin-top: 1rem; }
+        .footer-social-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.2rem; transition: all 0.2s ease; }
+        .footer-social-icon[aria-label="Facebook"] { color: #1877F2; background: rgba(24, 119, 242, 0.15); }
+        .footer-social-icon[aria-label="Facebook"]:hover { background: #1877F2; color: white; }
+        .footer-social-icon[aria-label="Instagram"] { color: #E4405F; background: rgba(228, 64, 95, 0.15); }
+        .footer-social-icon[aria-label="Instagram"]:hover { background: #E4405F; color: white; }
+        .footer-social-icon[aria-label="Twitter"] { color: #1DA1F2; background: rgba(29, 161, 242, 0.15); }
+        .footer-social-icon[aria-label="Twitter"]:hover { background: #1DA1F2; color: white; }
+        .footer-social-icon[aria-label="YouTube"] { color: #FF0000; background: rgba(255, 0, 0, 0.15); }
+        .footer-social-icon[aria-label="YouTube"]:hover { background: #FF0000; color: white; }
+        .footer-social-icon[aria-label="LinkedIn"] { color: #0A66C2; background: rgba(10, 102, 194, 0.15); }
+        .footer-social-icon[aria-label="LinkedIn"]:hover { background: #0A66C2; color: white; }
+        @media (prefers-color-scheme: dark) {
+          .footer-social-icon[aria-label="Facebook"] { color: #60A5FA; background: rgba(96, 165, 250, 0.2); }
+          .footer-social-icon[aria-label="Facebook"]:hover { background: #60A5FA; color: white; }
+          .footer-social-icon[aria-label="Instagram"] { color: #F472B6; background: rgba(244, 114, 182, 0.2); }
+          .footer-social-icon[aria-label="Instagram"]:hover { background: #F472B6; color: white; }
+          .footer-social-icon[aria-label="Twitter"] { color: #60A5FA; background: rgba(96, 165, 250, 0.2); }
+          .footer-social-icon[aria-label="Twitter"]:hover { background: #60A5FA; color: white; }
+          .footer-social-icon[aria-label="YouTube"] { color: #FCA5A5; background: rgba(252, 165, 165, 0.2); }
+          .footer-social-icon[aria-label="YouTube"]:hover { background: #FCA5A5; color: white; }
+          .footer-social-icon[aria-label="LinkedIn"] { color: #60A5FA; background: rgba(96, 165, 250, 0.2); }
+          .footer-social-icon[aria-label="LinkedIn"]:hover { background: #60A5FA; color: white; }
+        }
+        .footer-social-icon:hover { transform: translateY(-2px); }
         .footer-links-column { display: flex; flex-direction: column; gap: 1.2rem; }
         .footer-links-column h4 { font-size: 0.9rem; font-weight: 700; color: var(--text-primary); margin: 0; text-transform: uppercase; }
         .footer-interactive-links { display: flex; flex-direction: column; gap: 0.75rem; }
@@ -2202,6 +2382,7 @@ export default function App() {
           .core-values-matrix { grid-template-columns: 1fr; }
           .footer-columns-container { grid-template-columns: 1fr; gap: 2.5rem; }
           .footer-bottom-copyright-strip { flex-direction: column; gap: 1.5rem; text-align: center; }
+          .footer-social-links { justify-content: center; }
           .portal-workspace-grid { grid-template-columns: 1fr; height: auto; }
           .portal-sidebar-panel { display: none; }
           .portal-main-workspace { height: 100vh; overflow: hidden; }
@@ -2303,6 +2484,11 @@ export default function App() {
           .platform-badge-nav { font-size: 0.8rem; padding: 0.7rem 0.8rem; }
           .workspace-fluid-footer { padding: 2.5rem 0.9rem 1.25rem; }
           .footer-brand-headline { font-size: 1.1rem; }
+          .footer-social-icon { width: 36px; height: 36px; font-size: 1rem; }
+          .contact-info-grid { grid-template-columns: 1fr; }
+          .contact-form-wrapper { grid-template-columns: 1fr; }
+          .contact-form-wrapper input,
+          .contact-form-wrapper textarea { font-size: 16px; }
           .portal-workspace-header h2 { font-size: 1.1rem; }
           .dashboard-tab-button { padding: 0.55rem 0.75rem; font-size: 0.75rem; }
         }
@@ -2598,7 +2784,12 @@ export default function App() {
                       <div key={idx} className={`banner-slide ${idx === currentPromoSlide ? 'active' : ''}`}>
                         <div className="banner-text-package">
                           <span className="banner-badge"><i className="fa-solid fa-bullseye" style={{ fontSize: '0.8rem' }}></i>Client Review</span>
-                          <p>{slide.text}</p>
+                          <p className="review-text">{slide.text.length > 280 ? slide.text.substring(0, 280) + '...' : slide.text}</p>
+                          {slide.text.length > 280 && (
+                            <button className="read-more-btn" onClick={() => setSelectedReview(slide)}>
+                              Read More <i className="fa-solid fa-arrow-right" style={{ fontSize: '0.75rem', marginLeft: '0.4rem' }}></i>
+                            </button>
+                          )}
                           <div className="testimonial-author">{slide.title}</div>
                         </div>
                         {slide.imageType === 'logo' ? (
@@ -2612,12 +2803,36 @@ export default function App() {
                     ))}
 
                     <div className="banner-controls">
-                      {promoSlides.map((_, i) => (
-                        <button key={i} className={`banner-dot ${i === currentPromoSlide ? 'active' : ''}`} onClick={() => setCurrentPromoSlide(i)} aria-label={`Go to slide ${i + 1}`} />
-                      ))}
+                      <button className="banner-arrow banner-arrow-prev" onClick={handlePrevReview} aria-label="Previous review">
+                        <i className="fa-solid fa-chevron-left"></i>
+                      </button>
+                      <div className="banner-dots-wrapper">
+                        {promoSlides.map((_, i) => (
+                          <button key={i} className={`banner-dot ${i === currentPromoSlide ? 'active' : ''}`} onClick={() => { setCurrentPromoSlide(i); setPromoSlideAutoPlay(false); }} aria-label={`Go to slide ${i + 1}`} />
+                        ))}
+                      </div>
+                      <button className="banner-arrow banner-arrow-next" onClick={handleNextReview} aria-label="Next review">
+                        <i className="fa-solid fa-chevron-right"></i>
+                      </button>
                     </div>
                   </div>
                 </section>
+
+                {/* Review Modal Popup */}
+                {selectedReview && (
+                  <div className="review-modal-overlay" onClick={() => setSelectedReview(null)}>
+                    <div className="review-modal-content" onClick={(e) => e.stopPropagation()}>
+                      <button className="review-modal-close" onClick={() => setSelectedReview(null)}>
+                        <i className="fa-solid fa-xmark"></i>
+                      </button>
+                      <div className="review-modal-header">
+                        <span className="review-modal-badge"><i className="fa-solid fa-star"></i> Client Review</span>
+                        <h3>{selectedReview.title}</h3>
+                      </div>
+                      <p className="review-modal-text">{selectedReview.text}</p>
+                    </div>
+                  </div>
+                )}
 
                 {/* Interactive Gateway Matrix */}
                 <section id="services-explore" className="interactive-tabs-section">
@@ -2757,6 +2972,43 @@ export default function App() {
                   </div>
                 </section>
 
+                {/* FAQ Section */}
+                <section id="faq-section" className="faq-main-section" data-aos="fade-up">
+                  <div className="faq-container-wrapper">
+                    <div className="faq-header-block">
+                      <span className="faq-section-label">Common Questions</span>
+                      <h2>Frequently Asked Questions</h2>
+                      <p>Find answers to common questions about our coaching, programs, and how to get started with Paz Thriving Tribe.</p>
+                    </div>
+
+                    <div className="faq-accordion-wrapper">
+                      {faqItems.map((item, index) => (
+                        <div key={index} className="faq-item-card">
+                          <button
+                            className={`faq-question-button ${expandedFaqIndex === index ? 'active' : ''}`}
+                            onClick={() => setExpandedFaqIndex(expandedFaqIndex === index ? -1 : index)}
+                          >
+                            <span className="faq-question-text">{item.question}</span>
+                            <span className="faq-toggle-icon">
+                              <i className="fa-solid fa-chevron-down"></i>
+                            </span>
+                          </button>
+                          {expandedFaqIndex === index && (
+                            <div className="faq-answer-content">
+                              <p>{item.answer}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="faq-cta-footer">
+                      <p>Didn't find your answer?</p>
+                      <a href="#contact" className="faq-contact-link">Contact us directly →</a>
+                    </div>
+                  </div>
+                </section>
+
 
               </div>
             }
@@ -2767,6 +3019,8 @@ export default function App() {
              ========================================================================= */}
           <Route path="/teens-kids-academy" element={<TeensKidsMenu paystackPublicKey={paystackPublicKey} teensKidsMonthlyFee={teensKidsMonthlyFee} />} />
           <Route path="/care-counseling" element={<CareCounselingPage />} />
+          <Route path="/services/family" element={<ComingSoonPage title="Thriving Parents" description="Empowering parents with tools and wisdom" />} />
+          <Route path="/services/marriage" element={<ComingSoonPage title="Thriving Women" description="Transforming lives, building confidence" />} />
           <Route path="/services/:serviceSlug" element={<ServicePageWrapper services={services} programs={programs} onIntakeSubmit={handleServiceIntakeSubmit} />} />
 
           {/* Administrative Gateway Login */}
@@ -3174,8 +3428,83 @@ export default function App() {
             }
           />
 
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
+
+        {/* Contact Us Section */}
+        <section id="contact" className="contact-us-section" data-aos="fade-up">
+          <div className="contact-container-wrapper">
+            <div className="contact-header-block">
+              <span className="contact-section-label">Get In Touch</span>
+              <h2>Contact Us</h2>
+              <p>Have questions or ready to start your journey? We're here to help. Reach out to our team and we'll get back to you as soon as possible.</p>
+            </div>
+
+            <div className="contact-content-grid">
+              <div className="contact-info-cards">
+                <div className="contact-info-item">
+                  <div className="contact-icon-box">
+                    <i className="fa-solid fa-phone"></i>
+                  </div>
+                  <div className="contact-info-details">
+                    <h4>Phone</h4>
+                    <p>+234 (0) 800 123 4567</p>
+                  </div>
+                </div>
+
+                <div className="contact-info-item">
+                  <div className="contact-icon-box">
+                    <i className="fa-solid fa-envelope"></i>
+                  </div>
+                  <div className="contact-info-details">
+                    <h4>Email</h4>
+                    <p>support@paztribe.org</p>
+                  </div>
+                </div>
+
+                <div className="contact-info-item">
+                  <div className="contact-icon-box">
+                    <i className="fa-solid fa-location-dot"></i>
+                  </div>
+                  <div className="contact-info-details">
+                    <h4>Address</h4>
+                    <p>Lagos Main Campus, Nigeria</p>
+                  </div>
+                </div>
+
+                <div className="contact-info-item">
+                  <div className="contact-icon-box">
+                    <i className="fa-solid fa-clock"></i>
+                  </div>
+                  <div className="contact-info-details">
+                    <h4>Hours</h4>
+                    <p>Mon - Fri: 9:00 AM - 6:00 PM</p>
+                  </div>
+                </div>
+              </div>
+
+              <form className="contact-form-wrapper">
+                <div className="form-input-container">
+                  <label>Your Name</label>
+                  <input type="text" placeholder="John Doe" required />
+                </div>
+                <div className="form-input-container">
+                  <label>Email Address</label>
+                  <input type="email" placeholder="john@example.com" required />
+                </div>
+                <div className="form-input-container">
+                  <label>Subject</label>
+                  <input type="text" placeholder="How can we help?" required />
+                </div>
+                <div className="form-input-container">
+                  <label>Message</label>
+                  <textarea rows="5" placeholder="Tell us more about your inquiry..." required style={{ resize: 'vertical' }}></textarea>
+                </div>
+                <button type="submit" className="contact-submit-btn">Send Message</button>
+              </form>
+            </div>
+          </div>
+        </section>
 
         {/* Global Multi-Column Footer Component */}
         <footer className="workspace-fluid-footer">
@@ -3189,6 +3518,23 @@ export default function App() {
                 impacting individuals, families, transforming teenagers, positively influencing women,
                 and helping children and young people develop the values, character, and healthy
                 habits they need to thrive and become purposeful leaders.</p>
+              <div className="footer-social-links">
+                <a href="https://facebook.com/pazthrivingtribe" target="_blank" rel="noopener noreferrer" className="footer-social-icon" aria-label="Facebook">
+                  <i className="fa-brands fa-facebook-f"></i>
+                </a>
+                <a href="https://instagram.com/pazthrivingtribe" target="_blank" rel="noopener noreferrer" className="footer-social-icon" aria-label="Instagram">
+                  <i className="fa-brands fa-instagram"></i>
+                </a>
+                <a href="https://twitter.com/pazthrivingtribe" target="_blank" rel="noopener noreferrer" className="footer-social-icon" aria-label="Twitter">
+                  <i className="fa-brands fa-twitter"></i>
+                </a>
+                <a href="https://youtube.com/@pazthrivingtribe" target="_blank" rel="noopener noreferrer" className="footer-social-icon" aria-label="YouTube">
+                  <i className="fa-brands fa-youtube"></i>
+                </a>
+                <a href="https://linkedin.com/company/pazthrivingtribe" target="_blank" rel="noopener noreferrer" className="footer-social-icon" aria-label="LinkedIn">
+                  <i className="fa-brands fa-linkedin-in"></i>
+                </a>
+              </div>
             </div>
 
             <div className="footer-links-column">
