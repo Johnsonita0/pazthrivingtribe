@@ -3448,7 +3448,7 @@ export default function App() {
                   </div>
                   <div className="contact-info-details">
                     <h4>Phone</h4>
-                    <p>+234 (0) 800 123 4567</p>
+                    <p>+234 (0) 803 738 3820</p>
                   </div>
                 </div>
 
