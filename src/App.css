@@ -407,6 +407,21 @@ body, html {
   font-weight: 400;
 }
 
+.inspiring-card-text-h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.3;
+  color: #2ea44f;
+  margin-bottom: 0.75rem;
+}
+
+.inspiring-card-text-secondary {
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.6;
+  color: #c9d1d9;
+}
+
 .inspiring-paragraph-card-primary {
   min-height: 300px;
 }
@@ -425,30 +440,25 @@ body, html {
   width: 100%;
 }
 
-.inspiring-nav-btn {
-  background: linear-gradient(135deg, #2ea44f 0%, #26a148 100%);
-  color: white;
-  border: none;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  font-size: 1.2rem;
-  cursor: pointer;
+.inspiring-dots {
   display: flex;
+  gap: 0.75rem;
   align-items: center;
-  justify-content: center;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(46, 164, 79, 0.3);
-  padding: 0;
 }
 
-.inspiring-nav-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 20px rgba(46, 164, 79, 0.5);
+.inspiring-dots .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #30363d;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.inspiring-nav-btn:active {
-  transform: scale(0.95);
+.inspiring-dots .dot.active {
+  width: 20px;
+  background: #2ea44f;
 }
 
 /* Dots Navigation */

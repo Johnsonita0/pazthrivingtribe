@@ -2744,26 +2744,16 @@ export default function App() {
                           return (
                             <div key={offset} className={`inspiring-paragraph-card ${isPrimary ? 'inspiring-paragraph-card-primary' : 'inspiring-paragraph-card-secondary'}`} data-aos="fade-in" data-aos-delay={offset * 100}>
                               {isPrimary ? (
-                                <h1 className="inspiring-card-title inspiring-card-title-h1">{paragraph.title}</h1>
+                                <h1 className="inspiring-card-text inspiring-card-text-h1">{paragraph.text}</h1>
                               ) : (
-                                <p className="inspiring-card-title inspiring-card-title-p">{paragraph.title}</p>
+                                <p className="inspiring-card-text inspiring-card-text-secondary">{paragraph.text}</p>
                               )}
-                              <p className="inspiring-card-text">{paragraph.text}</p>
                             </div>
                           );
                         })}
                       </div>
 
-                      {/* Navigation Controls */}
                       <div className="inspiring-carousel-controls">
-                        <button
-                          className="inspiring-nav-btn"
-                          onClick={() => setCurrentInspiringIndex((prev) => (prev - 2 + inspiringParagraphs.length) % inspiringParagraphs.length)}
-                          aria-label="Previous inspirations"
-                        >
-                          <i className="fa-solid fa-chevron-left"></i>
-                        </button>
-
                         <div className="inspiring-dots">
                           {Array.from({ length: Math.ceil(inspiringParagraphs.length / 2) }).map((_, i) => (
                             <button
@@ -2774,14 +2764,6 @@ export default function App() {
                             ></button>
                           ))}
                         </div>
-
-                        <button
-                          className="inspiring-nav-btn"
-                          onClick={() => setCurrentInspiringIndex((prev) => (prev + 2) % inspiringParagraphs.length)}
-                          aria-label="Next inspirations"
-                        >
-                          <i className="fa-solid fa-chevron-right"></i>
-                        </button>
                       </div>
                     </div>
                   </div>
