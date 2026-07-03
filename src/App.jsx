@@ -7,6 +7,7 @@ import TeensKidsMenu from './TeensKidsMenu';
 import ThriverRegistrationModal from './ThriverRegistrationModal';
 import NotFoundPage from './NotFoundPage';
 import ComingSoonPage from './ComingSoonPage';
+import GallerySection from './GallerySection';
 
 function AdminTabBar({ selectedTab, onChangeTab }) {
   const adminTabs = [
@@ -2233,6 +2234,9 @@ export default function App() {
           line-height: 1.6;
           font-size: 0.98rem;
         }
+        .section-label,
+        .faq-section-label,
+        .contact-section-label { text-align: center; display: inline-block; margin: 0 auto 0.85rem; }
         .section-title-heading { text-align: center; font-size: 2.8rem; color: var(--text-primary); margin-bottom: 0.5rem; font-weight: 800; letter-spacing: -0.5px; }
         .section-subtext { text-align: center; color: var(--text-muted); margin-bottom: 4rem; font-size: 1.2rem; }
         
@@ -3114,98 +3118,7 @@ export default function App() {
                   </div>
                 </section>
 
-                {/* <section id="what-parents-will-notice" className="parent-notice-section" data-aos="fade-up">
-                  <div style={{ maxWidth: '1080px', margin: '0 auto' }}>
-                    <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.95rem', fontWeight: '700', color: 'var(--brand-blue)', textTransform: 'uppercase' }}>
-                        <i className="fa-solid fa-eye" style={{ fontSize: '0.9rem' }}></i>
-                        What Parents Will Notice
-                      </span>
-                      <h2 style={{ margin: '1rem auto 0 auto', fontSize: '2.7rem', lineHeight: '1.05', maxWidth: '760px' }}>An illustrated flow of the changes you will see first in your home.</h2>
-                    </div>
-
-                    <div className="parent-notice-grid">
-                      {parentNoticeItems.map((item, index) => (
-                        <div key={item.title} className="notice-card" data-aos="fade-up" data-aos-delay={index * 120}>
-                          <div className="notice-icon-shell">
-                            <i className={item.icon}></i>
-                          </div>
-                          <h3>{item.title}</h3>
-                          <p>{item.description}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </section> */}
-
-                <section id="video-feature" className="youtube-video-feature-section" data-aos="fade-up">
-                  <div className="video-feature-grid">
-                    <div className="video-feature-copy">
-                      <h2>Examine your Thoughts, Words and Actions👌👌</h2>
-                      <p>Your life is shaped by 3 things: your thoughts, your words, and your actions.  In this video, we break down why self-examination matters and how checking
-                        these 3 areas can transform your mindset, relationships, and success.</p>
-                    </div>
-                    <div className="video-embed-wrap">
-                      {youtubeEmbedUrl ? (
-                        <iframe
-                          title="Featured YouTube Playback"
-                          src={normalizeYoutubeEmbed(youtubeEmbedUrl)}
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      ) : (
-                        <div style={{ padding: '2rem', color: 'var(--text-muted)', minHeight: '240px' }}>
-                          A featured YouTube video will appear here once a valid embed URL is configured in the CMS.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </section>
-
-                <section id="social-updates" className="social-news-stream-section" data-aos="fade-up">
-                  <div className="social-news-layout-wrapper">
-                    <div className="social-news-header-zone">
-                      <div className="social-news-title-stack">
-                        <h2>Social Media Highlights</h2>
-                        <p>Latest community posts from Facebook, Instagram, and YouTube with a live preview of our most recent update.</p>
-                      </div>
-                      <div className="social-platform-indicator-badges">
-                        {socialNewsFeed.map((item, index) => (
-                          <button
-                            key={item.platform}
-                            type="button"
-                            className={`platform-badge-nav ${item.platform.toLowerCase() === 'facebook' ? 'active-facebook' : item.platform.toLowerCase() === 'instagram' ? 'active-instagram' : 'active-youtube'} ${index === activeNewsIndex ? 'active' : ''}`}
-                            onClick={() => setActiveNewsIndex(index)}
-                          >
-                            <i className={item.icon}></i> {item.platform}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <a
-                      href={socialNewsFeed[activeNewsIndex].targetUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="social-news-broadcast-anchor-card social-slide-screen-viewport"
-                    >
-                      <div className="broadcast-meta-row">
-                        <div className="meta-platform-identity">
-                          <i className={socialNewsFeed[activeNewsIndex].icon}></i>
-                          <span>{socialNewsFeed[activeNewsIndex].platform}</span>
-                        </div>
-                        <span className="meta-type-badge" style={{ backgroundColor: socialNewsFeed[activeNewsIndex].color, color: '#ffffff' }}>
-                          {socialNewsFeed[activeNewsIndex].badgeText}
-                        </span>
-                      </div>
-                      <div className="broadcast-content-body">
-                        <h3>{socialNewsFeed[activeNewsIndex].title}</h3>
-                        <p>{socialNewsFeed[activeNewsIndex].summary}</p>
-                      </div>
-                      <div className="broadcast-action-footer">View Now <i className="fa-solid fa-arrow-right"></i></div>
-                    </a>
-                  </div>
-                </section>
+                <GallerySection theme={theme} />
 
                 {/* FAQ Section */}
                 <section id="faq-section" className="faq-main-section" data-aos="fade-up">
@@ -4583,8 +4496,8 @@ function CareCounselingPage() {
         <div className="care-counseling-shell">
           <div className="care-intro-block">
             <span className="section-label">Talk & Thrive</span>
-            <h1 className="section-title-heading" style={{ textAlign: 'left', marginBottom: '0.2rem' }}>Support that feels calm, confidential, and practical.</h1>
-            <p className="section-subtext" style={{ textAlign: 'left', marginBottom: '0', fontSize: '1rem' }}>
+            <h1 className="section-title-heading" style={{ marginBottom: '0.2rem' }}>Support that feels calm, confidential, and practical.</h1>
+            <p className="section-subtext" style={{ marginBottom: '0', fontSize: '1rem' }}>
               Talk & Thrive Sessions provide a safe, confidential, and supportive space where you can freely express yourself, share your burdens and gain clarity
             </p>
           </div>
