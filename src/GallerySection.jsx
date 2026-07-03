@@ -31,7 +31,11 @@ export default function GallerySection({ theme }) {
   const [containerWidth, setContainerWidth] = useState(0);
   const [selectedItem, setSelectedItem] = useState(null);
   const trackRef = useRef(null);
-  const animationSpeed = 12; // pixels per second
+  const dragState = useRef({ active: false, startX: 0, startTranslate: 0, startTime: 0 });
+  const autoScrollPaused = useRef(false);
+  const autoScrollResumeTimeout = useRef(null);
+  const animationFrame = useRef(null);
+  const animationSpeed = 18; // pixels per second
 
   useEffect(() => {
     const updateSlides = () => {
@@ -67,35 +71,119 @@ export default function GallerySection({ theme }) {
     return () => window.removeEventListener('resize', updateWidths);
   }, [slidesPerView]);
 
+  const normalizeTranslate = (value) => {
+    const max = trackWidth / 2 || 0;
+    let next = value;
+    if (!max) return 0;
+    while (next >= max) next -= max;
+    while (next < 0) next += max;
+    return next;
+  };
+
   useEffect(() => {
     if (!trackWidth) return;
-    let rafId = 0;
     let lastTimestamp = performance.now();
 
     const step = (timestamp) => {
+      if (autoScrollPaused.current) {
+        animationFrame.current = window.requestAnimationFrame(step);
+        return;
+      }
+
       const delta = timestamp - lastTimestamp;
       lastTimestamp = timestamp;
 
-      setTranslateX((current) => {
-        const next = current + (animationSpeed * delta) / 1000;
-        return next >= trackWidth / 2 ? next - trackWidth / 2 : next;
-      });
-
-      rafId = window.requestAnimationFrame(step);
+      setTranslateX((current) => normalizeTranslate(current + (animationSpeed * delta) / 1000));
+      animationFrame.current = window.requestAnimationFrame(step);
     };
 
-    rafId = window.requestAnimationFrame(step);
-    return () => window.cancelAnimationFrame(rafId);
-  }, [trackWidth]);
+    animationFrame.current = window.requestAnimationFrame(step);
+    return () => {
+      if (animationFrame.current) window.cancelAnimationFrame(animationFrame.current);
+    };
+  }, [trackWidth, animationSpeed]);
 
   const extendedItems = [...galleryItems, ...galleryItems];
-  const cardWidth = 100 / slidesPerView;
+  const isMobileView = slidesPerView <= 2;
+  const cardWidth = slidesPerView === 1 ? 100 : 100 / slidesPerView;
   const trackStyle = {
     display: 'flex',
     gap: '0.75rem',
     transform: `translateX(-${translateX}px)`,
-    transition: 'none',
+    transition: 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)',
   };
+
+  const trackWrapperStyle = {
+    position: 'relative',
+    overflow: 'hidden',
+    padding: '0 1rem',
+    marginTop: '2rem',
+    touchAction: 'pan-y',
+  };
+
+  const arrowButtonStyle = {
+    position: 'absolute',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    width: '44px',
+    height: '44px',
+    borderRadius: '999px',
+    border: '1px solid rgba(255,255,255,0.16)',
+    background: isDark ? 'rgba(14, 19, 28, 0.82)' : 'rgba(255,255,255,0.92)',
+    color: isDark ? '#f8fafc' : '#111827',
+    cursor: 'pointer',
+    display: 'grid',
+    placeItems: 'center',
+    boxShadow: isDark ? '0 8px 20px rgba(0,0,0,0.18)' : '0 8px 20px rgba(15,23,42,0.12)',
+    opacity: 0.95,
+    zIndex: 10,
+  };
+
+  const moveGalleryBy = (delta) => {
+    pauseAutoScroll();
+    setTranslateX((current) => normalizeTranslate(current + delta));
+  };
+
+  const pauseAutoScroll = () => {
+    autoScrollPaused.current = true;
+    if (autoScrollResumeTimeout.current) {
+      clearTimeout(autoScrollResumeTimeout.current);
+    }
+    autoScrollResumeTimeout.current = window.setTimeout(() => {
+      autoScrollPaused.current = false;
+    }, 800);
+  };
+
+  const handlePointerDown = (event) => {
+    if (event.pointerType !== 'touch') return;
+    pauseAutoScroll();
+    dragState.current.active = true;
+    dragState.current.startX = event.clientX;
+    dragState.current.startTranslate = translateX;
+    dragState.current.startTime = performance.now();
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerMove = (event) => {
+    if (!dragState.current.active || event.pointerType !== 'touch') return;
+    const delta = dragState.current.startX - event.clientX;
+    setTranslateX(normalizeTranslate(dragState.current.startTranslate + delta));
+  };
+
+  const handlePointerEnd = (event) => {
+    if (!dragState.current.active || event.pointerType !== 'touch') return;
+    const delta = dragState.current.startX - event.clientX;
+    const duration = Math.max(1, performance.now() - dragState.current.startTime);
+    const velocity = delta / duration;
+    const momentum = Math.sign(velocity) * Math.min(450, Math.abs(velocity) * 260);
+    moveGalleryBy(momentum);
+    dragState.current.active = false;
+    if (event.currentTarget.releasePointerCapture) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+
+  const arrowShift = Math.max(containerWidth * 0.5, (trackWidth / extendedItems.length) * 1.5 || 220);
 
   const cardStyle = (index) => {
     const cardSize = trackWidth / extendedItems.length;
@@ -254,7 +342,13 @@ export default function GallerySection({ theme }) {
       <h2 className="section-title-heading">Gallery of impact</h2>
       <p className="section-subtext">Enjoy a visual journey through our work and the lives we touch.</p>
 
-      <div style={{ position: 'relative', overflow: 'hidden', padding: '0 1rem', marginTop: '2rem' }}>
+      <div
+        style={trackWrapperStyle}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={handlePointerEnd}
+      >
         <div ref={trackRef} style={trackStyle}>
           {extendedItems.map((item, index) => (
             <div key={`${item.title}-${index}`} style={cardStyle(index)} onClick={() => openModal(item)}>
@@ -273,6 +367,26 @@ export default function GallerySection({ theme }) {
             </div>
           ))}
         </div>
+        {!isMobileView && (
+          <>
+            <button
+              type="button"
+              style={{ ...arrowButtonStyle, left: '0.75rem' }}
+              onClick={() => moveGalleryBy(-arrowShift)}
+              aria-label="Scroll gallery left"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              style={{ ...arrowButtonStyle, right: '0.75rem' }}
+              onClick={() => moveGalleryBy(arrowShift)}
+              aria-label="Scroll gallery right"
+            >
+              ›
+            </button>
+          </>
+        )}
       </div>
 
       {selectedItem && (
