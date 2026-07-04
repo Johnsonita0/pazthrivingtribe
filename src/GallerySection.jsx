@@ -338,7 +338,7 @@ export default function GallerySection({ theme }) {
 
   return (
     <section id="image-gallery" className="gallery-section" data-aos="fade-up">
-      <span className="section-label">Visual storytelling</span>
+      {/* <span className="section-label">Visual storytelling</span> */}
       <h2 className="section-title-heading">Gallery of impact</h2>
       <p className="section-subtext">Enjoy a visual journey through our work and the lives we touch.</p>
 

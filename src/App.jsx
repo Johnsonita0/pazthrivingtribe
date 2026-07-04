@@ -3124,7 +3124,7 @@ export default function App() {
                 <section id="faq-section" className="faq-main-section" data-aos="fade-up">
                   <div className="faq-container-wrapper">
                     <div className="faq-header-block">
-                      <span className="faq-section-label">Common Questions</span>
+                      {/* <span className="faq-section-label">Common Questions</span> */}
                       <h2>Frequently Asked Questions</h2>
                       <p>Find answers to common questions about our coaching, programs, and how to get started with Paz Thriving Tribe.</p>
                     </div>
