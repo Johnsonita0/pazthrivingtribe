@@ -521,6 +521,11 @@ body, html {
     min-height: 240px;
   }
 
+  .inspiring-card-text-h1 {
+    font-size: 1.55rem;
+    line-height: 1.25;
+  }
+
   .inspiring-carousel-controls {
     gap: 1rem;
   }
