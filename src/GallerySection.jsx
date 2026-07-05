@@ -448,9 +448,12 @@ export default function GallerySection({ theme }) {
 
   const handleModalMouseDown = (e) => {
     if (e.target.closest('[data-resize-handle]')) return;
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    if (!clientX || !clientY) return;
     modalDragState.current.isDragging = true;
-    modalDragState.current.startX = e.clientX;
-    modalDragState.current.startY = e.clientY;
+    modalDragState.current.startX = clientX;
+    modalDragState.current.startY = clientY;
     modalDragState.current.startPosX = modalPosition.x;
     modalDragState.current.startPosY = modalPosition.y;
   };
@@ -458,9 +461,12 @@ export default function GallerySection({ theme }) {
   const handleResizeMouseDown = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+    if (!clientX || !clientY) return;
     modalResizeState.current.isResizing = true;
-    modalResizeState.current.startX = e.clientX;
-    modalResizeState.current.startY = e.clientY;
+    modalResizeState.current.startX = clientX;
+    modalResizeState.current.startY = clientY;
     modalResizeState.current.startWidth = modalSize.width;
     modalResizeState.current.startHeight = typeof modalSize.height === 'number' ? modalSize.height : 500;
   };
@@ -469,9 +475,13 @@ export default function GallerySection({ theme }) {
     if (!selectedItem) return;
 
     const handleMouseMove = (e) => {
+      const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+      const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+      if (!clientX || !clientY) return;
+
       if (modalDragState.current.isDragging) {
-        const dx = e.clientX - modalDragState.current.startX;
-        const dy = e.clientY - modalDragState.current.startY;
+        const dx = clientX - modalDragState.current.startX;
+        const dy = clientY - modalDragState.current.startY;
         setModalPosition({
           x: modalDragState.current.startPosX + dx,
           y: Math.max(0, modalDragState.current.startPosY + dy),
@@ -479,8 +489,8 @@ export default function GallerySection({ theme }) {
       }
 
       if (modalResizeState.current.isResizing) {
-        const dx = e.clientX - modalResizeState.current.startX;
-        const dy = e.clientY - modalResizeState.current.startY;
+        const dx = clientX - modalResizeState.current.startX;
+        const dy = clientY - modalResizeState.current.startY;
         const newWidth = Math.max(400, modalResizeState.current.startWidth + dx);
         const newHeight = Math.max(300, modalResizeState.current.startHeight + dy);
         setModalSize({ width: newWidth, height: newHeight });
@@ -494,10 +504,14 @@ export default function GallerySection({ theme }) {
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('touchmove', handleMouseMove, { passive: false });
+    document.addEventListener('touchend', handleMouseUp);
 
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchmove', handleMouseMove);
+      document.removeEventListener('touchend', handleMouseUp);
     };
   }, [selectedItem, modalPosition, modalSize]);
 
@@ -564,7 +578,7 @@ export default function GallerySection({ theme }) {
 
       {selectedItem && (
         <div style={modalOverlayStyle} onClick={closeModal}>
-          <div ref={modalRef} style={modalContentStyle} onClick={(event) => event.stopPropagation()} onMouseDown={handleModalMouseDown}>
+          <div ref={modalRef} style={modalContentStyle} onClick={(event) => event.stopPropagation()} onMouseDown={handleModalMouseDown} onTouchStart={handleModalMouseDown}>
             <div style={modalHeaderStyle}>
               <h3 style={modalTitleStyle}>{selectedItem.title}</h3>
               <button type="button" style={closeButtonStyle} onClick={closeModal} aria-label="Close modal">
@@ -582,6 +596,7 @@ export default function GallerySection({ theme }) {
             data-resize-handle="true"
             style={resizeHandleStyle}
             onMouseDown={handleResizeMouseDown}
+            onTouchStart={handleResizeMouseDown}
             onMouseEnter={(e) => e.target.style.opacity = '1'}
             onMouseLeave={(e) => e.target.style.opacity = '0'}
             title="Drag bottom-right corner to resize"
