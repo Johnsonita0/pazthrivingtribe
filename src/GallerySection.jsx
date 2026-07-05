@@ -13,16 +13,16 @@ const galleryItems = [
     image: '/image/pic2.png',
     // service: 'Churches',
   },
-  {
-    title: 'Teen Empowerment Workshops',
-    description: 'Interactive workshops designed for schools and youth centers to help teens navigate peer pressure, build self-worth, and develop healthy communication skills.',
-    image: '/image/pic3.png',
-    // service: 'Youth Centers',
-  },
+  // {
+  //   title: 'Teen Empowerment Workshops',
+  //   description: 'Interactive workshops designed for schools and youth centers to help teens navigate peer pressure, build self-worth, and develop healthy communication skills.',
+  //   image: '/image/pic3.png',
+  //   // service: 'Youth Centers',
+  // },
   {
     title: 'School Assembly Programs',
     description: 'Engaging full-school assemblies and motivational talks for students and staff, creating lasting impact through inspiring messages and interactive experiences.',
-    image: '/image/pic5.png',
+    image: '/image/pic3.png',
     // service: 'Schools',
   },
   {
@@ -52,25 +52,25 @@ const galleryItems = [
   {
     title: 'Live Event Coaching',
     description: 'Dynamic coaching sessions at conferences and community gatherings, where attendees experience transformational conversations and actionable strategies for personal growth.',
-    image: '/image/pic10',
+    image: '/image/pic10.png',
     // service: 'Events',
   },
   {
     title: 'Church Youth Development Session',
     description: 'Interactive church sessions fostering spiritual growth, character development, and peer mentorship for young congregants in a supportive faith community.',
-    image: '/image/pic11',
+    image: '/image/pic11.png',
     // service: 'Churches',
   },
   {
     title: 'Group Empowerment Days',
     description: 'Large-scale community events where participants come together for interactive workshops, team activities, and transformative coaching experiences in a supportive environment.',
-    image: '/image/pic12',
+    image: '/image/pic12.png',
     // service: 'Communities',
   },
   {
     title: 'Lead Coach - Roseline Iraoya',
     description: 'Meet our Lead Coach, Roseline Iraoya, dedicated to transforming lives through personalized coaching, mentorship, and creating a thriving community of growth.',
-    image: '/image/pic13',
+    image: '/image/pic13.png',
     // service: 'Leadership',
   },
 ];
@@ -82,7 +82,12 @@ export default function GallerySection({ theme }) {
   const [trackWidth, setTrackWidth] = useState(0);
   const [containerWidth, setContainerWidth] = useState(0);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
+  const [modalSize, setModalSize] = useState({ width: 760, height: 'auto' });
   const trackRef = useRef(null);
+  const modalRef = useRef(null);
+  const modalDragState = useRef({ isDragging: false, startX: 0, startY: 0, startPosX: 0, startPosY: 0 });
+  const modalResizeState = useRef({ isResizing: false, startX: 0, startY: 0, startWidth: 0, startHeight: 0 });
   const dragState = useRef({ active: false, startX: 0, startTranslate: 0, startTime: 0 });
   const autoScrollPaused = useRef(false);
   const autoScrollResumeTimeout = useRef(null);
@@ -327,22 +332,24 @@ export default function GallerySection({ theme }) {
     inset: 0,
     backgroundColor: isDark ? 'rgba(0,0,0,0.72)' : 'rgba(15,23,42,0.55)',
     display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: '1.5rem',
-    zIndex: 9999,
+    zIndex: 9998,
   };
 
   const modalContentStyle = {
-    maxWidth: '760px',
-    width: 'min(100%, 760px)',
-    maxHeight: 'calc(100vh - 3rem)',
+    position: 'fixed',
+    top: `${modalPosition.y}px`,
+    left: `${modalPosition.x}px`,
+    width: `${modalSize.width}px`,
+    height: modalSize.height === 'auto' ? 'auto' : `${modalSize.height}px`,
+    maxHeight: 'calc(100vh - 80px)',
     borderRadius: '24px',
     overflow: 'hidden',
     background: isDark ? '#090a0f' : 'var(--bg-main)',
     boxShadow: isDark ? '0 24px 80px rgba(0,0,0,0.55)' : '0 20px 60px rgba(15,23,42,0.16)',
     display: 'flex',
     flexDirection: 'column',
+    zIndex: 9999,
+    userSelect: 'none',
   };
 
   const modalHeaderStyle = {
@@ -351,6 +358,21 @@ export default function GallerySection({ theme }) {
     alignItems: 'center',
     padding: '1rem 1.25rem',
     borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.14)'}`,
+    cursor: 'move',
+    backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(15,23,42,0.02)',
+  };
+
+  const resizeHandleStyle = {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: '20px',
+    height: '20px',
+    cursor: 'nwse-resize',
+    background: isDark ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)',
+    borderTopLeftRadius: '4px',
+    opacity: 0,
+    transition: 'opacity 0.2s ease',
   };
 
   const modalTitleStyle = {
@@ -422,7 +444,66 @@ export default function GallerySection({ theme }) {
     position: 'relative',
   };
 
-  const openModal = (item) => setSelectedItem(item);
+  const handleModalMouseDown = (e) => {
+    if (e.target.closest('[data-resize-handle]')) return;
+    modalDragState.current.isDragging = true;
+    modalDragState.current.startX = e.clientX;
+    modalDragState.current.startY = e.clientY;
+    modalDragState.current.startPosX = modalPosition.x;
+    modalDragState.current.startPosY = modalPosition.y;
+  };
+
+  const handleResizeMouseDown = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    modalResizeState.current.isResizing = true;
+    modalResizeState.current.startX = e.clientX;
+    modalResizeState.current.startY = e.clientY;
+    modalResizeState.current.startWidth = modalSize.width;
+    modalResizeState.current.startHeight = typeof modalSize.height === 'number' ? modalSize.height : 500;
+  };
+
+  useEffect(() => {
+    if (!selectedItem) return;
+
+    const handleMouseMove = (e) => {
+      if (modalDragState.current.isDragging) {
+        const dx = e.clientX - modalDragState.current.startX;
+        const dy = e.clientY - modalDragState.current.startY;
+        setModalPosition({
+          x: modalDragState.current.startPosX + dx,
+          y: Math.max(0, modalDragState.current.startPosY + dy),
+        });
+      }
+
+      if (modalResizeState.current.isResizing) {
+        const dx = e.clientX - modalResizeState.current.startX;
+        const dy = e.clientY - modalResizeState.current.startY;
+        const newWidth = Math.max(400, modalResizeState.current.startWidth + dx);
+        const newHeight = Math.max(300, modalResizeState.current.startHeight + dy);
+        setModalSize({ width: newWidth, height: newHeight });
+      }
+    };
+
+    const handleMouseUp = () => {
+      modalDragState.current.isDragging = false;
+      modalResizeState.current.isResizing = false;
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [selectedItem, modalPosition, modalSize]);
+
+  const openModal = (item) => {
+    setSelectedItem(item);
+    setModalPosition({ x: window.innerWidth / 2 - 380, y: 60 });
+    setModalSize({ width: 760, height: 'auto' });
+  };
   const closeModal = () => setSelectedItem(null);
 
   return (
@@ -481,7 +562,7 @@ export default function GallerySection({ theme }) {
 
       {selectedItem && (
         <div style={modalOverlayStyle} onClick={closeModal}>
-          <div style={modalContentStyle} onClick={(event) => event.stopPropagation()}>
+          <div ref={modalRef} style={modalContentStyle} onClick={(event) => event.stopPropagation()} onMouseDown={handleModalMouseDown}>
             <div style={modalHeaderStyle}>
               <h3 style={modalTitleStyle}>{selectedItem.title}</h3>
               <button type="button" style={closeButtonStyle} onClick={closeModal} aria-label="Close modal">
@@ -494,6 +575,14 @@ export default function GallerySection({ theme }) {
             <div style={modalBodyStyle}>
               <p style={{ margin: 0, lineHeight: 1.5 }}>{selectedItem.description}</p>
             </div>
+            <div 
+              data-resize-handle="true"
+              style={resizeHandleStyle}
+              onMouseDown={handleResizeMouseDown}
+              onMouseEnter={(e) => e.target.style.opacity = '1'}
+              onMouseLeave={(e) => e.target.style.opacity = '0'}
+              title="Drag to resize"
+            />
           </div>
         </div>
       )}
