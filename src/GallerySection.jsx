@@ -49,6 +49,30 @@ const galleryItems = [
     image: '/image/pic9.jpeg',
     // service: 'Communities',
   },
+  {
+    title: 'Live Event Coaching',
+    description: 'Dynamic coaching sessions at conferences and community gatherings, where attendees experience transformational conversations and actionable strategies for personal growth.',
+    image: '/image/pic10',
+    // service: 'Events',
+  },
+  {
+    title: 'Youth Bible Club Mentorship',
+    description: 'Guided spiritual and personal development programs for young people, combining faith-based values with practical life coaching and peer support.',
+    image: '/image/pic11',
+    // service: 'Churches',
+  },
+  {
+    title: 'Group Empowerment Days',
+    description: 'Large-scale community events where participants come together for interactive workshops, team activities, and transformative coaching experiences in a supportive environment.',
+    image: '/image/pic12',
+    // service: 'Communities',
+  },
+  {
+    title: 'Lead Coach - Roseline Iraoya',
+    description: 'Meet our Lead Coach and founder, Roseline Iraoya, dedicated to transforming lives through personalized coaching, mentorship, and creating a thriving community of growth.',
+    image: '/image/pic13',
+    // service: 'Leadership',
+  },
 ];
 
 export default function GallerySection({ theme }) {
