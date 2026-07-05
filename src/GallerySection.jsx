@@ -2,24 +2,58 @@ import React, { useState, useEffect, useRef } from 'react';
 
 const galleryItems = [
   {
-    title: 'Safe Space Sessions',
-    description: 'A gentle guided experience with coaching, meditation, and reflection for young people and parents who want calm, confidence, and clarity.',
+    title: 'Youth Leadership Programs',
+    description: 'We offer comprehensive coaching and mentorship for schools, equipping young people with confidence, emotional intelligence, and leadership skills that transform classroom dynamics and student engagement.',
     image: '/image/pic1.jpeg',
+    service: 'Schools',
   },
   {
-    title: 'Family Connection',
-    description: 'Real-life moments of trust and teamwork, captured in a warm frame that shows how every family can grow stronger together.',
+    title: 'Church Youth Outreach',
+    description: 'Connect with young congregants through interactive sessions, spiritual guidance, and character-building workshops that strengthen faith and community bonds in churches.',
     image: '/image/pic2.png',
+    service: 'Churches',
   },
   {
-    title: 'Teen Growth Journey',
-    description: 'A day in the life of growth, resilience, and self-discovery, designed to inspire teens to take the next courageous step.',
+    title: 'Teen Empowerment Workshops',
+    description: 'Interactive workshops designed for schools and youth centers to help teens navigate peer pressure, build self-worth, and develop healthy communication skills.',
     image: '/image/pic3.png',
+    service: 'Youth Centers',
   },
   {
-    title: 'Parent Empowerment',
-    description: 'Support, tools, and encouragement for parents who are building healthier boundaries, deeper listening, and stronger family rhythms.',
+    title: 'Parent & Family Sessions',
+    description: 'For churches and community organizations, we provide family coaching that strengthens relationships, improves communication, and builds resilient households.',
     image: '/image/pic4.png',
+    service: 'Communities',
+  },
+  {
+    title: 'School Assembly Programs',
+    description: 'Engaging full-school assemblies and motivational talks for students and staff, creating lasting impact through inspiring messages and interactive experiences.',
+    image: '/image/pic5.png',
+    service: 'Schools',
+  },
+  {
+    title: 'Corporate Team Building',
+    description: 'Organizations benefit from our tailored team coaching, fostering collaboration, emotional wellness, and a thriving workplace culture for employees at all levels.',
+    image: '/image/pic6.png',
+    service: 'Corporations',
+  },
+  {
+    title: 'Children\'s Character Development',
+    description: 'Sunday school and church education programs enriched with values-based coaching that helps children ages 6-12 develop confidence, kindness, and strong character foundations.',
+    image: '/image/pic7.png',
+    service: 'Churches',
+  },
+  {
+    title: 'Mental Wellness Seminars',
+    description: 'Professional seminars for schools, workplaces, and organizations on stress management, anxiety relief, and mental health awareness led by certified coaches.',
+    image: '/image/pic8.png',
+    service: 'Organizations',
+  },
+  {
+    title: 'Community Empowerment Series',
+    description: 'Multi-week programs for community centers and NGOs fostering personal growth, resilience, and social impact through group coaching and peer mentorship.',
+    image: '/image/pic9.jpeg',
+    service: 'Communities',
   },
 ];
 
@@ -333,14 +367,35 @@ export default function GallerySection({ theme }) {
     return `${text.slice(0, max).trim()}...`;
   };
 
+  const serviceBadgeStyle = {
+    position: 'absolute',
+    top: '0.75rem',
+    right: '0.75rem',
+    background: isDark ? 'rgba(59, 130, 246, 0.85)' : 'rgba(59, 130, 246, 0.9)',
+    color: '#ffffff',
+    padding: '0.35rem 0.75rem',
+    borderRadius: '999px',
+    fontSize: '0.75rem',
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+    backdropFilter: 'blur(8px)',
+    border: '1px solid rgba(255,255,255,0.18)',
+  };
+
+  const frameStyleWithBadge = {
+    ...frameStyle,
+    position: 'relative',
+  };
+
   const openModal = (item) => setSelectedItem(item);
   const closeModal = () => setSelectedItem(null);
 
   return (
     <section id="image-gallery" className="gallery-section" data-aos="fade-up">
       {/* <span className="section-label">Visual storytelling</span> */}
-      <h2 className="section-title-heading">Gallery of impact</h2>
-      <p className="section-subtext">Enjoy a visual journey through our work and the lives we touch.</p>
+      <h2 className="section-title-heading">Services We Offer</h2>
+      <p className="section-subtext">Transforming lives through coaching and mentorship for Churches, Schools, Youth Centers, Organizations, and Communities. Discover the impact we create.</p>
 
       <div
         style={trackWrapperStyle}
@@ -352,7 +407,8 @@ export default function GallerySection({ theme }) {
         <div ref={trackRef} style={trackStyle}>
           {extendedItems.map((item, index) => (
             <div key={`${item.title}-${index}`} style={cardStyle(index)} onClick={() => openModal(item)}>
-              <div style={frameStyle}>
+              <div style={frameStyleWithBadge}>
+                {item.service && <div style={serviceBadgeStyle}>{item.service}</div>}
                 <img src={item.image} alt={item.title} style={imageStyle} />
                 <div style={captionStyle}>
                   <h3 style={overlayTitleStyle}>{item.title}</h3>
