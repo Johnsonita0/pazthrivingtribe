@@ -1393,6 +1393,14 @@ export default function App() {
         }
         .hero-copy-card h1 { font-size: clamp(2.6rem, 5vw, 4.8rem); color: #ffffff; margin-bottom: 1rem; font-weight: 900; letter-spacing: -1px; animation: bannerTextFade 0.6s ease-out; text-shadow: 0 12px 32px rgba(0,0,0,0.92); line-height: 1.01; }
         .hero-copy-card p { font-size: clamp(1rem, 2vw, 1.35rem); color: #eff6ff; max-width: 980px; margin: 0 auto 1rem auto; line-height: 1.55; animation: bannerTextFade 0.8s ease-out; text-shadow: 0 8px 24px rgba(0,0,0,0.82); }
+        @media (max-width: 768px) {
+          .hero-copy-card h1 { font-size: clamp(1.8rem, 4vw, 2.8rem); }
+          .hero-copy-card p { font-size: clamp(0.875rem, 1.8vw, 1.1rem); }
+        }
+        @media (max-width: 480px) {
+          .hero-copy-card h1 { font-size: 1.6rem; }
+          .hero-copy-card p { font-size: 0.875rem; }
+        }
         .hero-action-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 0.75rem; margin-top: 1rem; position: relative; z-index: 2; }
         .hero-arrow-cluster {
           position: absolute;
