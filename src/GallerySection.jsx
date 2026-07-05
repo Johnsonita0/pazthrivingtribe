@@ -343,13 +343,14 @@ export default function GallerySection({ theme }) {
     height: modalSize.height === 'auto' ? 'auto' : `${modalSize.height}px`,
     maxHeight: 'calc(100vh - 80px)',
     borderRadius: '24px',
-    overflow: 'hidden',
+    overflow: modalSize.height === 'auto' ? 'visible' : 'hidden',
     background: isDark ? '#090a0f' : 'var(--bg-main)',
     boxShadow: isDark ? '0 24px 80px rgba(0,0,0,0.55)' : '0 20px 60px rgba(15,23,42,0.16)',
     display: 'flex',
     flexDirection: 'column',
     zIndex: 9999,
     userSelect: 'none',
+    paddingBottom: '2px',
   };
 
   const modalHeaderStyle = {
@@ -363,16 +364,17 @@ export default function GallerySection({ theme }) {
   };
 
   const resizeHandleStyle = {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
+    position: 'fixed',
+    bottom: `${modalPosition.y + modalSize.height - 20}px`,
+    right: `${window.innerWidth - (modalPosition.x + modalSize.width)}px`,
     width: '20px',
     height: '20px',
     cursor: 'nwse-resize',
-    background: isDark ? 'rgba(59, 130, 246, 0.3)' : 'rgba(59, 130, 246, 0.2)',
+    background: isDark ? 'rgba(59, 130, 246, 0.5)' : 'rgba(59, 130, 246, 0.4)',
     borderTopLeftRadius: '4px',
     opacity: 0,
     transition: 'opacity 0.2s ease',
+    zIndex: 10000,
   };
 
   const modalTitleStyle = {
@@ -575,15 +577,15 @@ export default function GallerySection({ theme }) {
             <div style={modalBodyStyle}>
               <p style={{ margin: 0, lineHeight: 1.5 }}>{selectedItem.description}</p>
             </div>
-            <div 
-              data-resize-handle="true"
-              style={resizeHandleStyle}
-              onMouseDown={handleResizeMouseDown}
-              onMouseEnter={(e) => e.target.style.opacity = '1'}
-              onMouseLeave={(e) => e.target.style.opacity = '0'}
-              title="Drag to resize"
-            />
           </div>
+          <div 
+            data-resize-handle="true"
+            style={resizeHandleStyle}
+            onMouseDown={handleResizeMouseDown}
+            onMouseEnter={(e) => e.target.style.opacity = '1'}
+            onMouseLeave={(e) => e.target.style.opacity = '0'}
+            title="Drag bottom-right corner to resize"
+          />
         </div>
       )}
     </section>

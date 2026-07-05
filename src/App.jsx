@@ -177,6 +177,11 @@ export default function App() {
       slideClassName: 'hero-slide-pic7'
     },
     {
+      title: "We Also Offer Church Coaching Sessions",
+      subtitle: "Empowering young congregants with spiritual growth, character development, and meaningful mentorship in a faith-centered community.",
+      image: "./image/pic11.png"
+    },
+    {
       title: "Structured Teens Development Program",
       subtitle: "Supportive and Structured approach that helps children, teenagers and young adults develop essential life skills, build self-confidence and navigate life challenges.",
       image: "./image/pic5.png"
@@ -2790,10 +2795,10 @@ export default function App() {
                               <div className="hero-action-row">
                                 <button
                                   className="hero-scroll-btn"
-                                  onClick={() => setHeroPopupMode(currentSlide.title === 'Need Someone to Talk To?' ? 'booking' : 'register')}
+                                  onClick={() => setHeroPopupMode((currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? 'booking' : 'register')}
                                 >
-                                  {currentSlide.title === 'Need Someone to Talk To?' ? 'Book Now' : 'Register Now'}
-                                  <i className={currentSlide.title === 'Need Someone to Talk To?' ? 'fa-solid fa-calendar-check' : 'fa-solid fa-user-plus'}></i>
+                                  {(currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? 'Book Now' : 'Register Now'}
+                                  <i className={(currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? 'fa-solid fa-calendar-check' : 'fa-solid fa-user-plus'}></i>
                                 </button>
                               </div>
                             </div>
