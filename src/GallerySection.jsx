@@ -31,12 +31,12 @@ const galleryItems = [
     image: '/image/pic6.png',
     // service: 'Corporations',
   },
-  {
-    title: 'Children\'s Character Development',
-    description: 'Sunday school and church education programs enriched with values-based coaching that helps children ages 6-12 develop confidence, kindness, and strong character foundations.',
-    image: '/image/pic7.png',
-    // service: 'Churches',
-  },
+  // {
+  //   title: 'Children\'s Character Development',
+  //   description: 'Sunday school and church education programs enriched with values-based coaching that helps children ages 6-12 develop confidence, kindness, and strong character foundations.',
+  //   image: '/image/pic7.png',
+  //   // service: 'Churches',
+  // },
   {
     title: 'Mental Wellness Seminars',
     description: 'Professional seminars for schools, workplaces, and organizations on stress management, anxiety relief, and mental health awareness led by certified coaches.',
@@ -56,8 +56,8 @@ const galleryItems = [
     // service: 'Events',
   },
   {
-    title: 'Youth Bible Club Mentorship',
-    description: 'Guided spiritual and personal development programs for young people, combining faith-based values with practical life coaching and peer support.',
+    title: 'Church Youth Development Session',
+    description: 'Interactive church sessions fostering spiritual growth, character development, and peer mentorship for young congregants in a supportive faith community.',
     image: '/image/pic11',
     // service: 'Churches',
   },
@@ -69,7 +69,7 @@ const galleryItems = [
   },
   {
     title: 'Lead Coach - Roseline Iraoya',
-    description: 'Meet our Lead Coach and founder, Roseline Iraoya, dedicated to transforming lives through personalized coaching, mentorship, and creating a thriving community of growth.',
+    description: 'Meet our Lead Coach, Roseline Iraoya, dedicated to transforming lives through personalized coaching, mentorship, and creating a thriving community of growth.',
     image: '/image/pic13',
     // service: 'Leadership',
   },
@@ -87,6 +87,7 @@ export default function GallerySection({ theme }) {
   const autoScrollPaused = useRef(false);
   const autoScrollResumeTimeout = useRef(null);
   const animationFrame = useRef(null);
+  const isWrappingRef = useRef(false);
   const animationSpeed = 18; // pixels per second
 
   useEffect(() => {
@@ -123,15 +124,6 @@ export default function GallerySection({ theme }) {
     return () => window.removeEventListener('resize', updateWidths);
   }, [slidesPerView]);
 
-  const normalizeTranslate = (value) => {
-    const max = trackWidth / 2 || 0;
-    let next = value;
-    if (!max) return 0;
-    while (next >= max) next -= max;
-    while (next < 0) next += max;
-    return next;
-  };
-
   useEffect(() => {
     if (!trackWidth) return;
     let lastTimestamp = performance.now();
@@ -144,8 +136,22 @@ export default function GallerySection({ theme }) {
 
       const delta = timestamp - lastTimestamp;
       lastTimestamp = timestamp;
+      const increment = (animationSpeed * delta) / 1000;
 
-      setTranslateX((current) => normalizeTranslate(current + (animationSpeed * delta) / 1000));
+      setTranslateX((current) => {
+        const maxScroll = trackWidth / 2;
+        let next = current + increment;
+        
+        // Seamless wrap at midpoint
+        if (next >= maxScroll) {
+          isWrappingRef.current = true;
+          next -= maxScroll;
+        } else {
+          isWrappingRef.current = false;
+        }
+        
+        return next;
+      });
       animationFrame.current = window.requestAnimationFrame(step);
     };
 
@@ -162,7 +168,7 @@ export default function GallerySection({ theme }) {
     display: 'flex',
     gap: '0.75rem',
     transform: `translateX(-${translateX}px)`,
-    transition: 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)',
+    transition: isWrappingRef.current ? 'none' : 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)',
   };
 
   const trackWrapperStyle = {
@@ -193,7 +199,13 @@ export default function GallerySection({ theme }) {
 
   const moveGalleryBy = (delta) => {
     pauseAutoScroll();
-    setTranslateX((current) => normalizeTranslate(current + delta));
+    setTranslateX((current) => {
+      const maxScroll = trackWidth / 2;
+      let next = current + delta;
+      if (next >= maxScroll) next -= maxScroll;
+      if (next < 0) next += maxScroll;
+      return next;
+    });
   };
 
   const pauseAutoScroll = () => {
@@ -218,8 +230,12 @@ export default function GallerySection({ theme }) {
 
   const handlePointerMove = (event) => {
     if (!dragState.current.active || event.pointerType !== 'touch') return;
+    const maxScroll = trackWidth / 2;
     const delta = dragState.current.startX - event.clientX;
-    setTranslateX(normalizeTranslate(dragState.current.startTranslate + delta));
+    let next = dragState.current.startTranslate + delta;
+    if (next >= maxScroll) next -= maxScroll;
+    if (next < 0) next += maxScroll;
+    setTranslateX(next);
   };
 
   const handlePointerEnd = (event) => {
