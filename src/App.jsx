@@ -77,7 +77,6 @@ export default function App() {
   const [selectedReview, setSelectedReview] = useState(null);
   const [expandedFaqIndex, setExpandedFaqIndex] = useState(0);
   const [promoSlideAutoPlay, setPromoSlideAutoPlay] = useState(true);
-  const [currentInspiringIndex, setCurrentInspiringIndex] = useState(0);
   const [promoSlides, setPromoSlides] = useState([
     {
       title: 'Jojo’s Mom',
@@ -98,50 +97,6 @@ export default function App() {
       imageType: 'logo'
     }
   ]);
-
-  // Inspiring paragraphs for carousel section
-  const inspiringParagraphs = [
-    {
-      title: "Growth Through Challenge",
-      text: "Every challenge you face is an opportunity to grow stronger. When you embrace difficulties with courage and curiosity, you unlock potential you didn't know you had. Remember, the strongest trees grow from pushing against the wind."
-    },
-    {
-      title: "Peace Begins Within",
-      text: "True peace doesn't come from external circumstances—it comes from within. When you cultivate inner calm through self-awareness and self-compassion, you create a foundation that no external disruption can shake. Your inner peace is your superpower."
-    },
-    {
-      title: "Purpose Over Perfection",
-      text: "Stop waiting for perfection before you start pursuing your dreams. Purpose is found in progress, not in flawlessness. Every step you take toward your goals, however imperfect, is a step toward becoming who you're meant to be."
-    },
-    {
-      title: "Connection Heals",
-      text: "In a world that often feels isolating, genuine human connection is medicine. When you open up, listen deeply, and show up for others, you create spaces where healing happens. You are never truly alone in your journey."
-    },
-    {
-      title: "Resilience is Built",
-      text: "Resilience isn't something you're born with—it's something you build. Each time you get back up after falling, you're strengthening your ability to overcome. Your setbacks are setups for your comebacks."
-    },
-    {
-      title: "Your Voice Matters",
-      text: "Your thoughts, feelings, and experiences are valid and important. Speaking your truth, even when it's scary, is an act of courage that ripples outward. Don't diminish yourself to make others comfortable—your authentic voice deserves to be heard."
-    },
-    {
-      title: "Transformation Takes Time",
-      text: "Real change doesn't happen overnight, and that's okay. Like a plant growing roots before it shoots skyward, your transformation is happening even when you can't see it. Trust the process, stay committed, and celebrate the small wins."
-    },
-    {
-      title: "You Are Enough",
-      text: "Right now, exactly as you are, you are enough. Not when you lose weight, not when you get the promotion, not when you have it all figured out—but right now. Embrace your whole self, flaws and all, and watch how that acceptance changes everything."
-    },
-    {
-      title: "Lead With Kindness",
-      text: "The most powerful leadership begins with kindness—toward others and toward yourself. When you approach life with compassion, you inspire others to do the same. Kindness creates ripples that spread far beyond what you can imagine."
-    },
-    {
-      title: "Your Story is Still Being Written",
-      text: "No matter where you are right now, your story is not finished. The past doesn't define your future unless you let it. You have the power to author the next chapter of your life. What will you write?"
-    }
-  ];
 
   const parentNoticeItems = [
     {
@@ -174,7 +129,7 @@ export default function App() {
   const faqItems = [
     {
       question: 'How do I get started with Paz Thriving Tribe coaching?',
-      answer: 'Getting started is simple! Visit our services page, select the program that fits your needs (Talk & Thrive, Teens Academy, Children Services, etc.), and fill out the intake form. Our team will reach out within 24-48 hours to confirm your session details and answer any questions.'
+      answer: 'Getting started is simple! Visit our services page, select the program that fits your needs (Talk & Thrive, Teens Academy,  etc.), and fill out the intake form. Our team will reach out within 24-48 hours to confirm your session details and answer any questions.'
     },
     {
       question: 'What are your coaching session rates and payment options?',
@@ -508,14 +463,6 @@ export default function App() {
     }, 9000);
     return () => clearInterval(promoInterval);
   }, [promoSlideAutoPlay, promoSlides.length]);
-
-  // Auto-rotate inspiring paragraphs carousel
-  useEffect(() => {
-    const inspiringInterval = setInterval(() => {
-      setCurrentInspiringIndex((prev) => (prev + Math.ceil(inspiringParagraphs.length / 2)) % inspiringParagraphs.length);
-    }, 8000);
-    return () => clearInterval(inspiringInterval);
-  }, [inspiringParagraphs.length]);
 
   useEffect(() => {
     const founderInterval = setInterval(() => {
@@ -2894,43 +2841,6 @@ export default function App() {
                 )}
 
                 <section className="program-highlights-section" data-aos="fade-up">
-                  <div className="section-intro-shell rotating-intro-shell">
-                    <span className="section-label">Daily Inspiration for Your Journey</span>
-                    
-                    <div className="inspiring-paragraphs-carousel">
-                      <div className="inspiring-cards-container">
-                        {/* Display 2 paragraphs at a time */}
-                        {[0, 1].map((offset) => {
-                          const index = (currentInspiringIndex + offset) % inspiringParagraphs.length;
-                          const paragraph = inspiringParagraphs[index];
-                          const isPrimary = offset === 0;
-                          return (
-                            <div key={offset} className={`inspiring-paragraph-card ${isPrimary ? 'inspiring-paragraph-card-primary' : 'inspiring-paragraph-card-secondary'}`} data-aos="fade-in" data-aos-delay={offset * 100}>
-                              {isPrimary ? (
-                                <h1 className="inspiring-card-text inspiring-card-text-h1">{paragraph.text}</h1>
-                              ) : (
-                                <p className="inspiring-card-text inspiring-card-text-secondary">{paragraph.text}</p>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-
-                      <div className="inspiring-carousel-controls">
-                        <div className="inspiring-dots">
-                          {Array.from({ length: Math.ceil(inspiringParagraphs.length / 2) }).map((_, i) => (
-                            <button
-                              key={i}
-                              className={`dot ${i === Math.floor(currentInspiringIndex / 2) ? 'active' : ''}`}
-                              onClick={() => setCurrentInspiringIndex((i * 2) % inspiringParagraphs.length)}
-                              aria-label={`Go to slide ${i + 1}`}
-                            ></button>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
                   <div className="highlight-grid">
                     {homeHighlights.map((item, index) => (
                       <article key={item.title} className="highlight-card" data-aos="fade-up" data-aos-delay={index * 80}>
