@@ -350,7 +350,7 @@ export default function GallerySection({ theme }) {
     inset: 0,
     backgroundColor: isDark ? 'rgba(0,0,0,0.72)' : 'rgba(15,23,42,0.55)',
     display: 'flex',
-    zIndex: 9998,
+    zIndex: 99998,
   };
 
   const getResponsiveModalSize = () => {
@@ -384,7 +384,7 @@ export default function GallerySection({ theme }) {
     boxShadow: isDark ? '0 24px 80px rgba(0,0,0,0.55)' : '0 20px 60px rgba(15,23,42,0.16)',
     display: 'flex',
     flexDirection: 'column',
-    zIndex: 9999,
+    zIndex: 99999,
     userSelect: 'none',
     paddingBottom: '2px',
   };
@@ -411,7 +411,7 @@ export default function GallerySection({ theme }) {
     border: `1px solid ${isDark ? 'rgba(59, 130, 246, 0.8)' : 'rgba(59, 130, 246, 0.8)'}`,
     opacity: 0,
     transition: 'opacity 0.2s ease, background 0.2s ease',
-    zIndex: 10001,
+    zIndex: 100001,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
