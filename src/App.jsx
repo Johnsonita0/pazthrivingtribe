@@ -2803,7 +2803,13 @@ export default function App() {
                               <div className="hero-action-row">
                                 <button
                                   className="hero-scroll-btn"
-                                  onClick={() => setHeroPopupMode((currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? 'booking' : 'register')}
+                                  onClick={() => {
+                                    if (currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') {
+                                      setHeroPopupMode('booking');
+                                    } else {
+                                      window.open('https://pazthrivingtribe.schoolsfocus.net/apply', '_blank', 'noopener');
+                                    }
+                                  }}
                                 >
                                   {(currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? 'Book Now' : 'Register Now'}
                                   <i className={(currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? 'fa-solid fa-calendar-check' : 'fa-solid fa-user-plus'}></i>

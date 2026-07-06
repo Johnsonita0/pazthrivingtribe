@@ -35,6 +35,49 @@ const server = http.createServer((req, res) => {
 
   req.on('end', () => {
     try {
+      if (pathname === '/api/proxy-page' && req.method === 'GET') {
+        const targetUrl = parsedUrl.searchParams.get('url');
+        if (!targetUrl) {
+          res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+          res.end('Missing url parameter');
+          return;
+        }
+
+        let parsedTargetUrl;
+        try {
+          parsedTargetUrl = new URL(targetUrl);
+        } catch (error) {
+          res.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
+          res.end('Invalid url parameter');
+          return;
+        }
+
+        try {
+          const upstreamResponse = await fetch(parsedTargetUrl.toString(), {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36'
+            },
+            redirect: 'follow'
+          });
+
+          const html = await upstreamResponse.text();
+          const rewrittenHtml = html
+            .replace(/<head[^>]*>/i, (match) => `${match}\n<base href="${parsedTargetUrl.origin}/">`)
+            .replace(/(src|href|action)=["']\//gi, `$1="${parsedTargetUrl.origin}/`)
+            .replace(/(src|href|action)=["'](?!https?:|\/|data:|mailto:|tel:|javascript:|#)/gi, '$1="' + parsedTargetUrl.origin + '/');
+
+          res.writeHead(200, {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Cache-Control': 'no-store'
+          });
+          res.end(rewrittenHtml);
+        } catch (error) {
+          res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' });
+          res.end(`Unable to load the requested page: ${error.message}`);
+        }
+        return;
+      }
+
       // Handle send-notification-email endpoint
       if (pathname === '/api/send-notification-email' && req.method === 'POST') {
         const data = body ? JSON.parse(body) : {};
@@ -84,13 +127,14 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, () => {
   console.log(`
 ╔════════════════════════════════════════════════════════════╗
-║  PAZ Thriving Tribe - Development API Server              ║
-║  Running on http://localhost:${PORT}                           ║
+║  PAZ Thriving Tribe - Development API Server               ║
+║  Running on http://localhost:${PORT}                       ║
 ║                                                            ║
 ║  Endpoints:                                                ║
-║  - POST /api/send-notification-email                      ║
+║  - POST /api/send-notification-email                       ║
+║  - GET /api/proxy-page                                     ║
 ║                                                            ║
-║  💡 Keep this running alongside "npm run dev"             ║
+║  💡 Keep this running alongside "npm run dev"              ║
 ╚════════════════════════════════════════════════════════════╝
   `);
 });

@@ -694,7 +694,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'center' }}>
             <button
               type="button"
-              onClick={() => openRegistrationPopup('register')}
+              onClick={() => window.open('https://pazthrivingtribe.schoolsfocus.net/apply', '_blank', 'noopener')}
               style={{
                 minWidth: '220px',
                 padding: '0.95rem 1.5rem',

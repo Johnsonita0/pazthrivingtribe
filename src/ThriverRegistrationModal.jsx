@@ -57,6 +57,7 @@ export default function ThriverRegistrationModal({
   const [passportPreviewUrl, setPassportPreviewUrl] = useState(null);
   const [stepIndex, setStepIndex] = useState(0);
   const passportInputRef = useRef(null);
+  const externalApplyUrl = 'https://pazthrivingtribe.schoolsfocus.net/apply';
 
   const handlePassportPreviewClick = () => {
     if (passportInputRef.current) {
@@ -409,221 +410,33 @@ export default function ThriverRegistrationModal({
           </div>
         ) : (
           <div className="registration-modal-body">
-            <form onSubmit={(e) => { e.preventDefault(); if (stepIndex < 2) handleNextStep(); }}>
-              {stepIndex === 0 && (
-                <>
-                  <section className="registration-modal-section">
-                    <h4>A. THRIVER INFORMATION</h4>
-                    <div className="registration-fields-grid">
-                      <div className="passport-upload-row">
-                        <div className="passport-upload-preview">
-                          <div
-                            className="preview-box"
-                            onClick={handlePassportPreviewClick}
-                            onDoubleClick={handlePassportPreviewClick}
-                            style={{ cursor: 'pointer', position: 'relative' }}
-                          >
-                            {passportPreviewUrl ? (
-                              <img src={passportPreviewUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            ) : (
-                              <div style={{ fontSize: '0.85rem', color: '#6b7280', padding: '0.5rem', textAlign: 'center' }}></div>
-                            )}
-                            <div style={{
-                              position: 'absolute',
-                              bottom: '0.5rem',
-                              left: '50%',
-                              transform: 'translateX(-100%)',
-                              background: 'rgba(255, 255, 255, 0.42)',
-                              padding: '0.25rem 0.6rem',
-                              borderRadius: '999px',
-                              fontSize: '0.78rem',
-                              color: '#0507086e',
-                              pointerEvents: 'none'
-                            }}>
-                              {passportPreviewUrl ? 'Change Photo' : 'Double-click to choose image'}
-                            </div>
-                          </div>
-                          <input
-                            ref={passportInputRef}
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => setPassportFile(e.target.files && e.target.files[0] ? e.target.files[0] : null)}
-                            style={{ display: 'none' }}
-                          />
-                        </div>
-                        <div className="passport-upload-form">
-                          <div className="form-input-container">
-                            <label>Full Name</label>
-                            <input type="text" value={formData.fullName} onChange={(e) => updateField('fullName', e.target.value)} required className="plain-text-input" />
-                          </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                            <div className="form-input-container">
-                              <label>Date of Birth</label>
-                              <input type="date" value={formData.dateOfBirth} onChange={(e) => updateField('dateOfBirth', e.target.value)} required className="plain-text-input" />
-                            </div>
-                            <div className="form-input-container">
-                              <label>Age</label>
-                              <input type="number" min="6" max="25" value={formData.age} onChange={(e) => updateField('age', e.target.value)} required className="plain-text-input" />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="form-input-container">
-                        <label>Gender</label>
-                        <select value={formData.gender} onChange={(e) => updateField('gender', e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
-                          <option value="Female">Female</option>
-                          <option value="Male">Male</option>
-                          <option value="Non-binary">Non-binary</option>
-                          <option value="Prefer not to say">Prefer not to say</option>
-                        </select>
-                      </div>
-                      <div className="form-input-container">
-                        <label>School Name</label>
-                        <input type="text" value={formData.schoolName} onChange={(e) => updateField('schoolName', e.target.value)} className="plain-text-input" />
-                      </div>
-                      <div className="form-input-container">
-                        <label>Current Class / Grade</label>
-                        <input type="text" value={formData.currentClassGrade} onChange={(e) => updateField('currentClassGrade', e.target.value)} className="plain-text-input" />
-                      </div>
-                      <div className="form-input-container" style={{ gridColumn: '1 / -1' }}>
-                        <label>Home Address</label>
-                        <input type="text" value={formData.homeAddress} onChange={(e) => updateField('homeAddress', e.target.value)} className="plain-text-input" />
-                      </div>
-                      <div className="form-input-container" style={{ gridColumn: '1 / -1' }}>
-                        <label>Special Interests / Hobbies</label>
-                        <input type="text" value={formData.hobbies} onChange={(e) => updateField('hobbies', e.target.value)} className="plain-text-input" />
-                      </div>
-                    </div>
-                  </section>
-                </>
-              )}
-
-              {stepIndex === 1 && (
-                <>
-                  <section className="registration-modal-section">
-                    <h4>B. PARENT / GUARDIAN INFORMATION</h4>
-                    <div className="registration-fields-grid">
-                      <div className="form-input-container">
-                        <label>Parent / Guardian Name</label>
-                        <input type="text" value={formData.parentName} onChange={(e) => updateField('parentName', e.target.value)} required className="plain-text-input" />
-                      </div>
-                      <div className="form-input-container">
-                        <label>Relationship to Child</label>
-                        <input type="text" value={formData.relationship} onChange={(e) => updateField('relationship', e.target.value)} required className="plain-text-input" />
-                      </div>
-                      <div className="form-input-container">
-                        <label>Phone Number 1</label>
-                        <input type="tel" value={formData.phone1} onChange={(e) => updateField('phone1', e.target.value)} required className="plain-text-input" />
-                      </div>
-                      <div className="form-input-container">
-                        <label>Phone Number 2</label>
-                        <input type="tel" value={formData.phone2} onChange={(e) => updateField('phone2', e.target.value)} className="plain-text-input" />
-                      </div>
-                      <div className="form-input-container">
-                        <label>Email Address</label>
-                        <input type="email" value={formData.parentEmail} onChange={(e) => updateField('parentEmail', e.target.value)} required className="plain-text-input" />
-                      </div>
-                      <div className="form-input-container">
-                        <label>Occupation</label>
-                        <input type="text" value={formData.occupation} onChange={(e) => updateField('occupation', e.target.value)} className="plain-text-input" />
-                      </div>
-                    </div>
-                  </section>
-
-                  <section className="registration-modal-section">
-                    <h4>C. DEVELOPMENT GOALS</h4>
-                    <div className="registration-checklist-grid">
-                      {Object.keys(goalLabels).map((key) => (
-                        <label key={key} className="checkbox-card">
-                          <input type="checkbox" checked={goalAreas[key]} onChange={() => toggleGoal(key)} />
-                          <span>{goalLabels[key]}</span>
-                        </label>
-                      ))}
-                    </div>
-                    {goalAreas.others && (
-                      <div className="form-input-container" style={{ marginTop: '1rem' }}>
-                        <label>Other goal focus</label>
-                        <input type="text" value={otherGoal} onChange={(e) => setOtherGoal(e.target.value)} className="plain-text-input" placeholder="Please specify other development goals" />
-                      </div>
-                    )}
-                  </section>
-
-                  <section className="registration-modal-section">
-                    <h4>D. HEALTH INFORMATION</h4>
-                    <div className="registration-fields-grid">
-                      <div className="form-input-container">
-                        <label>Allergies or Medical Conditions</label>
-                        <input type="text" value={formData.allergies} onChange={(e) => updateField('allergies', e.target.value)} className="plain-text-input" />
-                      </div>
-                      <div className="form-input-container">
-                        <label>Emergency Contact Name</label>
-                        <input type="text" value={formData.emergencyContactName} onChange={(e) => updateField('emergencyContactName', e.target.value)} className="plain-text-input" />
-                      </div>
-                      <div className="form-input-container" style={{ gridColumn: '1 / -1' }}>
-                        <label>Emergency Contact Number</label>
-                        <input type="tel" value={formData.emergencyContactNumber} onChange={(e) => updateField('emergencyContactNumber', e.target.value)} className="plain-text-input" />
-                      </div>
-                    </div>
-                  </section>
-
-                  <section className="registration-modal-section">
-                    <h4>E. UPLOADS</h4>
-                    <div className="registration-fields-grid">
-                      <div className="form-input-container">
-                        <label>Supporting Document (PDF/DOC)</label>
-                        <input type="file" accept="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/*" onChange={(e) => setDocumentFile(e.target.files && e.target.files[0] ? e.target.files[0] : null)} className="plain-text-input" />
-                      </div>
-                    </div>
-                  </section>
-
-                  <section className="registration-modal-section">
-                    <h4>F. CONSENT</h4>
-                    <div className="form-input-container">
-                      <label>I authorize my child/ward to participate in activities organized by Paz Thriving Teens Academy and I will pay the investment fee as at when due.</label>
-                      <textarea rows="3" value={formData.signature} onChange={(e) => updateField('signature', e.target.value)} placeholder="Parent signature or printed name" className="plain-text-input" style={{ resize: 'vertical' }} required />
-                    </div>
-                    <div className="registration-payment-row">
-                      <div className="form-input-container">
-                        <label>Date</label>
-                        <input type="date" value={formData.consentDate} onChange={(e) => updateField('consentDate', e.target.value)} className="plain-text-input" />
-                      </div>
-                      <div className="form-input-container">
-                        <label>Payment Amount (NGN)</label>
-                        <input type="number" min="100" value={formData.amount} onChange={(e) => updateField('amount', e.target.value)} className="plain-text-input" required />
-                      </div>
-                    </div>
-                  </section>
-
-                  <div className="form-input-container" style={{ marginBottom: '1rem' }}>
-                    <label>Selected Academy Track</label>
-                    <select value={formData.track} onChange={(e) => updateField('track', e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
-                      <option>Thriving Pre-teen & Teens</option>
-                      <option>Thriving Parents</option>
-                      <option>Thriving Women</option>
-                    </select>
-                  </div>
-                </>
-              )}
-
-              {statusMessage && <div className="payment-status-message">{statusMessage}</div>}
-
-              {stepIndex <= 1 && (
-                <div className="registration-action-row">
-                  {stepIndex > 0 && (
-                    <button type="button" className="form-cancel-action-btn" onClick={handlePreviousStep} style={{ background: 'transparent', border: '1px solid var(--border-color)', padding: '0.6rem 1rem', flex: '0 0 auto' }}>
-                      Previous
-                    </button>
-                  )}
-                  <button type="button" className="form-submit-action-btn" onClick={handleNextStep} disabled={loading} style={{ flex: '1 1 220px' }}>
-                    Next
-                  </button>
-                  <button type="button" className="form-cancel-action-btn" onClick={onClose} style={{ background: 'transparent', border: '1px solid var(--border-color)', padding: '0.6rem 1rem', flex: '0 0 auto' }}>
-                    Cancel
-                  </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <div>
+                  <h4 style={{ margin: 0 }}>Apply through the official registration form</h4>
+                  <p style={{ margin: '0.25rem 0 0', color: 'var(--text-secondary)' }}>
+                    Complete your application directly below. If the form does not load, use the button to open it in a new tab.
+                  </p>
                 </div>
-              )}
-            </form>
+                <a
+                  href={externalApplyUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="form-submit-action-btn"
+                  style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  Open in new tab
+                </a>
+              </div>
+              <div style={{ border: '1px solid var(--border-color)', borderRadius: '12px', overflow: 'hidden', minHeight: '70vh', background: '#fff' }}>
+                <iframe
+                  src={`/api/proxy-page?url=${encodeURIComponent(externalApplyUrl)}`}
+                  title="Paz Thriving Tribe Application Form"
+                  style={{ width: '100%', minHeight: '70vh', border: 'none' }}
+                  loading="lazy"
+                />
+              </div>
+            </div>
           </div>
         )}
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 const galleryItems = [
   {
@@ -84,6 +85,7 @@ export default function GallerySection({ theme }) {
   const [selectedItem, setSelectedItem] = useState(null);
   const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
   const [modalSize, setModalSize] = useState({ width: 760, height: 'auto' });
+  const [isExpanded, setIsExpanded] = useState(false);
   const trackRef = useRef(null);
   const modalRef = useRef(null);
   const modalDragState = useRef({ isDragging: false, startX: 0, startY: 0, startPosX: 0, startPosY: 0 });
@@ -133,19 +135,21 @@ export default function GallerySection({ theme }) {
     if (!selectedItem) return;
 
     const handleWindowResize = () => {
-      // Reposition modal to keep it centered and within viewport
       const responsiveSize = getResponsiveModalSize();
-      const newWidth = Math.min(760, responsiveSize.maxWidth);
-      const newX = Math.max(0, (window.innerWidth - newWidth) / 2);
-      const newY = Math.max(0, Math.min(modalPosition.y, window.innerHeight - 300));
-      
+      const newWidth = isExpanded
+        ? Math.max(320, Math.min(window.innerWidth - 32, responsiveSize.maxWidth))
+        : Math.min(760, responsiveSize.maxWidth);
+      const newHeight = isExpanded ? Math.max(320, window.innerHeight - 32) : modalSize.height;
+      const newX = isExpanded ? 16 : Math.max(0, (window.innerWidth - newWidth) / 2);
+      const newY = isExpanded ? 16 : Math.max(0, Math.min(modalPosition.y, window.innerHeight - 300));
+
       setModalPosition({ x: newX, y: newY });
-      setModalSize(prev => ({ ...prev, width: newWidth }));
+      setModalSize(prev => ({ ...prev, width: newWidth, height: newHeight }));
     };
 
     window.addEventListener('resize', handleWindowResize);
     return () => window.removeEventListener('resize', handleWindowResize);
-  }, [selectedItem, modalPosition]);
+  }, [selectedItem, modalPosition, isExpanded, modalSize.height]);
 
   useEffect(() => {
     if (!trackWidth) return;
@@ -350,7 +354,11 @@ export default function GallerySection({ theme }) {
     inset: 0,
     backgroundColor: isDark ? 'rgba(0,0,0,0.72)' : 'rgba(15,23,42,0.55)',
     display: 'flex',
-    zIndex: 99998,
+    zIndex: 2147483647,
+    isolation: 'isolate',
+    overflowY: 'auto',
+    padding: '1rem',
+    boxSizing: 'border-box',
   };
 
   const getResponsiveModalSize = () => {
@@ -367,26 +375,31 @@ export default function GallerySection({ theme }) {
   };
 
   const responsiveSize = getResponsiveModalSize();
-  const constrainedWidth = Math.max(responsiveSize.minWidth, Math.min(modalSize.width, responsiveSize.maxWidth));
-  const constrainedY = Math.max(0, Math.min(modalPosition.y, window.innerHeight - 300));
-  const constrainedX = Math.max(0, Math.min(modalPosition.x, window.innerWidth - constrainedWidth));
+  const constrainedWidth = isExpanded
+    ? Math.max(320, Math.min(window.innerWidth - 32, modalSize.width || responsiveSize.maxWidth))
+    : Math.max(responsiveSize.minWidth, Math.min(modalSize.width, responsiveSize.maxWidth));
+  const constrainedY = isExpanded ? 16 : Math.max(0, Math.min(modalPosition.y, window.innerHeight - 300));
+  const constrainedX = isExpanded
+    ? Math.max(16, Math.min((window.innerWidth - constrainedWidth) / 2, window.innerWidth - constrainedWidth - 16))
+    : Math.max(0, Math.min(modalPosition.x, window.innerWidth - constrainedWidth));
 
   const modalContentStyle = {
     position: 'fixed',
     top: `${constrainedY}px`,
     left: `${constrainedX}px`,
     width: `${constrainedWidth}px`,
-    height: modalSize.height === 'auto' ? 'auto' : `${modalSize.height}px`,
-    maxHeight: 'calc(100vh - 100px)',
+    height: isExpanded ? `${Math.max(320, Math.min(window.innerHeight - 32, modalSize.height || window.innerHeight - 32))}px` : (modalSize.height === 'auto' ? 'auto' : `${modalSize.height}px`),
+    maxHeight: 'calc(100vh - 2rem)',
     borderRadius: '24px',
-    overflow: modalSize.height === 'auto' ? 'visible' : 'auto',
+    overflow: 'hidden',
     background: isDark ? '#090a0f' : 'var(--bg-main)',
     boxShadow: isDark ? '0 24px 80px rgba(0,0,0,0.55)' : '0 20px 60px rgba(15,23,42,0.16)',
     display: 'flex',
     flexDirection: 'column',
-    zIndex: 99999,
+    zIndex: 2147483647,
     userSelect: 'none',
     paddingBottom: '2px',
+    boxSizing: 'border-box',
   };
 
   const modalHeaderStyle = {
@@ -395,29 +408,8 @@ export default function GallerySection({ theme }) {
     alignItems: 'center',
     padding: '1rem 1.25rem',
     borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.14)'}`,
-    cursor: 'move',
+    cursor: 'default',
     backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(15,23,42,0.02)',
-  };
-
-  const resizeHandleStyle = {
-    position: 'fixed',
-    bottom: `${constrainedY + (modalSize.height === 'auto' ? 20 : modalSize.height) - 16}px`,
-    right: `${window.innerWidth - (constrainedX + constrainedWidth)}px`,
-    width: '24px',
-    height: '24px',
-    cursor: 'nwse-resize',
-    background: isDark ? 'rgba(59, 130, 246, 0.7)' : 'rgba(59, 130, 246, 0.6)',
-    borderTopLeftRadius: '6px',
-    border: `1px solid ${isDark ? 'rgba(59, 130, 246, 0.8)' : 'rgba(59, 130, 246, 0.8)'}`,
-    opacity: 0,
-    transition: 'opacity 0.2s ease, background 0.2s ease',
-    zIndex: 100001,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '12px',
-    color: '#fff',
-    fontWeight: 'bold',
   };
 
   const modalTitleStyle = {
@@ -427,18 +419,34 @@ export default function GallerySection({ theme }) {
     lineHeight: 1.2,
   };
 
-  const closeButtonStyle = {
+  const modalActionsStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.6rem',
+  };
+
+  const actionButtonStyle = {
     background: isDark ? 'rgba(255,255,255,0.12)' : 'var(--bg-card)',
     border: `1px solid ${isDark ? 'rgba(255,255,255,0.24)' : 'rgba(15,23,42,0.18)'}`,
     color: isDark ? '#fff' : '#111827',
-    borderRadius: '50%',
+    borderRadius: '999px',
+    padding: '0.5rem 0.75rem',
+    cursor: 'pointer',
+    fontSize: '0.95rem',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '0.35rem',
+    boxShadow: isDark ? '0 10px 20px rgba(0,0,0,0.18)' : '0 10px 20px rgba(15,23,42,0.12)',
+  };
+
+  const closeButtonStyle = {
+    ...actionButtonStyle,
     width: '42px',
     height: '42px',
-    cursor: 'pointer',
+    padding: 0,
+    borderRadius: '50%',
+    justifyContent: 'center',
     fontSize: '1.2rem',
-    display: 'grid',
-    placeItems: 'center',
-    boxShadow: isDark ? '0 10px 20px rgba(0,0,0,0.18)' : '0 10px 20px rgba(15,23,42,0.12)',
   };
 
   const modalBodyStyle = {
@@ -446,6 +454,7 @@ export default function GallerySection({ theme }) {
     color: isDark ? '#d5d7db' : '#292f36',
     lineHeight: 1.55,
     overflowY: 'auto',
+    maxHeight: isExpanded ? 'calc(100vh - 280px)' : '420px',
   };
 
   const readMoreStyle = {
@@ -490,28 +499,7 @@ export default function GallerySection({ theme }) {
   };
 
   const handleModalMouseDown = (e) => {
-    if (e.target.closest('[data-resize-handle]')) return;
-    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-    if (!clientX || !clientY) return;
-    modalDragState.current.isDragging = true;
-    modalDragState.current.startX = clientX;
-    modalDragState.current.startY = clientY;
-    modalDragState.current.startPosX = modalPosition.x;
-    modalDragState.current.startPosY = modalPosition.y;
-  };
-
-  const handleResizeMouseDown = (e) => {
-    e.preventDefault();
     e.stopPropagation();
-    const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-    const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-    if (!clientX || !clientY) return;
-    modalResizeState.current.isResizing = true;
-    modalResizeState.current.startX = clientX;
-    modalResizeState.current.startY = clientY;
-    modalResizeState.current.startWidth = constrainedWidth;
-    modalResizeState.current.startHeight = typeof modalSize.height === 'number' ? modalSize.height : 500;
   };
 
   useEffect(() => {
@@ -563,12 +551,28 @@ export default function GallerySection({ theme }) {
   const openModal = (item) => {
     setSelectedItem(item);
     const responsiveSize = getResponsiveModalSize();
-    const initialWidth = Math.min(760, responsiveSize.maxWidth);
-    const initialX = Math.max(0, (window.innerWidth - initialWidth) / 2);
-    setModalPosition({ x: initialX, y: Math.max(60, window.innerHeight / 2 - 200) });
-    setModalSize({ width: initialWidth, height: 'auto' });
+    const initialWidth = Math.max(320, Math.min(window.innerWidth - 32, responsiveSize.maxWidth));
+    setIsExpanded(true);
+    setModalPosition({ x: Math.max(16, (window.innerWidth - initialWidth) / 2), y: 16 });
+    setModalSize({ width: initialWidth, height: Math.max(320, window.innerHeight - 32) });
   };
-  const closeModal = () => setSelectedItem(null);
+  const closeModal = () => {
+    setSelectedItem(null);
+    setIsExpanded(false);
+  };
+  const toggleModalSize = () => {
+    if (isExpanded) {
+      const responsiveSize = getResponsiveModalSize();
+      const nextWidth = Math.min(760, responsiveSize.maxWidth);
+      setIsExpanded(false);
+      setModalPosition({ x: Math.max(0, (window.innerWidth - nextWidth) / 2), y: Math.max(40, window.innerHeight / 2 - 220) });
+      setModalSize({ width: nextWidth, height: 'auto' });
+    } else {
+      setIsExpanded(true);
+      setModalPosition({ x: Math.max(16, (window.innerWidth - Math.max(320, Math.min(window.innerWidth - 32, getResponsiveModalSize().maxWidth))) / 2), y: 16 });
+      setModalSize({ width: Math.max(320, Math.min(window.innerWidth - 32, getResponsiveModalSize().maxWidth)), height: Math.max(320, window.innerHeight - 32) });
+    }
+  };
 
   return (
     <section id="image-gallery" className="gallery-section" data-aos="fade-up">
@@ -624,14 +628,19 @@ export default function GallerySection({ theme }) {
         )}
       </div>
 
-      {selectedItem && (
+      {selectedItem && typeof document !== 'undefined' && createPortal(
         <div style={modalOverlayStyle} onClick={closeModal}>
           <div ref={modalRef} style={modalContentStyle} onClick={(event) => event.stopPropagation()} onMouseDown={handleModalMouseDown} onTouchStart={handleModalMouseDown}>
             <div style={modalHeaderStyle}>
               <h3 style={modalTitleStyle}>{selectedItem.title}</h3>
-              <button type="button" style={closeButtonStyle} onClick={closeModal} aria-label="Close modal">
-                ×
-              </button>
+              <div style={modalActionsStyle}>
+                <button type="button" style={actionButtonStyle} onClick={toggleModalSize} aria-label={isExpanded ? 'Restore modal size' : 'Expand modal to full view'}>
+                  {isExpanded ? '↺ Restore' : '⤢ Resize'}
+                </button>
+                <button type="button" style={closeButtonStyle} onClick={closeModal} aria-label="Close modal">
+                  ×
+                </button>
+              </div>
             </div>
             <div style={{ width: '100%', maxHeight: '420px', overflow: 'hidden' }}>
               <img src={selectedItem.image} alt={selectedItem.title} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
@@ -640,18 +649,8 @@ export default function GallerySection({ theme }) {
               <p style={{ margin: 0, lineHeight: 1.5 }}>{selectedItem.description}</p>
             </div>
           </div>
-          <div 
-            data-resize-handle="true"
-            style={resizeHandleStyle}
-            onMouseDown={handleResizeMouseDown}
-            onTouchStart={handleResizeMouseDown}
-            onMouseEnter={(e) => { e.target.style.opacity = '1'; e.target.style.background = isDark ? 'rgba(59, 130, 246, 1)' : 'rgba(59, 130, 246, 0.9)'; }}
-            onMouseLeave={(e) => { e.target.style.opacity = '0'; e.target.style.background = isDark ? 'rgba(59, 130, 246, 0.7)' : 'rgba(59, 130, 246, 0.6)'; }}
-            title="Drag to resize modal"
-          >
-            ⤢
-          </div>
-        </div>
+        </div>,
+        document.body
       )}
     </section>
   );
