@@ -50,6 +50,7 @@ export default function App() {
   const [heroPopupMode, setHeroPopupMode] = useState(null); // 'register' | 'booking' | null
   const [cookieConsentAccepted, setCookieConsentAccepted] = useState(false);
   const [showCookieBanner, setShowCookieBanner] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const logoImageUrl = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"%3E%3Crect width="48" height="48" rx="12" fill="%23238636"/%3E%3Ctext x="50%" y="55%" font-size="26" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-weight="700"%3EP%3C/text%3E%3C/svg%3E';
 
   // --- Auth & System Loading States ---
@@ -429,6 +430,7 @@ export default function App() {
     AOS.init({
       duration: 800,
       once: true,
+      mirror: false,
       easing: 'ease-out'
     });
 
@@ -449,7 +451,22 @@ export default function App() {
       if (document.head.contains(faLink)) {
         document.head.removeChild(faLink);
       }
+      if (subscription && typeof subscription.unsubscribe === 'function') {
+        subscription.unsubscribe();
+      }
     };
+  }, []);
+
+  // Prevent body scroll while preloader is visible
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    if (initialLoading) document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev || ''; };
+  }, [initialLoading]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setInitialLoading(false), 4200);
+    return () => window.clearTimeout(timer);
   }, []);
 
   // --- Auto-Slide Interval Loops on homepage bannerHeroSlider---
@@ -1106,6 +1123,78 @@ export default function App() {
           width: 100% !important;
           max-width: 100% !important;
           min-width: 100% !important;
+        }
+
+        .app-preloader-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 99999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background-color: var(--bg-main);
+          color: var(--text-primary);
+          padding: 1rem;
+        }
+
+        .app-preloader-box {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 1rem;
+          padding: 2rem 2.5rem;
+          border-radius: 24px;
+          background: var(--bg-card);
+          box-shadow: 0 24px 80px rgba(0, 0, 0, 0.06);
+          min-width: 320px;
+          max-width: 92vw;
+          text-align: center;
+          border: 1px solid var(--border-color);
+        }
+
+        .app-preloader-logo {
+          width: 120px;
+          height: 120px;
+          object-fit: cover;
+          border-radius: 50%;
+          box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+          animation: app-logo-spin 0.95s linear infinite;
+          background: transparent;
+        }
+
+        /* keep spinner CSS in case we want it later */
+        .app-preloader-spinner {
+          width: 78px;
+          height: 78px;
+          border: 8px solid rgba(255, 255, 255, 0.06);
+          border-top-color: rgba(255,255,255,0.04);
+          border-radius: 50%;
+          display: none;
+        }
+
+        @keyframes app-preloader-spin {
+          to { transform: rotate(1turn); }
+        }
+
+        @keyframes app-logo-spin {
+          to { transform: rotate(1turn); }
+        }
+
+        @media (max-width: 640px) {
+          .app-preloader-box {
+            padding: 1.25rem 1rem;
+            min-width: 240px;
+          }
+
+          .app-preloader-logo {
+            width: 88px;
+            height: 88px;
+          }
+
+          .app-preloader-overlay { padding: 0.5rem; }
+        }
+
+        html, body, #root, .full-view-app-root-override {
           box-sizing: border-box !important;
           background-color: var(--bg-main);
           color: var(--text-primary);
@@ -1197,7 +1286,13 @@ export default function App() {
           backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
         }
         .nav-logo-brand-zone { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; min-width: 0; }
-        .nav-logo-img { width: 48px; height: 48px; border-radius: 12px; object-fit: cover; background-color: transparent; border: none; }
+        .nav-logo-img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background-color: transparent; border: none; }
+        /* Make any image path that includes 'logo/' display as a circular logo */
+        img[src*="logo/"] {
+          border-radius: 50%;
+          object-fit: cover;
+          display: inline-block;
+        }
         .platform-badge-nav.active { transform: translateY(-1px); font-weight: 800; }
         .nav-vector-logo { width: 36px; height: 36px; background-color: var(--brand-green); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: white; font-size: 1.2rem; }
         .nav-brand-name { font-size: 1.15rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.3px; white-space: nowrap; }
@@ -2647,6 +2742,19 @@ export default function App() {
         }
       `}</style>
 
+      {initialLoading && (
+        <div className="app-preloader-overlay" role="alert" aria-busy="true">
+          <div className="app-preloader-box">
+            <img
+              src={theme === 'dark' ? "../logo/logo2.jpeg" : "../logo/logomain.png"}
+              alt="Paz Thriving Tribe logo"
+              className="app-preloader-logo"
+            />
+            <p style={{ margin: 0, fontSize: '0.95rem', lineHeight: '1.6' }}>Preparing your Paz Thriving Tribe experience...</p>
+          </div>
+        </div>
+      )}
+
       {showCookieBanner && (
         <div className="cookie-consent-banner">
           <div className="cookie-consent-copy">
@@ -2733,8 +2841,9 @@ export default function App() {
           } />
         </Routes>
 
-        {/* STICKY HEADER NAVIGATION BAR */}
-        <header className="public-navbar">
+        {/* STICKY HEADER NAVIGATION BAR (hidden while preloader is active to avoid double-loading logos) */}
+        {!initialLoading && (
+          <header className="public-navbar">
           <Link to="/" className="nav-logo-brand-zone" onClick={() => { setNavOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
             <img src={theme === 'dark' ? "../logo/logo2.jpeg" : "../logo/logomain.png"} alt="Paz Thriving Tribe logo" className="nav-logo-img" />
             <div className="nav-brand-name">Paz Thriving Tribe</div>
@@ -2764,7 +2873,8 @@ export default function App() {
               <span>Portal</span>
             </a>
           </nav>
-        </header>
+          </header>
+        )}
 
         <Routes>
           {/* =========================================================================
