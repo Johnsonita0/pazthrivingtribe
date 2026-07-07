@@ -46,4 +46,7 @@ if (supabaseUrl && supabaseUrl.includes('supabase.co')) {
 	}
 }
 
+// expose a flag so the UI can detect stub mode and show a developer indicator
+export const isSupabaseStub = !(supabaseUrl && supabaseUrl.includes('supabase.co'))
+
 export { supabase }

@@ -43,13 +43,18 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
   const [bookingSubmitted, setBookingSubmitted] = useState(false);
 
   useEffect(() => {
-    AOS.init({ duration: 800, offset: 100 });
+    AOS.init({ duration: 800, offset: 100, once: false, mirror: false, easing: 'ease-out' });
+    // ensure AOS recalculates after this component mounts and after any layout settles
+    const raf = window.requestAnimationFrame(() => setTimeout(() => { try { AOS.refresh(); } catch(e){} }, 80));
     window.scrollTo(0, 0);
     const heroInterval = setInterval(() => {
       setActiveHeroSlide((prev) => (prev + 1) % teensHeroSlides.length);
     }, 5500);
 
-    return () => clearInterval(heroInterval);
+    return () => {
+      clearInterval(heroInterval);
+      try { window.cancelAnimationFrame(raf); } catch (e) {}
+    };
   }, [teensHeroSlides.length]);
 
   useEffect(() => {
@@ -138,9 +143,9 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
           className="teens-welcome-overlay"
           style={{
             position: 'fixed',
-            inset: 0,
-            background: 'rgba(15, 23, 42, 0.7)',
-            zIndex: 9999,
+              inset: 0,
+              background: 'rgba(15, 23, 42, 0.8)',
+              zIndex: 20001,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',

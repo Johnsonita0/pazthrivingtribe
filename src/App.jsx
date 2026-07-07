@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Link, Navigate, useParams, useNavigate } from 'react-router-dom';
-import { supabase } from './supabaseClient';
+import { supabase, isSupabaseStub } from './supabaseClient';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import TeensKidsMenu from './TeensKidsMenu';
@@ -468,6 +468,17 @@ export default function App() {
     const timer = window.setTimeout(() => setInitialLoading(false), 4200);
     return () => window.clearTimeout(timer);
   }, []);
+
+  // Ensure AOS recalculates positions after the preloader hides
+  useEffect(() => {
+    if (!initialLoading) {
+      // small delay to allow layout to settle
+      const t = setTimeout(() => {
+        try { AOS.refresh(); } catch (e) { /* ignore if AOS not ready */ }
+      }, 120);
+      return () => clearTimeout(t);
+    }
+  }, [initialLoading]);
 
   // --- Auto-Slide Interval Loops on homepage bannerHeroSlider---
 
@@ -2751,6 +2762,15 @@ export default function App() {
               className="app-preloader-logo"
             />
             <p style={{ margin: 0, fontSize: '0.95rem', lineHeight: '1.6' }}>Preparing your Paz Thriving Tribe experience...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Dev banner when Supabase is stubbed (no real network requests) */}
+      {isSupabaseStub && (
+        <div style={{ position: 'fixed', top: 12, right: 12, zIndex: 2147483646 }}>
+          <div style={{ background: '#fffbeb', color: '#92400e', padding: '6px 10px', borderRadius: 999, boxShadow: '0 6px 18px rgba(15,23,42,0.08)', fontSize: '13px', fontWeight: 700 }}>
+            Dev: Supabase stub active
           </div>
         </div>
       )}

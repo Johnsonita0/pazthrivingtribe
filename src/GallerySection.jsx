@@ -289,7 +289,9 @@ export default function GallerySection({ theme }) {
     while (position < -cardSize) position += period;
     while (position > period + cardSize) position -= period;
     const distance = Math.abs(position - activeCenter);
-    const intensity = Math.max(0, 1 - Math.min(distance / activeCenter, 1));
+    // guard against containerWidth === 0 to avoid division by zero (produces NaN zIndex)
+    const safeActiveCenter = activeCenter || 1;
+    const intensity = containerWidth ? Math.max(0, 1 - Math.min(distance / safeActiveCenter, 1)) : 0;
     const scale = 1 + 0.08 * intensity;
 
     return {
@@ -299,7 +301,7 @@ export default function GallerySection({ theme }) {
       boxSizing: 'border-box',
       transform: `scale(${scale})`,
       transition: 'transform 0.3s ease',
-      zIndex: Math.round(100 + intensity * 10),
+      zIndex: Number.isFinite(Math.round(100 + intensity * 10)) ? Math.round(100 + intensity * 10) : 100,
       willChange: 'transform',
     };
   };
