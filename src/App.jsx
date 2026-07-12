@@ -1156,7 +1156,7 @@ export default function App() {
           padding: 2rem 2.5rem;
           border-radius: 24px;
           background: var(--bg-card);
-          box-shadow: 0 24px 80px rgba(0, 0, 0, 0.06);
+          box-shadow: 0 24px 80px rgba(39, 38, 38, 0.06);
           min-width: 320px;
           max-width: 92vw;
           text-align: center;
@@ -2969,6 +2969,7 @@ export default function App() {
                       </>
                     );
                   })()}
+                  
                 </section>
                 {heroPopupMode && (
                   <ThriverRegistrationModal
