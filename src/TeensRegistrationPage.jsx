@@ -4,7 +4,7 @@ import { supabase } from './supabaseClient';
 
 const initialForm = {
   childName: '',
-  age: '',
+  dateOfBirth: '',
   gender: 'Female',
   schoolName: '',
   classGrade: '',
@@ -39,7 +39,7 @@ export default function TeensRegistrationPage() {
       result[step.id] = (() => {
         switch (index) {
           case 0:
-            return !!(formData.childName && formData.age && formData.gender);
+            return !!(formData.childName && formData.dateOfBirth && formData.gender);
           case 1:
             return !!(formData.parentName && formData.email && formData.phone && formData.homeAddress);
           case 2:
@@ -79,7 +79,7 @@ export default function TeensRegistrationPage() {
 
   const validateCurrentStep = () => {
     if (currentStep === 0) {
-      if (!formData.childName || !formData.age || !formData.gender) {
+      if (!formData.childName || !formData.dateOfBirth || !formData.gender) {
         return 'Please complete the child profile section before continuing.';
       }
     }
@@ -133,7 +133,7 @@ export default function TeensRegistrationPage() {
         phone: formData.phone,
         track: formData.programType,
         parent_name: formData.parentName,
-        age: Number(formData.age) || null,
+        date_of_birth: formData.dateOfBirth || null,
         gender: formData.gender,
         school_name: formData.schoolName,
         current_class_grade: formData.classGrade,
@@ -177,8 +177,8 @@ export default function TeensRegistrationPage() {
           </label>
 
           <label className="teens-registration-field">
-            <span>Age</span>
-            <input type="number" name="age" min="7" max="19" value={formData.age} onChange={handleChange} required />
+            <span>Date of birth</span>
+            <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} required />
           </label>
 
           <label className="teens-registration-field">
@@ -278,7 +278,7 @@ export default function TeensRegistrationPage() {
           <div className="review-group">
             <h4>Child Profile</h4>
             <p><strong>Name:</strong> {formData.childName || 'Not provided'}</p>
-            <p><strong>Age:</strong> {formData.age || 'Not provided'}</p>
+            <p><strong>Date of birth:</strong> {formData.dateOfBirth || 'Not provided'}</p>
             <p><strong>School:</strong> {formData.schoolName || 'Not provided'}</p>
             <p><strong>Grade:</strong> {formData.classGrade || 'Not provided'}</p>
           </div>
