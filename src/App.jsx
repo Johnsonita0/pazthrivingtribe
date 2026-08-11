@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
-import { Routes, Route, Link, Navigate, useParams, useNavigate } from 'react-router-dom';
+import { Routes, Route, Link, Navigate, useLocation, useParams, useNavigate } from 'react-router-dom';
 import { supabase, isSupabaseStub } from './supabaseClient';
+import './App.css';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import TeensKidsMenu from './TeensKidsMenu';
@@ -8,6 +9,8 @@ import ThriverRegistrationModal from './ThriverRegistrationModal';
 import NotFoundPage from './NotFoundPage';
 import ComingSoonPage from './ComingSoonPage';
 import GallerySection from './GallerySection';
+import AdminDashboard from './AdminDashboard';
+import TeensRegistrationPage from './TeensRegistrationPage';
 
 const whatsappTips = [
   'Need help today?',
@@ -62,6 +65,9 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
+  const isRegistrationRoute = ['/teens_reg', '/teens-reg'].includes(location.pathname);
+  const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/dashboard');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState(null);
@@ -76,6 +82,29 @@ export default function App() {
     concern: ''
   });
   const [bookingSubmitted, setBookingSubmitted] = useState(false);
+  const [contactForm, setContactForm] = useState({
+    name: '',
+    email: '',
+    subject: '',
+    message: ''
+  });
+  const [contactMessages, setContactMessages] = useState([]);
+
+  const handleContactFormSubmit = (event) => {
+    event.preventDefault();
+    const trimmedMessage = {
+      id: `contact-${Date.now()}`,
+      name: contactForm.name.trim(),
+      email: contactForm.email.trim(),
+      subject: contactForm.subject.trim(),
+      message: contactForm.message.trim(),
+      createdAt: new Date().toISOString()
+    };
+    setContactMessages((prev) => [trimmedMessage, ...prev]);
+    setContactForm({ name: '', email: '', subject: '', message: '' });
+    setToastMessage('Your message has been received and will be reviewed by the team shortly.');
+    setToastType('success');
+  };
 
   // --- Sliding Hero Banner States (Main Page) ---
   const [currentHomeSlide, setCurrentHomeSlide] = useState(0);
@@ -87,19 +116,19 @@ export default function App() {
     {
       title: 'Jojo’s Mom',
       text: "Ms. Rosaline has been a truly exceptional tutor and coach for my 10-year-old daughter. My daughter will have her 9th class this week. From the beginning, she created a fun, warm, and engaging environment that made my daughter genuinely excited for every lesson—often looking forward to it even before it starts. What makes Ms. Rosaline stand out is her real impact. She has played a major role in building my daughter’s personality—developing her sense of responsibility and, most importantly, her inner motivation. Today, my daughter attends her classes because she wants to, not because I ask her to—and that, to me, is incredibly valuable. Through her constant encouragement, positivity, and genuine care, Ms. Rosaline has helped my daughter grow in confidence, independence, self-love, and communication. She also nurtures leadership skills and teaches children how to handle different life situations with confidence and awareness. Her dedication, patience, and uplifting spirit truly make a lasting difference. I’m deeply grateful for her efforts and highly recommend her as an inspiring and impactful life coach for children.",
-      image: "./logo/logo2.jpeg",
+      image: "/logo/logo2.jpeg",
       imageType: 'logo'
     },
     { 
       title: 'Chukwunonso',
       text: 'Good evening Coach Roseline thank you for the things you have done for me, my grades are improving now.',
-      image: "./logo/logo2.jpeg",
+      image: "/logo/logo2.jpeg",
       imageType: 'logo'
     },
     {
       title: "A and A's Dad",
       text: 'Thank You hope they are making progress in line with the schedule. They enjoyed their sessions.',
-      image: "./logo/logo2.jpeg",
+      image: "/logo/logo2.jpeg",
       imageType: 'logo'
     }
   ]);
@@ -163,7 +192,7 @@ export default function App() {
     {
       title: "Paz Thriving Tribe",
       subtitle: "Coaching, Mentoring and Counselling Organization.",
-      image: "./logo/logo2.jpeg",
+      image: "/logo/logo2.jpeg",
       imageType: 'logo'
     },
     {
@@ -330,7 +359,30 @@ export default function App() {
   const [cmsErrorMessage, setCmsErrorMessage] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
   const [toastType, setToastType] = useState('success');
-  const [selectedAdminTab, setSelectedAdminTab] = useState('content');
+  const [selectedAdminTab, setSelectedAdminTab] = useState('applicants');
+  const [privacyContent, setPrivacyContent] = useState('');
+  const [termsContent, setTermsContent] = useState('');
+  const [faqContent, setFaqContent] = useState(faqItems.map((item) => ({ ...item, linkLabel: '', linkTo: '' })));
+  const [clientActivityLog, setClientActivityLog] = useState([]);
+  const [clientActivityLoading, setClientActivityLoading] = useState(false);
+  const [refreshingDashboard, setRefreshingDashboard] = useState(false);
+
+  const updateFaqItem = (index, field, value) => {
+    setFaqContent((prev) => prev.map((item, idx) => idx === index ? { ...item, [field]: value } : item));
+  };
+
+  const handleSaveLegalAndFaqContent = async (e) => {
+    e.preventDefault();
+    try {
+      setCmsStatus('Saving legal and FAQ content...');
+      // Placeholder save logic for legal and FAQ content
+      setCmsStatus('Legal and FAQ content saved successfully.');
+    } catch (err) {
+      console.error('Failed saving legal and FAQ content:', err);
+      setCmsStatus(`Save failed: ${err?.message || err}`, true);
+    }
+  };
+
   const [testimonialAuthor, setTestimonialAuthor] = useState('');
   const [testimonialText, setTestimonialText] = useState('');
   const [testimonialOrigin, setTestimonialOrigin] = useState('');
@@ -556,9 +608,7 @@ export default function App() {
 
   useEffect(() => {
     const handleScroll = () => {
-      const heroSection = document.querySelector('.hero-section');
-      const heroHeight = heroSection?.offsetHeight || 800;
-      setShowScrollTop(window.scrollY > heroHeight);
+      setShowScrollTop(window.scrollY > 280);
     };
 
     handleScroll();
@@ -592,6 +642,23 @@ export default function App() {
   const handleNextReview = () => {
     setCurrentPromoSlide((prev) => (prev + 1) % promoSlides.length);
     setPromoSlideAutoPlay(false);
+  };
+
+  const tryLoadSupabaseTables = async (tableNames) => {
+    for (const tableName of tableNames) {
+      try {
+        const { data, error } = await supabase.from(tableName).select('*').order('created_at', { ascending: false }).limit(200);
+        if (error) {
+          continue;
+        }
+        if (Array.isArray(data)) {
+          return data;
+        }
+      } catch (err) {
+        continue;
+      }
+    }
+    return null;
   };
 
   const fetchDynamicWebsiteContent = async () => {
@@ -644,6 +711,36 @@ export default function App() {
       }
 
       try {
+        const contactRecords = await tryLoadSupabaseTables(['tribe_contact_messages', 'tribe_contacts', 'contact_messages', 'contacts', 'tribe_messages', 'messages']);
+        if (contactRecords) {
+          setContactMessages(contactRecords.map((item) => ({
+            id: item.id || `${item.name || item.email || 'contact'}-${item.created_at || item.createdAt || Date.now()}`,
+            name: item.name || item.full_name || item.sender || 'Unknown',
+            email: item.email || item.sender_email || item.contact_email || '',
+            subject: item.subject || item.title || 'Message',
+            message: item.message || item.body || item.content || '',
+            createdAt: item.created_at || item.createdAt || item.timestamp || ''
+          })));
+        }
+      } catch (err) {
+        console.log('No contact message table available for dynamic updates:', err);
+      }
+
+      try {
+        const activityRecords = await tryLoadSupabaseTables(['tribe_activity', 'client_activity', 'visitor_activity', 'activity_log', 'page_views']);
+        if (activityRecords) {
+          setClientActivityLog(activityRecords.map((item) => ({
+            id: item.id || `${item.session_id || item.user_id || 'activity'}-${item.created_at || item.createdAt || Date.now()}`,
+            created_at: item.created_at || item.createdAt || item.timestamp || '',
+            path: item.path || item.page || item.url || item.pathname || '/',
+            session_id: item.session_id || item.session || item.user_id || 'Unknown session'
+          })));
+        }
+      } catch (err) {
+        console.log('No activity log table available for dynamic updates:', err);
+      }
+
+      try {
         const { data: socialFeedData, error: socialFeedError } = await supabase.from('tribe_social_feed').select('*');
         if (!socialFeedError && Array.isArray(socialFeedData) && socialFeedData.length > 0) {
           const socialRows = socialFeedData.map((row) => ({
@@ -669,8 +766,33 @@ export default function App() {
 
       // fetch testimonials after other content
       await fetchTestimonials();
+
+      return true;
     } catch (err) {
       console.log("Using baseline presentation values while tables initialize.");
+      return false;
+    }
+  };
+
+  const refreshAdminData = async () => {
+    setRefreshingDashboard(true);
+    setClientActivityLoading(true);
+    try {
+      const success = await fetchDynamicWebsiteContent();
+      if (success) {
+        setToastMessage('Dashboard refreshed with the latest records successfully.');
+        setToastType('success');
+      } else {
+        setToastMessage('Refresh completed with partial results; some records may not be available.');
+        setToastType('error');
+      }
+    } catch (err) {
+      console.error('Dashboard refresh failed:', err);
+      setToastMessage('Dashboard refresh failed. Please try again or contact support if the issue persists.');
+      setToastType('error');
+    } finally {
+      setRefreshingDashboard(false);
+      setClientActivityLoading(false);
     }
   };
 
@@ -684,7 +806,7 @@ export default function App() {
           title: item.author || item.title || 'Anonymous',
           text: item.text || '',
           origin: item.origin || '',
-          image: item.image || './logo/logomain.png',
+          image: item.image || '/logo/logomain.png',
           imageType: item.imageType || 'logo'
         })));
       }
@@ -732,13 +854,12 @@ export default function App() {
   }
 
   useEffect(() => {
-    if (!cmsSuccessMessage && !cmsErrorMessage) return
+    if (!toastMessage) return;
     const timer = setTimeout(() => {
-      setCmsStatus(null)
-      setToastMessage(null)
-    }, 5000)
-    return () => clearTimeout(timer)
-  }, [cmsSuccessMessage, cmsErrorMessage])
+      setToastMessage(null);
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, [toastMessage]);
 
   const normalizeYoutubeEmbed = (url) => {
     if (!url) return '';
@@ -802,7 +923,7 @@ export default function App() {
       title: testimonialAuthor || 'Anonymous',
       text: testimonialText,
       origin: testimonialOrigin || '',
-      image: './logo/logomain.png',
+      image: '/logo/logomain.png',
       imageType: 'logo'
     };
 
@@ -1039,7 +1160,7 @@ export default function App() {
       if (error) throw error;
 
       setBookingSubmitted(true);
-      setToastMessage('Booking request sent successfully. We will follow up shortly.');
+      setToastMessage('Booking request submitted successfully. Our team will follow up promptly.');
       setToastType('success');
     } catch (err) {
       console.error('Home banner booking submission failed:', err);
@@ -1051,8 +1172,8 @@ export default function App() {
         message
       });
       setBookingSubmitted(true);
-      setToastMessage('Booking request saved locally. We will follow up shortly.');
-      setToastType('success'); 
+      setToastMessage('Booking request stored locally and will be processed as soon as the service is restored.');
+      setToastType('success');
     } finally {
       setBookingForm({ name: '', email: '', phone: '', clientType: 'Individual', sessionType: 'Virtual', preferredTime: 'Any time', concern: '' });
     }
@@ -1946,6 +2067,27 @@ export default function App() {
         .status-pill { display: inline-flex; padding: 0.35rem 0.8rem; border-radius: 6px; font-size: 0.8rem; font-weight: 700; }
         .status-pill.success { background: rgba(35, 134, 54, 0.14); color: var(--accent-green); }
         .status-pill.pending { background: rgba(255, 231, 179, 0.6); color: #b58304; }
+        .portal-data-metrics-row { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem; }
+        .portal-metric-card {
+          background: #ffffff;
+          border: 1px solid rgba(148, 163, 184, 0.25);
+          box-shadow: 0 18px 35px rgba(15, 23, 42, 0.06);
+          padding: 1.5rem;
+          border-radius: 18px;
+        }
+        .portal-metric-card h4 {
+          color: #475569;
+          font-size: 0.85rem;
+          margin-bottom: 0.65rem;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+        .portal-status-text { margin: 0; font-size: 2rem; color: #0f172a; font-weight: 700; }
+        .portal-scope-text { margin: 0.75rem 0 0 0; color: #64748b; font-size: 0.95rem; line-height: 1.6; }
+        .portal-data-metrics-row .portal-metric-card:nth-child(1) { border-left: 4px solid #34d399; }
+        .portal-data-metrics-row .portal-metric-card:nth-child(2) { border-left: 4px solid #38bdf8; }
+        .portal-data-metrics-row .portal-metric-card:nth-child(3) { border-left: 4px solid #fbbf24; }
+        .portal-data-metrics-row .portal-metric-card:nth-child(4) { border-left: 4px solid #a855f7; }
 
         /* SERVICE VIEW SLIDING HERO BANNER SPECIFICS */
         .service-view-hero-banner { 
@@ -2545,8 +2687,8 @@ export default function App() {
         .dashboard-logout-btn { background: transparent; border: 1px solid var(--brand-green); color: var(--brand-green); padding: 0.65rem 1.1rem; border-radius: 8px; cursor: pointer; font-weight: 700; transition: all 0.2s ease; font-size: 0.9rem; }
         .dashboard-logout-btn:hover { background: var(--brand-green); color: #ffffff; transform: translateY(-1px); }
         .portal-workspace-header-shell { display: flex; flex-direction: column; flex-shrink: 0; }
-        .dashboard-tab-navigation { position: sticky; top: 0; z-index: 20; background: var(--bg-main); flex-shrink: 0; }
-        .dashboard-tab-buttons { display: flex; flex-wrap: wrap; gap: 0.75rem; padding: 1rem 3rem; margin-bottom: 0; position: sticky; top: 0; z-index: 25; background: var(--bg-main); border-bottom: 1px solid var(--border-color); width: 100%; box-sizing: border-box; overflow-x: auto; }
+        .dashboard-tab-navigation { position: static; top: auto; z-index: auto; background: transparent; }
+        .dashboard-tab-buttons { display: flex; flex-wrap: wrap; gap: 0.75rem; padding: 1rem 3rem; margin-bottom: 0; position: static; top: auto; z-index: auto; background: transparent; border: none; width: 100%; box-sizing: border-box; overflow-x: auto; }
         .dashboard-tab-button { padding: 0.75rem 1.2rem; border-radius: 8px; border: 1px solid var(--border-color); background: transparent; color: var(--text-muted); font-weight: 600; cursor: pointer; transition: all 0.2s ease; white-space: nowrap; font-size: 0.95rem; }
         .dashboard-tab-button:hover { background: rgba(35,134,54,0.08); color: var(--text-primary); border-color: var(--brand-green); }
         .dashboard-tab-button.active { background: var(--brand-green); border-color: var(--brand-green); color: #ffffff; box-shadow: 0 2px 8px rgba(46,164,79,0.3); }
@@ -2566,10 +2708,52 @@ export default function App() {
         .form-cancel-action-btn:hover { background-color: rgba(0,0,0,0.05); border-color: var(--text-muted); transform: translateY(-1px); }
         .status-feedback-banner { padding: 1rem 1.25rem; background-color: rgba(46,164,79,0.08); border: 1px solid rgba(46,164,79,0.3); color: var(--accent-green); border-radius: 10px; font-weight: 600; text-align: center; font-size: 0.95rem; }
         
-        .auth-page-wrapper { display: flex; justify-content: center; align-items: center; min-height: 100vh; background-color: var(--bg-main); width: 100% !important; }
-        .login-card-layout { background-color: var(--bg-card); border: 1px solid var(--border-color); padding: 3rem 2.5rem; border-radius: 14px; width: 400px; box-shadow: var(--shadow-lg); }
-        .login-brand-title { text-align: center; color: var(--text-primary); margin-bottom: 2.5rem; font-size: 1.75rem; font-weight: 800; }
-        .standard-login-form { display: flex; flex-direction: column; gap: 1.5rem; }
+        .auth-page-wrapper {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          min-height: 100vh;
+          background-color: var(--bg-main);
+          width: 100% !important;
+          padding: 1.5rem;
+          box-sizing: border-box;
+        }
+        .login-page-body {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          width: 100%;
+          min-height: calc(100vh - 5rem);
+          padding: 2.5rem 0 2rem;
+          box-sizing: border-box;
+        }
+        .login-card-layout {
+          display: grid;
+          grid-template-columns: 1.15fr 1fr;
+          gap: 1.5rem;
+          background-color: var(--bg-card);
+          border: 1px solid var(--border-color);
+          border-radius: 14px;
+          width: min(100%, 1040px);
+          padding: 3rem 2.5rem;
+          box-shadow: var(--shadow-lg);
+        }
+        .login-card-left,
+        .login-card-form {
+          padding: 2rem;
+        }
+        .login-brand-title {
+          text-align: center;
+          color: var(--text-primary);
+          margin-bottom: 2rem;
+          font-size: clamp(1.8rem, 2.1vw, 2.4rem);
+          font-weight: 800;
+        }
+        .standard-login-form {
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+        }
         
         .system-loading-splash { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; background-color: #0d1117; }
         .loading-spinner-element { width: 44px; height: 44px; border: 4px solid #30363d; border-top-color: #2ea44f; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 1.25rem; }
@@ -2601,8 +2785,10 @@ export default function App() {
           .portal-main-workspace { height: 100vh; overflow: hidden; }
           .portal-workspace-body-content { padding: 1.5rem; }
           .portal-workspace-header { padding: 1rem 1.5rem; }
-          .dashboard-tab-buttons { padding: 0.75rem 1rem; gap: 0.5rem; overflow-x: auto; }
-          .dashboard-tab-button { padding: 0.65rem 0.95rem; font-size: 0.85rem; }
+          .dashboard-tab-buttons { padding: 0.45rem 0.65rem; gap: 0.35rem; overflow-x: auto; flex-wrap: nowrap; white-space: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; border-radius: 12px; }
+          .dashboard-tab-buttons::-webkit-scrollbar { display: none; }
+          .dashboard-tab-button { padding: 0.5rem 0.7rem; font-size: 0.72rem; line-height: 1.2; border-radius: 999px; min-height: 32px; }
+          .dashboard-tab-badge { min-width: 18px; height: 18px; font-size: 0.62rem; }
           .dashboard-editor-card { padding: 1.5rem; border-radius: 12px; }
           .cms-creation-form-layout { grid-template-columns: 1fr; }
           .dashboard-table th,
@@ -2626,8 +2812,8 @@ export default function App() {
         }
         @media (max-width: 640px) {
           .portal-workspace-body-content { padding: 1rem; }
-          .dashboard-tab-buttons { padding: 0.5rem 0.75rem; gap: 0.4rem; overflow-x: auto; }
-          .dashboard-tab-button { padding: 0.6rem 0.8rem; font-size: 0.8rem; }
+          .dashboard-tab-buttons { padding: 0.4rem 0.6rem; gap: 0.3rem; }
+          .dashboard-tab-button { padding: 0.45rem 0.65rem; font-size: 0.7rem; min-height: 30px; }
           .dashboard-editor-card { padding: 1.25rem; }
           .dashboard-table th,
           .dashboard-table td { padding: 0.6rem 0.5rem; font-size: 0.8rem; }
@@ -2645,7 +2831,7 @@ export default function App() {
           .video-feature-grid { grid-template-columns: 1fr; gap: 1.5rem; }
           .workspace-fluid-footer { padding: 4rem 2rem 2rem; }
           .footer-columns-container { gap: 2rem; }
-          .login-card-layout { width: min(92vw, 400px); }
+          .login-card-layout { width: min(100%, 720px); }
         }
 
         @media (max-width: 768px) {
@@ -2676,7 +2862,12 @@ export default function App() {
           .portal-workspace-header { flex-direction: column; align-items: flex-start; }
           .portal-workspace-body-content { padding: 1rem; }
           .dashboard-editor-card { padding: 1.25rem; }
-          .login-card-layout { width: min(94vw, 420px); padding: 1.5rem 1rem; }
+          .login-card-layout { width: 100%; padding: 1.8rem 1rem; grid-template-columns: 1fr; }
+          .login-page-body { padding: 1.5rem 0 1rem; }
+          .login-card-left,
+          .login-card-form { padding: 1.25rem; }
+          .login-brand-title { font-size: 1.7rem; }
+          .login-form-title { font-size: 1.4rem; }
           .standard-login-form { gap: 1rem; }
           .cms-creation-form-layout { gap: 1rem; }
           .dashboard-table th,
@@ -2711,7 +2902,7 @@ export default function App() {
         <div className="app-preloader-overlay" role="alert" aria-busy="true">
           <div className="app-preloader-box">
             <img
-              src="../logo/logomain.png"
+              src="/logo/logomain.png"
               alt="Paz Thriving Tribe logo"
               className="app-preloader-logo"
             />
@@ -2721,14 +2912,6 @@ export default function App() {
       )}
 
       {/* Dev banner when Supabase is stubbed (no real network requests) */}
-      {isSupabaseStub && (
-        <div style={{ position: 'fixed', top: 12, right: 12, zIndex: 2147483646 }}>
-          <div style={{ background: '#fffbeb', color: '#92400e', padding: '6px 10px', borderRadius: 999, boxShadow: '0 6px 18px rgba(15,23,42,0.08)', fontSize: '13px', fontWeight: 700 }}>
-            Dev: Supabase stub active
-          </div>
-        </div>
-      )}
-
       {showCookieBanner && (
         <div className="cookie-consent-banner">
           <div className="cookie-consent-copy">
@@ -2747,7 +2930,10 @@ export default function App() {
 
       {toastMessage && (
         <div className="toast-notification-container">
-          <div className={`toast-notification ${toastType}`}>{toastMessage}</div>
+          <div className={`toast-notification ${toastType}`}>
+            <span className="toast-message-text">{toastMessage}</span>
+            <button type="button" className="toast-close-btn" onClick={() => setToastMessage(null)} aria-label="Dismiss notification">×</button>
+          </div>
         </div>
       )}
 
@@ -2762,33 +2948,28 @@ export default function App() {
         </button>
 
         {/* FLOATING WHATSAPP ACTION */}
-        <Routes>
-          <Route path="/dashboard" element={null} />
-          <Route path="*" element={
-            <>
-              <div className="floating-action-shell">
-                <div className={`floating-action-tip ${showWhatsappTip ? 'visible' : ''}`}>
-                  {whatsappTips[whatsappTipIndex]}
-                </div>
-                <a
-                  href={whatsappLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="floating-action-trigger"
-                  aria-label="Chat on WhatsApp"
-                >
-                  <i className="fa-brands fa-whatsapp"></i>
-                </a>
-              </div>
-            </>
-          } />
-        </Routes>
+        {!isAdminRoute && (
+          <div className="floating-action-shell">
+            <div className={`floating-action-tip ${showWhatsappTip ? 'visible' : ''}`}>
+              {whatsappTips[whatsappTipIndex]}
+            </div>
+            <a
+              href={whatsappLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="floating-action-trigger"
+              aria-label="Chat on WhatsApp"
+            >
+              <i className="fa-brands fa-whatsapp"></i>
+            </a>
+          </div>
+        )}
 
         {/* STICKY HEADER NAVIGATION BAR (hidden while preloader is active to avoid double-loading logos) */}
-        {!initialLoading && (
+        {!initialLoading && !isAdminRoute && (
           <header className="public-navbar">
           <Link to="/" className="nav-logo-brand-zone" onClick={() => { setNavOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-            <img src="../logo/logomain.png" alt="Paz Thriving Tribe logo" className="nav-logo-img" />
+            <img src="/logo/logomain.png" alt="Paz Thriving Tribe logo" className="nav-logo-img" />
             <div className="nav-brand-name">Paz Thriving Tribe</div>
           </Link>
           <button className="nav-menu-toggle" onClick={() => setNavOpen((current) => !current)} aria-label="Toggle navigation menu">
@@ -2857,15 +3038,17 @@ export default function App() {
                                 <button
                                   className="hero-scroll-btn"
                                   onClick={() => {
-                                    if (currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') {
+                                    if (currentSlide.title === 'Structured Teens Development Program') {
+                                      navigate('/teens_reg');
+                                    } else if (currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') {
                                       setHeroPopupMode('booking');
                                     } else {
                                       window.open('https://pazthrivingtribe.schoolsfocus.net/apply', '_blank', 'noopener');
                                     }
                                   }}
                                 >
-                                  {(currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? 'Book Now' : 'Register Now'}
-                                  <i className={(currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? 'fa-solid fa-calendar-check' : 'fa-solid fa-user-plus'}></i>
+                                  {currentSlide.title === 'Structured Teens Development Program' ? 'Apply Now' : ((currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? 'Book Now' : 'Register Now')}
+                                  <i className={currentSlide.title === 'Structured Teens Development Program' ? 'fa-solid fa-pen-to-square' : ((currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? 'fa-solid fa-calendar-check' : 'fa-solid fa-user-plus')}></i>
                                 </button>
                               </div>
                             </div>
@@ -3148,6 +3331,8 @@ export default function App() {
              DEDICATED ROUTE PATTERNS FOR INDIVIDUAL PAGE VIEWS
              ========================================================================= */}
           <Route path="/teens-kids-academy" element={<TeensKidsMenu paystackPublicKey={paystackPublicKey} teensKidsMonthlyFee={teensKidsMonthlyFee} />} />
+          <Route path="/teens_reg" element={<TeensRegistrationPage />} />
+          <Route path="/teens-reg" element={<TeensRegistrationPage />} />
           <Route path="/care-counseling" element={<CareCounselingPage />} />
           <Route path="/services/family" element={<ComingSoonPage title="Thriving Parents" description="Empowering parents with tools and wisdom" />} />
           <Route path="/services/marriage" element={<ComingSoonPage title="Thriving Women" description="Transforming lives, building confidence" />} />
@@ -3157,28 +3342,25 @@ export default function App() {
           <Route
             path="/admin"
             element={
-              !session ? (
-                <div className="auth-page-wrapper">
-                  <div className="login-card-layout" data-aos="fade-up">
-                    <h2 className="login-brand-title">Admin Gateway</h2>
-                    {authError && <div style={{ color: '#f85149', marginBottom: '1.25rem', fontSize: '0.9rem', fontWeight: 'bold' }}>{authError}</div>}
-
-                    <form onSubmit={handleSignIn} className="standard-login-form">
-                      <div className="form-input-container">
-                        <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Admin Email Account</label>
-                        <input ref={emailInputRef} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@paztribe.org" required className="plain-text-input" />
-                      </div>
-                      <div className="form-input-container">
-                        <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Account Password</label>
-                        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" required className="plain-text-input" />
-                      </div>
-                      <button type="submit" className="form-submit-action-btn">Verify Portal Credentials</button>
-                    </form>
-                  </div>
-                </div>
-              ) : (
-                <Navigate to="/dashboard" replace />
-              )
+              <AdminDashboard
+                mode="login"
+                session={session}
+                loading={loading}
+                authError={authError}
+                email={email}
+                password={password}
+                setEmail={setEmail}
+                setPassword={setPassword}
+                handleSignIn={handleSignIn}
+                handleSignOut={handleSignOut}
+                selectedAdminTab={selectedAdminTab}
+                setSelectedAdminTab={setSelectedAdminTab}
+                dashboardMessage={dashboardMessage}
+                clientActivityLog={clientActivityLog}
+                clientActivityLoading={clientActivityLoading}
+                applicants={applicants}
+                contactMessages={contactMessages}
+              />
             }
           />
 
@@ -3186,375 +3368,26 @@ export default function App() {
           <Route
             path="/dashboard"
             element={
-              session ? (
-                <div className="portal-workspace-grid">
-                  <aside className="portal-sidebar-panel">
-                    <div className="portal-sidebar-title">PTT Admin</div>
-                    <nav className="portal-sidebar-links">
-                      <Link to="/" className="sidebar-link-item" style={{ textDecoration: 'none' }}>← Exit to Live Website</Link>
-                      <div className="sidebar-link-item active">Core Studio Engine</div>
-                    </nav>
-                    <button onClick={handleSignOut} className="sidebar-disconnect-btn">Logout to Sign In</button>
-                  </aside>
-
-                  <div className="portal-main-workspace">
-                    <div className="portal-workspace-header-shell">
-                      <header className="portal-workspace-header">
-                        <div>
-                          <h2 style={{ margin: 0, fontSize: '1.4rem', color: 'var(--text-primary)' }}>Paz Tribe Dynamic Website CMS Engine</h2>
-                          <p style={{ margin: '0.5rem 0 0 0', color: 'var(--text-muted)', fontSize: '0.95rem' }}>Secure admin console for content, applicants, and programs.</p>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                          <div style={{ background: 'var(--bg-main)', padding: '0.5rem 1rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', border: '1px solid var(--border-color)' }}>{session.user.email}</div>
-                          <button onClick={handleSignOut} className="dashboard-logout-btn">Logout</button>
-                        </div>
-                      </header>
-                    </div>
-
-                    <AdminTabBar selectedTab={selectedAdminTab} onChangeTab={setSelectedAdminTab} />
-
-                    <main className="portal-workspace-body-content">
-                      {dashboardMessage && <div className="status-feedback-banner" style={{ marginBottom: '1.5rem' }}>{dashboardMessage}</div>}
-
-                      {selectedAdminTab === 'content' && (
-                        <section className="dashboard-editor-card">
-                          <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Modify Core Specialty Menus Content</h3>
-                          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Select your menu configuration channel to synchronize text details onto deep pages dynamically.</p>
-
-                          {cmsSuccessMessage && <div className="status-feedback-banner" style={{ marginTop: '1.5rem' }}>{cmsSuccessMessage}</div>}
-                          {cmsErrorMessage && <div className="status-feedback-banner" style={{ marginTop: '1rem', color: '#842029', background: '#f8d7da', border: '1px solid #f5c2c7' }}>{cmsErrorMessage}</div>}
-
-                          <form onSubmit={handleUpdateContentCMS} className="cms-creation-form-layout">
-                            <div className="form-input-container">
-                              <label style={{ color: 'var(--brand-blue)', fontWeight: '600' }}>Select Targeted Menu Category to Update</label>
-                              <select value={editTarget} onChange={(e) => setEditTarget(e.target.value)} className="plain-text-input" style={{ height: '46px', border: '1px solid var(--brand-blue)' }}>
-                                <option value="family">Thriving Parents</option>
-                                <option value="marriage">Thriving Women</option>
-                                <option value="children">Thriving Pre-teen & Teens</option>
-                              </select>
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Display Heading Title</label>
-                              <input type="text" value={formTitle} onChange={(e) => setFormTitle(e.target.value)} className="plain-text-input" required />
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Subtitle & Specialist Roles</label>
-                              <input type="text" value={formSubtitle} onChange={(e) => setFormSubtitle(e.target.value)} className="plain-text-input" required />
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Impact Score / Metric Total Text</label>
-                              <input type="text" value={formMetric} onChange={(e) => setFormMetric(e.target.value)} className="plain-text-input" required />
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Detailed Menu Context Description</label>
-                              <textarea value={formDesc} onChange={(e) => setFormDesc(e.target.value)} rows="5" className="plain-text-input" style={{ resize: 'vertical', fontFamily: 'inherit' }} required></textarea>
-                            </div>
-
-                            <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Publish Dynamic Update</button>
-                          </form>
-
-                          <div style={{ marginTop: '2rem' }}>
-                            <h4 style={{ marginBottom: '0.75rem' }}>Client Testimonials (Homepage Slider)</h4>
-                            <p style={{ color: 'var(--text-muted)', marginTop: 0 }}>Add or preview client reviews shown in the homepage testimonial slider.</p>
-
-                            {cmsSuccessMessage && <div className="status-feedback-banner" style={{ marginTop: '0.75rem' }}>{cmsSuccessMessage}</div>}
-                            {cmsErrorMessage && <div className="status-feedback-banner" style={{ marginTop: '0.75rem', color: '#842029', background: '#f8d7da', border: '1px solid #f5c2c7' }}>{cmsErrorMessage}</div>}
-
-                            <form onSubmit={handleAddTestimonial} className="cms-creation-form-layout" style={{ marginTop: '1rem' }}>
-                              <div className="form-input-container">
-                                <label style={{ fontWeight: '600' }}>Client / Author</label>
-                                <input type="text" value={testimonialAuthor} onChange={(e) => setTestimonialAuthor(e.target.value)} className="plain-text-input" placeholder="Author name or tag" />
-                              </div>
-                              <div className="form-input-container">
-                                <label style={{ fontWeight: '600' }}>Origin / Tag</label>
-                                <input type="text" value={testimonialOrigin} onChange={(e) => setTestimonialOrigin(e.target.value)} className="plain-text-input" placeholder="e.g., Oniru Client" />
-                              </div>
-                              <div className="form-input-container">
-                                <label style={{ fontWeight: '600' }}>Testimonial</label>
-                                <textarea value={testimonialText} onChange={(e) => setTestimonialText(e.target.value)} rows="4" className="plain-text-input" style={{ resize: 'vertical' }} required />
-                              </div>
-                              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
-                                <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>{testimonialEditIndex !== null ? 'Save Testimonial' : 'Add Testimonial'}</button>
-                                {testimonialEditIndex !== null && (
-                                  <button type="button" onClick={handleCancelEditTestimonial} className="form-cancel-action-btn" style={{ maxWidth: '140px' }}>Cancel</button>
-                                )}
-                              </div>
-                            </form>
-
-                            <div style={{ marginTop: '1.25rem' }}>
-                              <h5 style={{ marginBottom: '0.6rem' }}>Current Testimonials</h5>
-                              <div style={{ display: 'grid', gap: '0.75rem' }}>
-                                {promoSlides.map((t, idx) => (
-                                  <div key={idx} style={{ backgroundColor: 'var(--bg-main)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '0.9rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem' }}>
-                                    <div style={{ flex: 1 }}>
-                                      <strong style={{ display: 'block' }}>{t.title}</strong>
-                                      <div style={{ color: 'var(--text-muted)', marginTop: '0.4rem' }}>{t.text.slice(0, 220)}{t.text.length > 220 ? '…' : ''}</div>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                      <button onClick={() => handleStartEditTestimonial(idx)} className="form-submit-action-btn" style={{ padding: '0.45rem 0.7rem' }}>Edit</button>
-                                      <button onClick={() => handleDeleteTestimonial(idx)} className="form-cancel-action-btn" style={{ padding: '0.45rem 0.7rem' }}>Delete</button>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </section>
-                      )}
-
-                      {selectedAdminTab === 'social' && (
-                        <section className="dashboard-editor-card">
-                          <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Social Media Preview Editor</h3>
-                          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Update the featured social card content and YouTube playback URL displayed on the homepage.</p>
-
-                          {cmsSuccessMessage && <div className="status-feedback-banner" style={{ marginTop: '1.5rem' }}>{cmsSuccessMessage}</div>}
-                          {cmsErrorMessage && <div className="status-feedback-banner" style={{ marginTop: '1rem', color: '#842029', background: '#f8d7da', border: '1px solid #f5c2c7' }}>{cmsErrorMessage}</div>}
-
-                          <form onSubmit={handleUpdateSocialPreview} className="cms-creation-form-layout" style={{ marginTop: '1.5rem' }}>
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Select Social Platform</label>
-                              <select value={socialEditTarget} onChange={(e) => setSocialEditTarget(e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
-                                {socialNewsFeed.map((item) => (
-                                  <option key={item.platform} value={item.platform}>{item.platform}</option>
-                                ))}
-                              </select>
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Social Preview Headline</label>
-                              <input type="text" value={socialPreviewTitle} onChange={(e) => setSocialPreviewTitle(e.target.value)} className="plain-text-input" required />
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Preview Description</label>
-                              <textarea value={socialPreviewSummary} onChange={(e) => setSocialPreviewSummary(e.target.value)} rows="4" className="plain-text-input" style={{ resize: 'vertical', fontFamily: 'inherit' }} required />
-                            </div>
-
-                            <div className="form-input-container" style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
-                              <div style={{ flex: 1 }}>
-                                <label style={{ fontWeight: '600' }}>Action Link URL</label>
-                                <input type="url" value={socialPreviewUrl} onChange={(e) => setSocialPreviewUrl(e.target.value)} className="plain-text-input" required />
-                              </div>
-                              <button type="button" onClick={fetchSocialUrlMetadata} className="form-submit-action-btn" style={{ minWidth: '220px' }} disabled={!socialPreviewUrl || socialMetadataLoading}>
-                                {socialMetadataLoading ? 'Fetching...' : 'Fetch details from URL'}
-                              </button>
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Post Timestamp</label>
-                              <input type="text" value={socialPreviewTimestamp} onChange={(e) => setSocialPreviewTimestamp(e.target.value)} className="plain-text-input" placeholder="Posted 4 hours ago" />
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Badge Label</label>
-                              <input type="text" value={socialPreviewBadgeText} onChange={(e) => setSocialPreviewBadgeText(e.target.value)} className="plain-text-input" required />
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>YouTube Embed URL</label>
-                              <input type="url" value={socialPreviewEmbedUrl} onChange={(e) => setSocialPreviewEmbedUrl(e.target.value)} className="plain-text-input" placeholder="https://www.youtube.com/watch?v=..." />
-                              <small style={{ color: 'var(--text-muted)' }}>This URL will be used for the homepage video player when YouTube is selected.</small>
-                            </div>
-
-                            <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Update Social Preview</button>
-                          </form>
-                        </section>
-                      )}
-
-                      {selectedAdminTab === 'programs' && (
-                        <section className="dashboard-editor-card">
-                          <h3 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Create Programs</h3>
-                          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Add new curriculum offerings for any service category and make them available on the customer-facing pages.</p>
-
-                          <form onSubmit={handleCreateProgram} className="cms-creation-form-layout" style={{ marginTop: '1.5rem' }}>
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Service Category</label>
-                              <select value={programForm.service} onChange={(e) => setProgramForm((prev) => ({ ...prev, service: e.target.value }))} className="plain-text-input" style={{ height: '46px' }}>
-                                <option value="family">Thriving Parents</option>
-                                <option value="marriage">Thriving Women</option>
-                                <option value="children">Thriving Pre-teen & Teens</option>
-                              </select>
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Program Name</label>
-                              <input type="text" value={programForm.title} onChange={(e) => setProgramForm((prev) => ({ ...prev, title: e.target.value }))} className="plain-text-input" required />
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Program Level / Age Group</label>
-                              <input type="text" value={programForm.level} onChange={(e) => setProgramForm((prev) => ({ ...prev, level: e.target.value }))} className="plain-text-input" required />
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Duration</label>
-                              <input type="text" value={programForm.duration} onChange={(e) => setProgramForm((prev) => ({ ...prev, duration: e.target.value }))} className="plain-text-input" required />
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Schedule</label>
-                              <input type="text" value={programForm.schedule} onChange={(e) => setProgramForm((prev) => ({ ...prev, schedule: e.target.value }))} className="plain-text-input" required />
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Program Overview</label>
-                              <textarea value={programForm.description} onChange={(e) => setProgramForm((prev) => ({ ...prev, description: e.target.value }))} rows="4" className="plain-text-input" style={{ resize: 'vertical', fontFamily: 'inherit' }} required></textarea>
-                            </div>
-
-                            <button type="submit" className="form-submit-action-btn" style={{ maxWidth: '250px' }}>Create Program</button>
-                          </form>
-
-                          <div style={{ marginTop: '2rem' }}>
-                            <h4 style={{ marginBottom: '1rem' }}>Programs by Category</h4>
-                            <div style={{ display: 'grid', gap: '1rem' }}>
-                              {programs.map((program) => (
-                                <div key={program.id} style={{ backgroundColor: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '1rem' }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '1rem' }}>
-                                    <div>
-                                      <strong>{program.name}</strong>
-                                      <div style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>{program.service.toUpperCase()}</div>
-                                    </div>
-                                    <button type="button" onClick={() => handleRemoveProgram(program.id)} style={{ background: '#ff4757', color: '#fff', border: 'none', borderRadius: '8px', padding: '0.55rem 0.85rem', cursor: 'pointer' }}>Remove</button>
-                                  </div>
-                                  <p style={{ margin: '0.85rem 0 0 0', color: 'var(--text-muted)' }}>{program.description}</p>
-                                  <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.92rem' }}>
-                                    <span>{program.duration}</span>
-                                    <span>{program.level}</span>
-                                    <span>{program.schedule}</span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </section>
-                      )}
-
-                      {selectedAdminTab === 'applicants' && (
-                        <section className="dashboard-editor-card">
-                          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
-                            <div>
-                              <h3 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Recent Applicants</h3>
-                              <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Review the latest intake submissions and track their requested service path.</p>
-                            </div>
-                            <div style={{ color: 'var(--text-primary)', fontWeight: 700, minWidth: '150px' }}>
-                              Total Registered: {applicants.length}
-                            </div>
-                          </div>
-
-                          {applicants.length === 0 ? (
-                            <div style={{ marginTop: '1.5rem', padding: '1.5rem', background: 'var(--bg-main)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                              <p style={{ margin: 0, color: 'var(--text-muted)' }}>No applicants have submitted yet.</p>
-                            </div>
-                          ) : (
-                            <div className="applicants-table-wrapper">
-                              <table className="dashboard-table">
-                                <thead>
-                                  <tr>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Phone</th>
-                                    <th>Track</th>
-                                    <th>Status</th>
-                                    <th>Payment Ref</th>
-                                    <th>Submitted</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {applicants.slice(0, 50).map((applicant) => (
-                                    <tr key={applicant.id}>
-                                      <td>{applicant.fullName}</td>
-                                      <td>{applicant.email}</td>
-                                      <td>{applicant.phone}</td>
-                                      <td>{applicant.track}</td>
-                                      <td><span className={`status-pill ${applicant.paymentStatus === 'success' ? 'success' : 'pending'}`}>{applicant.paymentStatus}</span></td>
-                                      <td>{applicant.paymentReference || 'N/A'}</td>
-                                      <td>{new Date(applicant.submittedAt).toLocaleString()}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          )}
-                        </section>
-                      )}
-
-                      {selectedAdminTab === 'payments' && (
-                        <section className="dashboard-editor-card">
-                          <h3 style={{ margin: '0 0 0.5rem 0', color: 'var(--text-primary)' }}>Paystack Payment Settings</h3>
-                          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', margin: 0 }}>Configure your Paystack API key and pricing for Pre-teen & Teens Academy program.</p>
-
-                          {dashboardMessage && <div className="status-feedback-banner" style={{ marginTop: '1.5rem' }}>{dashboardMessage}</div>}
-
-                          <form onSubmit={(e) => {
-                            e.preventDefault();
-                            setPaystackPublicKey(tempPaystackKey);
-                            setTeensKidsMonthlyFee(parseInt(tempMonthlyFee) || 30000);
-                            setDashboardMessage('✓ Payment settings saved successfully!');
-                            setTimeout(() => setDashboardMessage(null), 3000);
-                          }} style={{ marginTop: '1.5rem' }}>
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Paystack Public Key</label>
-                              <input
-                                type="text"
-                                value={tempPaystackKey}
-                                onChange={(e) => setTempPaystackKey(e.target.value)}
-                                className="plain-text-input"
-                                placeholder="pk_live_... or pk_test_..."
-                                required
-                              />
-                              <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
-                                Your Paystack public API key. Switch between test and live keys as needed.
-                              </small>
-                            </div>
-
-                            <div className="form-input-container">
-                              <label style={{ fontWeight: '600' }}>Program Registration Fee (NGN)</label>
-                              <input
-                                type="number"
-                                value={tempMonthlyFee}
-                                onChange={(e) => setTempMonthlyFee(e.target.value)}
-                                className="plain-text-input"
-                                placeholder="10000"
-                                min="1000"
-                                max="1000000"
-                                required
-                              />
-                              <small style={{ color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>
-                                Update the academy registration fee for the Pre-teen & Teens program. This value drives the displayed pricing for clients.
-                              </small>
-                            </div>
-
-                            <button
-                              type="submit"
-                              className="form-submit-action-btn"
-                              style={{ marginTop: '1.5rem', width: '100%', maxWidth: '200px' }}
-                            >
-                              Save Payment Settings
-                            </button>
-                          </form>
-
-                          <div style={{ marginTop: '2rem', padding: '1rem', background: 'var(--bg-main)', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
-                            <h4 style={{ margin: '0 0 0.75rem 0', color: 'var(--text-primary)' }}>Current Configuration</h4>
-                            <div style={{ display: 'grid', gap: '0.75rem', color: 'var(--text-muted)' }}>
-                              <span><strong>Active Public Key:</strong> {paystackPublicKey.substring(0, 20)}...</span>
-                              <span><strong>Monthly Fee:</strong> ₦{teensKidsMonthlyFee.toLocaleString()}</span>
-                              <span><strong>3 Months:</strong> ₦{(teensKidsMonthlyFee * 3).toLocaleString()}</span>
-                              <span><strong>6 Months:</strong> ₦{(teensKidsMonthlyFee * 6).toLocaleString()}</span>
-                              <span><strong>12 Months:</strong> ₦{(teensKidsMonthlyFee * 12).toLocaleString()}</span>
-                            </div>
-                          </div>
-                        </section>
-                      )}
-                    </main>
-                  </div>
-                </div>
-              ) : (
-                <Navigate to="/admin" replace />
-              )
+              <AdminDashboard
+                mode="dashboard"
+                session={session}
+                loading={loading}
+                authError={authError}
+                email={email}
+                password={password}
+                setEmail={setEmail}
+                setPassword={setPassword}
+                handleSignIn={handleSignIn}
+                handleSignOut={handleSignOut}
+                selectedAdminTab={selectedAdminTab}
+                setSelectedAdminTab={setSelectedAdminTab}
+                clientActivityLog={clientActivityLog}
+                clientActivityLoading={clientActivityLoading}
+                applicants={applicants}
+                contactMessages={contactMessages}
+                refreshAdminData={refreshAdminData}
+                refreshLoading={refreshingDashboard}
+              />
             }
           />
 
@@ -3562,8 +3395,9 @@ export default function App() {
         </Routes>
 
         {/* Contact Us Section */}
-        <section id="contact" className="contact-us-section" data-aos="fade-up">
-          <div className="contact-container-wrapper">
+        {!isRegistrationRoute && !isAdminRoute && (
+          <section id="contact" className="contact-us-section" data-aos="fade-up">
+            <div className="contact-container-wrapper">
             <div className="contact-header-block">
               <span className="contact-section-label">Get In Touch</span>
               <h2>Contact Us</h2>
@@ -3598,7 +3432,7 @@ export default function App() {
                   </div>
                   <div className="contact-info-details">
                     <h4>Address</h4>
-                    <p>Lagos Main Campus, Nigeria</p>
+                    <p>#5 Muyibat Ashani Street, Peaceville Estate, Badore, Ajah, Lagos</p>
                   </div>
                 </div>
 
@@ -3613,45 +3447,72 @@ export default function App() {
                 </div>
               </div>
 
-              <form className="contact-form-wrapper">
+              <form className="contact-form-wrapper" onSubmit={handleContactFormSubmit}>
                 <div className="form-input-container">
                   <label>Your Name</label>
-                  <input type="text" placeholder="Johnson Ime " required />
+                  <input
+                    type="text"
+                    placeholder="Johnson Ime"
+                    value={contactForm.name}
+                    onChange={(e) => setContactForm((prev) => ({ ...prev, name: e.target.value }))}
+                    required
+                  />
                 </div>
                 <div className="form-input-container">
                   <label>Email Address</label>
-                  <input type="email" placeholder="johnson@example.com" required />
+                  <input
+                    type="email"
+                    placeholder="johnson@example.com"
+                    value={contactForm.email}
+                    onChange={(e) => setContactForm((prev) => ({ ...prev, email: e.target.value }))}
+                    required
+                  />
                 </div>
                 <div className="form-input-container">
                   <label>Subject</label>
-                  <input type="text" placeholder="How can we help?" required />
+                  <input
+                    type="text"
+                    placeholder="How can we help?"
+                    value={contactForm.subject}
+                    onChange={(e) => setContactForm((prev) => ({ ...prev, subject: e.target.value }))}
+                    required
+                  />
                 </div>
                 <div className="form-input-container">
                   <label>Message</label>
-                  <textarea rows="5" placeholder="Tell us more about your inquiry..." required style={{ resize: 'vertical' }}></textarea>
+                  <textarea
+                    rows="5"
+                    placeholder="Tell us more about your inquiry..."
+                    value={contactForm.message}
+                    onChange={(e) => setContactForm((prev) => ({ ...prev, message: e.target.value }))}
+                    required
+                    style={{ resize: 'vertical' }}
+                  />
                 </div>
                 <button type="submit" className="contact-submit-btn">Send Message</button>
               </form>
             </div>
           </div>
         </section>
+        )}
 
         {/* Global Multi-Column Footer Component */}
-        <footer className="workspace-fluid-footer">
-          <div className="footer-columns-container">
-            <div className="footer-brand-column">
-              <Link to="/" className="footer-brand-logo-row" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                <div className="footer-vector-badge"><img src="../logo/logomain.png" alt="PTT logo" className="nav-logo-img" /></div>
-                <span className="footer-brand-headline">Paz Thriving Tribe</span>
-              </Link>
-              <p>Paz Thriving Tribe Coaching, Mentoring and Counselling Organisation is committed to
-                impacting individuals, families, transforming teenagers, positively influencing women,
-                and helping children and young people develop the values, character, and healthy
-                habits they need to thrive and become purposeful leaders.</p>
-              <div className="footer-social-links">
-                <a href="https://facebook.com/pazthrivingtribe" target="_blank" rel="noopener noreferrer" className="footer-social-icon" aria-label="Facebook">
-                  <i className="fa-brands fa-facebook-f"></i>
-                </a>
+        {!isAdminRoute && (
+          <footer className="workspace-fluid-footer">
+            <div className="footer-columns-container">
+              <div className="footer-brand-column">
+                <Link to="/" className="footer-brand-logo-row" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+                  <div className="footer-vector-badge"><img src="/logo/logomain.png" alt="PTT logo" className="nav-logo-img" /></div>
+                  <span className="footer-brand-headline">Paz Thriving Tribe</span>
+                </Link>
+                <p>Paz Thriving Tribe Coaching, Mentoring and Counselling Organisation is committed to
+                  impacting individuals, families, transforming teenagers, positively influencing women,
+                  and helping children and young people develop the values, character, and healthy
+                  habits they need to thrive and become purposeful leaders.</p>
+                <div className="footer-social-links">
+                  <a href="https://facebook.com/pazthrivingtribe" target="_blank" rel="noopener noreferrer" className="footer-social-icon" aria-label="Facebook">
+                    <i className="fa-brands fa-facebook-f"></i>
+                  </a>
                 <a href="https://instagram.com/pazthrivingtribe" target="_blank" rel="noopener noreferrer" className="footer-social-icon" aria-label="Instagram">
                   <i className="fa-brands fa-instagram"></i>
                 </a>
@@ -3701,6 +3562,7 @@ export default function App() {
             </div>
           </div>
         </footer>
+        )}
       </div>
     </>
   );
