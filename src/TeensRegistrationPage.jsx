@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 
@@ -53,6 +53,16 @@ export default function TeensRegistrationPage() {
   }, [formData]);
 
   const currentStepMeta = steps[currentStep];
+
+  useEffect(() => {
+    if (!formToast.message) return undefined;
+
+    const timer = window.setTimeout(() => {
+      setFormToast({ message: '', type: 'error' });
+    }, 4000);
+
+    return () => window.clearTimeout(timer);
+  }, [formToast.message]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -300,6 +310,13 @@ export default function TeensRegistrationPage() {
 
   return (
     <div className="teens-registration-page">
+      {formToast.message && (
+        <div className={`teens-registration-toast ${formToast.type}`} role="alert" aria-live="assertive">
+          <span>{formToast.message}</span>
+          <button type="button" onClick={() => setFormToast({ message: '', type: 'error' })} aria-label="Dismiss notification">×</button>
+        </div>
+      )}
+
       <div className="teens-registration-card" data-aos="fade-up">
         <div className="teens-registration-header">
           <span className="teens-registration-badge">PTTA Registration</span>
@@ -322,56 +339,47 @@ export default function TeensRegistrationPage() {
             </Link>
           </div>
         ) : (
-          <>
-            {formToast.message && (
-              <div className={`teens-registration-toast ${formToast.type}`} role="alert" aria-live="assertive">
-                <span>{formToast.message}</span>
-                <button type="button" onClick={() => setFormToast({ message: '', type: 'error' })} aria-label="Dismiss notification">×</button>
-              </div>
-            )}
-
-            <form className="teens-registration-form" onSubmit={handleSubmit}>
-              <div className="teens-registration-progress">
-                {steps.map((step, index) => (
-                  <button
-                    key={step.id}
-                    type="button"
-                    className={`teens-step-tab ${index === currentStep ? 'active' : ''} ${completedSteps[step.id] ? 'complete' : ''}`}
-                    onClick={() => goToStep(index)}
-                  >
-                    <span className="teens-step-number">{index + 1}</span>
-                    <span className="teens-step-label">{step.label}</span>
-                  </button>
-                ))}
-              </div>
-
-              <div className="teens-registration-step-header">
-                <div>
-                  <div className="teens-step-breadcrumb">Step {currentStep + 1} of {steps.length}</div>
-                  <h2>{currentStepMeta.title}</h2>
-                </div>
-                <p>{currentStepMeta.description}</p>
-              </div>
-
-              {renderStepContent()}
-
-              <div className="teens-registration-actions">
-                <button type="button" className="teens-registration-back" onClick={handlePrevious} disabled={currentStep === 0}>
-                  Back
+          <form className="teens-registration-form" onSubmit={handleSubmit}>
+            <div className="teens-registration-progress">
+              {steps.map((step, index) => (
+                <button
+                  key={step.id}
+                  type="button"
+                  className={`teens-step-tab ${index === currentStep ? 'active' : ''} ${completedSteps[step.id] ? 'complete' : ''}`}
+                  onClick={() => goToStep(index)}
+                >
+                  <span className="teens-step-number">{index + 1}</span>
+                  <span className="teens-step-label">{step.label}</span>
                 </button>
+              ))}
+            </div>
 
-                {currentStep < steps.length - 1 ? (
-                  <button type="button" className="teens-registration-submit" onClick={handleNext}>
-                    Next: {steps[currentStep + 1].label}
-                  </button>
-                ) : (
-                  <button type="submit" className="teens-registration-submit" disabled={saving}>
-                    {saving ? 'Submitting...' : 'Submit Registration'}
-                  </button>
-                )}
+            <div className="teens-registration-step-header">
+              <div>
+                <div className="teens-step-breadcrumb">Step {currentStep + 1} of {steps.length}</div>
+                <h2>{currentStepMeta.title}</h2>
               </div>
-            </form>
-          </>
+              <p>{currentStepMeta.description}</p>
+            </div>
+
+            {renderStepContent()}
+
+            <div className="teens-registration-actions">
+              <button type="button" className="teens-registration-back" onClick={handlePrevious} disabled={currentStep === 0}>
+                Back
+              </button>
+
+              {currentStep < steps.length - 1 ? (
+                <button type="button" className="teens-registration-submit" onClick={handleNext}>
+                  Next: {steps[currentStep + 1].label}
+                </button>
+              ) : (
+                <button type="submit" className="teens-registration-submit" disabled={saving}>
+                  {saving ? 'Submitting...' : 'Submit Registration'}
+                </button>
+              )}
+            </div>
+          </form>
         )}
       </div>
     </div>
