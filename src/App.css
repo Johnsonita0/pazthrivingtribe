@@ -646,18 +646,26 @@ body, html {
 }
 
 .teens-registration-toast {
+  position: fixed;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 11000;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.8rem;
+  width: min(100% - 1.5rem, 360px);
+  max-width: 360px;
   border-radius: 14px;
   padding: 0.9rem 1rem;
   font-size: 0.92rem;
   font-weight: 600;
-  border: 1px solid #fecaca;
-  background: #fff1f2;
-  color: #b42318;
-  box-shadow: 0 12px 30px rgba(180, 35, 24, 0.12);
+  border: 1px solid rgba(248, 81, 73, 0.9);
+  background: rgba(248, 81, 73, 0.95);
+  color: #ffffff;
+  box-shadow: 0 18px 30px rgba(15, 23, 42, 0.18);
+  pointer-events: auto;
+  animation: toast-slide-in 240ms ease-out;
 }
 
 .teens-registration-toast button {
@@ -669,6 +677,18 @@ body, html {
   cursor: pointer;
   line-height: 1;
   padding: 0;
+  opacity: 0.9;
+}
+
+@keyframes toast-slide-in {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 .teens-registration-actions {
