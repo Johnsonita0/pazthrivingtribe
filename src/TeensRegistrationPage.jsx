@@ -30,9 +30,8 @@ export default function TeensRegistrationPage() {
   const [formData, setFormData] = useState(initialForm);
   const [currentStep, setCurrentStep] = useState(0);
   const [submitted, setSubmitted] = useState(false);
-  const [submitError, setSubmitError] = useState('');
   const [saving, setSaving] = useState(false);
-  const [validationMessage, setValidationMessage] = useState('');
+  const [formToast, setFormToast] = useState({ message: '', type: 'error' });
 
   const completedSteps = useMemo(() => {
     const result = {};
@@ -58,8 +57,8 @@ export default function TeensRegistrationPage() {
   const handleChange = (event) => {
     const { name, value } = event.target;
     setFormData((current) => ({ ...current, [name]: value }));
-    if (validationMessage) {
-      setValidationMessage('');
+    if (formToast.message) {
+      setFormToast({ message: '', type: 'error' });
     }
   };
 
@@ -93,16 +92,16 @@ export default function TeensRegistrationPage() {
   const handleNext = () => {
     const validationError = validateCurrentStep();
     if (validationError) {
-      setValidationMessage(validationError);
+      setFormToast({ message: validationError, type: 'error' });
       return;
     }
 
-    setValidationMessage('');
+    setFormToast({ message: '', type: 'error' });
     setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
   };
 
   const handlePrevious = () => {
-    setValidationMessage('');
+    setFormToast({ message: '', type: 'error' });
     setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
 
@@ -110,12 +109,12 @@ export default function TeensRegistrationPage() {
     event.preventDefault();
     const validationError = validateCurrentStep();
     if (validationError) {
-      setValidationMessage(validationError);
+      setFormToast({ message: validationError, type: 'error' });
       return;
     }
 
     setSaving(true);
-    setSubmitError('');
+    setFormToast({ message: '', type: 'error' });
 
     try {
       const payload = {
@@ -149,7 +148,10 @@ export default function TeensRegistrationPage() {
     } catch (err) {
       console.error('PTTA registration submission failed:', err);
       setSubmitted(false);
-      setSubmitError('Your application was not submitted because the database is unavailable right now. Please try again in a moment.');
+      setFormToast({
+        message: 'Your application was not submitted because the database is unavailable right now. Please try again in a moment.',
+        type: 'error'
+      });
     } finally {
       setSaving(false);
     }
@@ -161,7 +163,7 @@ export default function TeensRegistrationPage() {
         <div className="teens-registration-form-grid">
           <label className="teens-registration-field">
             <span>Child's Full Name</span>
-            <input type="text" name="childName" value={formData.childName} onChange={handleChange} placeholder="Surname first" required />
+            <input type="text" name="childName" value={formData.childName} onChange={handleChange} placeholder="Surname, First Name, Middle Name" required />
           </label>
 
           <label className="teens-registration-field">
@@ -345,13 +347,10 @@ export default function TeensRegistrationPage() {
 
             {renderStepContent()}
 
-            {validationMessage && (
-              <div className="teens-registration-error">{validationMessage}</div>
-            )}
-
-            {submitError && (
-              <div className="teens-registration-error" style={{ marginBottom: '1rem', color: '#b42318', background: '#fff1f2', border: '1px solid #fecdd3', padding: '0.85rem 1rem', borderRadius: '10px' }}>
-                {submitError}
+            {formToast.message && (
+              <div className={`teens-registration-toast ${formToast.type}`} role="alert" aria-live="assertive">
+                <span>{formToast.message}</span>
+                <button type="button" onClick={() => setFormToast({ message: '', type: 'error' })} aria-label="Dismiss notification">×</button>
               </div>
             )}
 

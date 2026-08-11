@@ -645,14 +645,30 @@ body, html {
   line-height: 1.6;
 }
 
-.teens-registration-error {
+.teens-registration-toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  font-size: 0.92rem;
+  font-weight: 600;
   border: 1px solid #fecaca;
   background: #fff1f2;
   color: #b42318;
-  border-radius: 10px;
-  padding: 0.85rem 1rem;
-  font-size: 0.92rem;
-  font-weight: 600;
+  box-shadow: 0 12px 30px rgba(180, 35, 24, 0.12);
+}
+
+.teens-registration-toast button {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 1.4rem;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
 }
 
 .teens-registration-actions {
