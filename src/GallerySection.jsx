@@ -76,8 +76,8 @@ const galleryItems = [
   },
 ];
 
-export default function GallerySection({ theme }) {
-  const isDark = theme === 'dark';
+export default function GallerySection() {
+  const isDark = false;
   const [slidesPerView, setSlidesPerView] = useState(5);
   const [translateX, setTranslateX] = useState(0);
   const [trackWidth, setTrackWidth] = useState(0);

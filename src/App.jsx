@@ -9,6 +9,15 @@ import NotFoundPage from './NotFoundPage';
 import ComingSoonPage from './ComingSoonPage';
 import GallerySection from './GallerySection';
 
+const whatsappTips = [
+  'Need help today?',
+  'Need support right now?',
+  'Need guidance this week?',
+  'Looking for a caring reply?',
+  'Need help booking a session?',
+  'Need a warm welcome today?'
+];
+
 function AdminTabBar({ selectedTab, onChangeTab }) {
   const adminTabs = [
     { id: 'content', label: 'Page Content' },
@@ -39,14 +48,10 @@ function AdminTabBar({ selectedTab, onChangeTab }) {
 // MAIN UNIFIED APPLICATION WITH DEDICATED SERVICE PAGES & INTAKE FORMS
 // =========================================================================
 export default function App() {
-  // --- Theme Management States ---
-  const [theme, setTheme] = useState('dark');
-  const [showThemeModal, setShowThemeModal] = useState(false);
-  const [showFloatingActions, setShowFloatingActions] = useState(false);
-  const [floatingHintIndex, setFloatingHintIndex] = useState(0);
-  const [showFloatingHint, setShowFloatingHint] = useState(true);
-  const floatingActionRef = useRef(null);
   const [navOpen, setNavOpen] = useState(false);
+  const [whatsappTipIndex, setWhatsappTipIndex] = useState(0);
+  const [showWhatsappTip, setShowWhatsappTip] = useState(true);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const [heroPopupMode, setHeroPopupMode] = useState(null); // 'register' | 'booking' | null
   const [cookieConsentAccepted, setCookieConsentAccepted] = useState(false);
   const [showCookieBanner, setShowCookieBanner] = useState(false);
@@ -412,13 +417,6 @@ export default function App() {
     faLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
     document.head.appendChild(faLink);
 
-    const savedTheme = localStorage.getItem('paz-tribe-theme');
-    if (savedTheme) {
-      setTheme(savedTheme);
-    } else {
-      setShowThemeModal(true);
-    }
-
     const savedCookieConsent = localStorage.getItem('paz-tribe-cookie-consent');
     if (savedCookieConsent === 'accepted') {
       setCookieConsentAccepted(true);
@@ -531,61 +529,46 @@ export default function App() {
     }
   }, [editTarget, services]);
 
-  const selectThemeMode = (chosenTheme) => {
-    setTheme(chosenTheme);
-    localStorage.setItem('paz-tribe-theme', chosenTheme);
-    setShowThemeModal(false);
-    setTimeout(() => AOS.refresh(), 100);
-  };
-
-  const toggleThemeModeSwitch = () => {
-    const nextTheme = theme === 'dark' ? 'light' : 'dark';
-    setTheme(nextTheme);
-    localStorage.setItem('paz-tribe-theme', nextTheme);
-  };
-
-  const toggleFloatingActions = () => {
-    setShowFloatingActions((prev) => !prev);
-  };
-
-  const closeFloatingActions = () => {
-    setShowFloatingActions(false);
-  };
+  const whatsappLink = 'https://wa.me/08037383820';
 
   useEffect(() => {
-    setFloatingHintIndex(0);
-    setShowFloatingHint(true);
+    let showTimer;
+    let hideTimer;
 
-    const hintTimeout = window.setTimeout(() => {
-      setShowFloatingHint(false);
-    }, 4500);
+    const cycleTip = () => {
+      setShowWhatsappTip(true);
+      showTimer = window.setTimeout(() => {
+        setShowWhatsappTip(false);
+        hideTimer = window.setTimeout(() => {
+          setWhatsappTipIndex((prev) => (prev + 1) % whatsappTips.length);
+          cycleTip();
+        }, 4000);
+      }, 6000);
+    };
+
+    cycleTip();
 
     return () => {
-      window.clearTimeout(hintTimeout);
+      window.clearTimeout(showTimer);
+      window.clearTimeout(hideTimer);
     };
   }, []);
 
   useEffect(() => {
-    if (showFloatingActions) {
-      setShowFloatingHint(false);
-    }
-  }, [showFloatingActions]);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (floatingActionRef.current && !floatingActionRef.current.contains(event.target)) {
-        setShowFloatingActions(false);
-      }
+    const handleScroll = () => {
+      const heroSection = document.querySelector('.hero-section');
+      const heroHeight = heroSection?.offsetHeight || 800;
+      setShowScrollTop(window.scrollY > heroHeight);
     };
 
-    if (showFloatingActions) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showFloatingActions]);
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const acceptCookieConsent = () => {
     localStorage.setItem('paz-tribe-cookie-consent', 'accepted');
@@ -1113,19 +1096,19 @@ export default function App() {
     <>
       <style>{`
         :root {
-          --bg-main: ${theme === 'dark' ? '#0d1117' : '#f6f8fa'};
-          --bg-card: ${theme === 'dark' ? '#161b22' : '#ffffff'};
-          --bg-nav: ${theme === 'dark' ? 'rgba(22, 27, 34, 0.85)' : 'rgba(255, 255, 255, 0.85)'};
-          --bg-input: ${theme === 'dark' ? '#0d1117' : '#fafafa'};
-          --border-color: ${theme === 'dark' ? '#30363d' : '#d0d7de'};
-          --text-primary: ${theme === 'dark' ? '#f0f6fc' : '#24292f'};
-          --text-muted: ${theme === 'dark' ? '#8b949e' : '#57606a'};
+          --bg-main: #f6f8fa;
+          --bg-card: #ffffff;
+          --bg-nav: rgba(255, 255, 255, 0.85);
+          --bg-input: #fafafa;
+          --border-color: #d0d7de;
+          --text-primary: #24292f;
+          --text-muted: #57606a;
           --brand-green: #238636;
           --brand-green-hover: #2ea44f;
           --brand-blue: #58a6ff;
           --accent-green: #3fb950;
-          --shadow-sm: 0 2px 8px rgba(0,0,0,${theme === 'dark' ? '0.2' : '0.06'});
-          --shadow-lg: 0 12px 34px rgba(0,0,0,${theme === 'dark' ? '0.4' : '0.1'});
+          --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+          --shadow-lg: 0 12px 34px rgba(0,0,0,0.1);
         }
 
         html, body, #root, .full-view-app-root-override {
@@ -1336,7 +1319,7 @@ export default function App() {
         .nav-cta-btn:focus-visible span { max-width: 6rem; opacity: 1; }
         .nav-menu-toggle { display: none; background: none; border: none; color: var(--text-primary); font-size: 1.55rem; cursor: pointer; }
 
-        /* Floating Controls UI Layer */
+        /* Floating WhatsApp Action */
         .floating-action-shell {
           position: fixed;
           bottom: 18px;
@@ -1345,7 +1328,7 @@ export default function App() {
           display: flex;
           flex-direction: column;
           align-items: flex-end;
-          gap: 0.75rem;
+          gap: 0.6rem;
         }
         .floating-action-trigger {
           width: 56px;
@@ -1360,83 +1343,72 @@ export default function App() {
           box-shadow: 0 8px 24px rgba(46, 164, 79, 0.35);
           cursor: pointer;
           transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+          text-decoration: none;
+          animation: bounce-default 1.7s ease-in-out infinite;
         }
         .floating-action-trigger:hover,
-        .floating-action-trigger.active {
+        .floating-action-trigger:focus-visible {
           transform: translateY(-2px);
           background-color: #1f9b46;
         }
-        .floating-action-hint {
-          position: absolute;
-          right: 100%;
-          top: 50%;
-          transform: translate(10px, -50%);
-          padding: 0.5rem 0.85rem;
+        .floating-action-trigger i {
+          font-size: 1.45rem;
+        }
+        .floating-action-tip {
+          max-width: min(220px, calc(100vw - 2rem));
+          padding: 0.55rem 0.8rem;
           border-radius: 999px;
-          background: rgba(4, 120, 87, 0.92);
-          color: #f8fafc;
-          font-size: 0.85rem;
-          font-weight: 600;
+          border: 1px solid rgba(35, 134, 54, 0.32);
+          background: transparent;
+          color: var(--brand-green);
+          font-size: 0.82rem;
+          font-weight: 700;
+          letter-spacing: 0.01em;
           white-space: nowrap;
           opacity: 0;
+          transform: translateY(6px);
+          transition: opacity 0.35s ease, transform 0.35s ease;
           pointer-events: none;
-          transition: opacity 0.4s ease, transform 0.4s ease;
-          box-shadow: 0 14px 36px rgba(0, 0, 0, 0.25);
         }
-        .floating-action-hint.visible {
+        .floating-action-tip.visible {
           opacity: 1;
-          transform: translate(0, -50%);
+          transform: translateY(0);
         }
-        .floating-action-menu {
-          display: none;
-          flex-direction: column;
-          align-items: stretch;
-          gap: 0.75rem;
-          background: rgba(12, 18, 24, 0.95);
-          padding: 0.75rem;
-          border-radius: 18px;
-          border: 1px solid rgba(255,255,255,0.08);
-          box-shadow: 0 14px 40px rgba(0, 0, 0, 0.25);
-          min-width: 180px;
-        }
-        .floating-action-menu.visible {
-          display: flex;
-        }
-        .floating-action-item {
-          display: flex;
+        .scroll-to-top-btn {
+          position: fixed;
+          left: 18px;
+          bottom: 18px;
+          z-index: 9998;
+          width: 50px;
+          height: 50px;
+          border-radius: 999px;
+          border: 1px solid rgba(35, 134, 54, 0.28);
+          background: rgba(255, 255, 255, 0.9);
+          color: var(--brand-green);
+          display: inline-flex;
           align-items: center;
-          gap: 0.75rem;
-          padding: 0.8rem 1rem;
-          border-radius: 14px;
-          background: rgba(255,255,255,0.06);
-          color: var(--text-primary);
-          text-decoration: none;
-          border: 1px solid rgba(255,255,255,0.08);
+          justify-content: center;
+          box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
           cursor: pointer;
-          transition: background 0.2s ease, transform 0.2s ease;
+          opacity: 0;
+          pointer-events: none;
+          transform: translateY(8px);
+          transition: opacity 0.25s ease, transform 0.25s ease, box-shadow 0.2s ease, background-color 0.2s ease;
         }
-        .floating-action-item:hover {
-          background: rgba(255,255,255,0.12);
-          transform: translateX(-2px);
+        .scroll-to-top-btn.visible {
+          opacity: 1;
+          pointer-events: auto;
+          transform: translateY(0);
         }
-        .floating-action-item span {
-          font-size: 0.9rem;
-          font-weight: 600;
-        }
-        .floating-action-item.theme-action {
-          background: rgba(255,255,255,0.08);
+        .scroll-to-top-btn:hover,
+        .scroll-to-top-btn:focus-visible {
+          background: var(--brand-green);
           color: white;
+          box-shadow: 0 10px 24px rgba(35, 134, 54, 0.24);
+          transform: translateY(-2px);
         }
-        .floating-action-item.theme-action span {
-          color: white;
-        }
-        .floating-action-item.whatsapp-action {
-          color: white;
-          background: #25D366;
-          border-color: rgba(255,255,255,0.18);
-        }
-        .floating-action-item.whatsapp-action i {
-          font-size: 1.1rem;
+        .scroll-to-top-btn i {
+          font-size: 1.05rem;
         }
         @keyframes bounce-default { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
@@ -2082,12 +2054,6 @@ export default function App() {
         .founder-img { width: 100%; height: 100%; object-fit: cover; display: block; }
         @media (max-width: 768px) { .founder-portrait-frame { height: 400px; } }
 
-        /* THEME SELECTION MODAL */
-        .theme-modal-dimmed-overlay { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); z-index: 20000; }
-        .theme-selection-card-frame { background: var(--bg-card); color: var(--text-primary); border-radius: 12px; padding: 2.25rem; width: 520px; max-width: calc(100% - 40px); box-shadow: 0 18px 50px rgba(0,0,0,0.45); border: 1px solid var(--border-color); }
-        .theme-selection-card-frame h2 { margin: 0 0 0.5rem 0; }
-        .theme-selection-card-frame p { margin: 0 0 1.25rem 0; color: var(--text-muted); }
-        .theme-options-grid { display: flex; gap: 1rem; }
         .choice-option-tile { flex: 1; text-align: center; padding: 1rem 1.25rem; border-radius: 8px; cursor: pointer; border: 1px solid var(--border-color); background: var(--bg-main); transition: transform 0.12s ease, box-shadow 0.12s ease; }
         .choice-option-tile:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.25); }
         .founder-title-tag-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.85)); padding: 2rem 1.5rem 1.5rem 1.5rem; color: white; }
@@ -2554,18 +2520,6 @@ export default function App() {
         .footer-social-icon[aria-label="YouTube"]:hover { background: #FF0000; color: white; }
         .footer-social-icon[aria-label="LinkedIn"] { color: #0A66C2; background: rgba(10, 102, 194, 0.15); }
         .footer-social-icon[aria-label="LinkedIn"]:hover { background: #0A66C2; color: white; }
-        @media (prefers-color-scheme: dark) {
-          .footer-social-icon[aria-label="Facebook"] { color: #60A5FA; background: rgba(96, 165, 250, 0.2); }
-          .footer-social-icon[aria-label="Facebook"]:hover { background: #60A5FA; color: white; }
-          .footer-social-icon[aria-label="Instagram"] { color: #F472B6; background: rgba(244, 114, 182, 0.2); }
-          .footer-social-icon[aria-label="Instagram"]:hover { background: #F472B6; color: white; }
-          .footer-social-icon[aria-label="Twitter"] { color: #60A5FA; background: rgba(96, 165, 250, 0.2); }
-          .footer-social-icon[aria-label="Twitter"]:hover { background: #60A5FA; color: white; }
-          .footer-social-icon[aria-label="YouTube"] { color: #FCA5A5; background: rgba(252, 165, 165, 0.2); }
-          .footer-social-icon[aria-label="YouTube"]:hover { background: #FCA5A5; color: white; }
-          .footer-social-icon[aria-label="LinkedIn"] { color: #60A5FA; background: rgba(96, 165, 250, 0.2); }
-          .footer-social-icon[aria-label="LinkedIn"]:hover { background: #60A5FA; color: white; }
-        }
         .footer-social-icon:hover { transform: translateY(-2px); }
         .footer-links-column { display: flex; flex-direction: column; gap: 1.2rem; }
         .footer-links-column h4 { font-size: 0.9rem; font-weight: 700; color: var(--text-primary); margin: 0; text-transform: uppercase; }
@@ -2757,7 +2711,7 @@ export default function App() {
         <div className="app-preloader-overlay" role="alert" aria-busy="true">
           <div className="app-preloader-box">
             <img
-              src={theme === 'dark' ? "../logo/logo2.jpeg" : "../logo/logomain.png"}
+              src="../logo/logomain.png"
               alt="Paz Thriving Tribe logo"
               className="app-preloader-logo"
             />
@@ -2798,64 +2752,33 @@ export default function App() {
       )}
 
       <div className="full-view-app-root-override">
-        {/* THEME CONFIG MODAL */}
-        {showThemeModal && (
-          <div className="theme-modal-dimmed-overlay">
-            <div className="theme-selection-card-frame">
-              <h2>Welcome to Paz Tribe</h2>
-              <p>Please select your baseline workspace layout profile configuration to customize your viewing experience context.</p>
-              <div className="theme-options-grid">
-                <div className="choice-option-tile" onClick={() => selectThemeMode('light')}>☀️ Light Mode</div>
-                <div className="choice-option-tile" onClick={() => selectThemeMode('dark')}>🌙 Dark Mode</div>
-              </div>
-            </div>
-          </div>
-        )}
+        <button
+          type="button"
+          className={`scroll-to-top-btn ${showScrollTop ? 'visible' : ''}`}
+          onClick={scrollToTop}
+          aria-label="Back to top"
+        >
+          <i className="fa-solid fa-arrow-up"></i>
+        </button>
 
-        {/* FLOATING ACTION LAYERS */}
+        {/* FLOATING WHATSAPP ACTION */}
         <Routes>
           <Route path="/dashboard" element={null} />
           <Route path="*" element={
             <>
-              <div className="floating-action-shell" ref={floatingActionRef}>
-                <button
-                  type="button"
-                  className={`floating-action-trigger ${showFloatingActions ? 'active' : ''}`}
-                  onClick={toggleFloatingActions}
-                  aria-label="Open quick actions"
+              <div className="floating-action-shell">
+                <div className={`floating-action-tip ${showWhatsappTip ? 'visible' : ''}`}>
+                  {whatsappTips[whatsappTipIndex]}
+                </div>
+                <a
+                  href={whatsappLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="floating-action-trigger"
+                  aria-label="Chat on WhatsApp"
                 >
-                  <i className="fa-solid fa-ellipsis-h"></i>
-                </button>
-
-                <div className={`floating-action-hint ${showFloatingHint ? 'visible' : ''}`}>
-                  {['Theme mode', 'WhatsApp'][floatingHintIndex]}
-                </div>
-
-                <div className={`floating-action-menu ${showFloatingActions ? 'visible' : ''}`}>
-                  <button
-                    type="button"
-                    className="floating-action-item theme-action"
-                    onClick={() => {
-                      toggleThemeModeSwitch();
-                      closeFloatingActions();
-                    }}
-                    style={{ color: theme === 'dark' ? 'white' : 'white' }}
-                  >
-                    <span>{theme === 'dark' ? '☀️' : '🌙'}</span>
-                    <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
-                  </button>
-
-                  <a
-                    href="https://wa.me/2348123456789"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="floating-action-item whatsapp-action"
-                    onClick={closeFloatingActions}
-                  >
-                    <i className="fa-brands fa-whatsapp"></i>
-                    <span>WhatsApp</span>
-                  </a>
-                </div>
+                  <i className="fa-brands fa-whatsapp"></i>
+                </a>
               </div>
             </>
           } />
@@ -2865,7 +2788,7 @@ export default function App() {
         {!initialLoading && (
           <header className="public-navbar">
           <Link to="/" className="nav-logo-brand-zone" onClick={() => { setNavOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-            <img src={theme === 'dark' ? "../logo/logo2.jpeg" : "../logo/logomain.png"} alt="Paz Thriving Tribe logo" className="nav-logo-img" />
+            <img src="../logo/logomain.png" alt="Paz Thriving Tribe logo" className="nav-logo-img" />
             <div className="nav-brand-name">Paz Thriving Tribe</div>
           </Link>
           <button className="nav-menu-toggle" onClick={() => setNavOpen((current) => !current)} aria-label="Toggle navigation menu">
@@ -3177,7 +3100,7 @@ export default function App() {
                   </div>
                 </section>
 
-                <GallerySection theme={theme} />
+                <GallerySection />
 
                 {/* FAQ Section */}
                 <section id="faq-section" className="faq-main-section" data-aos="fade-up">
@@ -3718,7 +3641,7 @@ export default function App() {
           <div className="footer-columns-container">
             <div className="footer-brand-column">
               <Link to="/" className="footer-brand-logo-row" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                <div className="footer-vector-badge"><img src={theme === 'dark' ? "../logo/logo2.jpeg" : "../logo/logomain.png"} alt="PTT logo" className="nav-logo-img" /></div>
+                <div className="footer-vector-badge"><img src="../logo/logomain.png" alt="PTT logo" className="nav-logo-img" /></div>
                 <span className="footer-brand-headline">Paz Thriving Tribe</span>
               </Link>
               <p>Paz Thriving Tribe Coaching, Mentoring and Counselling Organisation is committed to
