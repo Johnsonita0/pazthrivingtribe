@@ -8,9 +8,9 @@ let supabase
 if (supabaseUrl && supabaseUrl.includes('supabase.co')) {
 	supabase = createClient(supabaseUrl, supabaseAnonKey, {
 		auth: {
-			persistSession: false,
+			persistSession: true,
 			detectSessionInUrl: false,
-			autoRefreshToken: false
+			autoRefreshToken: true
 		}
 	})
 } else {
