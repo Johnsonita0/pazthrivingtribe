@@ -322,31 +322,7 @@ export default function TeensRegistrationPage() {
             </Link>
           </div>
         ) : (
-          <form className="teens-registration-form" onSubmit={handleSubmit}>
-            <div className="teens-registration-progress">
-              {steps.map((step, index) => (
-                <button
-                  key={step.id}
-                  type="button"
-                  className={`teens-step-tab ${index === currentStep ? 'active' : ''} ${completedSteps[step.id] ? 'complete' : ''}`}
-                  onClick={() => goToStep(index)}
-                >
-                  <span className="teens-step-number">{index + 1}</span>
-                  <span className="teens-step-label">{step.label}</span>
-                </button>
-              ))}
-            </div>
-
-            <div className="teens-registration-step-header">
-              <div>
-                <div className="teens-step-breadcrumb">Step {currentStep + 1} of {steps.length}</div>
-                <h2>{currentStepMeta.title}</h2>
-              </div>
-              <p>{currentStepMeta.description}</p>
-            </div>
-
-            {renderStepContent()}
-
+          <>
             {formToast.message && (
               <div className={`teens-registration-toast ${formToast.type}`} role="alert" aria-live="assertive">
                 <span>{formToast.message}</span>
@@ -354,22 +330,48 @@ export default function TeensRegistrationPage() {
               </div>
             )}
 
-            <div className="teens-registration-actions">
-              <button type="button" className="teens-registration-back" onClick={handlePrevious} disabled={currentStep === 0}>
-                Back
-              </button>
+            <form className="teens-registration-form" onSubmit={handleSubmit}>
+              <div className="teens-registration-progress">
+                {steps.map((step, index) => (
+                  <button
+                    key={step.id}
+                    type="button"
+                    className={`teens-step-tab ${index === currentStep ? 'active' : ''} ${completedSteps[step.id] ? 'complete' : ''}`}
+                    onClick={() => goToStep(index)}
+                  >
+                    <span className="teens-step-number">{index + 1}</span>
+                    <span className="teens-step-label">{step.label}</span>
+                  </button>
+                ))}
+              </div>
 
-              {currentStep < steps.length - 1 ? (
-                <button type="button" className="teens-registration-submit" onClick={handleNext}>
-                  Next: {steps[currentStep + 1].label}
+              <div className="teens-registration-step-header">
+                <div>
+                  <div className="teens-step-breadcrumb">Step {currentStep + 1} of {steps.length}</div>
+                  <h2>{currentStepMeta.title}</h2>
+                </div>
+                <p>{currentStepMeta.description}</p>
+              </div>
+
+              {renderStepContent()}
+
+              <div className="teens-registration-actions">
+                <button type="button" className="teens-registration-back" onClick={handlePrevious} disabled={currentStep === 0}>
+                  Back
                 </button>
-              ) : (
-                <button type="submit" className="teens-registration-submit" disabled={saving}>
-                  {saving ? 'Submitting...' : 'Submit Registration'}
-                </button>
-              )}
-            </div>
-          </form>
+
+                {currentStep < steps.length - 1 ? (
+                  <button type="button" className="teens-registration-submit" onClick={handleNext}>
+                    Next: {steps[currentStep + 1].label}
+                  </button>
+                ) : (
+                  <button type="submit" className="teens-registration-submit" disabled={saving}>
+                    {saving ? 'Submitting...' : 'Submit Registration'}
+                  </button>
+                )}
+              </div>
+            </form>
+          </>
         )}
       </div>
     </div>
