@@ -314,6 +314,10 @@ export default function App() {
   const [socialPreviewEmbedUrl, setSocialPreviewEmbedUrl] = useState('https://www.youtube.com/embed/-vOSeWpU1Xs');
   const [socialMetadataLoading, setSocialMetadataLoading] = useState(false);
   const [youtubeEmbedUrl, setYoutubeEmbedUrl] = useState('https://www.youtube.com/embed/-vOSeWpU1Xs');
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetMessage, setResetMessage] = useState('');
 
   // --- State for Auto-Sliding Social Media News Updates Screen ---
   const [activeNewsIndex, setActiveNewsIndex] = useState(0);
@@ -389,6 +393,12 @@ export default function App() {
   const [testimonialText, setTestimonialText] = useState('');
   const [testimonialOrigin, setTestimonialOrigin] = useState('');
   const [testimonialEditIndex, setTestimonialEditIndex] = useState(null);
+  const [testimonialSubmission, setTestimonialSubmission] = useState({
+    name: '',
+    origin: '',
+    message: ''
+  });
+  const [testimonialSubmitStatus, setTestimonialSubmitStatus] = useState('');
   const [programs, setPrograms] = useState([
     { id: 'fam-101', service: 'family', name: 'Family Communication Foundations', duration: '8 weeks', level: 'Beginner', schedule: 'Saturdays 10:00 AM', description: 'Build family communication patterns with practical exercises for every household.' },
     { id: 'fam-102', service: 'family', name: 'Conflict Resolution Mastery', duration: '6 weeks', level: 'Intermediate', schedule: 'Wednesdays 6:00 PM', description: 'Develop the skills needed to de-escalate conflict, rebuild trust, and create healthy family rhythms.' },
@@ -802,15 +812,54 @@ export default function App() {
     e.preventDefault();
     setLoading(true);
     setAuthError(null);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setAuthError(error.message);
       setLoading(false);
+      return;
+    }
+
+    if (data?.session) {
+      setSession(data.session);
+      navigate('/dashboard');
+    }
+
+    setLoading(false);
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setResetLoading(true);
+    setResetMessage('');
+
+    try {
+      const response = await fetch('/api/admin-password-reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: resetEmail.trim() })
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error || 'Unable to send reset link.');
+      }
+
+      setResetMessage('✓ ' + (data?.message || 'Password reset email sent successfully.'));
+      setTimeout(() => {
+        setShowForgotPasswordModal(false);
+        setResetEmail('');
+        setResetMessage('');
+      }, 1800);
+    } catch (error) {
+      setResetMessage(`✕ ${error?.message || 'Could not send reset link.'}`);
+    } finally {
+      setResetLoading(false);
     }
   };
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    setSession(null);
     navigate('/admin');
   };
 
@@ -975,6 +1024,31 @@ export default function App() {
     }
 
     setTestimonialAuthor(''); setTestimonialText(''); setTestimonialOrigin('');
+  };
+
+  const handleTestimonialSubmission = (e) => {
+    e.preventDefault();
+    const name = testimonialSubmission.name.trim();
+    const message = testimonialSubmission.message.trim();
+
+    if (!name || !message) {
+      setTestimonialSubmitStatus('Please add your name and testimonial before submitting.');
+      return;
+    }
+
+    const nextSlide = {
+      id: `local-${Date.now()}`,
+      title: name,
+      text: message,
+      origin: testimonialSubmission.origin.trim() || 'Parent',
+      image: '/logo/logomain.png',
+      imageType: 'logo'
+    };
+
+    setPromoSlides((prev) => [nextSlide, ...prev]);
+    setCurrentPromoSlide(0);
+    setTestimonialSubmission({ name: '', origin: '', message: '' });
+    setTestimonialSubmitStatus('Thank you! Your testimonial has been added to the carousel.');
   };
 
   const handleStartEditTestimonial = (index) => {
@@ -1725,9 +1799,32 @@ export default function App() {
         .banner-text-package h2 { font-size: 2.4rem; font-weight: 800; color: var(--text-primary); margin: 0; line-height: 1.1; }
         .banner-text-package p { font-size: 1.05rem; line-height: 1.6; color: var(--text-muted); margin: 0; }
         .slide-graphic { width: 45%; height: 100%; border-radius: 12px; background-position: center; background-size: cover; box-shadow: var(--shadow-lg); border: 1px solid var(--border-color); }
-        .testimonial-author { font-size: 0.95rem; color: var(--text-muted); font-weight: 700; margin-top: 0.5rem; text-align: left; }
-        @media (max-width: 768px) { .testimonial-author { text-align: center; margin-top: 0.5rem; } }
-        @media (max-width: 768px) { .synchronized-promo-banner { padding: 1.25rem; } .banner-slider { height: auto; min-height: auto; position: relative; } .banner-slide { position: static !important; display: none; opacity: 1 !important; transform: none !important; transition: none; flex-direction: column; gap: 1rem; padding: 1rem; align-items: stretch; } .banner-slide.active { display: flex; } .banner-text-package { width: 100%; gap: 0.75rem; } .banner-badge { font-size: 0.75rem; padding: 0.3rem 0.8rem; } .banner-text-package p { font-size: 0.9rem; line-height: 1.5; } .slide-graphic { width: 100%; height: 180px; margin: 0.5rem 0 0 0; } }
+        .testimonial-author { font-size: 0.95rem; color: var(--text-muted); font-weight: 700; margin-top: auto; text-align: left; }
+        .testimonial-showcase-section { padding: 2.5rem 1.25rem 0.5rem; max-width: 1200px; margin: 0 auto; }
+        .testimonial-layout { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 1.5rem; align-items: stretch; }
+        .testimonial-slider-card { position: relative; min-height: 360px; display: block; background: linear-gradient(145deg, #ffffff, #f7f7f5); border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 24px; box-shadow: 0 24px 60px rgba(17, 24, 39, 0.08); overflow: hidden; }
+        .testimonial-slide-panel { position: relative; inset: auto; display: none; flex-direction: column; justify-content: space-between; gap: 1rem; padding: 2rem; width: 100%; height: 100%; min-height: 360px; box-sizing: border-box; opacity: 0; transform: translateX(18px); transition: opacity 0.45s ease, transform 0.45s ease; }
+        .testimonial-slide-panel.active { display: flex; opacity: 1; transform: translateX(0); }
+        .testimonial-slide-content { display: flex; flex-direction: column; gap: 1rem; height: 100%; width: 100%; max-width: 100%; }
+        .testimonial-badge { display: inline-flex; align-items: center; gap: 0.5rem; align-self: flex-start; background: rgba(34, 197, 94, 0.12); color: #166534; border-radius: 999px; padding: 0.45rem 0.85rem; font-size: 0.72rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 800; }
+        .testimonial-quote { margin: 0; color: #1f2937; font-size: clamp(1.1rem, 1.8vw, 1.5rem); line-height: 1.7; font-weight: 500; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+        .testimonial-meta { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: auto; padding-top: 1rem; border-top: 1px solid rgba(148, 163, 184, 0.3); flex-wrap: wrap; }
+        .testimonial-origin { font-size: 0.8rem; color: #4b5563; font-weight: 700; }
+        .testimonial-form-card { background: #ffffff; border: 1px solid rgba(15, 23, 42, 0.08); border-radius: 24px; box-shadow: 0 24px 60px rgba(17, 24, 39, 0.08); padding: 1.5rem; }
+        .testimonial-form-card h3 { margin: 0 0 1rem; color: #111827; font-size: clamp(1.5rem, 2vw, 2rem); }
+        .testimonial-form { display: flex; flex-direction: column; gap: 1rem; }
+        .testimonial-field { display: flex; flex-direction: column; gap: 0.45rem; }
+        .testimonial-field label { font-size: 0.8rem; font-weight: 700; color: #374151; text-transform: uppercase; letter-spacing: 0.06em; }
+        .testimonial-field input, .testimonial-field textarea { width: 100%; border: 1px solid #dbe2ea; border-radius: 12px; background: #f8fafc; color: #111827; padding: 0.85rem 0.95rem; font: inherit; box-sizing: border-box; }
+        .testimonial-field input:focus, .testimonial-field textarea:focus { outline: none; border-color: #22c55e; box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.12); }
+        .testimonial-field textarea { min-height: 120px; resize: vertical; }
+        .testimonial-submit-btn { border: none; border-radius: 12px; background: linear-gradient(135deg, #1f7a58, #22c55e); color: white; font-weight: 700; padding: 0.95rem 1.2rem; cursor: pointer; box-shadow: 0 16px 32px rgba(34, 197, 94, 0.25); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .testimonial-submit-btn:hover { transform: translateY(-1px); box-shadow: 0 20px 38px rgba(34, 197, 94, 0.3); }
+        .testimonial-status { margin: 0; min-height: 1.2rem; font-size: 0.9rem; color: #166534; font-weight: 600; }
+        .testimonial-controls { position: absolute; right: 1.25rem; bottom: 1.25rem; display: flex; align-items: center; gap: 0.8rem; }
+        .testimonial-controls .banner-arrow { width: 36px; height: 36px; }
+        .testimonial-slider-header { margin-bottom: 1rem; }
+        @media (max-width: 768px) { .testimonial-author { text-align: center; margin-top: 0.5rem; } .testimonial-layout { grid-template-columns: 1fr; } .testimonial-slider-card { min-height: 300px; } .testimonial-slide-panel { padding: 1.25rem; min-height: 300px; } .testimonial-quote { -webkit-line-clamp: 5; font-size: clamp(1rem, 1.8vw, 1.2rem); line-height: 1.6; } .testimonial-meta { align-items: flex-start; } .testimonial-form-card { padding: 1.2rem; } .testimonial-controls { position: static; justify-content: center; margin-top: 0.5rem; width: 100%; } .synchronized-promo-banner { padding: 1.25rem; } .banner-slider { height: auto; min-height: auto; position: relative; } .banner-slide { position: static !important; display: none; opacity: 1 !important; transform: none !important; transition: none; flex-direction: column; gap: 1rem; padding: 1rem; align-items: stretch; } .banner-slide.active { display: flex; } .banner-text-package { width: 100%; gap: 0.75rem; } .banner-badge { font-size: 0.75rem; padding: 0.3rem 0.8rem; } .banner-text-package p { font-size: 0.9rem; line-height: 1.5; } .slide-graphic { width: 100%; height: 180px; margin: 0.5rem 0 0 0; } }
         @media (max-width: 480px) { .synchronized-promo-banner { padding: 0.75rem; } .banner-slide { padding: 0.75rem; gap: 0.6rem; } .banner-text-package { gap: 0.5rem; } .banner-badge { font-size: 0.65rem; padding: 0.25rem 0.6rem; } .banner-text-package p { font-size: 0.8rem; line-height: 1.4; } .slide-graphic { height: 140px; } }
         .banner-controls { position: absolute; right: 18px; bottom: 12px; display: flex; gap: 1rem; align-items: center; }
         .banner-dots-wrapper { display: flex; gap: 0.6rem; }
@@ -2948,8 +3045,8 @@ export default function App() {
           </div>
         )}
 
-        {/* STICKY HEADER NAVIGATION BAR (hidden while preloader is active to avoid double-loading logos) */}
-        {!initialLoading && !isAdminRoute && (
+        {/* STICKY HEADER NAVIGATION BAR (shared across site and admin pages on mobile) */}
+        {!initialLoading && (
           <header className="public-navbar">
           <Link to="/" className="nav-logo-brand-zone" onClick={() => { setNavOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
             <img src="/logo/logomain.png" alt="Paz Thriving Tribe logo" className="nav-logo-img" />
@@ -2959,26 +3056,46 @@ export default function App() {
             <i className={navOpen ? 'fa-solid fa-xmark' : 'fa-solid fa-bars'}></i>
           </button>
           <nav className={`nav-navigation-links ${navOpen ? 'mobile-open' : ''}`}>
-            <Link to="/" className="nav-link-item" onClick={() => { setNavOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
-              <i className="fa-solid fa-house"></i> Home
-            </Link>
-            <Link to="/care-counseling" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-hand-holding-heart"></i> Talk & Thrive
-            </Link>
-            <Link to="/teens-kids-academy" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-child-reaching"></i> Thriving Pre-teens & Teens
-            </Link>
-            <Link to="/services/family" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-people-roof"></i> Thriving Parents
-            </Link>
-            <Link to="/services/marriage" className="nav-link-item" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-heart-crack"></i> Thriving Women
-            </Link>
+            {!isAdminRoute && (
+              <>
+                <Link to="/" className="nav-link-item" onClick={() => { setNavOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+                  <i className="fa-solid fa-house"></i> Home
+                </Link>
+                <Link to="/care-counseling" className="nav-link-item" onClick={() => setNavOpen(false)}>
+                  <i className="fa-solid fa-hand-holding-heart"></i> Talk & Thrive
+                </Link>
+                <Link to="/teens-kids-academy" className="nav-link-item" onClick={() => setNavOpen(false)}>
+                  <i className="fa-solid fa-child-reaching"></i> Thriving Pre-teens & Teens
+                </Link>
+                <Link to="/services/family" className="nav-link-item" onClick={() => setNavOpen(false)}>
+                  <i className="fa-solid fa-people-roof"></i> Thriving Parents
+                </Link>
+                <Link to="/services/marriage" className="nav-link-item" onClick={() => setNavOpen(false)}>
+                  <i className="fa-solid fa-heart-crack"></i> Thriving Women
+                </Link>
+              </>
+            )}
 
-            <a href="https://pazthrivingtribe.schoolsfocus.net/signin" className="nav-cta-btn" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)}>
-              <i className="fa-solid fa-right-to-bracket" aria-hidden="true"></i>
-              <span>Portal</span>
-            </a>
+            {isAdminRoute && session && (
+              <button
+                type="button"
+                className="nav-cta-btn"
+                onClick={() => {
+                  setNavOpen(false);
+                  handleSignOut();
+                }}
+              >
+                <i className="fa-solid fa-right-from-bracket" aria-hidden="true"></i>
+                <span>Sign out</span>
+              </button>
+            )}
+
+            {!isAdminRoute && (
+              <a href="https://pazthrivingtribe.schoolsfocus.net/signin" className="nav-cta-btn" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)}>
+                <i className="fa-solid fa-right-to-bracket" aria-hidden="true"></i>
+                <span>Portal</span>
+              </a>
+            )}
           </nav>
           </header>
         )}
@@ -3268,6 +3385,97 @@ export default function App() {
 
                 <GallerySection />
 
+                <section className="testimonial-showcase-section">
+                  <div className="testimonial-slider-header" style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                    <span style={{ display: 'inline-block', fontSize: '0.85rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#1e7d5b', marginBottom: '0.75rem' }}>
+                      Client Voices
+                    </span>
+                    <h2 style={{ margin: 0, fontSize: 'clamp(2rem, 3vw, 3rem)', color: '#1a1a1a' }}>What families and teens are saying</h2>
+                  </div>
+
+                  <div className="testimonial-layout">
+                    <div className="testimonial-slider-card">
+                      {promoSlides.length > 0 ? (
+                        promoSlides.map((slide, index) => (
+                          <article
+                            key={`${slide.title}-${slide.id || index}`}
+                            className={`testimonial-slide-panel ${index === currentPromoSlide ? 'active' : ''}`}
+                          >
+                            <div className="testimonial-slide-content">
+                              <div className="testimonial-badge"><i className="fa-solid fa-star"></i> Client Review</div>
+                              <p className="testimonial-quote">“{slide.text || 'Thank you for sharing your story with our community.'}”</p>
+                              <div className="testimonial-meta">
+                                <div>
+                                  <div className="testimonial-author" style={{ marginTop: 0 }}>{slide.title || 'Anonymous'}</div>
+                                  <div className="testimonial-origin">{slide.origin || 'Parent'}</div>
+                                </div>
+                                <div className="testimonial-controls">
+                                  <button className="banner-arrow" onClick={handlePrevReview} aria-label="Previous review">
+                                    <i className="fa-solid fa-chevron-left"></i>
+                                  </button>
+                                  <button className="banner-arrow" onClick={handleNextReview} aria-label="Next review">
+                                    <i className="fa-solid fa-chevron-right"></i>
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </article>
+                        ))
+                      ) : (
+                        <div className="testimonial-slide-panel active">
+                          <div className="testimonial-slide-content">
+                            <div className="testimonial-badge"><i className="fa-solid fa-star"></i> Client Review</div>
+                            <p className="testimonial-quote">“We are committed to helping families and teens build confidence, connection, and purpose.”</p>
+                            <div className="testimonial-meta">
+                              <div>
+                                <div className="testimonial-author" style={{ marginTop: 0 }}>Paz Thriving Tribe</div>
+                                <div className="testimonial-origin">Community</div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="testimonial-form-card">
+                      <h3>Share your story</h3>
+                      <form className="testimonial-form" onSubmit={handleTestimonialSubmission}>
+                        <div className="testimonial-field">
+                          <label htmlFor="testimonial-name">Parent name</label>
+                          <input
+                            id="testimonial-name"
+                            type="text"
+                            value={testimonialSubmission.name}
+                            onChange={(e) => setTestimonialSubmission((prev) => ({ ...prev, name: e.target.value }))}
+                            placeholder="Your name"
+                          />
+                        </div>
+                        <div className="testimonial-field">
+                          <label htmlFor="testimonial-origin">Child / program</label>
+                          <input
+                            id="testimonial-origin"
+                            type="text"
+                            value={testimonialSubmission.origin}
+                            onChange={(e) => setTestimonialSubmission((prev) => ({ ...prev, origin: e.target.value }))}
+                            placeholder="e.g. Teen Leadership"
+                          />
+                        </div>
+                        <div className="testimonial-field">
+                          <label htmlFor="testimonial-message">Your testimonial</label>
+                          <textarea
+                            id="testimonial-message"
+                            value={testimonialSubmission.message}
+                            onChange={(e) => setTestimonialSubmission((prev) => ({ ...prev, message: e.target.value }))}
+                            placeholder="Tell us how our program worked for your family..."
+                          />
+                        </div>
+                        <button type="submit" className="testimonial-submit-btn">Submit testimonial</button>
+                        <p className="testimonial-status">{testimonialSubmitStatus}</p>
+                      </form>
+                    </div>
+                  </div>
+                </section>
+
                 {/* FAQ Section */}
                 <section id="faq-section" className="faq-main-section">
                   <div className="faq-container-wrapper">
@@ -3341,10 +3549,81 @@ export default function App() {
                 selectedAdminTab={selectedAdminTab}
                 setSelectedAdminTab={setSelectedAdminTab}
                 dashboardMessage={dashboardMessage}
+                cmsErrorMessage={cmsErrorMessage}
+                cmsSuccessMessage={cmsSuccessMessage}
                 clientActivityLog={clientActivityLog}
                 clientActivityLoading={clientActivityLoading}
                 applicants={applicants}
                 contactMessages={contactMessages}
+                socialNewsFeed={socialNewsFeed}
+                socialEditTarget={socialEditTarget}
+                setSocialEditTarget={setSocialEditTarget}
+                socialPreviewTitle={socialPreviewTitle}
+                setSocialPreviewTitle={setSocialPreviewTitle}
+                socialPreviewSummary={socialPreviewSummary}
+                setSocialPreviewSummary={setSocialPreviewSummary}
+                socialPreviewBadgeText={socialPreviewBadgeText}
+                setSocialPreviewBadgeText={setSocialPreviewBadgeText}
+                socialPreviewTimestamp={socialPreviewTimestamp}
+                setSocialPreviewTimestamp={setSocialPreviewTimestamp}
+                socialPreviewUrl={socialPreviewUrl}
+                setSocialPreviewUrl={setSocialPreviewUrl}
+                socialPreviewEmbedUrl={socialPreviewEmbedUrl}
+                setSocialPreviewEmbedUrl={setSocialPreviewEmbedUrl}
+                socialMetadataLoading={socialMetadataLoading}
+                fetchSocialUrlMetadata={fetchSocialUrlMetadata}
+                handleUpdateSocialPreview={handleUpdateSocialPreview}
+                privacyContent={privacyContent}
+                setPrivacyContent={setPrivacyContent}
+                termsContent={termsContent}
+                setTermsContent={setTermsContent}
+                faqContent={faqContent}
+                setFaqContent={setFaqContent}
+                updateFaqItem={updateFaqItem}
+                handleSaveLegalAndFaqContent={handleSaveLegalAndFaqContent}
+                handleUpdateContentCMS={handleUpdateContentCMS}
+                editTarget={editTarget}
+                setEditTarget={setEditTarget}
+                formTitle={formTitle}
+                setFormTitle={setFormTitle}
+                formSubtitle={formSubtitle}
+                setFormSubtitle={setFormSubtitle}
+                formDesc={formDesc}
+                setFormDesc={setFormDesc}
+                formMetric={formMetric}
+                setFormMetric={setFormMetric}
+                promoSlides={promoSlides}
+                testimonialAuthor={testimonialAuthor}
+                setTestimonialAuthor={setTestimonialAuthor}
+                testimonialOrigin={testimonialOrigin}
+                setTestimonialOrigin={setTestimonialOrigin}
+                testimonialText={testimonialText}
+                setTestimonialText={setTestimonialText}
+                testimonialEditIndex={testimonialEditIndex}
+                handleAddTestimonial={handleAddTestimonial}
+                handleStartEditTestimonial={handleStartEditTestimonial}
+                handleCancelEditTestimonial={handleCancelEditTestimonial}
+                handleDeleteTestimonial={handleDeleteTestimonial}
+                programForm={programForm}
+                setProgramForm={setProgramForm}
+                programs={programs}
+                handleCreateProgram={handleCreateProgram}
+                handleRemoveProgram={handleRemoveProgram}
+                paystackPublicKey={paystackPublicKey}
+                teensKidsMonthlyFee={teensKidsMonthlyFee}
+                tempPaystackKey={tempPaystackKey}
+                setTempPaystackKey={setTempPaystackKey}
+                tempMonthlyFee={tempMonthlyFee}
+                setTempMonthlyFee={setTempMonthlyFee}
+                setPaystackPublicKey={setPaystackPublicKey}
+                setTeensKidsMonthlyFee={setTeensKidsMonthlyFee}
+                showForgotPasswordModal={showForgotPasswordModal}
+                setShowForgotPasswordModal={setShowForgotPasswordModal}
+                resetEmail={resetEmail}
+                setResetEmail={setResetEmail}
+                resetLoading={resetLoading}
+                resetMessage={resetMessage}
+                handleForgotPassword={handleForgotPassword}
               />
             }
           />
@@ -3366,12 +3645,84 @@ export default function App() {
                 handleSignOut={handleSignOut}
                 selectedAdminTab={selectedAdminTab}
                 setSelectedAdminTab={setSelectedAdminTab}
+                dashboardMessage={dashboardMessage}
+                cmsErrorMessage={cmsErrorMessage}
+                cmsSuccessMessage={cmsSuccessMessage}
                 clientActivityLog={clientActivityLog}
                 clientActivityLoading={clientActivityLoading}
                 applicants={applicants}
                 contactMessages={contactMessages}
                 refreshAdminData={refreshAdminData}
                 refreshLoading={refreshingDashboard}
+                socialNewsFeed={socialNewsFeed}
+                socialEditTarget={socialEditTarget}
+                setSocialEditTarget={setSocialEditTarget}
+                socialPreviewTitle={socialPreviewTitle}
+                setSocialPreviewTitle={setSocialPreviewTitle}
+                socialPreviewSummary={socialPreviewSummary}
+                setSocialPreviewSummary={setSocialPreviewSummary}
+                socialPreviewBadgeText={socialPreviewBadgeText}
+                setSocialPreviewBadgeText={setSocialPreviewBadgeText}
+                socialPreviewTimestamp={socialPreviewTimestamp}
+                setSocialPreviewTimestamp={setSocialPreviewTimestamp}
+                socialPreviewUrl={socialPreviewUrl}
+                setSocialPreviewUrl={setSocialPreviewUrl}
+                socialPreviewEmbedUrl={socialPreviewEmbedUrl}
+                setSocialPreviewEmbedUrl={setSocialPreviewEmbedUrl}
+                socialMetadataLoading={socialMetadataLoading}
+                fetchSocialUrlMetadata={fetchSocialUrlMetadata}
+                handleUpdateSocialPreview={handleUpdateSocialPreview}
+                privacyContent={privacyContent}
+                setPrivacyContent={setPrivacyContent}
+                termsContent={termsContent}
+                setTermsContent={setTermsContent}
+                faqContent={faqContent}
+                setFaqContent={setFaqContent}
+                updateFaqItem={updateFaqItem}
+                handleSaveLegalAndFaqContent={handleSaveLegalAndFaqContent}
+                handleUpdateContentCMS={handleUpdateContentCMS}
+                editTarget={editTarget}
+                setEditTarget={setEditTarget}
+                formTitle={formTitle}
+                setFormTitle={setFormTitle}
+                formSubtitle={formSubtitle}
+                setFormSubtitle={setFormSubtitle}
+                formDesc={formDesc}
+                setFormDesc={setFormDesc}
+                formMetric={formMetric}
+                setFormMetric={setFormMetric}
+                promoSlides={promoSlides}
+                testimonialAuthor={testimonialAuthor}
+                setTestimonialAuthor={setTestimonialAuthor}
+                testimonialOrigin={testimonialOrigin}
+                setTestimonialOrigin={setTestimonialOrigin}
+                testimonialText={testimonialText}
+                setTestimonialText={setTestimonialText}
+                testimonialEditIndex={testimonialEditIndex}
+                handleAddTestimonial={handleAddTestimonial}
+                handleStartEditTestimonial={handleStartEditTestimonial}
+                handleCancelEditTestimonial={handleCancelEditTestimonial}
+                handleDeleteTestimonial={handleDeleteTestimonial}
+                setProgramForm={setProgramForm}
+                programForm={programForm}
+                programs={programs}
+                handleCreateProgram={handleCreateProgram}
+                handleRemoveProgram={handleRemoveProgram}
+                paystackPublicKey={paystackPublicKey}
+                teensKidsMonthlyFee={teensKidsMonthlyFee}
+                tempPaystackKey={tempPaystackKey}
+                setTempPaystackKey={setTempPaystackKey}
+                tempMonthlyFee={tempMonthlyFee}
+                setTempMonthlyFee={setTempMonthlyFee}
+                setPaystackPublicKey={setPaystackPublicKey}
+                setTeensKidsMonthlyFee={setTeensKidsMonthlyFee}
+                showForgotPasswordModal={showForgotPasswordModal}
+                setShowForgotPasswordModal={setShowForgotPasswordModal}
+                resetEmail={resetEmail}
+                setResetEmail={setResetEmail}
+                resetLoading={resetLoading}
+                resetMessage={resetMessage}
+                handleForgotPassword={handleForgotPassword}
               />
             }
           />

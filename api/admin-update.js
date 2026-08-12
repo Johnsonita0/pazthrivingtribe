@@ -7,9 +7,13 @@ import { createClient } from '@supabase/supabase-js'
 const getEnv = () => ({
   supabaseUrl: process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
   serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
-  adminEmails: (process.env.ADMIN_EMAILS || process.env.VITE_ADMIN_EMAILS || '')
+  adminEmails: (process.env.ADMIN_EMAILS || process.env.VITE_ADMIN_EMAILS || 'pazthrivingtribe@gmail.com')
     .split(',')
     .map(s => s.trim().toLowerCase())
+    .filter(Boolean),
+  adminUserIds: (process.env.ADMIN_USER_IDS || process.env.VITE_ADMIN_USER_IDS || '44787dbc-03ba-475e-9d5c-86ba765d5b0a')
+    .split(',')
+    .map(s => s.trim())
     .filter(Boolean)
 })
 
@@ -20,7 +24,7 @@ const jsonResponse = (res, status, body) => {
 }
 
 export default async function handler(req, res) {
-  const { supabaseUrl, serviceRoleKey, adminEmails } = getEnv()
+  const { supabaseUrl, serviceRoleKey, adminEmails, adminUserIds } = getEnv()
   if (req.method !== 'POST') return jsonResponse(res, 405, { error: 'Method not allowed' })
   if (!supabaseUrl || !serviceRoleKey) return jsonResponse(res, 500, { error: 'Server misconfigured: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing' })
 
@@ -61,8 +65,9 @@ export default async function handler(req, res) {
       // table might not exist yet — we'll fall back to env list
     }
 
-    // Fallback to ADMIN_EMAILS environment variable if no admin row found
-    if (!isAdmin && adminEmails.includes((user.email || '').toLowerCase())) {
+    // Allow the configured admin email and Supabase user ID for this project.
+    const normalizedEmail = (user.email || '').toLowerCase()
+    if (!isAdmin && (adminEmails.includes(normalizedEmail) || adminUserIds.includes(user.id))) {
       isAdmin = true
     }
 

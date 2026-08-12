@@ -6,9 +6,10 @@ create table if not exists site_admins (
   created_at timestamp with time zone default now()
 );
 
--- Example insert for a known admin email
--- Replace with your actual admin address or Supabase user UID
-insert into site_admins (email) values ('admin@example.com');
+-- Trusted admin account for the live site
+insert into site_admins (email, uid)
+values ('pazthrivingtribe@gmail.com', '44787dbc-03ba-475e-9d5c-86ba765d5b0a')
+on conflict (email) do update set uid = excluded.uid;
 
 -- Enable row level security on applicant table if you want to allow only specific inserts.
 -- This example allows public inserts for applicants and denies all other direct mutations.
