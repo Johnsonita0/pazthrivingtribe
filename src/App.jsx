@@ -65,6 +65,11 @@ export default function App() {
   const location = useLocation();
   const isRegistrationRoute = ['/teens_reg', '/teens-reg'].includes(location.pathname);
   const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/dashboard');
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [location.pathname]);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState(null);
