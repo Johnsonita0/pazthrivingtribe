@@ -1,7 +1,6 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Link, Navigate, useLocation, useParams, useNavigate } from 'react-router-dom';
 import { supabase, isSupabaseStub } from './supabaseClient';
-import './App.css';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
 import TeensKidsMenu from './TeensKidsMenu';
@@ -9,12 +8,8 @@ import ThriverRegistrationModal from './ThriverRegistrationModal';
 import NotFoundPage from './NotFoundPage';
 import ComingSoonPage from './ComingSoonPage';
 import GallerySection from './GallerySection';
-<<<<<<< HEAD
 import AdminDashboard from './AdminDashboard';
-import TeensRegistrationPage from './TeensRegistrationPage';
-=======
 import TeensRegistrationPage from './pages/TeensRegistrationPage';
->>>>>>> 64bd16d (Add teens registration route and dedicated form page)
 
 const whatsappTips = [
   'Need help today?',
@@ -3335,11 +3330,8 @@ export default function App() {
              DEDICATED ROUTE PATTERNS FOR INDIVIDUAL PAGE VIEWS
              ========================================================================= */}
           <Route path="/teens-kids-academy" element={<TeensKidsMenu paystackPublicKey={paystackPublicKey} teensKidsMonthlyFee={teensKidsMonthlyFee} />} />
-<<<<<<< HEAD
-=======
           <Route path="/tee" element={<TeensRegistrationPage />} />
           <Route path="/teens-registration" element={<TeensRegistrationPage />} />
->>>>>>> 64bd16d (Add teens registration route and dedicated form page)
           <Route path="/teens_reg" element={<TeensRegistrationPage />} />
           <Route path="/teens-reg" element={<TeensRegistrationPage />} />
           <Route path="/care-counseling" element={<CareCounselingPage />} />
