@@ -33,6 +33,7 @@ export default function TeensRegistrationPage() {
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formToast, setFormToast] = useState({ message: '', type: 'error' });
+  const formCardRef = useRef(null);
 
   const completedSteps = useMemo(() => {
     const result = {};
@@ -76,7 +77,16 @@ export default function TeensRegistrationPage() {
   const goToStep = (index) => {
     if (index < 0 || index >= steps.length) return;
     setCurrentStep(index);
+    requestAnimationFrame(() => {
+      formCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   };
+
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      formCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [currentStep]);
 
   const validateCurrentStep = () => {
     if (currentStep === 0) {
@@ -322,7 +332,7 @@ export default function TeensRegistrationPage() {
         </div>
       )}
 
-      <div className="teens-registration-card">
+      <div className="teens-registration-card" ref={formCardRef}>
         <div className="teens-registration-header">
           <span className="teens-registration-badge">PTTA Registration</span>
           <h1>Paz Thriving Teens Academy</h1>
