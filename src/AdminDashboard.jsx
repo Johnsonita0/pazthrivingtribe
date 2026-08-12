@@ -131,7 +131,7 @@ export default function AdminDashboard(props) {
   if (mode === 'login' && !session) {
     return (
       <div className="auth-page-wrapper">
-        <div className="login-card-layout" data-aos="fade-up">
+        <div className="login-card-layout">
           <h2 className="login-brand-title">Admin Gateway</h2>
 
           <form onSubmit={handleSignIn} className="standard-login-form">

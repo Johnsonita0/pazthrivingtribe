@@ -322,7 +322,7 @@ export default function TeensRegistrationPage() {
         </div>
       )}
 
-      <div className="teens-registration-card" data-aos="fade-up">
+      <div className="teens-registration-card">
         <div className="teens-registration-header">
           <span className="teens-registration-badge">PTTA Registration</span>
           <h1>Paz Thriving Teens Academy</h1>

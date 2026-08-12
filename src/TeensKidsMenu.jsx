@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import AOS from 'aos';
-import 'aos/dist/aos.css';
 import ThriverRegistrationModal from './ThriverRegistrationModal';
 
 export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_update_from_admin', teensKidsMonthlyFee = 30000 }) {
@@ -43,9 +41,6 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
   const [bookingSubmitted, setBookingSubmitted] = useState(false);
 
   useEffect(() => {
-    AOS.init({ duration: 800, offset: 100, once: false, mirror: false, easing: 'ease-out' });
-    // ensure AOS recalculates after this component mounts and after any layout settles
-    const raf = window.requestAnimationFrame(() => setTimeout(() => { try { AOS.refresh(); } catch(e){} }, 80));
     window.scrollTo(0, 0);
     const heroInterval = setInterval(() => {
       setActiveHeroSlide((prev) => (prev + 1) % teensHeroSlides.length);
@@ -53,7 +48,6 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
 
     return () => {
       clearInterval(heroInterval);
-      try { window.cancelAnimationFrame(raf); } catch (e) {}
     };
   }, [teensHeroSlides.length]);
 
@@ -255,7 +249,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
       )}
 
       {/* HERO BANNER */}
-      <section className="service-view-hero-banner" style={{ minHeight: '460px', marginBottom: '3rem' }} data-aos="fade-down">
+      <section className="service-view-hero-banner" style={{ minHeight: '460px', marginBottom: '3rem' }}>
         <div
           className="service-banner-bg"
           style={{ backgroundImage: `url(${teensHeroSlides[activeHeroSlide].image})` }}
@@ -321,7 +315,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
       <section style={{ maxWidth: '1200px', margin: '0 auto', padding: '3rem 2rem', marginBottom: '3rem' }}>
         <div className="teens-info-grid" style={{ display: 'grid', gap: '2rem', marginBottom: '3rem' }}>
           {/* Vision */}
-          <div data-aos="fade-right" style={{
+          <div style={{
             background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1))',
             padding: '2rem',
             borderRadius: '12px',
@@ -336,7 +330,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
           </div>
 
           {/* Mission */}
-          <div data-aos="fade-left" style={{
+          <div style={{
             background: 'linear-gradient(135deg, rgba(118, 75, 162, 0.1), rgba(102, 126, 234, 0.1))',
             padding: '2rem',
             borderRadius: '12px',
@@ -355,7 +349,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <h3 style={{ fontSize: '1.8rem', fontWeight: '800', marginBottom: '2rem' }}>Target Age Groups</h3>
           <div className="teens-age-grid" style={{ display: 'grid', gap: '1.5rem', maxWidth: '600px', margin: '0 auto' }}>
-            <div data-aos="zoom-in" style={{
+            <div style={{
               background: 'var(--bg-secondary)',
               padding: '2rem',
               borderRadius: '12px',
@@ -364,7 +358,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
               <h4 style={{ fontSize: '1.3rem', fontWeight: '700', marginBottom: '0.5rem' }}>🧒 Thriving Pre-teens</h4>
               <p style={{ fontSize: '1.1rem', fontWeight: '600', color: '#667eea' }}>Ages 7–12 years</p>
             </div>
-            <div data-aos="zoom-in" data-aos-delay="100" style={{
+            <div style={{
               background: 'var(--bg-secondary)',
               padding: '2rem',
               borderRadius: '12px',
@@ -390,8 +384,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
             {corePrograms.map((program, index) => (
               <div
                 key={program.id}
-                data-aos="fade-up"
-                data-aos-delay={index * 50}
+                
                 onClick={() => setSelectedProgram(selectedProgram === program.id ? null : program.id)}
                 style={{
                   background: 'var(--bg-primary)',
@@ -438,7 +431,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
             gap: '2rem'
           }}>
             {uniqueSellingPoints.map((point, index) => (
-              <div key={index} data-aos="flip-left" data-aos-delay={index * 50} style={{
+              <div key={index} style={{
                 background: 'rgba(255, 255, 255, 0.1)',
                 padding: '1.5rem',
                 borderRadius: '12px',
@@ -465,7 +458,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
             gap: '1.5rem'
           }}>
             {['Initial Assessment', 'Goal Setting', 'Personalized Action Plan', 'Monthly Coaching Sessions', 'Parent Feedback', 'Progress Tracking'].map((step, index) => (
-              <div key={index} data-aos="zoom-in" data-aos-delay={index * 50} style={{
+              <div key={index} style={{
                 background: 'linear-gradient(135deg, #667eea, #764ba2)',
                 color: 'white',
                 padding: '2rem',
@@ -510,7 +503,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
           maxWidth: '700px',
           margin: '0 auto'
         }}>
-          <div data-aos="fade-right" style={{
+          <div style={{
             background: 'var(--bg-secondary)',
             padding: '2rem',
             borderRadius: '12px',
@@ -521,7 +514,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
             <p style={{ fontSize: '2rem', fontWeight: '900', color: '#667eea', marginBottom: '0.5rem' }}>₦30,000</p>
             <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>One-time enrollment</p>
           </div>
-          <div data-aos="fade-left" style={{
+          <div style={{
             background: 'var(--bg-secondary)',
             padding: '2rem',
             borderRadius: '12px',
@@ -547,7 +540,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
             gap: '1.5rem'
           }}>
             {['Public Speaking Showcase', 'Leadership Bootcamp', 'Parent Seminar', 'Talent Exhibition', 'Community Service Projects', 'Award Ceremony'].map((event, index) => (
-              <div key={index} data-aos="bounce" data-aos-delay={index * 50} style={{
+              <div key={index} style={{
                 background: 'rgba(255, 255, 255, 0.1)',
                 padding: '1.5rem',
                 borderRadius: '12px',
@@ -572,7 +565,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
           gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
           gap: '2rem'
         }}>
-          <div data-aos="fade-up" style={{
+          <div style={{
             background: 'var(--bg-secondary)',
             padding: '2rem',
             borderRadius: '12px',
@@ -584,7 +577,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
             <p style={{ color: '#667eea', fontWeight: '600', marginBottom: '0.5rem' }}>Lead Coach</p>
             <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Certified Children and Teen Coach, passionate about helping children and teens build positive values.</p>
           </div>
-          <div data-aos="fade-up" data-aos-delay="50" style={{
+          <div style={{
             background: 'var(--bg-secondary)',
             padding: '2rem',
             borderRadius: '12px',
@@ -613,7 +606,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
             gap: '1.5rem'
           }}>
             {['Improved Confidence', 'Better Communication', 'Greater Responsibility', 'Stronger Values', 'Leadership Abilities', 'Positive Attitude'].map((benefit, index) => (
-              <div key={index} data-aos="fade-up" data-aos-delay={index * 50} style={{
+              <div key={index} style={{
                 background: 'linear-gradient(135deg, #667eea20, #764ba220)',
                 padding: '1.5rem',
                 borderRadius: '12px',
@@ -642,7 +635,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
             { step: 3, title: 'Attend Orientation', icon: '👋' },
             { step: 4, title: 'Begin Sessions', icon: '🚀' }
           ].map((item) => (
-            <div key={item.step} data-aos="zoom-in" data-aos-delay={item.step * 50} style={{
+            <div key={item.step} style={{
               background: 'linear-gradient(135deg, #667eea, #764ba2)',
               color: 'white',
               padding: '2rem',

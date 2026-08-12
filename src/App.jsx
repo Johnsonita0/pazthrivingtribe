@@ -1,8 +1,6 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Link, Navigate, useLocation, useParams, useNavigate } from 'react-router-dom';
 import { supabase, isSupabaseStub } from './supabaseClient';
-import AOS from 'aos';
-import 'aos/dist/aos.css';
 import TeensKidsMenu from './TeensKidsMenu';
 import ThriverRegistrationModal from './ThriverRegistrationModal';
 import NotFoundPage from './NotFoundPage';
@@ -476,13 +474,6 @@ export default function App() {
       setShowCookieBanner(true);
     }
 
-    AOS.init({
-      duration: 800,
-      once: true,
-      mirror: false,
-      easing: 'ease-out'
-    });
-
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
@@ -491,7 +482,6 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
       setSession(currentSession);
       setLoading(false);
-      AOS.refresh();
     });
 
     fetchDynamicWebsiteContent();
@@ -517,17 +507,6 @@ export default function App() {
     const timer = window.setTimeout(() => setInitialLoading(false), 4200);
     return () => window.clearTimeout(timer);
   }, []);
-
-  // Ensure AOS recalculates positions after the preloader hides
-  useEffect(() => {
-    if (!initialLoading) {
-      // small delay to allow layout to settle
-      const t = setTimeout(() => {
-        try { AOS.refresh(); } catch (e) { /* ignore if AOS not ready */ }
-      }, 120);
-      return () => clearTimeout(t);
-    }
-  }, [initialLoading]);
 
   // --- Auto-Slide Interval Loops on homepage bannerHeroSlider---
 
@@ -3007,7 +2986,7 @@ export default function App() {
             path="/"
             element={
               <div className="public-website-container">
-                <section className="hero-section" data-aos="fade-down">
+                <section className="hero-section">
                   {(() => {
                     const currentSlide = homeSlides[currentHomeSlide];
                     return (
@@ -3094,10 +3073,10 @@ export default function App() {
                   />
                 )}
 
-                <section className="program-highlights-section" data-aos="fade-up">
+                <section className="program-highlights-section">
                   <div className="highlight-grid">
                     {homeHighlights.map((item, index) => (
-                      <article key={item.title} className="highlight-card" data-aos="fade-up" data-aos-delay={index * 80}>
+                      <article key={item.title} className="highlight-card">
                         <div className="highlight-icon-wrap">
                           <i className={item.icon}></i>
                         </div>
@@ -3108,8 +3087,8 @@ export default function App() {
                   </div>
                 </section>
 
-                <section id="founder-suite" className="founder-executive-suite" data-aos="fade-up">
-                  <div className="founder-portrait-frame" data-aos="fade-right">
+                <section id="founder-suite" className="founder-executive-suite">
+                  <div className="founder-portrait-frame">
                     <img src="../image/pic1.jpeg" className="founder-img" alt="Paz Tribe CEO" />
                     <div className="founder-title-tag-overlay">
                       <h4>Roseline Iraoya </h4>
@@ -3118,7 +3097,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="founder-interactive-message-box" data-aos="fade-left">
+                  <div className="founder-interactive-message-box">
                     <nav className="founder-msg-nav-row">
                       <button className={`founder-nav-pill ${founderActiveTab === 'speech' ? 'active' : ''}`} onClick={() => setFounderActiveTab('speech')}>
                         <i className="fa-solid fa-microphone"></i> From the Lead Consultant Desk
@@ -3181,7 +3160,7 @@ export default function App() {
                   </div>
                 </section>
 
-                <section className="synchronized-promo-banner" data-aos="fade-up">
+                <section className="synchronized-promo-banner">
                   <div className="banner-slider">
                     {promoSlides.map((slide, idx) => (
                       <div key={idx} className={`banner-slide ${idx === currentPromoSlide ? 'active' : ''}`}>
@@ -3239,11 +3218,11 @@ export default function App() {
 
                 {/* Interactive Gateway Matrix */}
                 <section id="services-explore" className="interactive-tabs-section">
-                  <span className="section-label" data-aos="fade-up">Explore the main programs</span>
-                  <h2 className="section-title-heading" data-aos="fade-right">What we offer</h2>
+                  <span className="section-label">Explore the main programs</span>
+                  <h2 className="section-title-heading">What we offer</h2>
                   <p className="section-subtext">Choose the area that fits your current season and discover a tailored path for growth, mentoring, and support.</p>
 
-                  <div className="services-routing-grid" data-aos="fade-up">
+                  <div className="services-routing-grid">
                     <Link to="/care-counseling" className="service-gateway-card">
                       <div>
                         <div className="gateway-icon-wrap"><i className="fa-solid fa-hand-holding-heart"></i></div>
@@ -3285,7 +3264,7 @@ export default function App() {
                 <GallerySection />
 
                 {/* FAQ Section */}
-                <section id="faq-section" className="faq-main-section" data-aos="fade-up">
+                <section id="faq-section" className="faq-main-section">
                   <div className="faq-container-wrapper">
                     <div className="faq-header-block">
                       {/* <span className="faq-section-label">Common Questions</span> */}
@@ -3397,7 +3376,7 @@ export default function App() {
 
         {/* Contact Us Section */}
         {!isRegistrationRoute && !isAdminRoute && (
-          <section id="contact" className="contact-us-section" data-aos="fade-up">
+          <section id="contact" className="contact-us-section">
             <div className="contact-container-wrapper">
             <div className="contact-header-block">
               <span className="contact-section-label">Get In Touch</span>
@@ -3661,7 +3640,6 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    AOS.refresh();
     setActiveSlideIndex(0); // Reset when category changes
   }, [serviceSlug]);
 
@@ -3745,8 +3723,8 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
           >
             {currentBannerSlide?.eyebrow || activeService.title}
           </span>
-          <h1 data-aos="zoom-in">{currentBannerSlide?.title || activeService.title}</h1>
-          <p data-aos="fade-up" data-aos-delay="100">{currentBannerSlide?.text || activeService.subtitle}</p>
+          <h1>{currentBannerSlide?.title || activeService.title}</h1>
+          <p>{currentBannerSlide?.text || activeService.subtitle}</p>
           <div className="service-banner-controls">
             <button
               type="button"
@@ -3779,7 +3757,7 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
 
       <div className="service-content-split-zone">
         {/* Main Side Narrative Description */}
-        <div className="service-info-narrative-card" data-aos="fade-right">
+        <div className="service-info-narrative-card">
           <h2>Strategic Strategy Framework</h2>
           <h4>Operational Scope Index: {activeService.metricCount}</h4>
           <p>{activeService.description}</p>
@@ -3821,7 +3799,7 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
         </div>
 
         {/* Dedicated News Column Sidebar */}
-        <div className="service-sidebar-news-stack" data-aos="fade-left">
+        <div className="service-sidebar-news-stack">
           <div style={{ textTransform: 'uppercase', fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-muted)', letterSpacing: '1px' }}>Topic Channel Feed</div>
 
           <div className="topic-news-card">
@@ -3842,13 +3820,13 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
       {/* AVAILABLE CLASSES & ENROLLMENT SECTION */}
       <section style={{ padding: '4rem 2rem', backgroundColor: 'var(--bg-card)', marginTop: '3rem' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <h2 style={{ marginBottom: '1rem', fontSize: '2.2rem', fontWeight: '800', textAlign: 'center' }} data-aos="fade-down">
+          <h2 style={{ marginBottom: '1rem', fontSize: '2.2rem', fontWeight: '800', textAlign: 'center' }}>
             <i className="fa-solid fa-graduation-cap" style={{ marginRight: '0.5rem', color: 'var(--accent-primary)' }}></i>
             {servicePrograms.title}
           </h2>
-          {/* <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '3rem', fontSize: '1.1rem' }} data-aos="fade-up">
+          {/*
             Explore our comprehensive curriculum designed specifically for {activeService.title.toLowerCase()}
-          </p> */}
+          */}
 
           <div style={{
             display: 'grid',
@@ -3860,8 +3838,6 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
               <div
                 key={classItem.id}
                 className="enrollment-class-card"
-                data-aos="fade-up"
-                data-aos-delay={idx * 100}
                 style={{
                   backgroundColor: 'var(--bg-main)',
                   border: '1px solid var(--border-color)',
@@ -3954,7 +3930,6 @@ function ServicePageWrapper({ services, programs, onIntakeSubmit }) {
                 padding: '2rem',
                 marginTop: '2rem'
               }}
-              data-aos="zoom-in"
             >
               <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center' }}>
                 <i className="fa-solid fa-bookmark" style={{ marginRight: '0.8rem', color: 'var(--accent-green)', fontSize: '1.4rem' }}></i>
@@ -4295,7 +4270,7 @@ function CareCounselingPage() {
           }
         }
       `}</style>
-      <section className="service-view-hero-banner" data-aos="fade-up" style={{ minHeight: '460px', marginTop: '0.75rem' }}>
+      <section className="service-view-hero-banner" style={{ minHeight: '460px', marginTop: '0.75rem' }}>
         <div
           className="service-banner-bg"
           style={{ backgroundImage: `url(${counselingHeroSlides[activeCounselingSlide].image})` }}
@@ -4337,7 +4312,7 @@ function CareCounselingPage() {
         </div>
       </section>
 
-      <section className="care-counseling-section" data-aos="fade-up" style={{ paddingTop: '1rem' }}>
+      <section className="care-counseling-section" style={{ paddingTop: '1rem' }}>
         <div className="care-counseling-shell">
           <div className="care-intro-block">
             <span className="section-label">Talk & Thrive</span>
@@ -4349,17 +4324,17 @@ function CareCounselingPage() {
 
           <div className="care-section-block">
             <div className="care-animated-grid">
-              <article className="care-animated-box" data-aos="fade-up" data-aos-delay="100">
+              <article className="care-animated-box">
                 <span className="care-pill">Support</span>
                 <h3>Guidance for real-life pressure</h3>
                 <p>Our Talk & Thrive session offers a confidential and warm space to onboarding and hear our clients out.</p>
               </article>
-              <article className="care-animated-box" data-aos="fade-up" data-aos-delay="180">
+              <article className="care-animated-box">
                 <span className="care-pill">Approach</span>
                 <h3>Warm, practical, and personal</h3>
                 <p>Every session is designed to help clients feel heard, encouraged, and better equipped.</p>
               </article>
-              <article className="care-animated-box" data-aos="fade-up" data-aos-delay="260">
+              <article className="care-animated-box">
                 <span className="care-pill">Outcome</span>
                 <h3>Support that strengthens the whole journey</h3>
                 <p>Emotion Relief, Clarity, Practical Guidance, Renewed Confidence, Peace and a clear path forward.</p>
@@ -4368,7 +4343,7 @@ function CareCounselingPage() {
           </div>
 
           <div className="care-section-block">
-            <article className="care-counseling-card care-animated-box" data-aos="fade-up" data-aos-delay="320" style={{ borderRadius: '20px' }}>
+            <article className="care-counseling-card care-animated-box" style={{ borderRadius: '20px' }}>
               <span className="care-pill">Why it matters</span>
               <h3>Support that feels steady, confidential, personal, and practical</h3>
               <p style={{ marginBottom: '0.95rem' }}>
@@ -4376,17 +4351,17 @@ function CareCounselingPage() {
               </p>
 
               {/* <div className="why-it-matters-grid">
-                <article className="why-it-matters-card" data-aos="fade-up" data-aos-delay="120">
+                <article className="why-it-matters-card">
                   <span className="why-it-matters-icon">01</span>
                   <h4>Gentle guidance</h4>
                   <p>Clear, respectful support for emotional strain, uncertainty, and everyday pressure.</p>
                 </article>
-                <article className="why-it-matters-card" data-aos="fade-up" data-aos-delay="220">
+                <article className="why-it-matters-card">
                   <span className="why-it-matters-icon">02</span>
                   <h4>Practical next steps</h4>
                   <p>Tools and reflection that help you move forward with confidence and calm.</p>
                 </article>
-                <article className="why-it-matters-card" data-aos="fade-up" data-aos-delay="320">
+                <article className="why-it-matters-card">
                   <span className="why-it-matters-icon">03</span>
                   <h4>Client-centered care</h4>
                   <p>A professional experience shaped around dignity, trust, and a steady path to growth.</p>
@@ -4396,7 +4371,7 @@ function CareCounselingPage() {
           </div>
 
           <div className="care-section-block">
-            <article className="care-counseling-card care-animated-box care-focus-surface" data-aos="fade-up" data-aos-delay="380" style={{ borderRadius: '20px' }}>
+            <article className="care-counseling-card care-animated-box care-focus-surface" style={{ borderRadius: '20px' }}>
               <div className="care-focus-header">
                 <div className="care-focus-copy">
                   <span className="care-pill">{currentCareFocusSlide.badge}</span>
@@ -4433,7 +4408,7 @@ function CareCounselingPage() {
 
               <div className="care-services-strip" style={{ marginTop: '1rem' }}>
                 {currentCareFocusSlide.items.map((item, index) => (
-                  <article key={`${item}-${index}`} className="care-mini-card" data-aos="fade-up" data-aos-delay="120">
+                  <article key={`${item}-${index}`} className="care-mini-card">
                     {item}
                     {item === 'Book a session with our inhouse counselor today!' && (
                       <button

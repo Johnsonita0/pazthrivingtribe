@@ -577,7 +577,7 @@ export default function GallerySection() {
   };
 
   return (
-    <section id="image-gallery" className="gallery-section" data-aos="fade-up">
+    <section id="image-gallery" className="gallery-section">
       {/* <span className="section-label">Visual storytelling</span> */}
       <h2 className="section-title-heading">Services We Offer</h2>
       <p className="section-subtext">Transforming lives through coaching and mentorship for Churches, Schools, Youth Centers, Organizations, and Communities. Discover the impact we create.</p>
