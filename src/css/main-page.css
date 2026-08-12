@@ -1,0 +1,618 @@
+﻿/* =========================================================================
+   1. GLOBAL SYSTEM RESETS & STYLING BASELINE
+   ========================================================================= */
+body, html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #0d1117;
+  color: #c9d1d9;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Splash/Initial Loading Area */
+.system-loading-splash {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #0d1117;
+}
+
+.loading-spinner-element {
+  width: 45px;
+  height: 45px;
+  border: 4px solid #30363d;
+  border-top-color: #2ea44f;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* =========================================================================
+   2. PUBLIC CONTEXT: AUTHENTICATION / LOGIN SCREEN
+   ========================================================================= */
+.auth-page-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: radial-gradient(circle at top right, #161b22, #0d1117);
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+.login-card-layout {
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  padding: 2.5rem;
+  border-radius: 10px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  box-sizing: border-box;
+}
+
+.login-brand-title {
+  color: #2ea44f;
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 2rem;
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.auth-error-notification {
+  background-color: rgba(248, 81, 73, 0.1);
+  border: 1px solid #f85149;
+  color: #f85149;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.standard-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-field-label {
+  font-size: 0.85rem;
+  color: #8b949e;
+  font-weight: 500;
+}
+
+.plain-text-input {
+  background-color: #0d1117;
+  border: 1px solid #30363d;
+  color: #c9d1d9;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.plain-text-input:focus {
+  outline: none;
+  border-color: #58a6ff;
+}
+
+.form-submit-action-btn {
+  background-color: #238636;
+  color: #ffffff;
+  border: 1px solid rgba(240, 246, 252, 0.1);
+  padding: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  margin-top: 0.5rem;
+}
+
+.form-submit-action-btn:hover:not(:disabled) {
+  background-color: #2ea44f;
+}
+
+.form-submit-action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* =========================================================================
+   3. PROTECTED CONTEXT: PORTAL WORKSPACE DASHBOARD
+   ========================================================================= */
+.portal-workspace-grid {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: 100vh;
+}
+
+/* Left Navigation Sidebar Panel */
+.portal-sidebar-panel {
+  background-color: #161b22;
+  border-right: 1px solid #30363d;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+.portal-sidebar-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #f0f6fc;
+  margin-bottom: 2rem;
+  padding-left: 0.5rem;
+  border-left: 3px solid #2ea44f;
+}
+
+.portal-sidebar-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex-grow: 1;
+}
+
+.sidebar-link-item {
+  color: #8b949e;
+  text-decoration: none;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.sidebar-link-item:hover {
+  background-color: #21262d;
+  color: #c9d1d9;
+}
+
+.sidebar-link-item.active {
+  background-color: #21262d;
+  color: #f0f6fc;
+  font-weight: 500;
+}
+
+.sidebar-disconnect-btn {
+  background-color: transparent;
+  border: 1px solid #f85149;
+  color: #f85149;
+  padding: 0.65rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sidebar-disconnect-btn:hover {
+  background-color: #f85149;
+  color: #ffffff;
+}
+
+/* Right Content panel Window */
+.portal-main-workspace {
+  background-color: #0d1117;
+  display: flex;
+  flex-direction: column;
+}
+
+.portal-workspace-header {
+  background-color: #161b22;
+  border-bottom: 1px solid #30363d;
+  padding: 1.25rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.portal-workspace-header h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #f0f6fc;
+}
+
+.portal-user-pill-tag {
+  background-color: #21262d;
+  border: 1px solid #30363d;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  color: #c9d1d9;
+}
+
+.portal-workspace-body-content {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  max-width: 1200px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Informational Cards */
+.portal-welcome-notification-card {
+  background: linear-gradient(135deg, #1f293d 0%, #161b22 100%);
+  border: 1px solid #38445d;
+  padding: 1.75rem;
+  border-radius: 8px;
+}
+
+@keyframes galleryScroll {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes galleryPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  40%, 60% {
+    transform: scale(1.08);
+  }
+}
+
+.portal-welcome-notification-card h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  color: #58a6ff;
+  font-size: 1.25rem;
+}
+
+.portal-welcome-notification-card p {
+  margin: 0;
+  color: #8b949e;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* Metrics Displays Grid Layout */
+.portal-data-metrics-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+
+.portal-metric-card {
+  background-color: #161b22;
+  border: 1px solid #30363d;
+  padding: 1.5rem;
+  border-radius: 8px;
+}
+
+.portal-metric-card h4 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+  color: #8b949e;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.portal-status-text, .portal-scope-text {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #f0f6fc;
+}
+
+.portal-status-text.active-status {
+  color: #3fb950;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.portal-status-text.active-status::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  background-color: #3fb950;
+  border-radius: 50%;
+}
+
+/* Toast notification styles for admin CMS actions */
+.toast-notification-container {
+  position: fixed;
+  top: 90px;
+  right: 1rem;
+  z-index: 11000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  pointer-events: none;
+}
+.toast-notification {
+  pointer-events: auto;
+  max-width: 360px;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+}
+
+/* =========================================================================
+   INSPIRING PARAGRAPHS CAROUSEL (Within section-intro-shell)
+   ========================================================================= */
+
+.inspiring-paragraphs-carousel {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  align-items: center;
+  width: 100%;
+  margin-top: 1.5rem;
+}
+
+.inspiring-cards-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.inspiring-paragraph-card {
+  background: linear-gradient(135deg, #161b22 0%, #0d1117 100%);
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  padding: 2rem;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.inspiring-paragraph-card:hover {
+  border-color: #2ea44f;
+  box-shadow: 0 8px 30px rgba(46, 164, 79, 0.2);
+  transform: translateY(-4px);
+}
+
+.inspiring-card-title {
+  color: #2ea44f;
+  margin: 0 0 1rem 0;
+  line-height: 1.4;
+}
+
+.inspiring-card-title-h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.inspiring-card-title-p {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.inspiring-card-text {
+  font-size: 1rem;
+  color: #c9d1d9;
+  line-height: 1.7;
+  margin: 0;
+  font-weight: 400;
+}
+
+.inspiring-card-text-h1 {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.3;
+  color: #2ea44f;
+  margin-bottom: 0.75rem;
+}
+
+.inspiring-card-text-secondary {
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.6;
+  color: #c9d1d9;
+}
+
+.inspiring-paragraph-card-primary {
+  min-height: 300px;
+}
+
+.inspiring-paragraph-card-secondary {
+  min-height: 240px;
+}
+
+/* Carousel Controls */
+.inspiring-carousel-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.inspiring-dots {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.inspiring-dots .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #30363d;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.inspiring-dots .dot.active {
+  width: 20px;
+  background: #2ea44f;
+}
+
+/* Dots Navigation */
+.inspiring-dots {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.inspiring-dots .dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #30363d;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0;
+}
+
+.inspiring-dots .dot:hover {
+  background: #484f58;
+  transform: scale(1.2);
+}
+
+.inspiring-dots .dot.active {
+  background: #2ea44f;
+  width: 32px;
+  border-radius: 6px;
+  box-shadow: 0 0 10px rgba(46, 164, 79, 0.4);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .inspiring-cards-container {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .inspiring-paragraph-card {
+    padding: 1.5rem;
+    min-height: 240px;
+  }
+
+  .inspiring-card-text-h1 {
+    font-size: 1.55rem;
+    line-height: 1.25;
+  }
+
+  .inspiring-carousel-controls {
+    gap: 1rem;
+  }
+
+  .inspiring-nav-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+
+  .inspiring-dots .dot {
+    width: 10px;
+    height: 10px;
+  }
+
+  .inspiring-dots .dot.active {
+    width: 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .inspiring-cards-container {
+    gap: 0.75rem;
+  }
+
+  .inspiring-paragraph-card {
+    padding: 1.25rem;
+    min-height: 220px;
+  }
+
+  .inspiring-card-title {
+    font-size: 1.1rem;
+  }
+
+  .inspiring-card-text {
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+
+  .inspiring-carousel-controls {
+    gap: 0.75rem;
+  }
+
+  .inspiring-nav-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+  }
+}
+}
+  padding: 0.95rem 1rem;
+  border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.18);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.4;
+  animation: toast-slide-in 240ms ease-out;
+}
+.toast-notification.success {
+  background-color: rgba(46, 164, 79, 0.95);
+  color: #ffffff;
+  border: 1px solid rgba(46, 164, 79, 0.9);
+}
+.toast-notification.error {
+  background-color: rgba(248, 81, 73, 0.95);
+  color: #ffffff;
+  border: 1px solid rgba(248, 81, 73, 0.9);
+}
+@keyframes toast-slide-in {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+@media (max-width: 640px) {
+  .toast-notification-container {
+    top: 72px;
+    right: 0.75rem;
+    left: 0.75rem;
+  }
+}
+
+/* =========================================================================
+   4. 404 / NOT FOUND PAGE STYLES
+   ========================================================================= */
+/* 404 styles are defined inline in NotFoundPage.jsx */
