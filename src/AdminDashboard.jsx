@@ -141,6 +141,7 @@ export default function AdminDashboard(props) {
   const [parentFilter, setParentFilter] = useState('');
   const [programFilter, setProgramFilter] = useState('');
   const [selectedRowIds, setSelectedRowIds] = useState([]);
+  const [viewingRow, setViewingRow] = useState(null);
 
   const toggleSelectRow = (id) => {
     setSelectedRowIds((prev) => {
@@ -151,6 +152,14 @@ export default function AdminDashboard(props) {
 
   const clearSelection = () => setSelectedRowIds([]);
 
+  const tableMap = {
+    visitors: null,
+    teens: 'tribe_applicants',
+    messages: 'tribe_contact_messages',
+    bookings: 'tribe_bookings',
+    testimonials: 'tribe_testimonials'
+  };
+
   const extractDbId = (rowId) => {
     if (!rowId) return rowId;
     // If id looks like composite 'uuid-idx' where uuid contains dashes, return first segment
@@ -160,16 +169,8 @@ export default function AdminDashboard(props) {
     return rowId;
   };
 
-  const deleteSelected = async () => {
-    if (!selectedRowIds || selectedRowIds.length === 0) return;
-    if (!window.confirm(`Delete ${selectedRowIds.length} selected row(s)? This cannot be undone.`)) return;
-    const tableMap = {
-      visitors: null,
-      teens: 'tribe_applicants',
-      messages: 'tribe_contact_messages',
-      bookings: 'tribe_bookings',
-      testimonials: 'tribe_testimonials'
-    };
+  const deleteRows = async (idsToDelete) => {
+    if (!idsToDelete || idsToDelete.length === 0) return;
     const table = tableMap[activeDashboardView];
     if (!table) {
       alert('Delete not supported for this view.');
@@ -182,7 +183,7 @@ export default function AdminDashboard(props) {
     }
 
     try {
-      for (const rid of selectedRowIds) {
+      for (const rid of idsToDelete) {
         const dbId = extractDbId(rid);
         const body = { action: 'delete', table, match: { id: dbId } };
         const resp = await fetch('/api/admin-update', {
@@ -190,19 +191,56 @@ export default function AdminDashboard(props) {
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify(body)
         });
-        const json = await resp.json();
         if (!resp.ok) {
-          console.error('Delete failed', json);
-          throw new Error(json?.error || 'Delete failed');
+          let errMsg = 'Delete failed';
+          try {
+            const json = await resp.json();
+            errMsg = json?.error || errMsg;
+          } catch (parseErr) {
+            errMsg = `${resp.status} ${resp.statusText}`;
+          }
+          console.error('Delete failed', errMsg);
+          throw new Error(errMsg);
+        }
+        try {
+          await resp.json();
+        } catch (parseErr) {
+          // Some endpoints return empty 200 responses; that's okay
+          console.warn('Could not parse response JSON, but delete succeeded');
         }
       }
       clearSelection();
       if (typeof refreshAdminData === 'function') refreshAdminData();
-      alert('Deleted selected rows.');
+      return true;
     } catch (err) {
       console.error('Bulk delete error', err);
       alert('One or more deletes failed. See console for details.');
+      return false;
     }
+  };
+
+  const deleteSelected = async () => {
+    if (!selectedRowIds || selectedRowIds.length === 0) return;
+    if (!window.confirm(`Delete ${selectedRowIds.length} selected row(s)? This cannot be undone.`)) return;
+    const ok = await deleteRows(selectedRowIds);
+    if (ok) alert('Deleted selected rows.');
+  };
+
+  const deleteRow = async (rowId) => {
+    if (!rowId) return;
+    if (!window.confirm('Delete this row? This cannot be undone.')) return;
+    const ok = await deleteRows([rowId]);
+    if (ok) alert('Row deleted.');
+  };
+
+  const viewRow = (row) => {
+    if (!row) return;
+    const rowData = Array.isArray(row.columns) ? row.columns.reduce((acc, value, index) => {
+      const key = dashboardTableColumns[activeDashboardView]?.[index] || `column_${index + 1}`;
+      acc[key] = value;
+      return acc;
+    }, {}) : row;
+    setViewingRow(rowData);
   };
   const parentOptions = useMemo(() => {
     const set = new Set();
@@ -710,9 +748,9 @@ export default function AdminDashboard(props) {
           .stat-card .value{font-weight:900;font-size:2.4rem;margin-top:6px}
           .dashboard-actions-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:20px}
           .dashboard-filters{display:flex;gap:8px;align-items:center;margin-left:8px;flex-wrap:wrap}
-          .dashboard-table-wrap{overflow-x:auto;margin-top:18px;-webkit-overflow-scrolling:touch}
-          .table{min-width:980px;width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e7eb;border-radius:14px}
-          .table th,.table td{padding:12px 14px;text-align:left;vertical-align:top}
+          .dashboard-table-wrap{overflow-x:auto;margin-top:18px;-webkit-overflow-scrolling:touch;width:100%;border-radius:14px}
+          .table{min-width:1200px;width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e7eb;border-radius:14px}
+          .table th,.table td{padding:12px 14px;text-align:left;vertical-align:top;white-space:nowrap}
           @media(min-width:900px){.stat-card{flex:1 1 calc(25% - 16px)}.stat-card .value{font-size:3rem}}
           @media(max-width:640px){.stat-card{flex:1 1 100%;min-width:100%}.stat-card .value{font-size:1.9rem}.dashboard-actions-row{flex-direction:column;align-items:flex-start}.dashboard-filters{margin-left:0}.table th,.table td{padding:10px}} 
         `}</style>
@@ -823,6 +861,7 @@ export default function AdminDashboard(props) {
                         {dashboardTableColumns[activeDashboardView]?.map((column) => (
                           <th key={column} style={{ textAlign: 'left', padding: '14px 16px', color: '#374151', fontSize: '0.95rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{column}</th>
                         ))}
+                        <th style={{ textAlign: 'right', padding: '14px 16px', color: '#374151', fontSize: '0.95rem', fontWeight: 700, whiteSpace: 'nowrap' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -837,11 +876,29 @@ export default function AdminDashboard(props) {
                                 {cell}
                               </td>
                             ))}
+                            <td style={{ padding: '14px 16px', textAlign: 'right', verticalAlign: 'middle' }}>
+                              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => viewRow(row)}
+                                  style={{ border: '1px solid #d5e8ff', background: '#edf6ff', color: '#14532d', borderRadius: '999px', padding: '0.55rem 0.9rem', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
+                                >
+                                  View
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => deleteRow(row.id)}
+                                  style={{ border: '1px solid #fecaca', background: '#fff1f2', color: '#991b1b', borderRadius: '999px', padding: '0.55rem 0.9rem', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </td>
                           </tr>
                         ))
                   ) : (
                     <tr>
-                          <td colSpan={(dashboardTableColumns[activeDashboardView]?.length || 1) + 1} style={{ padding: '18px 16px', color: '#6b7280', textAlign: 'center' }}>No records available yet.</td>
+                          <td colSpan={(dashboardTableColumns[activeDashboardView]?.length || 1) + 2} style={{ padding: '18px 16px', color: '#6b7280', textAlign: 'center' }}>No records available yet.</td>
                     </tr>
                   )}
                 </tbody>
@@ -850,6 +907,39 @@ export default function AdminDashboard(props) {
           </div>
         </div>
       </div>
+
+      {/* Viewing Modal */}
+      {viewingRow && (
+        <div className="view-modal-overlay" onClick={() => setViewingRow(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div className="view-modal-content" onClick={(e) => e.stopPropagation()} style={{ background: '#fff', borderRadius: '16px', padding: '2rem', maxWidth: '600px', width: '90%', maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', borderBottom: '1px solid #e5e7eb', paddingBottom: '1rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 800, color: '#1a1a1a' }}>Record Details</h3>
+              <button type="button" onClick={() => setViewingRow(null)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#6b7280' }}>×</button>
+            </div>
+            <div style={{ display: 'grid', gap: '1rem' }}>
+              {Object.entries(viewingRow).map(([key, value]) => {
+                let displayValue = value;
+                if (typeof value === 'object' && value !== null) {
+                  try {
+                    displayValue = JSON.stringify(value, null, 2);
+                  } catch (e) {
+                    displayValue = String(value);
+                  }
+                }
+                return (
+                  <div key={key} style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: '1rem', alignItems: 'start' }}>
+                    <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#374151', textTransform: 'capitalize' }}>{key.replace(/_/g, ' ')}</label>
+                    <div style={{ fontSize: '0.95rem', color: '#1f2937', wordBreak: 'break-word', whiteSpace: 'pre-wrap', fontFamily: typeof displayValue === 'string' && displayValue.includes('{') ? 'monospace' : 'inherit', background: '#f9fafb', padding: '0.75rem', borderRadius: '8px' }}>{displayValue || '—'}</div>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem', justifyContent: 'flex-end', borderTop: '1px solid #e5e7eb', paddingTop: '1rem' }}>
+              <button type="button" onClick={() => setViewingRow(null)} style={{ background: '#f0f1f2', color: '#1f2937', border: '1px solid #d8dfe7', padding: '0.75rem 1.5rem', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

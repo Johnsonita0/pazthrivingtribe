@@ -1283,19 +1283,22 @@ export default function App() {
     <>
       <style>{`
         :root {
-          --bg-main: #f6f8fa;
+          --bg-main: #f9fdfb;
           --bg-card: #ffffff;
-          --bg-nav: rgba(255, 255, 255, 0.85);
-          --bg-input: #fafafa;
-          --border-color: #d0d7de;
-          --text-primary: #24292f;
-          --text-muted: #57606a;
-          --brand-green: #238636;
-          --brand-green-hover: #2ea44f;
-          --brand-blue: #58a6ff;
-          --accent-green: #3fb950;
-          --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
-          --shadow-lg: 0 12px 34px rgba(0,0,0,0.1);
+          --bg-nav: rgba(255, 255, 255, 0.92);
+          --bg-input: #f4fbf9;
+          --border-color: #dfeee7;
+          --text-primary: #1b2a27;
+          --text-muted: #536c66;
+          --brand-green: #1fcf78;
+          --brand-green-hover: #17b864;
+          --brand-blue: #2f86ff;
+          --accent-green: #ffb45d;
+          --brand-peach: #ff8f70;
+          --brand-gold: #f4c768;
+          --brand-teal: #4ad7c3;
+          --shadow-sm: 0 2px 8px rgba(17, 98, 70, 0.08);
+          --shadow-lg: 0 12px 34px rgba(17, 98, 70, 0.12);
         }
 
         html, body, #root, .full-view-app-root-override {
@@ -2506,12 +2509,12 @@ export default function App() {
         .services-routing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem; }
         @media (max-width: 992px) { .services-routing-grid { grid-template-columns: 1fr; } }
         
-        .service-gateway-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 3rem; display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--shadow-sm); transition: transform 0.2s, border-color 0.2s; text-decoration: none; color: inherit; }
+        .service-gateway-card { background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 2rem; display: flex; flex-direction: column; justify-content: space-between; box-shadow: var(--shadow-sm); transition: transform 0.2s, border-color 0.2s; text-decoration: none; color: inherit; }
         .service-gateway-card:hover { transform: translateY(-5px); border-color: var(--brand-green); }
-        .gateway-icon-wrap { width: 50px; height: 50px; border-radius: 10px; background-color: rgba(35,134,54,0.12); color: var(--brand-green); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 1.5rem; }
-        .service-gateway-card h3 { font-size: 1.6rem; font-weight: 800; color: var(--text-primary); margin: 0 0 0.75rem 0; }
-        .service-gateway-card p { font-size: 1.05rem; line-height: 1.6; color: var(--text-muted); margin: 0 0 2rem 0; flex-grow: 1; }
-        .gateway-footer-action { font-weight: 700; color: var(--brand-green); display: flex; align-items: center; gap: 0.5rem; }
+        .gateway-icon-wrap { width: 46px; height: 46px; border-radius: 10px; background-color: rgba(35,134,54,0.12); color: var(--brand-green); display: flex; align-items: center; justify-content: center; font-size: 1.3rem; margin-bottom: 1.25rem; }
+        .service-gateway-card h3 { font-size: 1.3rem; font-weight: 800; color: var(--text-primary); margin: 0 0 0.6rem 0; }
+        .service-gateway-card p { font-size: 0.92rem; line-height: 1.6; color: var(--text-muted); margin: 0 0 1.5rem 0; flex-grow: 1; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+        .gateway-footer-action { font-size: 0.9rem; font-weight: 700; color: var(--brand-green); display: flex; align-items: center; gap: 0.5rem; }
 
         .care-counseling-section { width: 100% !important; padding: 0 4rem 2rem 4rem; box-sizing: border-box; }
         .care-counseling-shell {
@@ -3355,7 +3358,7 @@ export default function App() {
                       <div>
                         <div className="gateway-icon-wrap"><i className="fa-solid fa-hand-holding-heart"></i></div>
                         <h3>Talk & Thrive</h3>
-                        <p>Dedicated counseling, coaching, and emotional support services for individual, parents, teens, women, and young adults who want guidance and a safe place to grow.</p>
+                        <p>Guidance and support for emotional wellbeing, everyday parenting, and personal growth in a safe, caring space.</p>
                       </div>
                       <div className="gateway-footer-action">Read more<i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
@@ -3364,7 +3367,7 @@ export default function App() {
                       <div>
                         <div className="gateway-icon-wrap"><i className="fa-solid fa-child-reaching"></i></div>
                         <h3>{services.children.title}</h3>
-                        <p>{services.children.description}</p>
+                        <p>{services.children.description.slice(0, 140)}{services.children.description.length > 140 ? '...' : ''}</p>
                       </div>
                       <div className="gateway-footer-action">Read more <i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
@@ -3373,7 +3376,7 @@ export default function App() {
                       <div>
                         <div className="gateway-icon-wrap"><i className="fa-solid fa-people-roof"></i></div>
                         <h3>{services.family.title}</h3>
-                        <p>{services.family.description}</p>
+                        <p>{services.family.description.slice(0, 140)}{services.family.description.length > 140 ? '...' : ''}</p>
                       </div>
                       <div className="gateway-footer-action">Read more<i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
@@ -3382,7 +3385,7 @@ export default function App() {
                       <div>
                         <div className="gateway-icon-wrap"><i className="fa-solid fa-heart-crack"></i></div>
                         <h3>{services.marriage.title}</h3>
-                        <p>{services.marriage.description}</p>
+                        <p>{services.marriage.description.slice(0, 140)}{services.marriage.description.length > 140 ? '...' : ''}</p>
                       </div>
                       <div className="gateway-footer-action">Read more<i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>

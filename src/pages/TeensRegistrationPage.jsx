@@ -248,38 +248,70 @@ export default function TeensRegistrationPage() {
         child_note: child.note
       }));
 
-      const payload = {
-        registration_type: formData.registrationType,
-        parent_or_guardian_name: formData.contactName,
-        email: formData.email,
-        phone: formData.phone,
-        home_address: formData.homeAddress,
-        children_count: formData.children.length,
-        source: formData.hearAboutUs || 'Not provided',
-        children_details: JSON.stringify(summary),
-        notes: formData.note || 'No additional notes',
-        full_name: formData.children[0]?.childName || formData.contactName
+      const buildPayload = (withOptionalFields = true) => {
+        const payload = {
+          registration_type: formData.registrationType,
+          parent_or_guardian_name: formData.contactName,
+          email: formData.email,
+          phone: formData.phone,
+          home_address: formData.homeAddress,
+          notes: formData.note || 'No additional notes'
+        };
+
+        if (withOptionalFields) {
+          payload.children_count = formData.children.length;
+          payload.source = formData.hearAboutUs || 'Not provided';
+          payload.children_details = JSON.stringify(summary);
+          payload.full_name = formData.children[0]?.childName || formData.contactName;
+        }
+
+        return payload;
       };
 
-      const { error } = await supabase.from('tribe_applicants').insert([payload]);
+      const candidatePayloads = [
+        buildPayload(true),
+        buildPayload(false),
+        {
+          registration_type: formData.registrationType,
+          parent_or_guardian_name: formData.contactName,
+          email: formData.email,
+          phone: formData.phone,
+          home_address: formData.homeAddress,
+          notes: formData.note || 'No additional notes'
+        }
+      ];
 
-      if (error) {
-        // include error details for easier debugging
-        console.error('Supabase insert error:', error);
-        throw error;
+      let finalError = null;
+      for (const payload of candidatePayloads) {
+        const { error } = await supabase.from('tribe_applicants').insert([payload]);
+        if (!error) {
+          setSubmitted(true);
+          setFormData(initialForm);
+          setSelectedChildIndex(0);
+          setCurrentStep(0);
+          return;
+        }
+
+        finalError = error;
+        const message = String(error?.message || '');
+        if (!/children_count|source|full_name|children_details/i.test(message)) {
+          break;
+        }
       }
 
-      setSubmitted(true);
-      // confetti/fireworks removed to avoid build-time import resolution issues
-
-      setFormData(initialForm);
-      setSelectedChildIndex(0);
-      setCurrentStep(0);
+      if (finalError) {
+        console.error('Supabase insert error:', finalError);
+        throw finalError;
+      }
     } catch (err) {
       console.error('PTTA registration submission failed:', err);
       setSubmitted(false);
+      const message = err?.message || '';
+      const isSchemaMismatch = /children_count|column.*tribe_applicants|schema cache/i.test(message);
       setFormToast({
-        message: err?.message ? `Submission failed: ${err.message}` : 'Your application was not submitted because the database is unavailable right now. Please try again in a moment.',
+        message: isSchemaMismatch
+          ? 'The registration form is ready, but the database needs the latest applicant table columns. Please run the Supabase SQL migration and try again.'
+          : err?.message ? `Submission failed: ${err.message}` : 'Your application was not submitted because the database is unavailable right now. Please try again in a moment.',
         type: 'error'
       });
     } finally {

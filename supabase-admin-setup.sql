@@ -253,6 +253,21 @@ create table if not exists tribe_applicants (
   updated_at timestamptz default now()
 );
 
+alter table if exists tribe_applicants add column if not exists registration_type text;
+alter table if exists tribe_applicants add column if not exists parent_or_guardian_name text;
+alter table if exists tribe_applicants add column if not exists full_name text;
+alter table if exists tribe_applicants add column if not exists email text;
+alter table if exists tribe_applicants add column if not exists phone text;
+alter table if exists tribe_applicants add column if not exists home_address text;
+alter table if exists tribe_applicants add column if not exists children_count integer;
+alter table if exists tribe_applicants add column if not exists source text;
+alter table if exists tribe_applicants add column if not exists children_details jsonb;
+alter table if exists tribe_applicants add column if not exists notes text;
+alter table if exists tribe_applicants add column if not exists track text;
+alter table if exists tribe_applicants add column if not exists message text;
+alter table if exists tribe_applicants add column if not exists payment_reference text;
+alter table if exists tribe_applicants add column if not exists payment_status text;
+
 alter table if exists tribe_applicants enable row level security;
 
 DO $$
