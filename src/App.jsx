@@ -729,6 +729,26 @@ export default function App() {
       }
 
       try {
+        const bookingRecords = await tryLoadSupabaseTables(['tribe_bookings', 'bookings', 'booking_requests']);
+        if (bookingRecords) {
+          setBookings(bookingRecords.map((item) => ({
+            id: item.id || `${item.email || 'booking'}-${item.created_at || Date.now()}`,
+            contact_name: item.contact_name || item.name || 'No name',
+            email: item.email || '',
+            phone: item.phone || '',
+            program_type: item.program_type || item.program || '',
+            preferred_date: item.preferred_date || '',
+            preferred_time: item.preferred_time || '',
+            session_format: item.session_format || item.format || '',
+            notes: item.notes || item.note || '',
+            created_at: item.created_at || ''
+          })));
+        }
+      } catch (err) {
+        console.log('No bookings table available for dynamic updates:', err);
+      }
+
+      try {
         const activityRecords = await tryLoadSupabaseTables(['tribe_activity', 'client_activity', 'visitor_activity', 'activity_log', 'page_views']);
         if (activityRecords) {
           setClientActivityLog(activityRecords.map((item) => ({

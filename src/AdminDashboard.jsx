@@ -781,9 +781,9 @@ export default function AdminDashboard(props) {
           .table{min-width:1400px;width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e7eb;border-radius:14px}
           .table th,.table td{padding:12px 14px;text-align:left;vertical-align:top;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
           .table td{max-width:200px}
-          .table th:last-child{position:sticky;right:0;background:#f8fafc;z-index:11;border-left:1px solid #e5e7eb;text-align:center;max-width:none;min-width:120px}
-          .table td:last-child{position:sticky;right:0;background:#fff;z-index:11;border-left:1px solid #f3f4f6;text-align:center}
-          .table tbody tr:hover td:last-child{background:#f9fafb}
+          .table th:last-child{position:relative;background:#f8fafc;border-left:1px solid #e5e7eb;text-align:center;max-width:none;min-width:120px;padding-right:16px}
+          .table td:last-child{position:relative;background:#fff;border-left:1px solid #f3f4f6;text-align:center;padding-right:16px}
+          .table tbody tr:hover td:last-child{background:#fff}
           .admin-toast{position:fixed;right:20px;bottom:22px;z-index:12000;max-width:420px;width:min(420px,calc(100vw - 24px));background:#111827;color:#fff;border-radius:14px;box-shadow:0 28px 50px rgba(15,23,42,.22);border:1px solid rgba(255,255,255,.08);overflow:hidden}
           .admin-toast[data-type='success']{background:#14532d;border-color:rgba(134,239,172,.3)}
           .admin-toast[data-type='error']{background:#7f1d1d;border-color:rgba(254,202,202,.3)}
@@ -797,7 +797,7 @@ export default function AdminDashboard(props) {
           .admin-toast-btn.secondary{background:rgba(255,255,255,.15);color:#fff}
           .admin-toast-btn.danger{background:#fff1f2;color:#991b1b}
           @media(min-width:900px){.stat-card{flex:1 1 calc(25% - 16px)}.stat-card .value{font-size:3rem}}
-          @media(max-width:640px){.stat-card{flex:1 1 100%;min-width:100%}.stat-card .value{font-size:1.9rem}.dashboard-actions-row{flex-direction:column;align-items:flex-start}.dashboard-filters{margin-left:0}.table th,.table td{padding:10px}.table{min-width:1200px;width:100%;overflow-x:auto}.table th:last-child{position:sticky;right:0;background:#f8fafc;z-index:11;border-left:1px solid #e5e7eb;text-align:center;max-width:none;min-width:120px}.table td:last-child{position:sticky;right:0;background:#fff;z-index:11;border-left:1px solid #f3f4f6;text-align:center}.table tbody tr:hover td:last-child{background:#fff}.admin-toast{right:12px;bottom:12px;max-width:calc(100vw - 24px)}} 
+          @media(max-width:640px){.stat-card{flex:1 1 100%;min-width:100%}.stat-card .value{font-size:1.9rem}.dashboard-actions-row{flex-direction:column;align-items:flex-start}.dashboard-filters{margin-left:0}.table th,.table td{padding:10px}.table{min-width:1200px;width:100%;overflow-x:auto}.table th:last-child{position:relative;background:#f8fafc;border-left:1px solid #e5e7eb;text-align:center;max-width:none;min-width:120px}.table td:last-child{position:relative;background:#fff;border-left:1px solid #f3f4f6;text-align:center}.table tbody tr:hover td:last-child{background:#fff}.admin-toast{right:12px;bottom:12px;max-width:calc(100vw - 24px)}} 
         `}</style>
 
         <div className="dashboard-stats">
