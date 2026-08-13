@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 
@@ -234,9 +234,9 @@ export default function TeensRegistrationPage() {
           <label className="teens-registration-field">
             <span>Program Type</span>
             <select name="programType" value={formData.programType} onChange={handleChange}>
-              <option value="Thriving Kids">Thriving Kids (Ages 7-12)</option>
+              <option value="Thriving Kids">Thriving Pre-Teens (Ages 8-12)</option>
               <option value="Thriving Teens">Thriving Teens (Ages 13-19)</option>
-              <option value="Both">Both</option>
+              
             </select>
           </label>
 

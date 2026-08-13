@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 
 function AdminTabBar({ selectedTab, onChangeTab }) {
@@ -112,6 +112,7 @@ export default function AdminDashboard(props) {
     clientActivityLog = [],
     clientActivityLoading = false,
     contactMessages = [],
+    bookings = [],
     programForm,
     setProgramForm,
     programs,
@@ -137,6 +138,102 @@ export default function AdminDashboard(props) {
   } = props;
 
   const [activeDashboardView, setActiveDashboardView] = useState('visitors');
+  const [parentFilter, setParentFilter] = useState('');
+  const [programFilter, setProgramFilter] = useState('');
+  const [selectedRowIds, setSelectedRowIds] = useState([]);
+
+  const toggleSelectRow = (id) => {
+    setSelectedRowIds((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      return [...prev, id];
+    });
+  };
+
+  const clearSelection = () => setSelectedRowIds([]);
+
+  const extractDbId = (rowId) => {
+    if (!rowId) return rowId;
+    // If id looks like composite 'uuid-idx' where uuid contains dashes, return first segment
+    const parts = rowId.split('-');
+    if (parts.length > 2) return parts.slice(0, 5).join('-');
+    if (parts.length === 2 && parts[0] && parts[0].includes('-')) return parts[0];
+    return rowId;
+  };
+
+  const deleteSelected = async () => {
+    if (!selectedRowIds || selectedRowIds.length === 0) return;
+    if (!window.confirm(`Delete ${selectedRowIds.length} selected row(s)? This cannot be undone.`)) return;
+    const tableMap = {
+      visitors: null,
+      teens: 'tribe_applicants',
+      messages: 'tribe_contact_messages',
+      bookings: 'tribe_bookings',
+      testimonials: 'tribe_testimonials'
+    };
+    const table = tableMap[activeDashboardView];
+    if (!table) {
+      alert('Delete not supported for this view.');
+      return;
+    }
+    const token = session?.access_token || session?.accessToken || '';
+    if (!token) {
+      alert('No admin session token available for delete.');
+      return;
+    }
+
+    try {
+      for (const rid of selectedRowIds) {
+        const dbId = extractDbId(rid);
+        const body = { action: 'delete', table, match: { id: dbId } };
+        const resp = await fetch('/api/admin-update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(body)
+        });
+        const json = await resp.json();
+        if (!resp.ok) {
+          console.error('Delete failed', json);
+          throw new Error(json?.error || 'Delete failed');
+        }
+      }
+      clearSelection();
+      if (typeof refreshAdminData === 'function') refreshAdminData();
+      alert('Deleted selected rows.');
+    } catch (err) {
+      console.error('Bulk delete error', err);
+      alert('One or more deletes failed. See console for details.');
+    }
+  };
+  const parentOptions = useMemo(() => {
+    const set = new Set();
+    (applicants || []).forEach((a) => {
+      const name = a.parentName || a.parent_or_guardian_name || a.contactName || '';
+      if (name) set.add(name);
+    });
+    return Array.from(set).sort();
+  }, [applicants]);
+
+  const programOptions = useMemo(() => {
+    const set = new Set();
+    (applicants || []).forEach((a) => {
+      try {
+        const children = a.childrenDetails ? (typeof a.childrenDetails === 'string' ? JSON.parse(a.childrenDetails) : a.childrenDetails) : null;
+        if (Array.isArray(children)) {
+          children.forEach((c) => {
+            const p = c.program_type || c.programType || c.track || '';
+            if (p) set.add(p);
+          });
+        } else if (a.track) {
+          set.add(a.track);
+        }
+      } catch (err) {
+        // ignore parse errors
+      }
+    });
+    return Array.from(set).sort();
+  }, [applicants]);
+
+  
 
   if (mode === 'login' && session) {
     return <Navigate to="/dashboard" replace />;
@@ -470,16 +567,19 @@ export default function AdminDashboard(props) {
   const dashboardViews = [
     { id: 'visitors', label: 'Visitors', color: '#2e7af0', value: Math.max(clientActivityLog.length || 1, 1) },
     { id: 'teens', label: 'Teens Reg', color: '#f39a2b', value: Math.max(applicants.length || 0, 0) },
+    { id: 'bookings', label: 'Bookings', color: '#16a34a', value: Math.max(bookings.length || 0, 0) },
     { id: 'messages', label: 'Messages', color: '#22a564', value: Math.max(contactMessages.length || 0, 0) },
     { id: 'testimonials', label: 'Testimonials', color: '#7c3aed', value: Math.max(promoSlides.length || 0, 0) }
   ];
 
   const dashboardTableColumns = {
     visitors: ['Page', 'Visited at', 'Session'],
-    teens: ['Name', 'Email', 'Phone', 'Track', 'Parent', 'School', 'Session', 'Focus', 'Submitted'],
+    teens: ['Name', 'Email', 'Phone', 'Program', 'Parent', 'School', 'Session', 'Focus', 'Submitted'],
     messages: ['Name', 'Email', 'Subject', 'Message'],
+    bookings: ['Name', 'Email', 'Phone', 'Program', 'Date', 'Time', 'Format', 'Notes'],
     testimonials: ['Name', 'Origin', 'Testimonial', 'Source']
   };
+  
 
   const dashboardTableData = {
     visitors: clientActivityLog.slice(0, 10).map((entry) => ({
@@ -490,20 +590,72 @@ export default function AdminDashboard(props) {
         entry.session_id || 'Unknown session'
       ]
     })),
-    teens: applicants.slice(0, 10).map((applicant) => ({
-      id: applicant.id || `${applicant.email || 'survey'}-${applicant.submittedAt || Date.now()}`,
-      columns: [
-        applicant.fullName || 'Unnamed applicant',
-        applicant.email || 'No email',
-        applicant.phone || 'No phone',
-        applicant.track || 'General',
-        applicant.parentName || 'N/A',
-        applicant.schoolName || 'N/A',
-        applicant.preferredSession || 'N/A',
-        applicant.developmentGoals || applicant.message || 'N/A',
-        applicant.submittedAt ? new Date(applicant.submittedAt).toLocaleString() : 'N/A'
-      ]
-    })),
+    teens: (() => {
+      const rows = [];
+      applicants.slice(0, 50).forEach((applicant) => {
+        const baseParent = {
+          email: applicant.email || 'No email',
+          phone: applicant.phone || 'No phone',
+          parentName: applicant.parentName || applicant.parent_or_guardian_name || 'N/A',
+          submittedAt: applicant.submittedAt || applicant.created_at || null
+        };
+
+        if (applicant.childrenDetails) {
+          try {
+            const children = typeof applicant.childrenDetails === 'string' ? JSON.parse(applicant.childrenDetails) : applicant.childrenDetails;
+            if (Array.isArray(children) && children.length > 0) {
+            children.forEach((child, idx) => {
+              rows.push({
+                id: `${applicant.id || 'app'}-${idx}`,
+                columns: [
+                  child.child_name || child.childName || child.name || 'Unnamed child',
+                  baseParent.email,
+                  baseParent.phone,
+                  // always prefer per-child program; no fallback to top-level 'track'
+                  child.program_type || child.programType || 'N/A',
+                  baseParent.parentName,
+                  child.school || child.schoolName || 'N/A',
+                  child.preferred_session || child.preferredSession || 'N/A',
+                  child.focus_area || child.focusArea || child.development_goals || applicant.message || 'N/A',
+                  baseParent.submittedAt ? new Date(baseParent.submittedAt).toLocaleString() : 'N/A'
+                ]
+              });
+            });
+              return;
+            }
+          } catch (err) {
+            // fall back to single-row below
+          }
+        }
+
+        // fallback: single row per applicant
+        rows.push({
+          id: applicant.id || `${applicant.email || 'survey'}-${applicant.submittedAt || Date.now()}`,
+          columns: [
+            applicant.fullName || 'Unnamed applicant',
+            applicant.email || 'No email',
+            applicant.phone || 'No phone',
+            applicant.track || 'General',
+            applicant.parentName || 'N/A',
+            applicant.schoolName || 'N/A',
+            applicant.preferredSession || 'N/A',
+            applicant.developmentGoals || applicant.message || 'N/A',
+            applicant.submittedAt ? new Date(applicant.submittedAt).toLocaleString() : 'N/A'
+          ]
+        });
+      });
+
+      // apply filters
+      const filtered = rows.filter((r) => {
+        const programCell = (r.columns[3] || '').toString();
+        const parentCell = (r.columns[4] || '').toString();
+        if (parentFilter && !parentCell.toLowerCase().includes(parentFilter.toLowerCase())) return false;
+        if (programFilter && programCell !== programFilter) return false;
+        return true;
+      });
+
+      return filtered;
+    })(),
     messages: contactMessages.slice(0, 10).map((message) => ({
       id: message.id || `${message.email || 'message'}-${message.createdAt || Date.now()}`,
       columns: [
@@ -511,6 +663,19 @@ export default function AdminDashboard(props) {
         message.email || 'No email',
         message.subject || 'Message',
         message.message || 'No message provided'
+      ]
+    })),
+    bookings: (bookings || []).slice(0, 50).map((b) => ({
+      id: b.id || `${b.email || 'booking'}-${b.created_at || Date.now()}`,
+      columns: [
+        b.contact_name || b.contactName || 'No name',
+        b.email || 'No email',
+        b.phone || 'No phone',
+        b.program_type || b.programType || 'N/A',
+        b.preferred_date ? new Date(b.preferred_date).toLocaleDateString() : 'N/A',
+        b.preferred_time || 'N/A',
+        b.session_format || b.sessionFormat || 'N/A',
+        b.notes || b.note || 'N/A'
       ]
     })),
     testimonials: promoSlides.slice(0, 10).map((testimonial) => ({
@@ -538,25 +703,25 @@ export default function AdminDashboard(props) {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '22px', marginTop: '30px' }}>
+        <style>{`
+          .dashboard-stats{display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between;margin-top:30px}
+          .stat-card{flex:1 1 calc(50% - 16px);min-width:140px;border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#fff;text-align:center}
+          .stat-card .label{font-weight:700;font-size:0.95rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.95}
+          .stat-card .value{font-weight:900;font-size:2.4rem;margin-top:6px}
+          .dashboard-actions-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:20px}
+          .dashboard-filters{display:flex;gap:8px;align-items:center;margin-left:8px;flex-wrap:wrap}
+          .dashboard-table-wrap{overflow-x:auto;margin-top:18px;-webkit-overflow-scrolling:touch}
+          .table{min-width:980px;width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e7eb;border-radius:14px}
+          .table th,.table td{padding:12px 14px;text-align:left;vertical-align:top}
+          @media(min-width:900px){.stat-card{flex:1 1 calc(25% - 16px)}.stat-card .value{font-size:3rem}}
+          @media(max-width:640px){.stat-card{flex:1 1 100%;min-width:100%}.stat-card .value{font-size:1.9rem}.dashboard-actions-row{flex-direction:column;align-items:flex-start}.dashboard-filters{margin-left:0}.table th,.table td{padding:10px}} 
+        `}</style>
+
+        <div className="dashboard-stats">
           {dashboardViews.map((view) => (
-            <div
-              key={view.id}
-              style={{
-                background: view.color,
-                borderRadius: '18px',
-                padding: '20px 20px 18px',
-                minHeight: '170px',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.2)'
-              }}
-            >
-              <div style={{ color: '#fff', fontSize: '1.05rem', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                {view.label}
-              </div>
-              <div style={{ color: '#fff', fontSize: '4.2rem', fontWeight: 800, lineHeight: 1 }}>{view.value}</div>
+            <div key={view.id} className="stat-card" style={{ background: view.color, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12)' }}>
+              <div className="label">{view.label}</div>
+              <div className="value">{view.value}</div>
             </div>
           ))}
         </div>
@@ -611,15 +776,15 @@ export default function AdminDashboard(props) {
               {activeDashboardView === 'visitors' ? 'Visitors logged from the main site.' : activeDashboardView === 'teens' ? 'Teens registration form details submitted through the public site.' : activeDashboardView === 'messages' ? 'Messages submitted via the main contact form.' : 'Testimonials submitted from the site and available for review.'}
             </p>
 
-            <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginTop: '20px' }}>
+            <div className="dashboard-actions-row">
               <button type="button" style={{ border: '1px solid #d8dfe7', background: '#f0f1f2', color: '#1f2937', borderRadius: '999px', padding: '0.8rem 1.2rem', fontSize: '1rem', fontWeight: 700, cursor: 'pointer' }}>
                 All rows
               </button>
               <button type="button" style={{ border: '1px solid #d8dfe7', background: '#f0f1f2', color: '#1f2937', borderRadius: '999px', padding: '0.8rem 1.2rem', fontSize: '1rem', fontWeight: 700, cursor: 'pointer' }}>
                 Selected rows (0)
               </button>
-              <button type="button" style={{ border: '1px solid #d8dfe7', background: '#f0f1f2', color: '#1f2937', borderRadius: '999px', padding: '0.8rem 1.2rem', fontSize: '1rem', fontWeight: 700, cursor: 'pointer' }}>
-                Delete selected
+              <button type="button" onClick={deleteSelected} disabled={selectedRowIds.length === 0} style={{ border: '1px solid #d8dfe7', background: selectedRowIds.length === 0 ? '#f7f7f7' : '#f0f1f2', color: '#1f2937', borderRadius: '999px', padding: '0.8rem 1.2rem', fontSize: '1rem', fontWeight: 700, cursor: selectedRowIds.length === 0 ? 'not-allowed' : 'pointer' }}>
+                Delete selected ({selectedRowIds.length})
               </button>
               <button type="button" style={{ border: 'none', background: '#f0f1f2', color: '#1f2937', borderRadius: '999px', padding: '0.8rem 1.2rem', fontSize: '1rem', fontWeight: 700, cursor: 'pointer' }}>
                 Preview PDF
@@ -627,31 +792,56 @@ export default function AdminDashboard(props) {
               <button type="button" style={{ border: 'none', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', color: '#fff', borderRadius: '999px', padding: '0.8rem 1.5rem', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 12px 22px rgba(92,74,228,0.22)' }}>
                 Print responses
               </button>
+                <div className="dashboard-filters">
+                <label style={{ fontSize: '0.95rem', color: '#374151', fontWeight: 600 }}>Parent</label>
+                <select value={parentFilter} onChange={(e) => setParentFilter(e.target.value)} style={{ minWidth: '160px', padding: '8px', borderRadius: '8px' }}>
+                  <option value="">All parents</option>
+                  {parentOptions.map((p) => <option key={p} value={p}>{p}</option>)}
+                </select>
+
+                <label style={{ fontSize: '0.95rem', color: '#374151', fontWeight: 600 }}>Program</label>
+                <select value={programFilter} onChange={(e) => setProgramFilter(e.target.value)} style={{ minWidth: '180px', padding: '8px', borderRadius: '8px' }}>
+                  <option value="">All programs</option>
+                  {programOptions.map((p) => <option key={p} value={p}>{p}</option>)}
+                </select>
+
+                <button type="button" onClick={() => { setParentFilter(''); setProgramFilter(''); }} style={{ border: '1px solid #d8dfe7', background: '#fff', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer' }}>Clear</button>
+              </div>
             </div>
 
-            <div style={{ marginTop: '18px', overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff', border: '1px solid #e5e7eb', borderRadius: '14px', overflow: 'hidden', minWidth: '980px' }}>
+            <div className="dashboard-table-wrap">
+              <table className="table">
                 <thead>
                   <tr style={{ background: '#f8fafc' }}>
-                    {dashboardTableColumns[activeDashboardView]?.map((column) => (
-                      <th key={column} style={{ textAlign: 'left', padding: '14px 16px', color: '#374151', fontSize: '0.95rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{column}</th>
-                    ))}
+                        <th style={{ width: '48px', textAlign: 'center', padding: '14px 8px' }}>
+                          <input type="checkbox" aria-label="Select all" onChange={(e) => {
+                            if (!dashboardTableData[activeDashboardView]) return;
+                            if (e.target.checked) setSelectedRowIds(dashboardTableData[activeDashboardView].map((r) => r.id));
+                            else clearSelection();
+                          }} checked={dashboardTableData[activeDashboardView] && selectedRowIds.length === dashboardTableData[activeDashboardView].length && dashboardTableData[activeDashboardView].length > 0} />
+                        </th>
+                        {dashboardTableColumns[activeDashboardView]?.map((column) => (
+                          <th key={column} style={{ textAlign: 'left', padding: '14px 16px', color: '#374151', fontSize: '0.95rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{column}</th>
+                        ))}
                   </tr>
                 </thead>
                 <tbody>
                   {dashboardTableData[activeDashboardView]?.length > 0 ? (
-                    dashboardTableData[activeDashboardView].map((row) => (
-                      <tr key={row.id} style={{ borderTop: '1px solid #eef2f7' }}>
-                        {row.columns.map((cell, index) => (
-                          <td key={`${row.id}-${index}`} style={{ padding: '14px 16px', color: '#4b5563', verticalAlign: 'top', maxWidth: '260px', whiteSpace: 'normal', wordBreak: 'break-word' }}>
-                            {cell}
-                          </td>
-                        ))}
-                      </tr>
-                    ))
+                        dashboardTableData[activeDashboardView].map((row) => (
+                          <tr key={row.id} style={{ borderTop: '1px solid #eef2f7' }}>
+                            <td style={{ padding: '14px 8px', textAlign: 'center' }}>
+                              <input type="checkbox" checked={selectedRowIds.includes(row.id)} onChange={() => toggleSelectRow(row.id)} />
+                            </td>
+                            {row.columns.map((cell, index) => (
+                              <td key={`${row.id}-${index}`} style={{ padding: '14px 16px', color: '#4b5563', verticalAlign: 'top', maxWidth: '260px', whiteSpace: 'normal', wordBreak: 'break-word' }}>
+                                {cell}
+                              </td>
+                            ))}
+                          </tr>
+                        ))
                   ) : (
                     <tr>
-                      <td colSpan={dashboardTableColumns[activeDashboardView]?.length || 1} style={{ padding: '18px 16px', color: '#6b7280', textAlign: 'center' }}>No records available yet.</td>
+                          <td colSpan={(dashboardTableColumns[activeDashboardView]?.length || 1) + 1} style={{ padding: '18px 16px', color: '#6b7280', textAlign: 'center' }}>No records available yet.</td>
                     </tr>
                   )}
                 </tbody>

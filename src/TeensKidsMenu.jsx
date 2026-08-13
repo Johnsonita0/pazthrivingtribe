@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import ThriverRegistrationModal from './ThriverRegistrationModal';
 
 export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_update_from_admin', teensKidsMonthlyFee = 30000 }) {
+  const navigate = useNavigate();
   const teensHeroSlides = [
     {
       eyebrow: 'Thriving Pre-teen & Teens Academy',
@@ -261,7 +262,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '1.5rem' }}>
             <button
               type="button"
-              onClick={openRegistrationPopup}
+              onClick={() => navigate('/teens_reg')}
               style={{
                 background: 'linear-gradient(135deg, #667eea, #764ba2)',
                 color: 'white',
@@ -692,7 +693,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'center' }}>
             <button
               type="button"
-              onClick={() => window.open('https://pazthrivingtribe.schoolsfocus.net/apply', '_blank', 'noopener')}
+              onClick={() => navigate('/teens_reg')}
               style={{
                 minWidth: '220px',
                 padding: '0.95rem 1.5rem',
@@ -708,7 +709,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
             </button>
             <button
               type="button"
-              onClick={() => openRegistrationPopup('booking')}
+              onClick={() => navigate('/book-session')}
               style={{
                 minWidth: '220px',
                 padding: '0.95rem 1.5rem',

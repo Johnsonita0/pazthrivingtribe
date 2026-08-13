@@ -8,6 +8,7 @@ import ComingSoonPage from './ComingSoonPage';
 import GallerySection from './GallerySection';
 import AdminDashboard from './AdminDashboard';
 import TeensRegistrationPage from './pages/TeensRegistrationPage';
+import BookSessionPage from './pages/BookSessionPage';
 
 const whatsappTips = [
   'Need help today?',
@@ -90,6 +91,7 @@ export default function App() {
     subject: '',
     message: ''
   });
+  const [bookings, setBookings] = useState([]);
   const [contactMessages, setContactMessages] = useState([]);
 
   const handleContactFormSubmit = (event) => {
@@ -343,7 +345,6 @@ export default function App() {
       targetUrl: "https://instagram.com/pazthriving"
     },
     // {
-    //   platform: "YouTube",
     //   icon: "fa-brands fa-youtube",
     //   color: "#FF0000",
     //   badgeText: "Featured Masterclass Broadcast",
@@ -353,6 +354,8 @@ export default function App() {
     //   targetUrl: "https://youtube.com/shorts/-vOSeWpU1Xs?feature=share"
     // }
   ]);
+
+        
 
 
   // --- CMS Admin Form Inputs ---
@@ -699,7 +702,13 @@ export default function App() {
           phone: item.phone,
           track: item.track,
           message: item.message || '',
-          submittedAt: item.created_at
+          submittedAt: item.created_at,
+          // preserve raw admin fields for downstream processing
+          parentName: item.parent_name || item.parent_or_guardian_name || '',
+          homeAddress: item.home_address || '',
+          childrenDetails: item.children_details || item.children_details_json || null,
+          notes: item.notes || item.note || '',
+          registrationType: item.registration_type || ''
         })));
       }
 
@@ -3138,13 +3147,10 @@ export default function App() {
                                 <button
                                   className="hero-scroll-btn"
                                   onClick={() => {
-                                    if (currentSlide.title === 'Structured Teens Development Program') {
-                                      navigate('/teens_reg');
-                                    } else if (currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') {
-                                      setHeroPopupMode('booking');
-                                    } else {
-                                      window.open('https://pazthrivingtribe.schoolsfocus.net/apply', '_blank', 'noopener');
-                                    }
+                                    const actionPath = currentSlide.title === 'Structured Teens Development Program'
+                                      ? '/teens_reg'
+                                      : ((currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? '/book-session' : '/teens_reg');
+                                    navigate(actionPath);
                                   }}
                                 >
                                   {currentSlide.title === 'Structured Teens Development Program' ? 'Apply Now' : ((currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? 'Book Now' : 'Register Now')}
@@ -3526,6 +3532,7 @@ export default function App() {
           <Route path="/teens-registration" element={<TeensRegistrationPage />} />
           <Route path="/teens_reg" element={<TeensRegistrationPage />} />
           <Route path="/teens-reg" element={<TeensRegistrationPage />} />
+          <Route path="/book-session" element={<BookSessionPage />} />
           <Route path="/care-counseling" element={<CareCounselingPage />} />
           <Route path="/services/family" element={<ComingSoonPage title="Thriving Parents" description="Empowering parents with tools and wisdom" />} />
           <Route path="/services/marriage" element={<ComingSoonPage title="Thriving Women" description="Transforming lives, building confidence" />} />
@@ -3555,6 +3562,7 @@ export default function App() {
                 clientActivityLoading={clientActivityLoading}
                 applicants={applicants}
                 contactMessages={contactMessages}
+                bookings={bookings}
                 socialNewsFeed={socialNewsFeed}
                 socialEditTarget={socialEditTarget}
                 setSocialEditTarget={setSocialEditTarget}
@@ -3652,6 +3660,7 @@ export default function App() {
                 clientActivityLoading={clientActivityLoading}
                 applicants={applicants}
                 contactMessages={contactMessages}
+                bookings={bookings}
                 refreshAdminData={refreshAdminData}
                 refreshLoading={refreshingDashboard}
                 socialNewsFeed={socialNewsFeed}
@@ -4771,10 +4780,7 @@ function CareCounselingPage() {
                         type="button"
                         className="form-submit-action-btn"
                         style={{ width: '100%', marginTop: '0.9rem' }}
-                        onClick={() => {
-                          setBookingSubmitted(false);
-                          setIsBookingModalOpen(true);
-                        }}
+                        onClick={() => navigate('/teens_reg')}
                       >
                         Book Now
                       </button>

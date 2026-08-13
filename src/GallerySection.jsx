@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 const galleryItems = [
@@ -191,11 +191,12 @@ export default function GallerySection() {
   const extendedItems = [...galleryItems, ...galleryItems];
   const isMobileView = slidesPerView <= 2;
   const cardWidth = slidesPerView === 1 ? 100 : 100 / slidesPerView;
+  const isWrapping = Boolean(isWrappingRef.current);
   const trackStyle = {
     display: 'flex',
     gap: '0.75rem',
     transform: `translateX(-${translateX}px)`,
-    transition: isWrappingRef.current ? 'none' : 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)',
+    transition: isWrapping ? 'none' : 'transform 0.35s cubic-bezier(0.22, 1, 0.36, 1)',
   };
 
   const trackWrapperStyle = {
@@ -363,10 +364,9 @@ export default function GallerySection() {
     boxSizing: 'border-box',
   };
 
-  const getResponsiveModalSize = () => {
+  function getResponsiveModalSize() {
     const width = window.innerWidth;
     const height = window.innerHeight;
-    
     if (width <= 480) {
       return { maxWidth: Math.min(330, width - 20), minWidth: 280 };
     } else if (width <= 768) {
@@ -374,7 +374,7 @@ export default function GallerySection() {
     } else {
       return { maxWidth: 760, minWidth: 400 };
     }
-  };
+  }
 
   const responsiveSize = getResponsiveModalSize();
   const constrainedWidth = isExpanded

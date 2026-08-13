@@ -1,4 +1,4 @@
-import React from 'react';
+import { useState, useEffect } from 'react';
 
 /**
  * GetNotifiedModal Component
@@ -18,12 +18,12 @@ export default function GetNotifiedModal({
   serviceTitle = "our service",
   onSuccess = null 
 }) {
-  const [email, setEmail] = React.useState('');
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [submitStatus, setSubmitStatus] = React.useState(null); // 'success' or 'error'
-  const [isMobile, setIsMobile] = React.useState(false);
+  const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState(null); // 'success' or 'error'
+  const [isMobile, setIsMobile] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const updateMobile = () => setIsMobile(window.innerWidth <= 480);
     updateMobile();
     window.addEventListener('resize', updateMobile);

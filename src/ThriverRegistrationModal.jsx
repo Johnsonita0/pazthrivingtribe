@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function ThriverRegistrationModal({
   visible,
@@ -81,13 +81,13 @@ export default function ThriverRegistrationModal({
   useEffect(() => {
     if (!visible) return;
     if (window.PaystackPop) {
-      setPaystackReady(true);
+      setTimeout(() => setPaystackReady(true), 0);
       return;
     }
 
     const existingScript = document.getElementById('paystack-inline-js');
     if (existingScript) {
-      setPaystackReady(true);
+      setTimeout(() => setPaystackReady(true), 0);
       return;
     }
 
@@ -101,60 +101,66 @@ export default function ThriverRegistrationModal({
 
   useEffect(() => {
     if (!visible) {
-      setFormData((prev) => ({
-        ...prev,
-        fullName: '',
-        dateOfBirth: '',
-        age: '',
-        gender: 'Female',
-        schoolName: '',
-        currentClassGrade: '',
-        homeAddress: '',
-        hobbies: '',
-        parentName: '',
-        relationship: '',
-        phone1: '',
-        phone2: '',
-        parentEmail: '',
-        occupation: '',
-        allergies: '',
-        emergencyContactName: '',
-        emergencyContactNumber: '',
-        signature: '',
-        consentDate: new Date().toISOString().slice(0, 10),
-        track: 'Thriving Pre-teen & Teens',
-        amount: 10000
-      }));
-      setGoalAreas({
-        confidenceBuilding: true,
-        publicSpeaking: false,
-        communicationSkills: false,
-        leadershipResilience: false,
-        disciplineIntegrity: false,
-        emotionalIntelligence: false,
-        goalSetting: false,
-        positiveCharacter: false,
-        financialLiteracy: false,
-        others: false
+      window.requestAnimationFrame(() => {
+        setFormData((prev) => ({
+          ...prev,
+          fullName: '',
+          dateOfBirth: '',
+          age: '',
+          gender: 'Female',
+          schoolName: '',
+          currentClassGrade: '',
+          homeAddress: '',
+          hobbies: '',
+          parentName: '',
+          relationship: '',
+          phone1: '',
+          phone2: '',
+          parentEmail: '',
+          occupation: '',
+          allergies: '',
+          emergencyContactName: '',
+          emergencyContactNumber: '',
+          signature: '',
+          consentDate: new Date().toISOString().slice(0, 10),
+          track: 'Thriving Pre-teen & Teens',
+          amount: 10000
+        }));
+        setGoalAreas({
+          confidenceBuilding: true,
+          publicSpeaking: false,
+          communicationSkills: false,
+          leadershipResilience: false,
+          disciplineIntegrity: false,
+          emotionalIntelligence: false,
+          goalSetting: false,
+          positiveCharacter: false,
+          financialLiteracy: false,
+          others: false
+        });
+        setOtherGoal('');
+        setStatusMessage('');
+        setLoading(false);
+        setPassportFile(null);
+        setDocumentFile(null);
+        setPassportPreviewUrl(null);
+        setStepIndex(0);
       });
-      setOtherGoal('');
-      setStatusMessage('');
-      setLoading(false);
-      setPassportFile(null);
-      setDocumentFile(null);
-      setPassportPreviewUrl(null);
-      setStepIndex(0);
     }
   }, [visible]);
 
   useEffect(() => {
     if (!passportFile) {
-      setPassportPreviewUrl(null);
+      setTimeout(() => setPassportPreviewUrl(null), 0);
       return;
     }
     const url = URL.createObjectURL(passportFile);
-    setPassportPreviewUrl(url);
-    return () => URL.revokeObjectURL(url);
+    // schedule state update to avoid synchronous setState in effect
+    const id = window.setTimeout(() => setPassportPreviewUrl(url), 0);
+    return () => {
+      window.clearTimeout(id);
+      URL.revokeObjectURL(url);
+    };
   }, [passportFile]);
 
   const updateField = (field, value) => {
@@ -196,12 +202,15 @@ export default function ThriverRegistrationModal({
 
     setLoading(true);
 
+    // eslint-disable-next-line react-hooks/purity
+    const paymentRef = `PTT-${Date.now()}`;
+
     const paymentHandler = window.PaystackPop.setup({
       key: paystackPublicKey,
       email: formData.parentEmail,
       amount: Number(formData.amount || 10000) * 100,
       currency: 'NGN',
-      ref: `PTT-${Date.now()}`,
+      ref: paymentRef,
       metadata: {
         custom_fields: [
           { display_name: 'Thriver Name', variable_name: 'thriver_name', value: formData.fullName },

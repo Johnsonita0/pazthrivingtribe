@@ -33,7 +33,7 @@ const server = http.createServer((req, res) => {
     body += chunk.toString();
   });
 
-  req.on('end', () => {
+  req.on('end', async () => {
     try {
       if (pathname === '/api/proxy-page' && req.method === 'GET') {
         const targetUrl = parsedUrl.searchParams.get('url');
@@ -117,6 +117,7 @@ const server = http.createServer((req, res) => {
       res.writeHead(404);
       res.end(JSON.stringify({ error: 'API route not found' }));
     } catch (error) {
+      // Log and respond on errors - 'error' is used here
       console.error('API Error:', error);
       res.writeHead(500);
       res.end(JSON.stringify({ error: 'Internal server error' }));

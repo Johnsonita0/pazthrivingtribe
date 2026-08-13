@@ -1,10 +1,10 @@
-import React from 'react';
+import { useState } from 'react';
 
 export default function ComingSoonPage({ title, description }) {
-  const [showEmailModal, setShowEmailModal] = React.useState(false);
-  const [email, setEmail] = React.useState('');
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [submitStatus, setSubmitStatus] = React.useState(null); // 'success' or 'error'
+  const [showEmailModal, setShowEmailModal] = useState(false);
+  const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState(null); // 'success' or 'error'
 
   const handleGetNotified = () => {
     setShowEmailModal(true);
