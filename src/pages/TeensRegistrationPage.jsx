@@ -43,6 +43,8 @@ export default function TeensRegistrationPage() {
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedChildIndex, setSelectedChildIndex] = useState(0);
+  const [lastSubmittedEmail, setLastSubmittedEmail] = useState('');
+  const [confirmationEmailSent, setConfirmationEmailSent] = useState(true);
   const [formToast, setFormToast] = useState({ message: '', type: 'error' });
   const formCardRef = useRef(null);
 
@@ -116,6 +118,42 @@ export default function TeensRegistrationPage() {
       formCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   }, [currentStep]);
+
+  const getFriendlyRegistrationError = (error) => {
+    const rawMessage = String(error?.message || error || '');
+    const normalized = rawMessage.toLowerCase();
+
+    if (
+      normalized.includes('failed to fetch') ||
+      normalized.includes('network error') ||
+      normalized.includes('load failed') ||
+      normalized.includes('fetch failed') ||
+      normalized.includes('connection')
+    ) {
+      return 'We could not reach the server. Please check your internet connection and try again. If the issue continues, email pazthrivingtribe@gmail.com and we will help complete your registration.';
+    }
+
+    if (normalized.includes('timeout') || normalized.includes('timed out')) {
+      return 'The request took too long to complete. Please try again in a moment.';
+    }
+
+    if (
+      normalized.includes('502') ||
+      normalized.includes('bad gateway') ||
+      normalized.includes('503') ||
+      normalized.includes('service unavailable') ||
+      normalized.includes('unexpected end of json') ||
+      normalized.includes('json input')
+    ) {
+      return 'Our server is temporarily busy. Please try again in a few minutes. Your registration is not lost, and we can still assist you by email if needed.';
+    }
+
+    if (normalized.includes('supabase') || normalized.includes('database')) {
+      return 'The form is working, but the registration database is currently unavailable. Please try again in a moment or email pazthrivingtribe@gmail.com for help.';
+    }
+
+    return 'We could not complete your registration right now. Please try again in a moment, or email pazthrivingtribe@gmail.com for direct assistance.';
+  };
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -285,6 +323,34 @@ export default function TeensRegistrationPage() {
       for (const payload of candidatePayloads) {
         const { error } = await supabase.from('tribe_applicants').insert([payload]);
         if (!error) {
+          let emailSent = true;
+
+          try {
+            const emailResponse = await fetch('/api/send-registration-email', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                to: formData.email,
+                name: formData.contactName || formData.children[0]?.childName || 'Parent / Guardian',
+                registrationType: formData.registrationType,
+                programType: formData.children[0]?.programType || 'Thriving Teens Academy',
+                childrenCount: formData.children.length,
+                hearAboutUs: formData.hearAboutUs || 'Website registration',
+                note: formData.note || 'No additional notes'
+              })
+            });
+
+            const emailData = await emailResponse.json().catch(() => ({}));
+            if (!emailResponse.ok) {
+              throw new Error(emailData?.error || 'Unable to send confirmation email.');
+            }
+          } catch (emailError) {
+            console.error('Registration email notification failed:', emailError);
+            emailSent = false;
+          }
+
+          setLastSubmittedEmail(formData.email);
+          setConfirmationEmailSent(emailSent);
           setSubmitted(true);
           setFormData(initialForm);
           setSelectedChildIndex(0);
@@ -306,12 +372,8 @@ export default function TeensRegistrationPage() {
     } catch (err) {
       console.error('PTTA registration submission failed:', err);
       setSubmitted(false);
-      const message = err?.message || '';
-      const isSchemaMismatch = /children_count|column.*tribe_applicants|schema cache/i.test(message);
       setFormToast({
-        message: isSchemaMismatch
-          ? 'The registration form is ready, but the database needs the latest applicant table columns. Please run the Supabase SQL migration and try again.'
-          : err?.message ? `Submission failed: ${err.message}` : 'Your application was not submitted because the database is unavailable right now. Please try again in a moment.',
+        message: getFriendlyRegistrationError(err),
         type: 'error'
       });
     } finally {
@@ -636,10 +698,12 @@ export default function TeensRegistrationPage() {
 
         {submitted ? (
           <div className="teens-registration-success">
+            <div className="teens-registration-success-icon">✓</div>
             <h2>Thank you for registering!</h2>
             <p>
-              We have received your registration request for Paz Thriving Teens Academy. A member of
-              our team will contact you shortly with the next steps and orientation details.
+              {confirmationEmailSent
+                ? `A confirmation email has been sent to ${lastSubmittedEmail || 'your inbox'}. We have received your registration request for Paz Thriving Teens Academy and a member of our team will contact you shortly with the next steps and orientation details.`
+                : `We have received your registration request for Paz Thriving Teens Academy. A member of our team will contact you at ${lastSubmittedEmail || 'your email address'} soon. If you do not receive a confirmation email within a few minutes, please email pazthrivingtribe@gmail.com for support.`}
             </p>
             <Link to="/" className="teens-registration-link-btn">
               Return Home

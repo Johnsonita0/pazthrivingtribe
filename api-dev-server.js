@@ -113,6 +113,42 @@ const server = http.createServer((req, res) => {
         return;
       }
 
+      // Handle registration confirmation emails to the client
+      if (pathname === '/api/send-registration-email' && req.method === 'POST') {
+        const data = body ? JSON.parse(body) : {};
+        const { to, name, registrationType, programType, childrenCount, hearAboutUs, note } = data;
+
+        if (!to) {
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: 'Missing recipient email' }));
+          return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(String(to).trim())) {
+          res.writeHead(400);
+          res.end(JSON.stringify({ error: 'Invalid recipient email address' }));
+          return;
+        }
+
+        console.log(`✓ [DEV API] Registration confirmation email queued for: ${to}`);
+        res.writeHead(200);
+        res.end(JSON.stringify({
+          success: true,
+          message: 'Registration confirmation email queued successfully.',
+          data: {
+            to: String(to).trim().toLowerCase(),
+            name: name || 'Client',
+            registrationType: registrationType || 'Unknown',
+            programType: programType || 'Thriving Teens Academy',
+            childrenCount: childrenCount || 1,
+            hearAboutUs: hearAboutUs || 'Website',
+            note: note || 'No additional notes'
+          }
+        }));
+        return;
+      }
+
       // Default 404
       res.writeHead(404);
       res.end(JSON.stringify({ error: 'API route not found' }));

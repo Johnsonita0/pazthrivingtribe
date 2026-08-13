@@ -318,18 +318,23 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.8rem;
-  width: min(100% - 1.5rem, 360px);
-  max-width: 360px;
+  width: min(100% - 1.5rem, 420px);
+  max-width: 420px;
   border-radius: 14px;
   padding: 0.9rem 1rem;
   font-size: 0.92rem;
   font-weight: 600;
   border: 1px solid rgba(248, 81, 73, 0.9);
-  background: rgba(248, 81, 73, 0.95);
+  background: rgba(248, 81, 73, 0.96);
   color: #ffffff;
   box-shadow: 0 18px 30px rgba(15, 23, 42, 0.18);
   pointer-events: auto;
   animation: teens-toast-slide-in 240ms ease-out;
+}
+
+.teens-registration-toast.success {
+  border-color: rgba(22, 101, 52, 0.9);
+  background: rgba(22, 101, 52, 0.96);
 }
 
 .teens-registration-toast button {
@@ -399,15 +404,43 @@
 }
 
 .teens-registration-success {
-  border: 1px solid #bbf7d0;
-  background: #f0fdf4;
-  border-radius: 16px;
-  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+  border: 1px solid rgba(110, 160, 214, 0.25);
+  background: linear-gradient(135deg, rgba(240, 253, 244, 0.96), rgba(234, 247, 255, 0.96));
+  border-radius: 22px;
+  padding: 2rem 1.5rem;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+}
+
+.teens-registration-success-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2bb673, #4ea4d9);
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 800;
+  box-shadow: 0 12px 26px rgba(43, 182, 115, 0.3);
 }
 
 .teens-registration-success h2 {
-  margin-top: 0;
-  color: #166534;
+  margin: 0;
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  line-height: 1.1;
+  color: #134b32;
+}
+
+.teens-registration-success p {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: #334155;
 }
 
 @media (max-width: 880px) {

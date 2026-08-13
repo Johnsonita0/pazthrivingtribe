@@ -142,6 +142,17 @@ export default function AdminDashboard(props) {
   const [programFilter, setProgramFilter] = useState('');
   const [selectedRowIds, setSelectedRowIds] = useState([]);
   const [viewingRow, setViewingRow] = useState(null);
+  const [adminToast, setAdminToast] = useState(null);
+
+  const showAdminToast = (type, title, message, actions = []) => {
+    setAdminToast({ type, title, message, actions });
+  };
+
+  useEffect(() => {
+    if (!adminToast) return undefined;
+    const timer = window.setTimeout(() => setAdminToast(null), 4500);
+    return () => window.clearTimeout(timer);
+  }, [adminToast]);
 
   const toggleSelectRow = (id) => {
     setSelectedRowIds((prev) => {
@@ -173,12 +184,12 @@ export default function AdminDashboard(props) {
     if (!idsToDelete || idsToDelete.length === 0) return;
     const table = tableMap[activeDashboardView];
     if (!table) {
-      alert('Delete not supported for this view.');
+      showAdminToast('error', 'Delete not available', 'This table does not support row deletions from the current dashboard view.');
       return;
     }
     const token = session?.access_token || session?.accessToken || '';
     if (!token) {
-      alert('No admin session token available for delete.');
+      showAdminToast('error', 'Authentication required', 'Your admin session expired. Please sign in again to delete records.');
       return;
     }
 
@@ -214,23 +225,41 @@ export default function AdminDashboard(props) {
       return true;
     } catch (err) {
       console.error('Bulk delete error', err);
-      alert('One or more deletes failed. See console for details.');
+      showAdminToast('error', 'Delete failed', 'One or more rows could not be deleted. Please try again or contact support if the issue continues.');
       return false;
     }
   };
 
-  const deleteSelected = async () => {
+  const deleteSelected = () => {
     if (!selectedRowIds || selectedRowIds.length === 0) return;
-    if (!window.confirm(`Delete ${selectedRowIds.length} selected row(s)? This cannot be undone.`)) return;
-    const ok = await deleteRows(selectedRowIds);
-    if (ok) alert('Deleted selected rows.');
+    showAdminToast('warning', 'Delete selected rows?', `This will remove ${selectedRowIds.length} selected record(s). This action cannot be undone.`, [
+      { label: 'Cancel', variant: 'secondary', onClick: () => setAdminToast(null) },
+      {
+        label: 'Delete',
+        variant: 'danger',
+        onClick: async () => {
+          setAdminToast(null);
+          const ok = await deleteRows(selectedRowIds);
+          if (ok) showAdminToast('success', 'Rows deleted', `${selectedRowIds.length} selected record(s) were removed successfully.`);
+        }
+      }
+    ]);
   };
 
-  const deleteRow = async (rowId) => {
+  const deleteRow = (rowId) => {
     if (!rowId) return;
-    if (!window.confirm('Delete this row? This cannot be undone.')) return;
-    const ok = await deleteRows([rowId]);
-    if (ok) alert('Row deleted.');
+    showAdminToast('warning', 'Delete this row?', 'This record will be permanently removed from the system.', [
+      { label: 'Cancel', variant: 'secondary', onClick: () => setAdminToast(null) },
+      {
+        label: 'Delete',
+        variant: 'danger',
+        onClick: async () => {
+          setAdminToast(null);
+          const ok = await deleteRows([rowId]);
+          if (ok) showAdminToast('success', 'Row deleted', 'The selected record was removed successfully.');
+        }
+      }
+    ]);
   };
 
   const viewRow = (row) => {
@@ -754,8 +783,20 @@ export default function AdminDashboard(props) {
           .table th:last-child{position:sticky;right:0;background:#f8fafc;z-index:11;border-left:1px solid #e5e7eb;text-align:center}
           .table td:last-child{position:sticky;right:0;background:#fff;z-index:11;border-left:1px solid #f3f4f6;text-align:center}
           .table tbody tr:hover td:last-child{background:#f9fafb}
+          .admin-toast{position:fixed;right:20px;bottom:22px;z-index:12000;max-width:420px;width:min(420px,calc(100vw - 24px));background:#111827;color:#fff;border-radius:14px;box-shadow:0 28px 50px rgba(15,23,42,.22);border:1px solid rgba(255,255,255,.08);overflow:hidden}
+          .admin-toast[data-type='success']{background:#14532d;border-color:rgba(134,239,172,.3)}
+          .admin-toast[data-type='error']{background:#7f1d1d;border-color:rgba(254,202,202,.3)}
+          .admin-toast[data-type='warning']{background:#78350f;border-color:rgba(253,224,71,.3)}
+          .admin-toast-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 16px 8px}
+          .admin-toast-title{font-size:0.96rem;font-weight:800;margin:0}
+          .admin-toast-close{background:transparent;border:none;color:#fff;font-size:1.2rem;cursor:pointer;opacity:.8;padding:0}
+          .admin-toast-body{padding:0 16px 12px;font-size:0.9rem;line-height:1.5;color:rgba(255,255,255,.92)}
+          .admin-toast-actions{display:flex;justify-content:flex-end;gap:8px;padding:0 16px 14px;flex-wrap:wrap}
+          .admin-toast-btn{border:none;border-radius:999px;padding:0.55rem 0.9rem;font-weight:700;cursor:pointer}
+          .admin-toast-btn.secondary{background:rgba(255,255,255,.15);color:#fff}
+          .admin-toast-btn.danger{background:#fff1f2;color:#991b1b}
           @media(min-width:900px){.stat-card{flex:1 1 calc(25% - 16px)}.stat-card .value{font-size:3rem}}
-          @media(max-width:640px){.stat-card{flex:1 1 100%;min-width:100%}.stat-card .value{font-size:1.9rem}.dashboard-actions-row{flex-direction:column;align-items:flex-start}.dashboard-filters{margin-left:0}.table th,.table td{padding:10px}.table{min-width:100%}.table th:last-child{position:sticky;right:0;background:#f8fafc;z-index:11;border-left:1px solid #e5e7eb}.table td:last-child{position:sticky;right:0;background:#fff;z-index:11;border-left:1px solid #f3f4f6}} 
+          @media(max-width:640px){.stat-card{flex:1 1 100%;min-width:100%}.stat-card .value{font-size:1.9rem}.dashboard-actions-row{flex-direction:column;align-items:flex-start}.dashboard-filters{margin-left:0}.table th,.table td{padding:10px}.table{min-width:100%}.table th:last-child{position:static;right:auto;background:#f8fafc;z-index:1;border-left:1px solid #e5e7eb}.table td:last-child{position:static;right:auto;background:#fff;z-index:1;border-left:1px solid #f3f4f6}.table tbody tr:hover td:last-child{background:#fff}.admin-toast{right:12px;bottom:12px;max-width:calc(100vw - 24px)}} 
         `}</style>
 
         <div className="dashboard-stats">
@@ -910,6 +951,30 @@ export default function AdminDashboard(props) {
           </div>
         </div>
       </div>
+
+      {adminToast && (
+        <div className="admin-toast" data-type={adminToast.type} role="status" aria-live="polite">
+          <div className="admin-toast-header">
+            <p className="admin-toast-title">{adminToast.title}</p>
+            <button type="button" className="admin-toast-close" onClick={() => setAdminToast(null)} aria-label="Close notification">×</button>
+          </div>
+          <div className="admin-toast-body">{adminToast.message}</div>
+          {adminToast.actions.length > 0 && (
+            <div className="admin-toast-actions">
+              {adminToast.actions.map((action, index) => (
+                <button
+                  key={`${action.label}-${index}`}
+                  type="button"
+                  className={`admin-toast-btn ${action.variant === 'danger' ? 'danger' : 'secondary'}`}
+                  onClick={action.onClick}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Viewing Modal */}
       {viewingRow && (
