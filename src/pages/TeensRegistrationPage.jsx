@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import '../css/teens-registration.css';
+import confetti from 'canvas-confetti';
 
 const createChild = () => ({
   id: `child-${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -29,13 +30,13 @@ const initialForm = {
   note: ''
 };
 
-const steps = [
-  { id: 'type', label: 'Registering As', title: 'Who is registering?', description: 'Choose the person making the registration.' },
-  { id: 'contact', label: 'Contact Details', title: 'Parent or guardian details', description: 'Add the main contact details for this registration.' },
-  { id: 'children', label: 'Children', title: 'Add your children', description: 'Add each child and complete their profile one by one.' },
-  { id: 'program', label: 'Program Match', title: 'Program preferences', description: 'Choose the session and focus area for the selected child.' },
-  { id: 'review', label: 'Review', title: 'Review and confirm', description: 'Check the full registration before submitting.' }
-];
+const baseSteps = {
+  type: { id: 'type', label: 'Registering As', title: 'Who is registering?', description: 'Choose the person making the registration.' },
+  contact: { id: 'contact', label: 'Contact Details', title: 'Parent or guardian details', description: 'Add the main contact details for this registration.' },
+  children: { id: 'children', label: 'Children', title: 'Add your children', description: 'Add each child and complete their profile one by one.' },
+  program: { id: 'program', label: 'Program Match', title: 'Program preferences', description: 'Choose the session and focus area for the selected child.' },
+  review: { id: 'review', label: 'Review', title: 'Review and confirm', description: 'Check the full registration before submitting.' }
+};
 
 export default function TeensRegistrationPage() {
   const [formData, setFormData] = useState(initialForm);
@@ -60,7 +61,19 @@ export default function TeensRegistrationPage() {
     return result;
   }, [formData]);
 
-  const currentStepMeta = steps[currentStep];
+  const stepsDynamic = useMemo(() => {
+    // Put children detail step before contact details (per request).
+    const childrenLabel = formData.registrationType === 'self' ? 'Personal Details' : baseSteps.children.label;
+    return [
+      baseSteps.type,
+      { ...baseSteps.children, label: childrenLabel },
+      baseSteps.contact,
+      baseSteps.program,
+      baseSteps.review
+    ];
+  }, [formData.registrationType]);
+
+  const currentStepMeta = stepsDynamic[currentStep];
 
   useEffect(() => {
     if (!formToast.message) return undefined;
@@ -155,25 +168,29 @@ export default function TeensRegistrationPage() {
   };
 
   const validateCurrentStep = () => {
-    if (currentStep === 0) {
+    const stepId = stepsDynamic[currentStep]?.id;
+
+    if (stepId === 'type') {
       if (!formData.registrationType) {
         return 'Please choose who is registering before continuing.';
       }
     }
 
-    if (currentStep === 1) {
+    if (stepId === 'contact') {
       if (!formData.contactName || !formData.email || !formData.phone || !formData.homeAddress) {
         return 'Please fill in the parent or guardian details before continuing.';
       }
     }
 
-    if (currentStep === 2) {
+    if (stepId === 'children') {
       if (!formData.children.length || !formData.children.every((child) => child.childName && child.dateOfBirth && child.gender)) {
-        return 'Please complete each child profile before continuing.';
+        return formData.registrationType === 'self'
+          ? 'Please complete your personal details before continuing.'
+          : 'Please complete each child profile before continuing.';
       }
     }
 
-    if (currentStep === 3) {
+    if (stepId === 'program') {
       if (!formData.children.every((child) => child.programType && child.preferredSession && child.focusArea)) {
         return 'Please choose the program and session details for each child before continuing.';
       }
@@ -244,6 +261,14 @@ export default function TeensRegistrationPage() {
       }
 
       setSubmitted(true);
+      // trigger confetti/fireworks on successful submit
+      try {
+        confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+      } catch (e) {
+        // ignore if confetti fails
+        // console.warn('Confetti failed', e);
+      }
+
       setFormData(initialForm);
       setSelectedChildIndex(0);
       setCurrentStep(0);
@@ -339,7 +364,7 @@ export default function TeensRegistrationPage() {
             className={`teens-child-tab ${selectedChildIndex === index ? 'active' : ''}`}
             onClick={() => setSelectedChildIndex(index)}
           >
-            Child {index + 1}
+            {formData.registrationType === 'self' ? 'Personal Details' : `Child ${index + 1}`}
           </button>
         ))}
         {formData.registrationType !== 'self' && (
@@ -520,7 +545,7 @@ export default function TeensRegistrationPage() {
 
         {formData.children.map((child, index) => (
           <div key={child.id} className="review-group">
-            <h4>Child {index + 1}</h4>
+            <h4>{formData.registrationType === 'self' ? 'Personal Details' : `Child ${index + 1}`}</h4>
             <p><strong>Name:</strong> {child.childName || 'Not provided'}</p>
             <p><strong>Date of birth:</strong> {child.dateOfBirth || 'Not provided'}</p>
             <p><strong>School:</strong> {child.schoolName || 'Not provided'}</p>
@@ -542,10 +567,11 @@ export default function TeensRegistrationPage() {
   );
 
   const renderStepContent = () => {
-    if (currentStep === 0) return renderRegistrantTypeStep();
-    if (currentStep === 1) return renderContactStep();
-    if (currentStep === 2) return renderChildrenStep();
-    if (currentStep === 3) return renderProgramStep();
+    const stepId = currentStepMeta?.id;
+    if (stepId === 'type') return renderRegistrantTypeStep();
+    if (stepId === 'contact') return renderContactStep();
+    if (stepId === 'children') return renderChildrenStep();
+    if (stepId === 'program') return renderProgramStep();
     return renderReviewStep();
   };
 
@@ -582,7 +608,7 @@ export default function TeensRegistrationPage() {
         ) : (
           <form className="teens-registration-form" onSubmit={handleSubmit}>
             <div className="teens-registration-progress">
-              {steps.map((step, index) => (
+              {stepsDynamic.map((step, index) => (
                 <button
                   key={step.id}
                   type="button"
