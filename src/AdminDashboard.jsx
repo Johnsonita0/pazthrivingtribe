@@ -797,7 +797,7 @@ export default function AdminDashboard(props) {
           .admin-toast-btn.secondary{background:rgba(255,255,255,.15);color:#fff}
           .admin-toast-btn.danger{background:#fff1f2;color:#991b1b}
           @media(min-width:900px){.stat-card{flex:1 1 calc(25% - 16px)}.stat-card .value{font-size:3rem}}
-          @media(max-width:640px){.stat-card{flex:1 1 100%;min-width:100%}.stat-card .value{font-size:1.9rem}.dashboard-actions-row{flex-direction:column;align-items:flex-start}.dashboard-filters{margin-left:0}.table th,.table td{padding:10px}.table{min-width:1200px;width:100%;overflow-x:auto}.table th:last-child{position:relative;background:#f8fafc;border-left:1px solid #e5e7eb;text-align:center;max-width:none;min-width:120px}.table td:last-child{position:relative;background:#fff;border-left:1px solid #f3f4f6;text-align:center}.table tbody tr:hover td:last-child{background:#fff}.admin-toast{right:12px;bottom:12px;max-width:calc(100vw - 24px)}} 
+          @media(max-width:640px){.stat-card{flex:1 1 100%;min-width:100%}.stat-card .value{font-size:1.9rem}.dashboard-actions-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;align-items:center;width:100%}.dashboard-filters{grid-column:1/-1;margin-left:0}.table th,.table td{padding:10px}.table{min-width:1200px;width:100%;overflow-x:auto}.table th:last-child{position:relative;background:#f8fafc;border-left:1px solid #e5e7eb;text-align:center;max-width:none;min-width:120px}.table td:last-child{position:relative;background:#fff;border-left:1px solid #f3f4f6;text-align:center}.table tbody tr:hover td:last-child{background:#fff}.admin-toast{right:12px;bottom:12px;max-width:calc(100vw - 24px)}} 
         `}</style>
 
         <div className="dashboard-stats">
