@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import '../css/teens-registration.css';
-import confetti from 'canvas-confetti';
 
 const createChild = () => ({
   id: `child-${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -263,13 +262,7 @@ export default function TeensRegistrationPage() {
       }
 
       setSubmitted(true);
-      // trigger confetti/fireworks on successful submit
-      try {
-        confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
-      } catch (e) {
-        // ignore if confetti fails
-        // console.warn('Confetti failed', e);
-      }
+      // confetti/fireworks removed to avoid build-time import resolution issues
 
       setFormData(initialForm);
       setSelectedChildIndex(0);
@@ -378,12 +371,12 @@ export default function TeensRegistrationPage() {
 
       <div className="teens-registration-form-grid child-editor">
         <label className="teens-registration-field">
-          <span>Child's Full Name</span>
+          <span>{formData.registrationType === 'self' ? "Your Full Name" : "Child's Full Name"}</span>
           <input
             type="text"
             value={currentChild.childName}
             onChange={(event) => handleChildChange(selectedChildIndex, 'childName', event.target.value)}
-            placeholder="Surname, First Name, Middle Name"
+            placeholder={formData.registrationType === 'self' ? 'Your full name' : 'Surname, First Name, Middle Name'}
           />
         </label>
 
@@ -429,22 +422,22 @@ export default function TeensRegistrationPage() {
         </label>
 
         <label className="teens-registration-field full-width">
-          <span>Strength of the child</span>
+          <span>{formData.registrationType === 'self' ? 'Your strengths' : 'Strength of the child'}</span>
           <textarea
             rows="3"
             value={currentChild.strengths}
             onChange={(event) => handleChildChange(selectedChildIndex, 'strengths', event.target.value)}
-            placeholder="Describe the child's strengths, talents, or positive qualities."
+            placeholder={formData.registrationType === 'self' ? "Describe your strengths, talents, or positive qualities." : "Describe the child's strengths, talents, or positive qualities."}
           />
         </label>
 
         <label className="teens-registration-field full-width">
-          <span>What area would you like your child to build or improve?</span>
+          <span>{formData.registrationType === 'self' ? 'What would you like to build or improve?' : 'What area would you like your child to build or improve?'}</span>
           <textarea
             rows="3"
             value={currentChild.improvementArea}
             onChange={(event) => handleChildChange(selectedChildIndex, 'improvementArea', event.target.value)}
-            placeholder="Example: confidence, focus, communication, discipline, emotional intelligence..."
+            placeholder={formData.registrationType === 'self' ? "Example: confidence, focus, communication, discipline, emotional intelligence..." : "Example: confidence, focus, communication, discipline, emotional intelligence..."}
           />
         </label>
 
@@ -469,14 +462,14 @@ export default function TeensRegistrationPage() {
             className={`teens-child-tab ${selectedChildIndex === index ? 'active' : ''}`}
             onClick={() => setSelectedChildIndex(index)}
           >
-            {child.childName ? child.childName : `Child ${index + 1}`}
+            {formData.registrationType === 'self' ? 'Personal Details' : (child.childName ? child.childName : `Child ${index + 1}`)}
           </button>
         ))}
       </div>
 
       <div className="teens-registration-form-grid">
         <label className="teens-registration-field">
-          <span>Program Type for {currentChild.childName || `Child ${selectedChildIndex + 1}`}</span>
+          <span>{formData.registrationType === 'self' ? 'Program Type for you' : `Program Type for ${currentChild.childName || `Child ${selectedChildIndex + 1}`}`}</span>
           <select
             value={currentChild.programType}
             onChange={(event) => handleChildChange(selectedChildIndex, 'programType', event.target.value)}
@@ -563,7 +556,13 @@ export default function TeensRegistrationPage() {
 
       <label className="teens-registration-field full-width">
         <span>Anything you would like us to know?</span>
-        <textarea name="note" value={formData.note} onChange={handleChange} rows="4" placeholder="Share any additional information about the child or family." />
+          <textarea
+            name="note"
+            value={formData.note}
+            onChange={handleChange}
+            rows="4"
+            placeholder={formData.registrationType === 'self' ? "Share any additional information you'd like us to know." : "Share any additional information about the child or family."}
+          />
       </label>
     </div>
   );
