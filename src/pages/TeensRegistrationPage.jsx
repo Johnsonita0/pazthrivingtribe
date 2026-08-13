@@ -136,29 +136,31 @@ export default function TeensRegistrationPage() {
     if (formData.registrationType === 'self') return;
 
     const newChild = createChild();
-    setFormData((current) => ({
-      ...current,
-      children: [...current.children, newChild]
-    }));
-    setSelectedChildIndex(formData.children.length);
+    setFormData((current) => {
+      const children = [...current.children, newChild];
+      // schedule selected index update after state is applied to avoid stale reads
+      window.requestAnimationFrame(() => setSelectedChildIndex(children.length - 1));
+      return { ...current, children };
+    });
   };
 
   const removeChild = (childIndex) => {
-    if (formData.children.length === 1) {
-      setFormData((current) => ({
-        ...current,
-        children: [createChild()]
-      }));
-      setSelectedChildIndex(0);
-      return;
-    }
+    setFormData((current) => {
+      // ensure at least one child remains
+      if (current.children.length <= 1) {
+        const single = [createChild()];
+        window.requestAnimationFrame(() => setSelectedChildIndex(0));
+        return { ...current, children: single };
+      }
 
-    setFormData((current) => ({
-      ...current,
-      children: current.children.filter((_, index) => index !== childIndex)
-    }));
+      const children = current.children.filter((_, index) => index !== childIndex);
+      // schedule selected index update using the new children length
+      window.requestAnimationFrame(() => {
+        setSelectedChildIndex((currentIndex) => Math.max(0, Math.min(currentIndex, children.length - 1)));
+      });
 
-    setSelectedChildIndex((currentIndex) => Math.max(0, Math.min(currentIndex, formData.children.length - 2)));
+      return { ...current, children };
+    });
   };
 
   const goToStep = (index) => {
@@ -475,9 +477,8 @@ export default function TeensRegistrationPage() {
             onChange={(event) => handleChildChange(selectedChildIndex, 'programType', event.target.value)}
           >
             <option value="">Select program type</option>
-            <option value="Thriving Kids">Thriving Kids (Ages 7-12)</option>
+            <option value="Thriving Kids">Thriving Pre-Teens (Ages 8-12)</option>
             <option value="Thriving Teens">Thriving Teens (Ages 13-19)</option>
-            <option value="Both">Both</option>
           </select>
         </label>
 
