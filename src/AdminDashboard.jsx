@@ -751,8 +751,10 @@ export default function AdminDashboard(props) {
           .dashboard-table-wrap{overflow-x:auto;margin-top:18px;-webkit-overflow-scrolling:touch;width:100%;border-radius:14px}
           .table{min-width:1200px;width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e7eb;border-radius:14px}
           .table th,.table td{padding:12px 14px;text-align:left;vertical-align:top;white-space:nowrap}
+          .table th:last-child,.table td:last-child{position:sticky;right:0;background:#fff;z-index:10}
+          .table tr:hover td:last-child{background:#f9fafb}
           @media(min-width:900px){.stat-card{flex:1 1 calc(25% - 16px)}.stat-card .value{font-size:3rem}}
-          @media(max-width:640px){.stat-card{flex:1 1 100%;min-width:100%}.stat-card .value{font-size:1.9rem}.dashboard-actions-row{flex-direction:column;align-items:flex-start}.dashboard-filters{margin-left:0}.table th,.table td{padding:10px}} 
+          @media(max-width:640px){.stat-card{flex:1 1 100%;min-width:100%}.stat-card .value{font-size:1.9rem}.dashboard-actions-row{flex-direction:column;align-items:flex-start}.dashboard-filters{margin-left:0}.table th,.table td{padding:10px}.table{min-width:100%}.table th:last-child,.table td:last-child{position:sticky;right:0;background:#fff;padding:8px}} 
         `}</style>
 
         <div className="dashboard-stats">
