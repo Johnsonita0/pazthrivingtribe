@@ -778,9 +778,10 @@ export default function AdminDashboard(props) {
           .dashboard-actions-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:20px}
           .dashboard-filters{display:flex;gap:8px;align-items:center;margin-left:8px;flex-wrap:wrap}
           .dashboard-table-wrap{overflow-x:auto;margin-top:18px;-webkit-overflow-scrolling:touch;width:100%;border-radius:14px}
-          .table{min-width:1200px;width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e7eb;border-radius:14px}
-          .table th,.table td{padding:12px 14px;text-align:left;vertical-align:top;white-space:nowrap}
-          .table th:last-child{position:sticky;right:0;background:#f8fafc;z-index:11;border-left:1px solid #e5e7eb;text-align:center}
+          .table{min-width:1400px;width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e7eb;border-radius:14px}
+          .table th,.table td{padding:12px 14px;text-align:left;vertical-align:top;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+          .table td{max-width:200px}
+          .table th:last-child{position:sticky;right:0;background:#f8fafc;z-index:11;border-left:1px solid #e5e7eb;text-align:center;max-width:none;min-width:120px}
           .table td:last-child{position:sticky;right:0;background:#fff;z-index:11;border-left:1px solid #f3f4f6;text-align:center}
           .table tbody tr:hover td:last-child{background:#f9fafb}
           .admin-toast{position:fixed;right:20px;bottom:22px;z-index:12000;max-width:420px;width:min(420px,calc(100vw - 24px));background:#111827;color:#fff;border-radius:14px;box-shadow:0 28px 50px rgba(15,23,42,.22);border:1px solid rgba(255,255,255,.08);overflow:hidden}

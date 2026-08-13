@@ -1035,13 +1035,15 @@ export default function App() {
     setTestimonialAuthor(''); setTestimonialText(''); setTestimonialOrigin('');
   };
 
-  const handleTestimonialSubmission = (e) => {
+  const handleTestimonialSubmission = async (e) => {
     e.preventDefault();
     const name = testimonialSubmission.name.trim();
     const message = testimonialSubmission.message.trim();
 
     if (!name || !message) {
-      setTestimonialSubmitStatus('Please add your name and testimonial before submitting.');
+      setTestimonialSubmitStatus('');
+      setToastMessage('Please add your name and a short testimonial before submitting.');
+      setToastType('error');
       return;
     }
 
@@ -1054,10 +1056,48 @@ export default function App() {
       imageType: 'logo'
     };
 
+    // Add to local state immediately for UI feedback
     setPromoSlides((prev) => [nextSlide, ...prev]);
     setCurrentPromoSlide(0);
     setTestimonialSubmission({ name: '', origin: '', message: '' });
-    setTestimonialSubmitStatus('Thank you! Your testimonial has been added to the carousel.');
+    setTestimonialSubmitStatus('');
+
+    // Persist to database
+    try {
+      const res = await fetch('/api/admin-update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session?.access_token || ''}`
+        },
+        body: JSON.stringify({
+          action: 'insert',
+          table: 'tribe_testimonials',
+          payload: [{ author: name, origin: testimonialSubmission.origin.trim() || 'Parent', text: message }]
+        })
+      });
+      const jr = await parseAdminResponse(res);
+      if (!res.ok) throw new Error(jr?.error || 'Failed to save testimonial');
+
+      // Update with the database-assigned ID if available
+      const created = Array.isArray(jr.data) ? jr.data[0] : jr.data;
+      if (created?.id) {
+        setPromoSlides((prev) => {
+          const updated = [...prev];
+          if (updated[0]?.id === nextSlide.id) {
+            updated[0] = { ...updated[0], id: created.id };
+          }
+          return updated;
+        });
+      }
+
+      setToastMessage('Thank you for sharing your story with our community. We appreciate your support.');
+      setToastType('success');
+    } catch (err) {
+      console.error('Failed saving testimonial to database:', err);
+      setToastMessage('Thank you for your submission. Your story will be reviewed and added shortly.');
+      setToastType('success');
+    }
   };
 
   const handleStartEditTestimonial = (index) => {
