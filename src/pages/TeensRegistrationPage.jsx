@@ -163,7 +163,7 @@ export default function TeensRegistrationPage() {
   };
 
   const goToStep = (index) => {
-    if (index < 0 || index >= steps.length) return;
+    if (index < 0 || index >= stepsDynamic.length) return;
     setCurrentStep(index);
   };
 
@@ -207,7 +207,7 @@ export default function TeensRegistrationPage() {
     }
 
     setFormToast({ message: '', type: 'error' });
-    setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+    setCurrentStep((prev) => Math.min(prev + 1, stepsDynamic.length - 1));
   };
 
   const handlePrevious = () => {
@@ -257,6 +257,8 @@ export default function TeensRegistrationPage() {
       const { error } = await supabase.from('tribe_applicants').insert([payload]);
 
       if (error) {
+        // include error details for easier debugging
+        console.error('Supabase insert error:', error);
         throw error;
       }
 
@@ -276,7 +278,7 @@ export default function TeensRegistrationPage() {
       console.error('PTTA registration submission failed:', err);
       setSubmitted(false);
       setFormToast({
-        message: 'Your application was not submitted because the database is unavailable right now. Please try again in a moment.',
+        message: err?.message ? `Submission failed: ${err.message}` : 'Your application was not submitted because the database is unavailable right now. Please try again in a moment.',
         type: 'error'
       });
     } finally {
@@ -623,7 +625,7 @@ export default function TeensRegistrationPage() {
 
             <div className="teens-registration-step-header">
               <div>
-                <div className="teens-step-breadcrumb">Step {currentStep + 1} of {steps.length}</div>
+                <div className="teens-step-breadcrumb">Step {currentStep + 1} of {stepsDynamic.length}</div>
                 <h2>{currentStepMeta.title}</h2>
               </div>
               <p>{currentStepMeta.description}</p>
@@ -641,9 +643,9 @@ export default function TeensRegistrationPage() {
                 Back
               </button>
 
-              {currentStep < steps.length - 1 ? (
+              {currentStep < stepsDynamic.length - 1 ? (
                 <button type="button" className="teens-registration-submit" onClick={handleNext}>
-                  Next: {steps[currentStep + 1].label}
+                  Next: {stepsDynamic[currentStep + 1].label}
                 </button>
               ) : (
                 <button type="submit" className="teens-registration-submit" disabled={saving}>
