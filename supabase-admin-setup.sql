@@ -1,4 +1,8 @@
--- Create a table to register trusted site admins
+-- Run this in the Supabase SQL editor.
+-- Required for gen_random_uuid() used in the admin table.
+create extension if not exists pgcrypto;
+
+-- Create a table to register trusted site admins.
 create table if not exists site_admins (
   id uuid primary key default gen_random_uuid(),
   uid text unique,
@@ -6,13 +10,14 @@ create table if not exists site_admins (
   created_at timestamp with time zone default now()
 );
 
--- Trusted admin account for the live site
+-- Trusted admin account for the live site.
 insert into site_admins (email, uid)
 values ('pazthrivingtribe@gmail.com', '44787dbc-03ba-475e-9d5c-86ba765d5b0a')
-on conflict (email) do update set uid = excluded.uid;
+on conflict (email) do update
+set uid = excluded.uid;
 
--- Enable row level security on applicant table if you want to allow only specific inserts.
--- This example allows public inserts for applicants and denies all other direct mutations.
+-- Optional: if you want to allow public applicant inserts and block direct edits.
+alter table if exists tribe_applicants enable row level security;
 
 alter table if exists tribe_applicants enable row level security;
 
