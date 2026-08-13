@@ -62,10 +62,16 @@ export default function TeensRegistrationPage() {
 
   const stepsDynamic = useMemo(() => {
     // Put children detail step before contact details (per request).
-    const childrenLabel = formData.registrationType === 'self' ? 'Personal Details' : baseSteps.children.label;
+    const isSelf = formData.registrationType === 'self';
+    const childrenLabel = isSelf ? 'Personal Details' : baseSteps.children.label;
+    const childrenTitle = isSelf ? 'Personal Details' : baseSteps.children.title;
+    const childrenDescription = isSelf
+      ? 'Enter your personal details (name, DOB, gender, strengths) to help match you to a program.'
+      : 'Add each child and complete their profile one by one. Use the "+ Add child" button to add more children and make sure to provide name, date of birth, and gender for each child.';
+
     return [
       baseSteps.type,
-      { ...baseSteps.children, label: childrenLabel },
+      { ...baseSteps.children, label: childrenLabel, title: childrenTitle, description: childrenDescription },
       baseSteps.contact,
       baseSteps.program,
       baseSteps.review
