@@ -266,6 +266,12 @@ export default function AdminDashboard(props) {
     feedback: 'tribe_parent_feedback'
   };
 
+  const uniqueVisitorCount = new Set(
+    clientActivityLog
+      .map((entry) => entry.ip_address || entry.session_id)
+      .filter(Boolean)
+  ).size;
+
   const extractDbId = (rowId) => {
     if (!rowId) return rowId;
     const parts = rowId.split('-');
@@ -693,7 +699,7 @@ export default function AdminDashboard(props) {
   }
 
   const dashboardViews = [
-    { id: 'visitors', label: 'Visitors', color: '#2e7af0', value: Math.max(clientActivityLog.length || 1, 1) },
+    { id: 'visitors', label: 'Visitors', color: '#2e7af0', value: uniqueVisitorCount },
     { id: 'teens', label: 'Teens Reg', color: '#f39a2b', value: Math.max(applicants.length || 0, 0) },
     { id: 'bookings', label: 'Bookings', color: '#16a34a', value: Math.max(bookings.length || 0, 0) },
     { id: 'messages', label: 'Messages', color: '#22a564', value: Math.max(contactMessages.length || 0, 0) },
@@ -703,7 +709,7 @@ export default function AdminDashboard(props) {
   ];
 
   const dashboardTableColumns = {
-    visitors: ['Page', 'Visited at', 'Session'],
+    visitors: ['Page', 'Visited at', 'IP address', 'Session'],
     teens: ['Name', 'Email', 'Phone', 'Program', 'Parent', 'School', 'Session', 'Focus', 'Submitted'],
     messages: ['Name', 'Email', 'Subject', 'Message'],
     bookings: ['Name', 'Email', 'Phone', 'Program', 'Date', 'Time', 'Format', 'Notes'],
@@ -734,6 +740,7 @@ export default function AdminDashboard(props) {
       columns: [
         entry.path || entry.pathname || '/',
         new Date(entry.created_at || entry.createdAt || Date.now()).toLocaleString(),
+        entry.ip_address || 'Unavailable',
         entry.session_id || 'Unknown session'
       ]
     })),

@@ -8,6 +8,7 @@
 import http from 'http';
 import url from 'url';
 import adminUpdateHandler from './api/admin-update.js';
+import trackVisitorHandler from './api/track-visitor.js';
 
 const PORT = 3001;
 
@@ -39,6 +40,12 @@ const server = http.createServer((req, res) => {
       if (pathname === '/api/admin-update' && req.method === 'POST') {
         req.body = body;
         await adminUpdateHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/track-visitor' && req.method === 'POST') {
+        req.body = body;
+        await trackVisitorHandler(req, res);
         return;
       }
 

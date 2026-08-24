@@ -409,6 +409,13 @@ DO $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'tribe_bookings' AND policyname = 'allow trusted admin read on bookings'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow trusted admin read on bookings" ON tribe_bookings FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM site_admins WHERE uid = auth.uid()::text OR lower(email) = lower(auth.jwt()->>''email'')));';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
     WHERE schemaname = 'public' AND tablename = 'tribe_bookings' AND policyname = 'allow public insert for bookings'
   ) THEN
     EXECUTE 'CREATE POLICY "allow public insert for bookings" ON tribe_bookings FOR INSERT WITH CHECK (true);';
@@ -674,6 +681,23 @@ create table if not exists tribe_activity (
   ip_address text,
   created_at timestamptz default now()
 );
+
+alter table if exists tribe_activity add column if not exists ip_address text;
+alter table if exists tribe_activity enable row level security;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'tribe_activity' AND policyname = 'allow trusted admin read on activity'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow trusted admin read on activity" ON tribe_activity FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM site_admins WHERE uid = auth.uid()::text OR lower(email) = lower(auth.jwt()->>''email'')));';
+  END IF;
+END
+$$;
+
+create index if not exists idx_tribe_activity_created_at on tribe_activity (created_at desc);
+create index if not exists idx_tribe_activity_ip_address on tribe_activity (ip_address);
 
 -- Indexes (add as needed)
 create index if not exists idx_tribe_applicants_created_at on tribe_applicants (created_at);

@@ -73,6 +73,29 @@ export default function App() {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [location.pathname]);
 
+  useEffect(() => {
+    if (isAdminRoute) return;
+
+    let sessionId = '';
+    try {
+      sessionId = localStorage.getItem('paz-visitor-session-id') || '';
+      if (!sessionId) {
+        sessionId = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        localStorage.setItem('paz-visitor-session-id', sessionId);
+      }
+    } catch (error) {
+      sessionId = `temporary-${Date.now()}`;
+    }
+
+    fetch('/api/track-visitor', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: location.pathname, sessionId })
+    }).catch((error) => {
+      console.debug('Visitor tracking unavailable:', error);
+    });
+  }, [isAdminRoute, location.pathname]);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authError, setAuthError] = useState(null);
@@ -771,6 +794,7 @@ export default function App() {
             id: item.id || `${item.session_id || item.user_id || 'activity'}-${item.created_at || item.createdAt || Date.now()}`,
             created_at: item.created_at || item.createdAt || item.timestamp || '',
             path: item.path || item.page || item.url || item.pathname || '/',
+            ip_address: item.ip_address || item.ip || '',
             session_id: item.session_id || item.session || item.user_id || 'Unknown session'
           })));
         }
