@@ -697,8 +697,7 @@ export default function App() {
         supabase.from('tribe_applicants').select('*').order('created_at', { ascending: false }).limit(20)
       ]);
 
-      if (serviceError) throw serviceError;
-      if (serviceData && serviceData.length > 0) {
+      if (!serviceError && serviceData && serviceData.length > 0) {
         const formattedServices = { ...services };
         serviceData.forEach(item => {
           if (formattedServices[item.slug]) {
