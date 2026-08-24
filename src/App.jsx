@@ -3120,7 +3120,7 @@ export default function App() {
         </button>
 
         {/* FLOATING WHATSAPP ACTION */}
-        {!isAdminRoute && !isFeedbackRoute && (
+        {!isAdminRoute && (
           <div className="floating-action-shell">
             <div className={`floating-action-tip ${showWhatsappTip ? 'visible' : ''}`}>
               {whatsappTips[whatsappTipIndex]}
@@ -3934,7 +3934,7 @@ export default function App() {
         )}
 
         {/* Global Multi-Column Footer Component */}
-        {!isAdminRoute && (
+        {!isAdminRoute && !isFeedbackRoute && (
           <footer className="workspace-fluid-footer">
             <div className="footer-columns-container">
               <div className="footer-brand-column">
