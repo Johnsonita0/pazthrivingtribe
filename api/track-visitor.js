@@ -9,7 +9,13 @@ const jsonResponse = (res, status, body) => {
 const getClientIp = (req) => {
   const forwarded = req.headers['x-forwarded-for']
   if (forwarded) return String(forwarded).split(',')[0].trim().slice(0, 100)
-  return String(req.headers['x-real-ip'] || req.socket?.remoteAddress || '').slice(0, 100)
+  return String(
+    req.headers['x-real-ip'] ||
+    req.headers['cf-connecting-ip'] ||
+    req.headers['x-client-ip'] ||
+    req.socket?.remoteAddress ||
+    ''
+  ).slice(0, 100)
 }
 
 const getDeviceType = (userAgent) => {

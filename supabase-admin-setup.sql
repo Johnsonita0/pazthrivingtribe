@@ -683,6 +683,7 @@ create table if not exists tribe_activity (
 );
 
 alter table if exists tribe_activity add column if not exists ip_address text;
+alter table if exists tribe_activity add column if not exists method text;
 alter table if exists tribe_activity add column if not exists device_type text;
 alter table if exists tribe_activity add column if not exists location text;
 alter table if exists tribe_activity enable row level security;
