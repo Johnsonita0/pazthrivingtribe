@@ -1595,6 +1595,7 @@ export default function App() {
           flex-direction: column;
           align-items: flex-end;
           gap: 0.6rem;
+          pointer-events: none;
         }
         .floating-action-trigger {
           width: 56px;
@@ -1610,6 +1611,7 @@ export default function App() {
           cursor: pointer;
           transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
           text-decoration: none;
+          pointer-events: auto;
           animation: bounce-default 1.7s ease-in-out infinite;
         }
         .floating-action-trigger:hover,
