@@ -3120,7 +3120,7 @@ export default function App() {
         </button>
 
         {/* FLOATING WHATSAPP ACTION */}
-        {!isAdminRoute && (
+        {!isAdminRoute && !isFeedbackRoute && (
           <div className="floating-action-shell">
             <div className={`floating-action-tip ${showWhatsappTip ? 'visible' : ''}`}>
               {whatsappTips[whatsappTipIndex]}
