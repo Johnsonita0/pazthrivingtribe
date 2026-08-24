@@ -9,6 +9,7 @@ import GallerySection from './GallerySection';
 import AdminDashboard from './AdminDashboard';
 import TeensRegistrationPage from './pages/TeensRegistrationPage';
 import BookSessionPage from './pages/BookSessionPage';
+import FeedbackPage from './pages/FeedbackPage';
 
 const whatsappTips = [
   'Need help today?',
@@ -93,6 +94,7 @@ export default function App() {
   });
   const [bookings, setBookings] = useState([]);
   const [contactMessages, setContactMessages] = useState([]);
+  const [parentFeedback, setParentFeedback] = useState([]);
 
   const handleContactFormSubmit = (event) => {
     event.preventDefault();
@@ -749,6 +751,13 @@ export default function App() {
       }
 
       try {
+        const feedbackRecords = await tryLoadSupabaseTables(['tribe_parent_feedback']);
+        if (feedbackRecords) setParentFeedback(feedbackRecords);
+      } catch (err) {
+        console.log('No parent feedback table available for dynamic updates:', err);
+      }
+
+      try {
         const activityRecords = await tryLoadSupabaseTables(['tribe_activity', 'client_activity', 'visitor_activity', 'activity_log', 'page_views']);
         if (activityRecords) {
           setClientActivityLog(activityRecords.map((item) => ({
@@ -822,7 +831,7 @@ export default function App() {
     try {
       const { data, error } = await supabase.from('tribe_testimonials').select('*').order('created_at', { ascending: false });
       if (error) throw error;
-      if (data && data.length > 0) {
+      if (Array.isArray(data)) {
         setPromoSlides(data.map((item) => ({
           id: item.id,
           title: item.author || item.title || 'Anonymous',
@@ -1896,6 +1905,10 @@ export default function App() {
         .testimonial-controls { position: absolute; right: 1.25rem; bottom: 1.25rem; display: flex; align-items: center; gap: 0.8rem; }
         .testimonial-controls .banner-arrow { width: 36px; height: 36px; }
         .testimonial-slider-header { margin-bottom: 1rem; }
+        .testimonial-intro { max-width: 680px; margin: 0.9rem auto 0; color: #5b6472; font-size: 1rem; line-height: 1.7; }
+        .testimonial-review-context { display: flex; align-items: center; gap: 0.55rem; color: #718096; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
+        .testimonial-review-context i { color: #e88767; font-size: 0.9rem; }
+        @media (min-width: 769px) { .testimonial-showcase-section { padding-top: 4.25rem; padding-bottom: 2rem; } .testimonial-slider-header { margin-bottom: 2.25rem !important; } .testimonial-slider-card { min-height: 430px; border-radius: 28px; background: linear-gradient(135deg, #ffffff 0%, #f4f8f5 100%); border-color: rgba(30, 125, 91, 0.18); box-shadow: 0 28px 70px rgba(30, 60, 46, 0.12); } .testimonial-slide-panel { min-height: 430px; padding: 3rem 3.25rem; } .testimonial-quote { max-width: 680px; font-size: clamp(1.35rem, 2.1vw, 1.85rem); line-height: 1.65; } .testimonial-review-context { margin-top: 0.35rem; } .testimonial-form-card { padding: 2rem; } }
         @media (max-width: 768px) { .testimonial-author { text-align: center; margin-top: 0.5rem; } .testimonial-layout { grid-template-columns: 1fr; } .testimonial-slider-card { min-height: 300px; } .testimonial-slide-panel { padding: 1.25rem; min-height: 300px; } .testimonial-quote { -webkit-line-clamp: 5; font-size: clamp(1rem, 1.8vw, 1.2rem); line-height: 1.6; } .testimonial-meta { align-items: flex-start; } .testimonial-form-card { padding: 1.2rem; } .testimonial-controls { position: static; justify-content: center; margin-top: 0.5rem; width: 100%; } .synchronized-promo-banner { padding: 1.25rem; } .banner-slider { height: auto; min-height: auto; position: relative; } .banner-slide { position: static !important; display: none; opacity: 1 !important; transform: none !important; transition: none; flex-direction: column; gap: 1rem; padding: 1rem; align-items: stretch; } .banner-slide.active { display: flex; } .banner-text-package { width: 100%; gap: 0.75rem; } .banner-badge { font-size: 0.75rem; padding: 0.3rem 0.8rem; } .banner-text-package p { font-size: 0.9rem; line-height: 1.5; } .slide-graphic { width: 100%; height: 180px; margin: 0.5rem 0 0 0; } }
         @media (max-width: 480px) { .synchronized-promo-banner { padding: 0.75rem; } .banner-slide { padding: 0.75rem; gap: 0.6rem; } .banner-text-package { gap: 0.5rem; } .banner-badge { font-size: 0.65rem; padding: 0.25rem 0.6rem; } .banner-text-package p { font-size: 0.8rem; line-height: 1.4; } .slide-graphic { height: 140px; } }
         .banner-controls { position: absolute; right: 18px; bottom: 12px; display: flex; gap: 1rem; align-items: center; }
@@ -3460,6 +3473,7 @@ export default function App() {
                       Client Voices
                     </span>
                     <h2 style={{ margin: 0, fontSize: 'clamp(2rem, 3vw, 3rem)', color: '#1a1a1a' }}>What families and teens are saying</h2>
+                    <p className="testimonial-intro">Every story reflects a different starting point, but the goal is shared: practical support that helps young people and their families move forward with confidence.</p>
                   </div>
 
                   <div className="testimonial-layout">
@@ -3472,6 +3486,7 @@ export default function App() {
                           >
                             <div className="testimonial-slide-content">
                               <div className="testimonial-badge"><i className="fa-solid fa-star"></i> Client Review</div>
+                              <div className="testimonial-review-context"><i className="fa-solid fa-quote-left"></i><span>Shared by a member of our community</span></div>
                               <p className="testimonial-quote">“{slide.text || 'Thank you for sharing your story with our community.'}”</p>
                               <div className="testimonial-meta">
                                 <div>
@@ -3596,6 +3611,7 @@ export default function App() {
           <Route path="/teens_reg" element={<TeensRegistrationPage />} />
           <Route path="/teens-reg" element={<TeensRegistrationPage />} />
           <Route path="/book-session" element={<BookSessionPage />} />
+          <Route path="/feedback" element={<FeedbackPage />} />
           <Route path="/care-counseling" element={<CareCounselingPage />} />
           <Route path="/services/family" element={<ComingSoonPage title="Thriving Parents" description="Empowering parents with tools and wisdom" />} />
           <Route path="/services/marriage" element={<ComingSoonPage title="Thriving Women" description="Transforming lives, building confidence" />} />
@@ -3626,6 +3642,8 @@ export default function App() {
                 applicants={applicants}
                 contactMessages={contactMessages}
                 bookings={bookings}
+                parentFeedback={parentFeedback}
+                setParentFeedback={setParentFeedback}
                 socialNewsFeed={socialNewsFeed}
                 socialEditTarget={socialEditTarget}
                 setSocialEditTarget={setSocialEditTarget}
@@ -3724,6 +3742,8 @@ export default function App() {
                 applicants={applicants}
                 contactMessages={contactMessages}
                 bookings={bookings}
+                parentFeedback={parentFeedback}
+                setParentFeedback={setParentFeedback}
                 refreshAdminData={refreshAdminData}
                 refreshLoading={refreshingDashboard}
                 socialNewsFeed={socialNewsFeed}

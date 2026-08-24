@@ -7,6 +7,7 @@
 
 import http from 'http';
 import url from 'url';
+import adminUpdateHandler from './api/admin-update.js';
 
 const PORT = 3001;
 
@@ -35,6 +36,12 @@ const server = http.createServer((req, res) => {
 
   req.on('end', async () => {
     try {
+      if (pathname === '/api/admin-update' && req.method === 'POST') {
+        req.body = body;
+        await adminUpdateHandler(req, res);
+        return;
+      }
+
       if (pathname === '/api/proxy-page' && req.method === 'GET') {
         const targetUrl = parsedUrl.searchParams.get('url');
         if (!targetUrl) {

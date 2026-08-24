@@ -32,6 +32,63 @@ BEGIN
 END
 $$;
 
+-- Parent mentoring feedback responses. The timestamp is generated when the form is submitted.
+create table if not exists tribe_parent_feedback (
+  id uuid primary key default gen_random_uuid(),
+  parent_name text not null,
+  child_name text not null,
+  mentoring_duration text,
+  positive_changes jsonb default '[]'::jsonb,
+  other_change text,
+  significant_change text,
+  impact_rating text,
+  support_areas jsonb default '[]'::jsonb,
+  other_support text,
+  future_focus text,
+  satisfaction text,
+  coach_relationship text,
+  child_comments text,
+  development_notes text,
+  improvement_suggestions text,
+  recommendation text,
+  testimonial text,
+  created_at timestamptz not null default now()
+);
+
+alter table if exists tribe_parent_feedback enable row level security;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'tribe_parent_feedback' AND policyname = 'allow public insert for parent feedback'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow public insert for parent feedback" ON tribe_parent_feedback FOR INSERT WITH CHECK (true);';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'tribe_parent_feedback' AND policyname = 'allow authenticated read for parent feedback'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow authenticated read for parent feedback" ON tribe_parent_feedback FOR SELECT TO authenticated USING (true);';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'tribe_parent_feedback' AND policyname = 'allow trusted admin update on parent feedback'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow trusted admin update on parent feedback" ON tribe_parent_feedback FOR UPDATE TO authenticated USING (EXISTS (SELECT 1 FROM site_admins WHERE uid = auth.uid()::text OR email = auth.jwt()->>''email'')) WITH CHECK (EXISTS (SELECT 1 FROM site_admins WHERE uid = auth.uid()::text OR email = auth.jwt()->>''email''));';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'tribe_parent_feedback' AND policyname = 'allow trusted admin delete on parent feedback'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow trusted admin delete on parent feedback" ON tribe_parent_feedback FOR DELETE TO authenticated USING (EXISTS (SELECT 1 FROM site_admins WHERE uid = auth.uid()::text OR email = auth.jwt()->>''email''));';
+  END IF;
+END
+$$;
+
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -274,6 +331,17 @@ DO $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'tribe_applicants' AND policyname = 'allow trusted admin delete on applicants'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow trusted admin delete on applicants" ON tribe_applicants FOR DELETE TO authenticated USING (EXISTS (SELECT 1 FROM site_admins WHERE uid = auth.uid()::text OR lower(email) = lower(auth.jwt()->>''email'')));';
+  END IF;
+END
+$$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
     WHERE schemaname = 'public' AND tablename = 'tribe_applicants' AND policyname = 'allow public insert for applicants'
   ) THEN
     EXECUTE 'CREATE POLICY "allow public insert for applicants" ON tribe_applicants FOR INSERT WITH CHECK (true);';
@@ -459,7 +527,39 @@ create table if not exists tribe_testimonials (
   updated_at timestamptz default now()
 );
 
+-- Seed the three testimonials currently shown by the homepage fallback.
+-- This gives them database ids so the Published Slider dashboard can manage them.
+insert into tribe_testimonials (author, origin, text, image_type)
+select 'Jojo''s Mom', 'Parent', 'Ms. Rosaline has been a truly exceptional tutor and coach for my 10-year-old daughter. My daughter will have her 9th class this week. From the beginning, she created a fun, warm, and engaging environment that made my daughter genuinely excited for every lesson—often looking forward to it even before it starts. What makes Ms. Rosaline stand out is her real impact. She has played a major role in building my daughter''s personality—developing her sense of responsibility and, most importantly, her inner motivation. Today, my daughter attends her classes because she wants to, not because I ask her to—and that, to me, is incredibly valuable. Through her constant encouragement, positivity, and genuine care, Ms. Rosaline has helped my daughter grow in confidence, independence, self-love, and communication. She also nurtures leadership skills and teaches children how to handle different life situations with confidence and awareness. Her dedication, patience, and uplifting spirit truly make a lasting difference. I''m deeply grateful for her efforts and highly recommend her as an inspiring and impactful life coach for children.', 'logo'
+where not exists (select 1 from tribe_testimonials where author = 'Jojo''s Mom');
+
+insert into tribe_testimonials (author, origin, text, image_type)
+select 'Chukwunonso', 'Community', 'Good evening Coach Roseline thank you for the things you have done for me, my grades are improving now.', 'logo'
+where not exists (select 1 from tribe_testimonials where author = 'Chukwunonso');
+
+insert into tribe_testimonials (author, origin, text, image_type)
+select 'A and A''s Dad', 'Parent', 'Thank You hope they are making progress in line with the schedule. They enjoyed their sessions.', 'logo'
+where not exists (select 1 from tribe_testimonials where author = 'A and A''s Dad');
+
 alter table if exists tribe_testimonials enable row level security;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'tribe_testimonials' AND policyname = 'allow trusted admin delete on testimonials'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow trusted admin delete on testimonials" ON tribe_testimonials FOR DELETE TO authenticated USING (EXISTS (SELECT 1 FROM site_admins WHERE uid = auth.uid()::text OR lower(email) = lower(auth.jwt()->>''email'')));';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'tribe_testimonials' AND policyname = 'allow trusted admin insert on testimonials'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow trusted admin insert on testimonials" ON tribe_testimonials FOR INSERT TO authenticated WITH CHECK (EXISTS (SELECT 1 FROM site_admins WHERE uid = auth.uid()::text OR lower(email) = lower(auth.jwt()->>''email'')));';
+  END IF;
+END
+$$;
 
 DO $$
 BEGIN
