@@ -67,6 +67,7 @@ export default function App() {
   const location = useLocation();
   const isRegistrationRoute = ['/teens_reg', '/teens-reg'].includes(location.pathname);
   const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/dashboard');
+  const isFeedbackRoute = location.pathname === '/feedback';
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -216,6 +217,12 @@ export default function App() {
       subtitle: "Paz Thriving Tribe offers a safe and confidential space where you can talk and be heard.",
       image: "./image/pic7.png",
       slideClassName: 'hero-slide-pic7'
+    },
+    {
+      title: "Share Your Feedback",
+      subtitle: "Tell us what is changing for your family so we can celebrate progress and keep improving the support we offer.",
+      image: "./image/pic8.png",
+      slideClassName: 'hero-slide-feedback'
     },
     {
       title: "We Also Offer Church Coaching Sessions",
@@ -3225,12 +3232,14 @@ export default function App() {
                                   onClick={() => {
                                     const actionPath = currentSlide.title === 'Structured Teens Development Program'
                                       ? '/teens_reg'
-                                      : ((currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? '/book-session' : '/teens_reg');
+                                      : currentSlide.title === 'Share Your Feedback'
+                                        ? '/feedback'
+                                        : ((currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? '/book-session' : '/teens_reg');
                                     navigate(actionPath);
                                   }}
                                 >
-                                  {currentSlide.title === 'Structured Teens Development Program' ? 'Apply Now' : ((currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? 'Book Now' : 'Register Now')}
-                                  <i className={currentSlide.title === 'Structured Teens Development Program' ? 'fa-solid fa-pen-to-square' : ((currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? 'fa-solid fa-calendar-check' : 'fa-solid fa-user-plus')}></i>
+                                  {currentSlide.title === 'Structured Teens Development Program' ? 'Apply Now' : currentSlide.title === 'Share Your Feedback' ? 'Take the Survey' : ((currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? 'Book Now' : 'Register Now')}
+                                  <i className={currentSlide.title === 'Structured Teens Development Program' ? 'fa-solid fa-pen-to-square' : currentSlide.title === 'Share Your Feedback' ? 'fa-solid fa-comment-dots' : ((currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? 'fa-solid fa-calendar-check' : 'fa-solid fa-user-plus')}></i>
                                 </button>
                               </div>
                             </div>
@@ -3823,7 +3832,7 @@ export default function App() {
         </Routes>
 
         {/* Contact Us Section */}
-        {!isRegistrationRoute && !isAdminRoute && (
+        {!isRegistrationRoute && !isAdminRoute && !isFeedbackRoute && (
           <section id="contact" className="contact-us-section">
             <div className="contact-container-wrapper">
             <div className="contact-header-block">
