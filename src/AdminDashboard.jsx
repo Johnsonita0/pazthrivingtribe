@@ -257,7 +257,7 @@ export default function AdminDashboard(props) {
   const clearSelection = () => setSelectedRowIds([]);
 
   const tableMap = {
-    visitors: null,
+    visitors: 'tribe_activity',
     teens: 'tribe_applicants',
     messages: 'tribe_contact_messages',
     bookings: 'tribe_bookings',

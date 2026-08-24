@@ -679,23 +679,28 @@ create table if not exists tribe_activity (
   path text,
   method text,
   ip_address text,
+  device_type text,
+  location text,
   created_at timestamptz default now()
 );
 
-alter table if exists tribe_activity add column if not exists ip_address text;
+alter table if exists tribe_activity add column if not exists session_id text;
+alter table if exists tribe_activity add column if not exists user_id text;
+alter table if exists tribe_activity add column if not exists path text;
 alter table if exists tribe_activity add column if not exists method text;
+alter table if exists tribe_activity add column if not exists ip_address text;
 alter table if exists tribe_activity add column if not exists device_type text;
 alter table if exists tribe_activity add column if not exists location text;
+alter table if exists tribe_activity add column if not exists created_at timestamptz default now();
 alter table if exists tribe_activity enable row level security;
+
+drop policy if exists "allow trusted admin read on activity" on tribe_activity;
+drop policy if exists "allow trusted admin delete on activity" on tribe_activity;
 
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public' AND tablename = 'tribe_activity' AND policyname = 'allow trusted admin read on activity'
-  ) THEN
-    EXECUTE 'CREATE POLICY "allow trusted admin read on activity" ON tribe_activity FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM site_admins WHERE uid = auth.uid()::text OR lower(email) = lower(auth.jwt()->>''email'')));';
-  END IF;
+  EXECUTE 'CREATE POLICY "allow trusted admin read on activity" ON tribe_activity FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM site_admins WHERE uid = auth.uid()::text OR lower(email) = lower(auth.jwt()->>''email'')));';
+  EXECUTE 'CREATE POLICY "allow trusted admin delete on activity" ON tribe_activity FOR DELETE TO authenticated USING (EXISTS (SELECT 1 FROM site_admins WHERE uid = auth.uid()::text OR lower(email) = lower(auth.jwt()->>''email'')));';
 END
 $$;
 
