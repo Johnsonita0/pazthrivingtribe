@@ -107,8 +107,8 @@ export default function FeedbackPage() {
   useEffect(() => {
     if (!introDone || window.innerWidth > 760) return undefined;
     const timer = window.setTimeout(() => {
-      const firstField = formRef.current?.querySelector('.feedback-fields input, .feedback-fields textarea, .feedback-fields select');
-      firstField?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const feedbackShell = formRef.current?.closest('.feedback-shell');
+      feedbackShell?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 120);
     return () => window.clearTimeout(timer);
   }, [introDone, step]);
