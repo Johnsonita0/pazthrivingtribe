@@ -3135,7 +3135,7 @@ export default function App() {
         </div>
       )}
 
-      {toastMessage && (
+      {toastMessage && !isAdminRoute && (
         <div className="toast-notification-container">
           <div className={`toast-notification ${toastType}`}>
             <span className="toast-message-text">{toastMessage}</span>
