@@ -105,10 +105,9 @@ export default function FeedbackPage() {
   }, [form, submitted]);
 
   useEffect(() => {
-    if (!introDone || window.innerWidth > 760) return undefined;
+    if (!introDone) return undefined;
     const timer = window.setTimeout(() => {
-      const feedbackShell = formRef.current?.closest('.feedback-shell');
-      feedbackShell?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     }, 120);
     return () => window.clearTimeout(timer);
   }, [introDone, step]);
