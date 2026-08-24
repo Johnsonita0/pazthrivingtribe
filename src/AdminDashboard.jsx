@@ -284,7 +284,7 @@ export default function AdminDashboard(props) {
 
   const deleteRows = async (idsToDelete) => {
     if (!idsToDelete || idsToDelete.length === 0) return;
-    const table = tableMap[activeDashboardView];
+    const table = tableMap[activeDashboardView] || (activeDashboardView === 'visitors' ? 'tribe_activity' : null);
     if (!table) {
       showAdminToast('error', 'Delete not available', 'This table does not support row deletions from the current dashboard view.');
       return;
