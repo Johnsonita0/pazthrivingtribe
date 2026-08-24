@@ -709,7 +709,7 @@ export default function AdminDashboard(props) {
   ];
 
   const dashboardTableColumns = {
-    visitors: ['Page', 'Visited at', 'IP address', 'Session'],
+    visitors: ['Page', 'IP address', 'Device', 'Location', 'Visited at'],
     teens: ['Name', 'Email', 'Phone', 'Program', 'Parent', 'School', 'Session', 'Focus', 'Submitted'],
     messages: ['Name', 'Email', 'Subject', 'Message'],
     bookings: ['Name', 'Email', 'Phone', 'Program', 'Date', 'Time', 'Format', 'Notes'],
@@ -739,9 +739,10 @@ export default function AdminDashboard(props) {
       id: entry.id || `${entry.session_id || 'activity'}-${entry.created_at || Date.now()}`,
       columns: [
         entry.path || entry.pathname || '/',
-        new Date(entry.created_at || entry.createdAt || Date.now()).toLocaleString(),
         entry.ip_address || 'Unavailable',
-        entry.session_id || 'Unknown session'
+        entry.device_type || 'Unknown',
+        entry.location || 'Unknown',
+        new Date(entry.created_at || entry.createdAt || Date.now()).toLocaleString()
       ]
     })),
     teens: (() => {

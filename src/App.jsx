@@ -1,6 +1,6 @@
 ﻿import React, { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Link, Navigate, useLocation, useParams, useNavigate } from 'react-router-dom';
-import { supabase, isSupabaseStub } from './supabaseClient';
+import { supabase } from './supabaseClient';
 import TeensKidsMenu from './TeensKidsMenu';
 import ThriverRegistrationModal from './ThriverRegistrationModal';
 import NotFoundPage from './NotFoundPage';
@@ -794,6 +794,8 @@ export default function App() {
             created_at: item.created_at || item.createdAt || item.timestamp || '',
             path: item.path || item.page || item.url || item.pathname || '/',
             ip_address: item.ip_address || item.ip || '',
+            device_type: item.device_type || item.device || '',
+            location: item.location || '',
             session_id: item.session_id || item.session || item.user_id || 'Unknown session'
           })));
         }

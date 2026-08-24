@@ -12,6 +12,30 @@ const getClientIp = (req) => {
   return String(req.headers['x-real-ip'] || req.socket?.remoteAddress || '').slice(0, 100)
 }
 
+const getDeviceType = (userAgent) => {
+  const agent = String(userAgent || '').toLowerCase()
+  if (/ipad|tablet|kindle|silk|playbook/.test(agent)) return 'Tablet'
+  if (/mobile|android|iphone|ipod|windows phone/.test(agent)) return 'Mobile'
+  return 'Desktop'
+}
+
+const getLocation = (req) => {
+  const city = req.headers['x-vercel-ip-city']
+  const region = req.headers['x-vercel-ip-country-region']
+  const country = req.headers['x-vercel-ip-country']
+  const parts = [city, region, country]
+    .map((part) => {
+      if (!part) return ''
+      try {
+        return decodeURIComponent(String(part))
+      } catch (error) {
+        return String(part)
+      }
+    })
+    .filter(Boolean)
+  return parts.length > 0 ? parts.join(', ').slice(0, 200) : 'Unknown'
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return jsonResponse(res, 405, { error: 'Method not allowed' })
 
@@ -40,7 +64,9 @@ export default async function handler(req, res) {
       session_id: sessionId,
       path,
       method: 'GET',
-      ip_address: getClientIp(req)
+      ip_address: getClientIp(req),
+      device_type: getDeviceType(req.headers['user-agent']),
+      location: getLocation(req)
     })
     if (error) return jsonResponse(res, 500, { error: 'Failed to record visitor' })
     return jsonResponse(res, 201, { success: true })
