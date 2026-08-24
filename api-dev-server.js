@@ -10,6 +10,12 @@ import url from 'url';
 import adminUpdateHandler from './api/admin-update.js';
 import trackVisitorHandler from './api/track-visitor.js';
 
+try {
+  process.loadEnvFile?.('.env');
+} catch (error) {
+  // Local development can still use explicitly configured environment variables.
+}
+
 const PORT = 3001;
 
 const server = http.createServer((req, res) => {

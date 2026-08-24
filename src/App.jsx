@@ -90,6 +90,7 @@ export default function App() {
     fetch('/api/track-visitor', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      keepalive: true,
       body: JSON.stringify({ path: location.pathname, sessionId })
     }).catch((error) => {
       console.debug('Visitor tracking unavailable:', error);

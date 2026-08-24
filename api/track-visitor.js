@@ -60,15 +60,30 @@ export default async function handler(req, res) {
 
   try {
     const supabase = createClient(supabaseUrl, serviceRoleKey)
-    const { error } = await supabase.from('tribe_activity').insert({
+    const activity = {
       session_id: sessionId,
       path,
       method: 'GET',
       ip_address: getClientIp(req),
       device_type: getDeviceType(req.headers['user-agent']),
       location: getLocation(req)
-    })
-    if (error) return jsonResponse(res, 500, { error: 'Failed to record visitor' })
+    }
+    const { error } = await supabase.from('tribe_activity').insert(activity)
+    if (error) {
+      const { error: legacyError } = await supabase.from('tribe_activity').insert({
+        session_id: activity.session_id,
+        path: activity.path,
+        method: activity.method,
+        ip_address: activity.ip_address
+      })
+      if (legacyError) {
+        const { error: oldestSchemaError } = await supabase.from('tribe_activity').insert({
+          session_id: activity.session_id,
+          path: activity.path
+        })
+        if (oldestSchemaError) return jsonResponse(res, 500, { error: 'Failed to record visitor' })
+      }
+    }
     return jsonResponse(res, 201, { success: true })
   } catch (error) {
     return jsonResponse(res, 500, { error: 'Failed to record visitor' })
