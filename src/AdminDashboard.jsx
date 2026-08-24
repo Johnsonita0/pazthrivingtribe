@@ -149,8 +149,7 @@ export default function AdminDashboard(props) {
   } = props;
 
   const [activeDashboardView, setActiveDashboardView] = useState('visitors');
-  const [parentFilter, setParentFilter] = useState('');
-  const [programFilter, setProgramFilter] = useState('');
+  const [tableFilters, setTableFilters] = useState({});
   const [selectedRowIds, setSelectedRowIds] = useState([]);
   const [viewingRow, setViewingRow] = useState(null);
   const [postingToSlider, setPostingToSlider] = useState(false);
@@ -363,37 +362,6 @@ export default function AdminDashboard(props) {
   const printViewingRow = () => {
     window.print();
   };
-  const parentOptions = useMemo(() => {
-    const set = new Set();
-    (applicants || []).forEach((a) => {
-      const name = a.parentName || a.parent_or_guardian_name || a.contactName || '';
-      if (name) set.add(name);
-    });
-    return Array.from(set).sort();
-  }, [applicants]);
-
-  const programOptions = useMemo(() => {
-    const set = new Set();
-    (applicants || []).forEach((a) => {
-      try {
-        const children = a.childrenDetails ? (typeof a.childrenDetails === 'string' ? JSON.parse(a.childrenDetails) : a.childrenDetails) : null;
-        if (Array.isArray(children)) {
-          children.forEach((c) => {
-            const p = c.program_type || c.programType || c.track || '';
-            if (p) set.add(p);
-          });
-        } else if (a.track) {
-          set.add(a.track);
-        }
-      } catch (err) {
-        // ignore parse errors
-      }
-    });
-    return Array.from(set).sort();
-  }, [applicants]);
-
-  
-
   if (mode === 'login' && session) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -743,6 +711,21 @@ export default function AdminDashboard(props) {
     slider: ['Name', 'Origin', 'Testimonial', 'Source'],
     feedback: ['Parent', 'Child', 'Duration', 'Impact', 'Satisfaction', 'Recommendation', 'Submitted']
   };
+
+  const dashboardFilterDefinitions = {
+    visitors: [{ key: 'Page', label: 'Page', index: 0 }],
+    teens: [{ key: 'Program', label: 'Program', index: 3 }, { key: 'Parent', label: 'Parent', index: 4 }],
+    messages: [{ key: 'Subject', label: 'Subject', index: 2 }],
+    bookings: [{ key: 'Program', label: 'Program', index: 3 }, { key: 'Format', label: 'Format', index: 6 }],
+    testimonials: [{ key: 'Origin', label: 'Origin', index: 1 }, { key: 'Source', label: 'Source', index: 3 }],
+    slider: [{ key: 'Origin', label: 'Origin', index: 1 }, { key: 'Source', label: 'Source', index: 3 }],
+    feedback: [
+      { key: 'Duration', label: 'Duration', index: 2 },
+      { key: 'Impact', label: 'Impact', index: 3 },
+      { key: 'Satisfaction', label: 'Satisfaction', index: 4 },
+      { key: 'Recommendation', label: 'Recommendation', index: 5 }
+    ]
+  };
   
 
   const dashboardTableData = {
@@ -809,16 +792,7 @@ export default function AdminDashboard(props) {
         });
       });
 
-      // apply filters
-      const filtered = rows.filter((r) => {
-        const programCell = (r.columns[3] || '').toString();
-        const parentCell = (r.columns[4] || '').toString();
-        if (parentFilter && !parentCell.toLowerCase().includes(parentFilter.toLowerCase())) return false;
-        if (programFilter && programCell !== programFilter) return false;
-        return true;
-      });
-
-      return filtered;
+      return rows;
     })(),
     messages: contactMessages.slice(0, 10).map((message) => ({
       id: message.id || `${message.email || 'message'}-${message.createdAt || Date.now()}`,
@@ -893,6 +867,19 @@ export default function AdminDashboard(props) {
       ]
     }))
   };
+
+  const activeFilterDefinitions = dashboardFilterDefinitions[activeDashboardView] || [];
+  const activeFilters = tableFilters[activeDashboardView] || {};
+  const activeTableRows = dashboardTableData[activeDashboardView] || [];
+  const filteredDashboardRows = activeTableRows.filter((row) => activeFilterDefinitions.every((filter) => {
+    const selectedValue = activeFilters[filter.key];
+    if (!selectedValue) return true;
+    return String(row.columns[filter.index] ?? '').toLowerCase() === selectedValue.toLowerCase();
+  }));
+  const filterOptions = activeFilterDefinitions.map((filter) => ({
+    ...filter,
+    options: Array.from(new Set(activeTableRows.map((row) => String(row.columns[filter.index] ?? '').trim()).filter(Boolean))).sort()
+  }));
 
   const activeDashboardLabel = dashboardViews.find((view) => view.id === activeDashboardView)?.label || 'Visitors';
 
@@ -1031,21 +1018,20 @@ export default function AdminDashboard(props) {
               <button type="button" style={{ border: 'none', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', color: '#fff', borderRadius: '999px', padding: '0.8rem 1.5rem', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 12px 22px rgba(92,74,228,0.22)' }}>
                 Print responses
               </button>
-                <div className="dashboard-filters">
-                <label style={{ fontSize: '0.95rem', color: '#374151', fontWeight: 600 }}>Parent</label>
-                <select value={parentFilter} onChange={(e) => setParentFilter(e.target.value)} style={{ minWidth: '160px', padding: '8px', borderRadius: '8px' }}>
-                  <option value="">All parents</option>
-                  {parentOptions.map((p) => <option key={p} value={p}>{p}</option>)}
-                </select>
-
-                <label style={{ fontSize: '0.95rem', color: '#374151', fontWeight: 600 }}>Program</label>
-                <select value={programFilter} onChange={(e) => setProgramFilter(e.target.value)} style={{ minWidth: '180px', padding: '8px', borderRadius: '8px' }}>
-                  <option value="">All programs</option>
-                  {programOptions.map((p) => <option key={p} value={p}>{p}</option>)}
-                </select>
-
-                <button type="button" onClick={() => { setParentFilter(''); setProgramFilter(''); }} style={{ border: '1px solid #d8dfe7', background: '#fff', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer' }}>Clear</button>
-              </div>
+                {activeFilterDefinitions.length > 0 && (
+                  <div className="dashboard-filters">
+                    {filterOptions.map((filter) => (
+                      <label key={filter.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.95rem', color: '#374151', fontWeight: 600 }}>
+                        {filter.label}
+                        <select value={activeFilters[filter.key] || ''} onChange={(e) => setTableFilters((current) => ({ ...current, [activeDashboardView]: { ...current[activeDashboardView], [filter.key]: e.target.value } }))} style={{ minWidth: '150px', padding: '8px', borderRadius: '8px' }}>
+                          <option value="">All {filter.label.toLowerCase()}s</option>
+                          {filter.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                        </select>
+                      </label>
+                    ))}
+                    <button type="button" onClick={() => setTableFilters((current) => ({ ...current, [activeDashboardView]: {} }))} style={{ border: '1px solid #d8dfe7', background: '#fff', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer' }}>Clear</button>
+                  </div>
+                )}
             </div>
 
             <div className="dashboard-table-wrap">
@@ -1054,10 +1040,10 @@ export default function AdminDashboard(props) {
                   <tr style={{ background: '#f8fafc' }}>
                         <th style={{ width: '48px', textAlign: 'center', padding: '14px 8px' }}>
                           <input type="checkbox" aria-label="Select all" onChange={(e) => {
-                            if (!dashboardTableData[activeDashboardView]) return;
-                            if (e.target.checked) setSelectedRowIds(dashboardTableData[activeDashboardView].map((r) => r.id));
+                            if (!filteredDashboardRows) return;
+                            if (e.target.checked) setSelectedRowIds(filteredDashboardRows.map((r) => r.id));
                             else clearSelection();
-                          }} checked={dashboardTableData[activeDashboardView] && selectedRowIds.length === dashboardTableData[activeDashboardView].length && dashboardTableData[activeDashboardView].length > 0} />
+                          }} checked={selectedRowIds.length === filteredDashboardRows.length && filteredDashboardRows.length > 0} />
                         </th>
                         {dashboardTableColumns[activeDashboardView]?.map((column) => (
                           <th key={column} style={{ textAlign: 'left', padding: '14px 16px', color: '#374151', fontSize: '0.95rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{column}</th>
@@ -1066,8 +1052,8 @@ export default function AdminDashboard(props) {
                   </tr>
                 </thead>
                 <tbody>
-                  {dashboardTableData[activeDashboardView]?.length > 0 ? (
-                        dashboardTableData[activeDashboardView].map((row) => (
+                  {filteredDashboardRows.length > 0 ? (
+                    filteredDashboardRows.map((row) => (
                           <tr key={row.id} style={{ borderTop: '1px solid #eef2f7' }}>
                             <td style={{ padding: '14px 8px', textAlign: 'center' }}>
                               <input type="checkbox" checked={selectedRowIds.includes(row.id)} onChange={() => toggleSelectRow(row.id)} />
