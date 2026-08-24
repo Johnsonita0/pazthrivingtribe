@@ -37,6 +37,7 @@ create table if not exists tribe_parent_feedback (
   id uuid primary key default gen_random_uuid(),
   parent_name text not null,
   child_name text not null,
+  gender text,
   mentoring_duration text,
   positive_changes jsonb default '[]'::jsonb,
   other_change text,
@@ -54,6 +55,24 @@ create table if not exists tribe_parent_feedback (
   testimonial text,
   created_at timestamptz not null default now()
 );
+
+-- Keep existing feedback tables compatible with the gender field added to the form.
+alter table if exists tribe_parent_feedback
+  add column if not exists gender text;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'tribe_parent_feedback'::regclass
+      AND conname = 'tribe_parent_feedback_gender_check'
+  ) THEN
+    ALTER TABLE tribe_parent_feedback
+      ADD CONSTRAINT tribe_parent_feedback_gender_check
+      CHECK (gender IS NULL OR gender IN ('male', 'female'));
+  END IF;
+END
+$$;
 
 alter table if exists tribe_parent_feedback enable row level security;
 

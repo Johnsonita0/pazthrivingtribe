@@ -17,7 +17,7 @@ const supportOptions = [
 ];
 
 const initialForm = {
-  parentName: '', childName: '', duration: '', changes: [], otherChange: '', significantChange: '', impact: '',
+  parentName: '', childName: '', gender: '', duration: '', changes: [], otherChange: '', significantChange: '', impact: '',
   support: [], otherSupport: '', futureFocus: '', satisfaction: '', relationship: '', childSays: '',
   development: '', valuable: '', recommend: '', testimonial: ''
 };
@@ -135,6 +135,7 @@ export default function FeedbackPage() {
       content: <>
         <label className="feedback-field"><span>Parent’s name</span><input name="parentName" value={form.parentName} onChange={update} required placeholder="Enter your full name" /></label>
         <label className="feedback-field"><span>Pre-teen/Teens’ name</span><input name="childName" value={form.childName} onChange={update} required placeholder="Enter their name" /></label>
+        <label className="feedback-field"><span>Gender</span><select name="gender" value={form.gender} onChange={update} required><option value="">Select gender</option><option value="male">Male</option><option value="female">Female</option></select></label>
         <fieldset className="feedback-fieldset"><legend>How long have your Pre-teen/Teens been receiving mentoring or coaching from us?</legend><div className="feedback-radio-grid">{['Less than 1 month', '1–3 months', '3–6 months', 'More than 6 months'].map((option) => <label className="feedback-radio" key={option}><input type="radio" name="duration" value={option} checked={form.duration === option} onChange={update} required /><span>{option}</span></label>)}</div></fieldset>
       </>
     },
@@ -167,6 +168,7 @@ export default function FeedbackPage() {
       const { error } = await supabase.from('tribe_parent_feedback').insert([{
         parent_name: form.parentName.trim(),
         child_name: form.childName.trim(),
+        gender: form.gender,
         mentoring_duration: form.duration,
         positive_changes: form.changes,
         other_change: form.otherChange.trim(),
@@ -194,8 +196,9 @@ export default function FeedbackPage() {
   };
 
   const participantName = form.childName.trim();
+  const participantPronouns = form.gender === 'female' ? { subject: 'she', object: 'her', possessive: 'her' } : { subject: 'he', object: 'him', possessive: 'his' };
 
-  if (submitted) return <main className="feedback-page feedback-success-page"><div className="feedback-firework feedback-firework-one" /><div className="feedback-firework feedback-firework-two" /><section className="feedback-success-backdrop"><div className="feedback-complete" aria-labelledby="feedback-success-title"><div className="feedback-thankyou-art" aria-hidden="true"><span className="thankyou-spark spark-a">✦</span><span className="thankyou-spark spark-b">✦</span><span className="thankyou-sun" /><span className="thankyou-person"><i /><b /></span><span className="thankyou-heart">♥</span></div><div className="feedback-complete-mark">✓</div><p className="feedback-kicker">Feedback received</p><p className="feedback-success-recipient">For {participantName || 'your Pre-teen/Teens'}</p><h1 id="feedback-success-title">Thank you for supporting {participantName || 'your Pre-teen/Teens'}.</h1><p>Your thoughtful reflections help us understand what is working with {participantName || 'your Pre-teen/Teens'} and where they need more care, attention, and encouragement.</p><Link className="feedback-primary-btn" to="/">Return to Paz Thriving Tribe <span>→</span></Link></div></section></main>;
+  if (submitted) return <main className="feedback-page feedback-success-page"><div className="feedback-firework feedback-firework-one" /><div className="feedback-firework feedback-firework-two" /><section className="feedback-success-backdrop"><div className="feedback-complete" aria-labelledby="feedback-success-title"><div className="feedback-thankyou-art" aria-hidden="true"><span className="thankyou-spark spark-a">✦</span><span className="thankyou-spark spark-b">✦</span><span className="thankyou-sun" /><span className="thankyou-person"><i /><b /></span><span className="thankyou-heart">♥</span></div><div className="feedback-complete-mark">✓</div><p className="feedback-kicker">Feedback received</p><p className="feedback-success-recipient">For {participantName || 'your Pre-teen/Teens'}</p><h1 id="feedback-success-title">Thank you for supporting {participantName || 'your Pre-teen/Teens'}.</h1><p>Your thoughtful reflections help us understand what is working with {participantName || 'your Pre-teen/Teens'} and where {participantPronouns.subject} needs more care, attention, and encouragement.</p><Link className="feedback-primary-btn" to="/">Return to Paz Thriving Tribe <span>→</span></Link></div></section></main>;
 
   return (
     <main className={`feedback-page ${introDone ? 'intro-finished' : ''}`}>
