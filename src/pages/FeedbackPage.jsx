@@ -112,6 +112,10 @@ export default function FeedbackPage() {
     return () => window.clearTimeout(timer);
   }, [introDone, step]);
 
+  useEffect(() => {
+    if (submitted) window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [submitted]);
+
   const update = (event) => {
     const value = ['parentName', 'childName'].includes(event.target.name) ? formatName(event.target.value) : event.target.value;
     setForm((current) => ({ ...current, [event.target.name]: value }));

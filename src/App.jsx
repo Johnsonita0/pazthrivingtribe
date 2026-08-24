@@ -2931,6 +2931,13 @@ export default function App() {
         .loading-spinner-element { width: 44px; height: 44px; border: 4px solid #30363d; border-top-color: #2ea44f; border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 1.25rem; }
         @keyframes spin { to { transform: rotate(360deg); } }
         
+        @media(max-width: 1400px) {
+          .nav-menu-toggle { display: block; }
+          .nav-navigation-links { display: none; }
+          .nav-navigation-links.mobile-open { display: flex; }
+          .public-navbar { padding: 1rem 1.5rem; }
+        }
+
         @media(max-width: 992px) {
           .nav-menu-toggle { display: block; }
           .nav-navigation-links { display: none; }
