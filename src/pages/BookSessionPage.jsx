@@ -62,6 +62,7 @@ export default function BookSessionPage() {
 
       const { error } = await supabase.from('tribe_bookings').insert([payload]);
       if (error) throw error;
+      setToast('Booking request submitted successfully.');
       setSubmitted(true);
       setForm(createInitial());
     } catch (err) {
@@ -75,6 +76,12 @@ export default function BookSessionPage() {
   if (submitted) {
     return (
       <div className="teens-registration-page">
+        {toast && (
+          <div className="teens-registration-toast success" role="status" aria-live="polite">
+            <i className="toast-status-icon fa-solid fa-circle-check" aria-hidden="true"></i>
+            <span>{toast}</span>
+          </div>
+        )}
         <div className="teens-registration-card">
           <div className="teens-registration-success">
             <h2>Booking received</h2>
@@ -88,7 +95,12 @@ export default function BookSessionPage() {
 
   return (
     <div className="teens-registration-page">
-      {toast && <div className="teens-registration-toast error">{toast}</div>}
+      {toast && (
+        <div className="teens-registration-toast error">
+          <i className="toast-status-icon fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+          <span>{toast}</span>
+        </div>
+      )}
       <div className="teens-registration-card">
         <div className="teens-registration-header">
           <span className="teens-registration-badge">Session Booking</span>

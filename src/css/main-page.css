@@ -353,8 +353,12 @@ html, body {
 /* Toast notification styles for admin CMS actions */
 .toast-notification-container {
   position: fixed;
-  top: 90px;
-  right: 1rem;
+  top: auto;
+  right: auto;
+  bottom: 1.25rem;
+  left: 50%;
+  width: min(calc(100vw - 2rem), 480px);
+  transform: translateX(-50%);
   z-index: 11000;
   display: flex;
   flex-direction: column;
@@ -363,12 +367,66 @@ html, body {
 }
 .toast-notification {
   pointer-events: auto;
-  max-width: 360px;
-  background: #1f2937;
-  border: 1px solid #374151;
-  border-radius: 8px;
-  padding: 1rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+  width: 100%;
+  box-sizing: border-box;
+  background: #17212b;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.24);
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.toast-status-icon,
+.cookie-consent-icon {
+  flex: 0 0 auto;
+  width: 1.35rem;
+  text-align: center;
+  font-size: 1.15rem;
+}
+.toast-message-text {
+  flex: 1;
+  min-width: 0;
+}
+.toast-notification.success {
+  background: #17352a;
+  border-color: rgba(52, 211, 153, 0.45);
+  border-left: 4px solid #34d399;
+}
+.toast-notification.success .toast-status-icon {
+  color: #6ee7b7;
+}
+.toast-notification.error {
+  background: #3a2528;
+  border-color: rgba(248, 113, 113, 0.45);
+  border-left: 4px solid #f87171;
+}
+.toast-notification.error .toast-status-icon {
+  color: #fda4af;
+}
+.toast-close-btn {
+  appearance: none;
+  flex: 0 0 auto;
+  width: 1.7rem;
+  height: 1.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  transition: background-color 160ms ease, border-color 160ms ease;
+}
+.toast-close-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.45);
 }
 
 /* =========================================================================
@@ -600,14 +658,16 @@ html, body {
   animation: toast-slide-in 240ms ease-out;
 }
 .toast-notification.success {
-  background-color: rgba(46, 164, 79, 0.95);
+  background-color: #17352a;
   color: #ffffff;
-  border: 1px solid rgba(46, 164, 79, 0.9);
+  border: 1px solid rgba(52, 211, 153, 0.45);
+  border-left: 4px solid #34d399;
 }
 .toast-notification.error {
-  background-color: rgba(248, 81, 73, 0.95);
+  background-color: #3a2528;
   color: #ffffff;
-  border: 1px solid rgba(248, 81, 73, 0.9);
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  border-left: 4px solid #f87171;
 }
 @keyframes toast-slide-in {
   from {
@@ -621,9 +681,10 @@ html, body {
 }
 @media (max-width: 640px) {
   .toast-notification-container {
-    top: 72px;
-    right: 0.75rem;
-    left: 0.75rem;
+    right: 0;
+    bottom: 0.85rem;
+    left: 50%;
+    width: calc(100vw - 1.5rem);
   }
 }
 

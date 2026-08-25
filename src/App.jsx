@@ -964,6 +964,26 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [toastMessage]);
 
+  useEffect(() => {
+    const handleOffline = () => {
+      setToastMessage('You are offline. Some features may be unavailable until your connection returns.');
+      setToastType('error');
+    };
+    const handleOnline = () => {
+      setToastMessage('Your internet connection has been restored.');
+      setToastType('success');
+    };
+
+    window.addEventListener('offline', handleOffline);
+    window.addEventListener('online', handleOnline);
+    if (!navigator.onLine) handleOffline();
+
+    return () => {
+      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener('online', handleOnline);
+    };
+  }, []);
+
   const normalizeYoutubeEmbed = (url) => {
     if (!url) return '';
     let normalized = url.trim();
@@ -3182,6 +3202,7 @@ export default function App() {
       {showCookieBanner && (
         <div className="toast-notification-container cookie-consent-toast-container" role="region" aria-label="Cookie preferences">
           <div className="cookie-consent-toast">
+            <i className="cookie-consent-icon fa-solid fa-cookie-bite" aria-hidden="true"></i>
             <div className="cookie-consent-copy">
               We use cookies and local storage to remember your preferences and improve your experience.
             </div>
@@ -3197,9 +3218,13 @@ export default function App() {
         </div>
       )}
 
-      {toastMessage && !isAdminRoute && (
+      {toastMessage && (
         <div className="toast-notification-container">
           <div className={`toast-notification ${toastType}`}>
+            <i
+              className={`toast-status-icon fa-solid ${toastType === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'}`}
+              aria-hidden="true"
+            ></i>
             <span className="toast-message-text">{toastMessage}</span>
             <button type="button" className="toast-close-btn" onClick={() => setToastMessage(null)} aria-label="Dismiss notification">×</button>
           </div>

@@ -349,6 +349,16 @@
   opacity: 0.9;
 }
 
+.teens-registration-toast .toast-status-icon {
+  flex: 0 0 auto;
+  font-size: 1.1rem;
+}
+
+.teens-registration-toast > span {
+  flex: 1;
+  min-width: 0;
+}
+
 @keyframes teens-toast-slide-in {
   from {
     transform: translateX(20px);

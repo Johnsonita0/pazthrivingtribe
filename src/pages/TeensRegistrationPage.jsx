@@ -681,6 +681,10 @@ export default function TeensRegistrationPage() {
     <div className="teens-registration-page">
       {formToast.message && (
         <div className={`teens-registration-toast ${formToast.type}`} role="alert" aria-live="assertive">
+          <i
+            className={`toast-status-icon fa-solid ${formToast.type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'}`}
+            aria-hidden="true"
+          ></i>
           <span>{formToast.message}</span>
           <button type="button" onClick={() => setFormToast({ message: '', type: 'error' })} aria-label="Dismiss notification">×</button>
         </div>

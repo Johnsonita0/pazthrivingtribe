@@ -927,9 +927,11 @@ export default function AdminDashboard(props) {
           .admin-toast[data-type='error']{background:#7f1d1d;border-color:rgba(254,202,202,.3)}
           .admin-toast[data-type='warning']{background:#78350f;border-color:rgba(253,224,71,.3)}
           .admin-toast-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:14px 16px 8px}
+          .admin-toast-content{display:flex;align-items:flex-start;gap:10px;min-width:0}
+          .admin-toast-icon{flex:0 0 auto;font-size:1.1rem;line-height:1.4}
           .admin-toast-title{font-size:0.96rem;font-weight:800;margin:0}
           .admin-toast-close{background:transparent;border:none;color:#fff;font-size:1.2rem;cursor:pointer;opacity:.8;padding:0}
-          .admin-toast-body{padding:0 16px 12px;font-size:0.9rem;line-height:1.5;color:rgba(255,255,255,.92)}
+          .admin-toast-body{padding:2px 0 0;font-size:0.9rem;line-height:1.5;color:rgba(255,255,255,.92)}
           .admin-toast-actions{display:flex;justify-content:flex-end;gap:8px;padding:0 16px 14px;flex-wrap:wrap}
           .admin-toast-btn{border:none;border-radius:999px;padding:0.55rem 0.9rem;font-weight:700;cursor:pointer}
           .admin-toast-btn.secondary{background:rgba(255,255,255,.15);color:#fff}
@@ -1077,10 +1079,18 @@ export default function AdminDashboard(props) {
       {adminToast && (
         <div className="admin-toast" data-type={adminToast.type} role="status" aria-live="polite">
           <div className="admin-toast-header">
-            <p className="admin-toast-title">{adminToast.title}</p>
+            <div className="admin-toast-content">
+              <i
+                className={`admin-toast-icon fa-solid ${adminToast.type === 'success' ? 'fa-circle-check' : adminToast.type === 'warning' ? 'fa-triangle-exclamation' : 'fa-circle-exclamation'}`}
+                aria-hidden="true"
+              ></i>
+              <div>
+                <p className="admin-toast-title">{adminToast.title}</p>
+                <div className="admin-toast-body">{adminToast.message}</div>
+              </div>
+            </div>
             <button type="button" className="admin-toast-close" onClick={() => setAdminToast(null)} aria-label="Close notification">×</button>
           </div>
-          <div className="admin-toast-body">{adminToast.message}</div>
           {adminToast.actions.length > 0 && (
             <div className="admin-toast-actions">
               {adminToast.actions.map((action, index) => (
