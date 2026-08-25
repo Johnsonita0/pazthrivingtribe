@@ -733,12 +733,17 @@ export default function AdminDashboard(props) {
     ]
   };
   
+  const formatVisitorPage = (path) => {
+    if (path === '/') return 'Home';
+    if (path === '/feedback') return 'Feedback page';
+    return path;
+  };
 
   const dashboardTableData = {
     visitors: clientActivityLog.slice(0, 10).map((entry) => ({
       id: entry.id || `${entry.session_id || 'activity'}-${entry.created_at || Date.now()}`,
       columns: [
-        entry.path || entry.pathname || '/',
+        formatVisitorPage(entry.path || entry.pathname || '/'),
         entry.ip_address || 'Unavailable',
         entry.device_type || 'Unknown',
         entry.location || 'Unknown',
