@@ -1518,6 +1518,7 @@ export default function App() {
           right: 1rem;
           bottom: 1rem;
           width: auto;
+          transform: none;
           max-width: none;
           height: auto !important;
           min-height: 0 !important;
@@ -1592,6 +1593,7 @@ export default function App() {
             right: 0.75rem;
             bottom: 0.75rem;
             width: auto;
+            transform: none;
           }
 
           .cookie-consent-toast {
@@ -1607,6 +1609,7 @@ export default function App() {
             box-shadow: 0 14px 30px rgba(15, 23, 42, 0.2);
             max-height: calc(100vh - 1.5rem);
             box-sizing: border-box;
+            overflow: auto;
           }
 
           .cookie-consent-copy {
