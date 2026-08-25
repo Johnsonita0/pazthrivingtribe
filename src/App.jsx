@@ -518,8 +518,8 @@ export default function App() {
     document.head.appendChild(faLink);
 
     const savedCookieConsent = localStorage.getItem('paz-tribe-cookie-consent');
-    if (savedCookieConsent === 'accepted') {
-      setCookieConsentAccepted(true);
+    if (savedCookieConsent === 'accepted' || savedCookieConsent === 'declined') {
+      setCookieConsentAccepted(savedCookieConsent === 'accepted');
       setShowCookieBanner(false);
     } else {
       setShowCookieBanner(true);
@@ -651,14 +651,14 @@ export default function App() {
 
   const acceptCookieConsent = () => {
     localStorage.setItem('paz-tribe-cookie-consent', 'accepted');
-    document.cookie = 'paz-tribe-cookie-consent=accepted; path=/; max-age=31536000; Secure; SameSite=Lax';
+    document.cookie = `paz-tribe-cookie-consent=accepted; path=/; max-age=31536000;${window.location.protocol === 'https:' ? ' Secure;' : ''} SameSite=Lax`;
     setCookieConsentAccepted(true);
     setShowCookieBanner(false);
   };
 
   const declineCookieConsent = () => {
     localStorage.setItem('paz-tribe-cookie-consent', 'declined');
-    document.cookie = 'paz-tribe-cookie-consent=declined; path=/; max-age=31536000; Secure; SameSite=Lax';
+    document.cookie = `paz-tribe-cookie-consent=declined; path=/; max-age=31536000;${window.location.protocol === 'https:' ? ' Secure;' : ''} SameSite=Lax`;
     setCookieConsentAccepted(false);
     setShowCookieBanner(false);
   };
@@ -1502,6 +1502,8 @@ export default function App() {
           height: auto !important;
           min-height: 0 !important;
           align-items: center;
+          z-index: 100000;
+          pointer-events: auto;
         }
 
         .cookie-consent-toast {
