@@ -948,59 +948,21 @@ export default function AdminDashboard(props) {
 
         <div className="dashboard-stats">
           {dashboardViews.map((view) => (
-            <div key={view.id} className="stat-card" style={{ background: view.color, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12)' }}>
+            <button
+              key={view.id}
+              type="button"
+              className="stat-card"
+              onClick={() => setActiveDashboardView(view.id)}
+              aria-label={`Open ${view.label}`}
+              style={{ background: view.color, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12)', border: 0, cursor: 'pointer', font: 'inherit' }}
+            >
               <div className="label">{view.label}</div>
               <div className="value">{view.value}</div>
-            </div>
+            </button>
           ))}
         </div>
 
         <div style={{ marginTop: '26px', padding: '0 2px' }}>
-          <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', borderBottom: '1px solid #d9dde2', paddingBottom: '18px', minWidth: 0 }}>
-            {dashboardViews.map((view) => {
-              const isActive = activeDashboardView === view.id;
-              return (
-                <button
-                  key={view.id}
-                  type="button"
-                  onClick={() => setActiveDashboardView(view.id)}
-                  style={{
-                    border: '1px solid rgba(255,255,255,0.35)',
-                    background: isActive ? '#ef4a86' : '#f1f2f4',
-                    color: isActive ? '#fff' : '#1f2937',
-                    borderRadius: '999px',
-                    padding: '0.65rem 1rem',
-                    fontSize: '1.05rem',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    boxShadow: isActive ? '0 8px 18px rgba(239,74,134,0.22)' : 'none',
-                    whiteSpace: 'nowrap',
-                    flexShrink: 0
-                  }}
-                >
-                  <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '22px',
-                    height: '22px',
-                    borderRadius: '50%',
-                    background: isActive ? '#fff' : '#ef4a86',
-                    color: isActive ? '#ef4a86' : '#fff',
-                    fontSize: '0.75rem',
-                    fontWeight: 800
-                  }}>
-                    {view.value}
-                  </span>
-                  {view.label}
-                </button>
-              );
-            })}
-          </div>
-
           <div style={{ marginTop: '18px', border: '1px solid #dfe3e7', borderRadius: '18px', background: '#f5f5f5', padding: '18px 20px 24px' }}>
             <h2 style={{ margin: 0, fontSize: '2rem', fontWeight: 800, color: '#1a1a1a' }}>{activeDashboardLabel}</h2>
             <p style={{ margin: '8px 0 0', fontSize: '1.05rem', color: '#4b5563' }}>

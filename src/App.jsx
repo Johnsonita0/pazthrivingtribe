@@ -1492,17 +1492,27 @@ export default function App() {
 
         body { overflow-x: hidden; }
 
-        .cookie-consent-banner {
-          position: fixed;
-          bottom: 18px;
-          left: 18px;
-          right: 18px;
-          max-width: 1140px;
-          margin: 0 auto;
+        .cookie-consent-toast-container {
+          top: auto !important;
+          left: 1rem;
+          right: 1rem;
+          bottom: 1rem;
+          width: auto;
+          max-width: none;
+          height: auto !important;
+          min-height: 0 !important;
+          align-items: center;
+        }
+
+        .cookie-consent-toast {
+          position: relative;
+          width: min(100%, 620px);
+          height: auto !important;
+          min-height: 0 !important;
           background: rgba(18, 23, 30, 0.96);
           border: 1px solid rgba(255,255,255,0.12);
           border-radius: 18px;
-          padding: 1rem 1.25rem;
+          padding: 0.8rem 1rem;
           display: flex;
           flex-wrap: wrap;
           gap: 1rem;
@@ -1513,10 +1523,10 @@ export default function App() {
         }
 
         .cookie-consent-copy {
-          flex: 1 1 320px;
+          flex: 0 1 360px;
           color: #f4f4f4;
-          font-size: 0.96rem;
-          line-height: 1.5;
+          font-size: 0.86rem;
+          line-height: 1.4;
         }
 
         .cookie-consent-actions {
@@ -1531,7 +1541,9 @@ export default function App() {
           border: none;
           cursor: pointer;
           border-radius: 999px;
-          padding: 0.78rem 1.2rem;
+          padding: 0.6rem 0.9rem;
+          min-height: 38px;
+          font-size: 0.86rem;
           font-weight: 700;
           transition: transform 0.15s ease, background-color 0.2s ease, color 0.2s ease;
         }
@@ -1552,14 +1564,60 @@ export default function App() {
         }
 
         @media (max-width: 720px) {
-          .cookie-consent-banner {
+          .cookie-consent-toast-container {
+            top: auto !important;
+            left: 0.75rem;
+            right: 0.75rem;
+            bottom: 0.75rem;
+            width: auto;
+          }
+
+          .cookie-consent-toast {
             flex-direction: column;
             align-items: stretch;
-            padding: 1rem;
+            gap: 0.65rem;
+            padding: 0.85rem 0.85rem 0.8rem;
+            background: #fff;
+            color: #334155;
+            border: 1px solid #dbe4ee;
+            border-top: 4px solid var(--brand-green);
+            border-radius: 14px;
+            box-shadow: 0 14px 30px rgba(15, 23, 42, 0.2);
+            max-height: calc(100vh - 1.5rem);
+            box-sizing: border-box;
           }
+
+          .cookie-consent-copy {
+            flex: 0 0 auto;
+            color: #334155;
+            font-size: 0.82rem;
+            line-height: 1.4;
+          }
+
           .cookie-consent-actions {
             width: 100%;
-            justify-content: flex-end;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.6rem;
+          }
+
+          .cookie-accept-btn,
+          .cookie-decline-btn {
+            min-height: 42px;
+            padding: 0.55rem 0.65rem;
+            border-radius: 9px;
+            font-size: 0.84rem;
+          }
+
+          .cookie-accept-btn {
+            background: var(--brand-green);
+            color: #fff;
+          }
+
+          .cookie-decline-btn {
+            background: #eefaf6;
+            color: #17634f;
+            border: 1px solid #bfe9d5;
           }
         }
 
@@ -3118,19 +3176,21 @@ export default function App() {
         </div>
       )}
 
-      {/* Dev banner when Supabase is stubbed (no real network requests) */}
+      {/* Cookie preferences toaster */}
       {showCookieBanner && (
-        <div className="cookie-consent-banner">
-          <div className="cookie-consent-copy">
-            We use cookies and local storage to improve your experience. By accepting, you allow the site to remember your preferences and help the website work smoothly on future visits.
-          </div>
-          <div className="cookie-consent-actions">
-            <button className="cookie-accept-btn" type="button" onClick={acceptCookieConsent}>
-              Accept Cookies
-            </button>
-            <button className="cookie-decline-btn" type="button" onClick={declineCookieConsent}>
-              Decline
-            </button>
+        <div className="toast-notification-container cookie-consent-toast-container" role="region" aria-label="Cookie preferences">
+          <div className="cookie-consent-toast">
+            <div className="cookie-consent-copy">
+              We use cookies and local storage to remember your preferences and improve your experience.
+            </div>
+            <div className="cookie-consent-actions">
+              <button className="cookie-accept-btn" type="button" onClick={acceptCookieConsent}>
+                Accept Cookies
+              </button>
+              <button className="cookie-decline-btn" type="button" onClick={declineCookieConsent}>
+                Decline
+              </button>
+            </div>
           </div>
         </div>
       )}
