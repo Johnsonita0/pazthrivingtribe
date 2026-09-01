@@ -127,9 +127,18 @@ export default function StorePage() {
   const [storeData] = useState(readStoreData);
   const [cart, setCart] = useState([]);
   const [activeProductIndex, setActiveProductIndex] = useState(0);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [isSmallScreen, setIsSmallScreen] = useState(() => window.innerWidth <= 768);
 
   const recentProducts = (storeData.products || []).slice(0, 12);
   const featuredProductRotationMs = 7 * 1000;
+
+  useEffect(() => {
+    const handleResize = () => setIsSmallScreen(window.innerWidth <= 768);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     if (!recentProducts.length) return undefined;
@@ -155,6 +164,9 @@ export default function StorePage() {
     ? `You need ${activeProduct.title} to help you through this season.`
     : 'You need a guide to help you through this season.';
 
+  const cartItemCount = cart.reduce((count, item) => count + item.quantity, 0);
+  const subtotal = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
+
   const addToCart = (product) => {
     setCart((current) => {
       const existing = current.find((item) => item.id === product.id);
@@ -165,16 +177,35 @@ export default function StorePage() {
       }
       return [...current, { ...product, quantity: 1 }];
     });
+    setCartOpen(true);
+  };
+
+  const toggleCartDrawer = () => {
+    setCartOpen((current) => !current);
+  };
+
+  const updateCartQuantity = (productId, delta) => {
+    setCart((current) =>
+      current
+        .map((item) =>
+          item.id === productId ? { ...item, quantity: Math.max(0, item.quantity + delta) } : item
+        )
+        .filter((item) => item.quantity > 0)
+    );
   };
 
   return (
-    <div style={{ minHeight: '100vh', overflowX: 'hidden', background: '#f5f1ec', color: '#1b1b1b', fontFamily: 'Inter, Arial, sans-serif' }}>
+    <div style={{ minHeight: '100vh', overflowX: 'hidden', background: '#f5f1ec', color: '#1b1b1b', fontFamily: 'Inter, Arial, sans-serif', marginTop: 0 }}>
       <style>{`
-        @keyframes lift {
-          0%, 100% { transform: translateY(0px); }
-          50% { transform: translateY(-8px); }
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
         }
-        @keyframes fadeSlideIn {
+        @keyframes slideIn {
+          from { transform: translateX(100%); }
+          to { transform: translateX(0); }
+        }
+        @keyframes storeHeroFade {
           0% {
             opacity: 0;
             transform: translateY(16px) scale(0.98);
@@ -184,98 +215,351 @@ export default function StorePage() {
             transform: translateY(0) scale(1);
           }
         }
-        .store-landing-card {
-          animation: lift 5s ease-in-out infinite;
+        .store-hero-shell {
+          position: relative;
+          z-index: 1;
+          max-width: 1360px;
+          margin: 0 auto;
+          padding: 24px 24px 0;
         }
-        .store-landing-feature {
-          animation: fadeSlideIn 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        .store-hero-slider {
+          position: relative;
+          width: 100%;
+          min-height: 620px;
+          border-radius: 34px;
+          overflow: hidden;
+          box-shadow: 0 28px 60px rgba(5, 17, 14, 0.28);
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          background: #0c1f1d;
         }
-        .store-landing-copy {
-          animation: fadeSlideIn 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+        .store-hero-slider::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(90deg, rgba(7, 15, 18, 0.82) 0%, rgba(7, 15, 18, 0.68) 38%, rgba(7, 15, 18, 0.42) 100%);
+          z-index: 1;
+        }
+        .store-hero-bg {
+          position: absolute;
+          inset: 0;
+          background-size: cover;
+          background-position: center;
+          transform: scale(1.05);
+          filter: saturate(0.9) contrast(1.06);
+          transition: background-image 0.8s ease;
+        }
+        .store-hero-inner {
+          position: relative;
+          z-index: 2;
+          min-height: 620px;
+          display: grid;
+          grid-template-columns: minmax(0, 1.2fr) minmax(260px, 420px);
+          gap: 2rem;
+          align-items: end;
+          padding: clamp(2rem, 5vw, 4.5rem);
+        }
+        .store-hero-copy {
+          max-width: 680px;
+          animation: storeHeroFade 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .store-hero-kicker,
+        .store-hero-subline {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.7rem 1rem;
+          border-radius: 999px;
+          background: rgba(255, 214, 95, 0.18);
+          border: 1px solid rgba(255, 214, 95, 0.4);
+          color: #f8d879;
+          font-weight: 800;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          font-size: 0.7rem;
+        }
+        .store-hero-subline {
+          margin-top: 1rem;
+          background: rgba(255, 255, 255, 0.08);
+          border-color: rgba(255, 255, 255, 0.16);
+          color: #edf2ff;
+          letter-spacing: 0.08em;
+        }
+        .store-hero-title {
+          margin: 1.1rem 0 1rem;
+          font-size: clamp(2.8rem, 5vw, 5.2rem);
+          line-height: 0.92;
+          letter-spacing: -0.06em;
+          color: #ffffff;
+          font-weight: 900;
+          text-shadow: 0 14px 32px rgba(0, 0, 0, 0.42);
+        }
+        .store-hero-text {
+          margin: 0;
+          max-width: 620px;
+          color: rgba(240, 244, 250, 0.9);
+          font-size: 1.08rem;
+          line-height: 1.7;
+        }
+        .store-hero-actions {
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 0.9rem;
+          margin-top: 1.8rem;
+        }
+        .store-hero-btn-primary,
+        .store-hero-btn-secondary,
+        .store-hero-btn-cart,
+        .store-hero-nav-btn {
+          border: none;
+          cursor: pointer;
+          transition: transform 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+        }
+        .store-hero-btn-primary,
+        .store-hero-btn-secondary,
+        .store-hero-btn-cart {
+          border-radius: 14px;
+          padding: 1rem 1.6rem;
+          font-size: 0.96rem;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+        .store-hero-btn-primary {
+          background: linear-gradient(180deg, #f5d468 0%, #eab75c 100%);
+          color: #132925;
+          box-shadow: 0 18px 32px rgba(243, 184, 74, 0.28);
+        }
+        .store-hero-btn-secondary,
+        .store-hero-btn-cart {
+          background: rgba(255, 255, 255, 0.06);
+          color: #ffffff;
+          border: 1px solid rgba(255, 255, 255, 0.24);
+        }
+        .store-hero-btn-primary:hover,
+        .store-hero-btn-secondary:hover,
+        .store-hero-btn-cart:hover,
+        .store-hero-nav-btn:hover {
+          transform: translateY(-1px);
+        }
+        .store-hero-panel {
+          align-self: end;
+          justify-self: end;
+          width: min(100%, 390px);
+          background: rgba(255,255,255,0.12);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255,255,255,0.18);
+          border-radius: 28px;
+          box-shadow: 0 22px 46px rgba(6, 20, 17, 0.2);
+          padding: 1rem;
+          animation: storeHeroFade 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .store-hero-product {
+          background: rgba(255,255,255,0.96);
+          border-radius: 22px;
+          padding: 1rem;
+          box-shadow: 0 14px 30px rgba(11, 18, 15, 0.18);
+        }
+        .store-hero-product-top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.75rem;
+          margin-bottom: 1rem;
+        }
+        .store-hero-tag {
+          display: inline-flex;
+          padding: 0.45rem 0.7rem;
+          border-radius: 999px;
+          background: #ebf8f0;
+          color: #1d6d60;
+          font-size: 0.68rem;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+        .store-hero-add-btn {
+          border: none;
+          border-radius: 12px;
+          background: linear-gradient(180deg, #1f766a 0%, #0f2d2a 100%);
+          color: #fff;
+          padding: 0.72rem 1rem;
+          font-weight: 800;
+          cursor: pointer;
+        }
+        .store-hero-product-body {
+          display: grid;
+          grid-template-columns: 150px minmax(0, 1fr);
+          gap: 1rem;
+          align-items: center;
+        }
+        .store-hero-image {
+          width: 100%;
+          height: 170px;
+          border-radius: 18px;
+          object-fit: cover;
+          background: #f2efe8;
+        }
+        .store-hero-product-name {
+          margin: 0 0 0.5rem;
+          color: #101828;
+          font-size: clamp(1.5rem, 2vw, 2.1rem);
+          line-height: 1.08;
+          font-weight: 900;
+        }
+        .store-hero-product-description {
+          margin: 0;
+          color: #4b5563;
+          line-height: 1.5;
+          font-size: 0.9rem;
+        }
+        .store-hero-product-meta {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+          margin-top: 1rem;
+        }
+        .store-hero-price {
+          font-size: 1.8rem;
+          color: #111827;
+          font-weight: 900;
+        }
+        .store-hero-details-btn {
+          border: 1px solid #d1d5db;
+          background: #fff;
+          color: #1f2937;
+          border-radius: 12px;
+          padding: 0.7rem 1rem;
+          font-weight: 800;
+          cursor: pointer;
+        }
+        .store-hero-controls {
+          position: absolute;
+          inset: 0;
+          z-index: 2;
+          pointer-events: none;
+          padding: 0 clamp(0.4rem, 1.2vw, 0.8rem);
+        }
+        .store-hero-controls-left,
+        .store-hero-controls-right {
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          display: flex;
+          align-items: center;
+          pointer-events: auto;
+        }
+        .store-hero-controls-left { left: clamp(0.4rem, 1.2vw, 0.8rem); }
+        .store-hero-controls-right { right: clamp(0.4rem, 1.2vw, 0.8rem); }
+        .store-hero-dots {
+          position: absolute;
+          left: 50%;
+          bottom: 0.75rem;
+          transform: translateX(-50%);
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          background: rgba(8, 13, 18, 0.18);
+          padding: 0.4rem 0.5rem;
+          border-radius: 999px;
+          border: 1px solid rgba(255,255,255,0.1);
+        }
+        .store-hero-dot {
+          width: 10px;
+          height: 10px;
+          border-radius: 999px;
+          border: none;
+          background: rgba(255,255,255,0.55);
+          cursor: pointer;
+          padding: 0;
+        }
+        .store-hero-dot.active {
+          width: 28px;
+          background: #ffffff;
+          box-shadow: 0 0 0 4px rgba(255,255,255,0.14);
+        }
+        .store-hero-arrow-cluster {
+          display: flex;
+          align-items: center;
+          gap: 0.35rem;
+        }
+        .store-hero-nav-btn {
+          width: 42px;
+          height: 42px;
+          border-radius: 50%;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.18);
+          color: #fff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.9rem;
+          box-shadow: 0 10px 24px rgba(0,0,0,0.14);
         }
         @media (max-width: 920px) {
-          .store-landing-grid {
-            grid-template-columns: 1fr !important;
-            gap: 18px !important;
-            align-items: start !important;
+          .store-hero-inner {
+            grid-template-columns: 1fr;
+            align-items: end;
           }
-          .store-landing-panel {
-            min-height: 300px !important;
-            max-height: none !important;
-            width: 100% !important;
-            margin-top: 0 !important;
+          .store-hero-panel {
+            justify-self: stretch;
+            width: 100%;
           }
-          .store-landing-card {
-            max-width: 100% !important;
+          .store-hero-shell {
+            padding-left: 14px;
+            padding-right: 14px;
           }
-          .store-landing-cta-row {
-            margin-top: 18px !important;
-            flex-direction: column !important;
-            align-items: stretch !important;
-          }
-          .store-landing-cta-row button {
-            width: 100% !important;
-          }
-          .store-landing-header {
-            flex-wrap: wrap !important;
-            gap: 12px !important;
-          }
-          .store-landing-header .store-badge {
-            width: 100% !important;
-            justify-content: center !important;
+          .store-hero-slider,
+          .store-hero-inner {
+            min-height: 540px;
           }
         }
-
         @media (max-width: 620px) {
-          .store-landing-body {
-            padding-left: 14px !important;
-            padding-right: 14px !important;
-            min-height: auto !important;
+          .store-hero-slider,
+          .store-hero-inner {
+            min-height: 420px;
           }
-          .store-landing-header {
-            margin-bottom: 18px !important;
+          .store-hero-inner {
+            display: block;
+            padding: 1.25rem 1.1rem 4.4rem;
           }
-          .store-landing-header img {
-            width: 42px !important;
-            height: 42px !important;
+          .store-hero-copy {
+            max-width: 100%;
           }
-          .store-landing-header > div:first-child > div > div {
-            font-size: 0.62rem !important;
-            letter-spacing: 0.08em !important;
+          .store-hero-title {
+            font-size: clamp(2.3rem, 10vw, 3.3rem);
           }
-          .store-landing-copy {
-            text-align: left !important;
+          .store-hero-text {
+            font-size: 0.95rem;
+            line-height: 1.6;
           }
-          .store-landing-copy h1 {
-            font-size: clamp(2.2rem, 9vw, 3.2rem) !important;
-            line-height: 0.96 !important;
-            max-width: 11ch !important;
+          .store-hero-panel {
+            display: none;
           }
-          .store-landing-copy p {
-            font-size: 0.9rem !important;
-            line-height: 1.55 !important;
+          .store-hero-actions {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.5rem;
+            margin-top: 1.2rem;
           }
-          .store-landing-feature {
-            padding: 14px !important;
+          .store-hero-btn-primary,
+          .store-hero-btn-secondary,
+          .store-hero-btn-cart {
+            width: 100%;
+            padding: 0.8rem 0.5rem;
+            font-size: 0.66rem;
+            letter-spacing: 0.05em;
+            text-align: center;
+            white-space: normal;
+            line-height: 1.2;
           }
-          .store-landing-feature-grid {
-            grid-template-columns: 1fr !important;
+          .store-hero-controls {
+            padding: 0 0.5rem;
           }
-          .store-landing-product-thumb {
-            height: 150px !important;
-          }
-          .store-landing-product-meta {
-            flex-direction: column !important;
-            align-items: flex-start !important;
-          }
-          .store-landing-product-meta strong {
-            font-size: 1.45rem !important;
-          }
-          .store-landing-product-meta button {
-            width: 100% !important;
-          }
-          .store-landing-panel {
-            min-height: 0 !important;
+          .store-hero-dots {
+            bottom: 0.6rem;
           }
         }
       `}</style>
@@ -287,6 +571,138 @@ export default function StorePage() {
         position: 'relative',
         overflowX: 'hidden'
       }}>
+        {cartOpen && (
+          <>
+            <div
+              onClick={() => setCartOpen(false)}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                background: 'rgba(15, 23, 42, 0.18)',
+                zIndex: 190,
+                animation: 'fadeIn 0.2s ease-out'
+              }}
+            />
+            <div data-cart-modal="true" style={{
+              position: 'fixed',
+              right: 0,
+              top: isSmallScreen ? 'auto' : 0,
+              bottom: isSmallScreen ? 0 : 0,
+              left: isSmallScreen ? 0 : 'auto',
+              width: isSmallScreen ? '100%' : '360px',
+              maxWidth: isSmallScreen ? '100vw' : '360px',
+              height: isSmallScreen ? '84vh' : '100vh',
+              background: '#fff',
+              boxShadow: isSmallScreen ? '0 -10px 24px rgba(15, 23, 42, 0.15)' : '-2px 0 8px rgba(0,0,0,0.1)',
+              zIndex: 200,
+              display: 'flex',
+              flexDirection: 'column',
+              animation: isSmallScreen ? 'slideIn 0.28s ease-out' : 'slideIn 0.3s ease-out',
+              borderTopLeftRadius: isSmallScreen ? '18px' : '0',
+              borderTopRightRadius: isSmallScreen ? '18px' : '0'
+            }}>
+              <div style={{ padding: isSmallScreen ? '12px 14px' : '16px', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b', fontWeight: 800 }}>P</div>
+                  <h2 style={{ margin: 0, fontSize: isSmallScreen ? '16px' : '18px', fontWeight: 'bold', color: '#111' }}>Shopping Cart</h2>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    onClick={() => setCartOpen(false)}
+                    style={{
+                      background: '#f3f4f6',
+                      border: 'none',
+                      borderRadius: '999px',
+                      padding: '6px 10px',
+                      cursor: 'pointer',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      color: '#111'
+                    }}
+                  >
+                    {isSmallScreen ? 'Continue' : 'Close'}
+                  </button>
+                  <button
+                    onClick={() => setCartOpen(false)}
+                    style={{
+                      background: 'none',
+                      border: '2px solid #e0e0e0',
+                      borderRadius: '50%',
+                      width: '32px',
+                      height: '32px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '18px',
+                      color: '#333'
+                    }}
+                    title="Close cart"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ flex: 1, overflowY: 'auto', padding: isSmallScreen ? '12px 14px' : '16px' }}>
+                {cart.length === 0 ? (
+                  <p style={{ color: '#666', textAlign: 'center', marginTop: '40px' }}>Your cart is empty</p>
+                ) : (
+                  <div style={{ display: 'grid', gap: '16px' }}>
+                    {cart.map((item) => (
+                      <div key={item.id} style={{ borderBottom: '1px solid #e0e0e0', paddingBottom: '16px' }}>
+                        <div style={{ display: 'flex', gap: '12px', marginBottom: '8px' }}>
+                          <img src={item.cover} alt={item.title} style={{ width: '60px', height: '60px', borderRadius: '4px', objectFit: 'cover' }} />
+                          <div style={{ flex: 1 }}>
+                            <h4 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: 'bold', color: '#111' }}>{item.title}</h4>
+                            <div style={{ color: '#666', fontSize: '12px' }}>Qty: {item.quantity}</div>
+                            <div style={{ fontWeight: 'bold', color: '#111' }}>{money(item.price * item.quantity)}</div>
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                          <button type="button" onClick={() => updateCartQuantity(item.id, -1)} style={{ padding: '4px 8px', border: '1px solid #d5d9d9', background: '#fff', cursor: 'pointer', borderRadius: '4px' }}>-</button>
+                          <button type="button" onClick={() => updateCartQuantity(item.id, 1)} style={{ padding: '4px 8px', border: '1px solid #d5d9d9', background: '#fff', cursor: 'pointer', borderRadius: '4px' }}>+</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {cart.length > 0 && (
+                <div style={{ borderTop: '1px solid #e0e0e0', padding: isSmallScreen ? '12px 14px 16px' : '16px' }}>
+                  <div style={{ marginBottom: '14px', display: 'flex', justifyContent: 'space-between', fontSize: isSmallScreen ? '15px' : '16px', fontWeight: 'bold', color: '#111' }}>
+                    <span>Subtotal:</span>
+                    <span>{money(subtotal)}</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCartOpen(false);
+                      navigate('/shop');
+                    }}
+                    style={{
+                      width: '100%',
+                      background: 'linear-gradient(135deg, #FF9900, #FF8A00)',
+                      border: 'none',
+                      borderRadius: '10px',
+                      padding: '12px 14px',
+                      fontWeight: '800',
+                      cursor: 'pointer',
+                      color: '#111',
+                      fontSize: '14px',
+                      boxShadow: '0 10px 18px rgba(255, 153, 0, 0.24)'
+                    }}
+                  >
+                    Checkout
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
         <div style={{
           position: 'absolute',
           inset: '0',
@@ -294,251 +710,87 @@ export default function StorePage() {
           pointerEvents: 'none'
         }} />
 
-        <div className="store-landing-body" style={{ maxWidth: '1360px', minHeight: '100vh', margin: '0 auto', padding: '0 24px', position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <header className="store-landing-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <img src="/logo/logomain.png" alt="Paz Thriving Tribe logo" style={{ width: '52px', height: '52px', borderRadius: '16px', objectFit: 'cover' }} />
-              <div>
-                <div style={{ color: '#f6f4ef', letterSpacing: '0.14em', fontSize: '0.72rem', fontWeight: 800, textTransform: 'uppercase' }}>Paz Thriving Tribe</div>
-              </div>
-            </div>
+        <div className="store-hero-shell">
+          <section className="store-hero-slider" aria-label="Store featured products slider">
+            <div
+              className="store-hero-bg"
+              style={{
+                backgroundImage: `url(${activeProduct.cover})`
+              }}
+            />
 
-            <div className="store-badge" style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
-              <div style={{
-                background: 'rgba(255,255,255,0.08)',
-                border: '1px solid rgba(255,255,255,0.15)',
-                borderRadius: '999px',
-                padding: '10px 18px',
-                color: '#fff',
-                fontWeight: 700,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px'
-              }}>
-                <i className="fa-solid fa-cart-shopping" aria-hidden="true"></i>
-                <span>{cart.reduce((count, item) => count + item.quantity, 0)}</span>
-              </div>
-            </div>
-          </header>
+            <div className="store-hero-inner">
+              <div className="store-hero-copy" key={activeProduct.id}>
+                <span className="store-hero-kicker">Digital growth resources</span>
+                <div className="store-hero-subline">{promoHeadline}</div>
+                <h1 className="store-hero-title">{activeProduct.title}</h1>
+                <p className="store-hero-text">{activeProduct.description}</p>
 
-          <div className="store-landing-grid" style={{ display: 'grid', gridTemplateColumns: '1.05fr 1fr', gap: '20px', alignItems: 'center' }}>
-            <div key={activeProduct.id} className="store-landing-copy">
-              <div style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                borderRadius: '999px',
-                background: 'rgba(255, 214, 95, 0.2)',
-                border: '1px solid rgba(255, 214, 95, 0.5)',
-                color: '#f8d879',
-                fontWeight: 800,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                fontSize: '0.72rem',
-                padding: '8px 14px'
-              }}>
-                Digital growth resources
+                <div className="store-hero-actions">
+                  <button type="button" className="store-hero-btn-primary" onClick={() => navigate('/shop')}>
+                    Shop now
+                  </button>
+                  <button type="button" className="store-hero-btn-secondary" onClick={() => navigate('/shop')}>
+                    Explore
+                  </button>
+                  <button type="button" className="store-hero-btn-cart" onClick={() => addToCart(activeProduct)}>
+                    Add to cart
+                  </button>
+                </div>
               </div>
 
-              <div style={{ marginTop: '16px', color: '#f5d468', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', fontSize: '0.74rem' }}>
-                {promoHeadline}
-              </div>
-
-              <h1 style={{ margin: '16px 0 12px', fontSize: 'clamp(2.6rem, 4vw, 5.2rem)', lineHeight: 0.92, letterSpacing: '-0.06em', color: '#fff', fontWeight: 900 }}>
-                {activeProduct ? activeProduct.title : 'Build a stronger life,'}
-              </h1>
-
-              <p style={{ margin: '0', maxWidth: '590px', color: 'rgba(245, 244, 239, 0.82)', fontSize: '1rem', lineHeight: 1.6 }}>
-                {activeProduct ? activeProduct.description : 'Thoughtful digital guides, planners, and workbooks designed to help teens, parents, and families grow with confidence, clarity, and purpose.'}
-              </p>
-
-              <div className="store-landing-cta-row" style={{ marginTop: '22px', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  onClick={() => navigate('/shop')}
-                  style={{
-                    border: 'none',
-                    borderRadius: '14px',
-                    background: 'linear-gradient(180deg, #f5d468 0%, #ecb642 100%)',
-                    color: '#142a29',
-                    padding: '18px 28px',
-                    fontSize: '1rem',
-                    fontWeight: 900,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    cursor: 'pointer',
-                    boxShadow: '0 18px 32px rgba(243, 184, 74, 0.26)'
-                  }}
-                >
-                  Shop now
-                </button>
-                <button
-                  type="button"
-                  onClick={() => navigate('/shop')}
-                  style={{
-                    border: '1px solid rgba(255,255,255,0.38)',
-                    borderRadius: '14px',
-                    background: 'rgba(255,255,255,0.04)',
-                    color: '#fff',
-                    padding: '18px 28px',
-                    fontSize: '1rem',
-                    fontWeight: 800,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Explore the catalog
-                </button>
-              </div>
-            </div>
-
-            <div className="store-landing-card store-landing-panel" style={{ position: 'relative', width: '100%', maxWidth: '680px', minHeight: '370px', maxHeight: '440px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: 'auto', marginRight: '0' }}>
-              <div style={{
-                position: 'absolute',
-                inset: '18px 24px 0 24px',
-                background: 'linear-gradient(135deg, #f7f4ef 0%, #eef4ed 100%)',
-                borderRadius: '32px',
-                boxShadow: '0 28px 52px rgba(6, 18, 16, 0.22)'
-              }} />
-
-              {activeProduct && (
-                <div
-                  key={activeProduct.id}
-                  className="store-landing-feature"
-                  style={{
-                    position: 'relative',
-                    zIndex: 1,
-                    width: '100%',
-                    maxWidth: '600px',
-                    borderRadius: '28px',
-                    background: '#ffffff',
-                    border: '1px solid rgba(16, 44, 39, 0.08)',
-                    boxShadow: '0 30px 54px rgba(15, 23, 42, 0.12)',
-                    padding: '18px'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                    <span style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      borderRadius: '999px',
-                      background: '#eef8f3',
-                      color: '#1d6d60',
-                      padding: '7px 12px',
-                      fontSize: '0.72rem',
-                      fontWeight: 800,
-                      letterSpacing: '0.08em',
-                      textTransform: 'uppercase'
-                    }}>
-                      {activeProduct.category}
-                    </span>
-                    <button type="button" onClick={() => addToCart(activeProduct)} style={{
-                      border: 'none',
-                      borderRadius: '12px',
-                      background: 'linear-gradient(180deg, #1f766a 0%, #0f2d2a 100%)',
-                      color: '#fff',
-                      padding: '11px 16px',
-                      fontWeight: 800,
-                      cursor: 'pointer'
-                    }}>
+              <div className="store-hero-panel">
+                <div className="store-hero-product">
+                  <div className="store-hero-product-top">
+                    <span className="store-hero-tag">{activeProduct.category}</span>
+                    <button type="button" className="store-hero-add-btn" onClick={() => addToCart(activeProduct)}>
                       Add to cart
                     </button>
                   </div>
 
-                  <div className="store-landing-feature-grid" style={{ display: 'grid', gridTemplateColumns: '170px 1fr', gap: '16px', alignItems: 'center' }}>
-                    <div className="store-landing-product-thumb" style={{
-                      borderRadius: '18px',
-                      height: '170px',
-                      overflow: 'hidden',
-                      background: '#f4f1ec',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      <img src={activeProduct.cover} alt={activeProduct.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    </div>
-
+                  <div className="store-hero-product-body">
+                    <img src={activeProduct.cover} alt={activeProduct.title} className="store-hero-image" />
                     <div>
-                      <h2 style={{ margin: '0 0 8px', fontSize: 'clamp(1.5rem, 2vw, 2.2rem)', lineHeight: 1.08, color: '#1f2937', fontWeight: 900 }}>{activeProduct.title}</h2>
-                      <p style={{ margin: 0, color: '#4b5563', lineHeight: 1.5, fontSize: '0.92rem' }}>{activeProduct.description}</p>
-                      <div className="store-landing-product-meta" style={{ marginTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                        <strong style={{ fontSize: '1.9rem', color: '#101828' }}>{money(activeProduct.price)}</strong>
-                        <button type="button" onClick={() => navigate('/shop')} style={{
-                          border: '1px solid #d1d5db',
-                          borderRadius: '12px',
-                          background: '#fff',
-                          color: '#1f2937',
-                          padding: '10px 16px',
-                          fontWeight: 800,
-                          cursor: 'pointer'
-                        }}>
+                      <h2 className="store-hero-product-name">{activeProduct.title}</h2>
+                      <p className="store-hero-product-description">{activeProduct.description}</p>
+                      <div className="store-hero-product-meta">
+                        <strong className="store-hero-price">{money(activeProduct.price)}</strong>
+                        <button type="button" className="store-hero-details-btn" onClick={() => navigate('/shop')}>
                           View details
                         </button>
                       </div>
                     </div>
                   </div>
-
-                  <div style={{ marginTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flex: 1 }}>
-                      {recentProducts.map((product, index) => (
-                        <button
-                          key={product.id}
-                          type="button"
-                          onClick={() => setActiveProductIndex(index)}
-                          aria-label={`Open ${product.title}`}
-                          style={{
-                            width: '12px',
-                            height: '12px',
-                            borderRadius: '50%',
-                            border: 'none',
-                            background: index === activeProductIndex ? '#1f766a' : '#dfe7e4',
-                            cursor: 'pointer',
-                            padding: 0
-                          }}
-                        />
-                      ))}
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button
-                        type="button"
-                        onClick={showPreviousProduct}
-                        aria-label="Previous product"
-                        style={{
-                          border: '1px solid #d1d5db',
-                          borderRadius: '10px',
-                          background: '#fff',
-                          color: '#1f2937',
-                          width: '36px',
-                          height: '36px',
-                          fontWeight: 900,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        ←
-                      </button>
-                      <button
-                        type="button"
-                        onClick={showNextProduct}
-                        aria-label="Next product"
-                        style={{
-                          border: '1px solid #d1d5db',
-                          borderRadius: '10px',
-                          background: '#fff',
-                          color: '#1f2937',
-                          width: '36px',
-                          height: '36px',
-                          fontWeight: 900,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        →
-                      </button>
-                    </div>
-                  </div>
                 </div>
-              )}
+              </div>
             </div>
-          </div>
+
+            <div className="store-hero-controls">
+              <div className="store-hero-controls-left" aria-label="Previous slide controls">
+                <button type="button" className="store-hero-nav-btn" aria-label="Previous slide" onClick={showPreviousProduct}>
+                  <i className="fa-solid fa-chevron-left"></i>
+                </button>
+              </div>
+
+              <div className="store-hero-controls-right" aria-label="Next slide controls">
+                <button type="button" className="store-hero-nav-btn" aria-label="Next slide" onClick={showNextProduct}>
+                  <i className="fa-solid fa-chevron-right"></i>
+                </button>
+              </div>
+
+              <div className="store-hero-dots" aria-label="Product slide navigation">
+                {recentProducts.map((product, index) => (
+                  <button
+                    key={product.id}
+                    type="button"
+                    aria-label={`Go to ${product.title}`}
+                    className={`store-hero-dot ${index === activeProductIndex ? 'active' : ''}`}
+                    onClick={() => setActiveProductIndex(index)}
+                  />
+                ))}
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     </div>
