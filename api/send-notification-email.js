@@ -1,5 +1,14 @@
-import { sendMailjetEmail } from './lib/mailjet.js';
+import { sendResendEmail } from './lib/resend.js';
 import { buildPazEmailTemplate } from './lib/paz-email-template.js';
+
+function sendJson(res, statusCode, payload) {
+  if (typeof res.status === 'function') {
+    return res.status(statusCode).json(payload);
+  }
+
+  res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(payload));
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -8,24 +17,23 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
+    return sendJson(res, 200, { ok: true });
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return sendJson(res, 405, { error: 'Method not allowed' });
   }
 
   const { email, service, timestamp, message, productMessage, customMessage, attachmentName, customerName, orderNumber, itemSummary } = req.body || {};
 
   if (!email || !service) {
-    return res.status(400).json({ error: 'Missing required fields' });
+    return sendJson(res, 400, { error: 'Missing required fields' });
   }
 
   try {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return res.status(400).json({ error: 'Invalid email address' });
+      return sendJson(res, 400, { error: 'Invalid email address' });
     }
 
     const cleanEmail = String(email).trim().toLowerCase();
@@ -79,16 +87,17 @@ export default async function handler(req, res) {
       footerNote: 'Thank you for shopping with PAZ Thriving Tribe.'
     });
 
-    await sendMailjetEmail({
+    await sendResendEmail({
       to: cleanEmail,
       subject: subjectLine,
       html: emailHTML,
-      text: `PAZ Thriving Tribe\n\n${deliveryMessage || 'Thank you for choosing PAZ Thriving Tribe.'}`
+      text: `PAZ Thriving Tribe\n\n${deliveryMessage || 'Thank you for choosing PAZ Thriving Tribe.'}`,
+      from: process.env.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.org'
     });
 
-    console.log(`✓ Mailjet notification sent to: ${cleanEmail}`);
+    console.log(`✓ Resend notification sent to: ${cleanEmail}`);
 
-    return res.status(200).json({
+    return sendJson(res, 200, {
       success: true,
       subject: subjectLine,
       message: 'Thank you for subscribing! Check your email for confirmation.',
@@ -101,7 +110,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('Error processing notification:', error);
-    return res.status(500).json({
+    return sendJson(res, 500, {
       error: 'Failed to process subscription',
       details: error.message
     });

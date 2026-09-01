@@ -9,7 +9,9 @@ import http from 'http';
 import url from 'url';
 import adminUpdateHandler from './api/admin-update.js';
 import trackVisitorHandler from './api/track-visitor.js';
-import mailjetWebhookHandler from './api/mailjet-webhook.js';
+import resendWebhookHandler from './api/resend-webhook.js';
+import sendNotificationEmailHandler from './api/send-notification-email.js';
+import sendRegistrationEmailHandler from './api/send-registration-email.js';
 
 try {
   process.loadEnvFile?.('.env');
@@ -58,7 +60,19 @@ const server = http.createServer((req, res) => {
 
       if (pathname === '/api/mailjet-webhook' && req.method === 'POST') {
         req.body = body;
-        await mailjetWebhookHandler(req, res);
+        await resendWebhookHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/resend-webhook' && req.method === 'POST') {
+        req.body = body;
+        await resendWebhookHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/webhook' && (req.method === 'POST' || req.method === 'GET')) {
+        req.body = body;
+        await resendWebhookHandler(req, res);
         return;
       }
 
@@ -107,72 +121,15 @@ const server = http.createServer((req, res) => {
 
       // Handle send-notification-email endpoint
       if (pathname === '/api/send-notification-email' && req.method === 'POST') {
-        const data = body ? JSON.parse(body) : {};
-        const { email, service, timestamp } = data;
-
-        // Validation
-        if (!email || !service) {
-          res.writeHead(400);
-          res.end(JSON.stringify({ error: 'Missing required fields' }));
-          return;
-        }
-
-        // Email validation
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email.trim())) {
-          res.writeHead(400);
-          res.end(JSON.stringify({ error: 'Invalid email address' }));
-          return;
-        }
-
-        // Success response
-        console.log(`✓ [DEV API] Email subscription recorded: ${email} for service: ${service}`);
-        res.writeHead(200);
-        res.end(JSON.stringify({
-          success: true,
-          message: 'Thank you for subscribing! Check your email for confirmation.',
-          data: {
-            email: email.toLowerCase().trim(),
-            service: service,
-            subscribedAt: timestamp || new Date().toISOString()
-          }
-        }));
+        req.body = body ? JSON.parse(body) : {};
+        await sendNotificationEmailHandler(req, res);
         return;
       }
 
       // Handle registration confirmation emails to the client
       if (pathname === '/api/send-registration-email' && req.method === 'POST') {
-        const data = body ? JSON.parse(body) : {};
-        const { to, name, registrationType, programType, childrenCount, hearAboutUs, note } = data;
-
-        if (!to) {
-          res.writeHead(400);
-          res.end(JSON.stringify({ error: 'Missing recipient email' }));
-          return;
-        }
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(String(to).trim())) {
-          res.writeHead(400);
-          res.end(JSON.stringify({ error: 'Invalid recipient email address' }));
-          return;
-        }
-
-        console.log(`✓ [DEV API] Registration confirmation email queued for: ${to}`);
-        res.writeHead(200);
-        res.end(JSON.stringify({
-          success: true,
-          message: 'Registration confirmation email queued successfully.',
-          data: {
-            to: String(to).trim().toLowerCase(),
-            name: name || 'Client',
-            registrationType: registrationType || 'Unknown',
-            programType: programType || 'Thriving Teens Academy',
-            childrenCount: childrenCount || 1,
-            hearAboutUs: hearAboutUs || 'Website',
-            note: note || 'No additional notes'
-          }
-        }));
+        req.body = body ? JSON.parse(body) : {};
+        await sendRegistrationEmailHandler(req, res);
         return;
       }
 

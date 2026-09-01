@@ -1,5 +1,14 @@
-import { sendMailjetEmail } from './lib/mailjet.js';
+import { sendResendEmail } from './lib/resend.js';
 import { buildPazEmailTemplate } from './lib/paz-email-template.js';
+
+function sendJson(res, statusCode, payload) {
+  if (typeof res.status === 'function') {
+    return res.status(statusCode).json(payload);
+  }
+
+  res.writeHead(statusCode, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(payload));
+}
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -8,24 +17,23 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
+    return sendJson(res, 200, { ok: true });
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return sendJson(res, 405, { error: 'Method not allowed' });
   }
 
   const { to, name, registrationType, programType, childrenCount, hearAboutUs, note } = req.body || {};
 
   if (!to) {
-    return res.status(400).json({ error: 'Missing recipient email' });
+    return sendJson(res, 400, { error: 'Missing recipient email' });
   }
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const cleanEmail = String(to).trim().toLowerCase();
   if (!emailRegex.test(cleanEmail)) {
-    return res.status(400).json({ error: 'Invalid recipient email address' });
+    return sendJson(res, 400, { error: 'Invalid recipient email address' });
   }
 
   try {
@@ -50,16 +58,17 @@ export default async function handler(req, res) {
       footerNote: 'We are excited to journey with you.'
     });
 
-    await sendMailjetEmail({
+    await sendResendEmail({
       to: cleanEmail,
       subject: 'Your registration request has been received - PAZ Thriving Tribe',
       html: emailHTML,
-      text: `Hi ${name || 'there'},\n\nThank you for submitting your registration...`
+      text: `Hi ${name || 'there'},\n\nThank you for submitting your registration...`,
+      from: process.env.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.org'
     });
 
-    console.log(`✓ Mailjet registration confirmation sent to: ${cleanEmail}`);
+    console.log(`✓ Resend registration confirmation sent to: ${cleanEmail}`);
 
-    return res.status(200).json({
+    return sendJson(res, 200, {
       success: true,
       message: 'Registration confirmation email sent successfully.',
       data: {
@@ -69,7 +78,7 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('Registration email sending failed:', error);
-    return res.status(500).json({
+    return sendJson(res, 500, {
       error: 'Unable to send the confirmation email right now.',
       details: error.message || 'Unknown email error'
     });
