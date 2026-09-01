@@ -9,6 +9,7 @@ import http from 'http';
 import url from 'url';
 import adminUpdateHandler from './api/admin-update.js';
 import trackVisitorHandler from './api/track-visitor.js';
+import mailjetWebhookHandler from './api/mailjet-webhook.js';
 
 try {
   process.loadEnvFile?.('.env');
@@ -52,6 +53,12 @@ const server = http.createServer((req, res) => {
       if (pathname === '/api/track-visitor' && req.method === 'POST') {
         req.body = body;
         await trackVisitorHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/mailjet-webhook' && req.method === 'POST') {
+        req.body = body;
+        await mailjetWebhookHandler(req, res);
         return;
       }
 

@@ -648,7 +648,7 @@ export default function ShopPage({ onOrderSubmitted }) {
     return undefined;
   }, [paymentProof, paymentProofFile, submittedOrder, onOrderSubmitted]);
 
-  const handleCheckout = (event) => {
+  const handleCheckout = async (event) => {
     event.preventDefault();
     if (!cart.length) return;
 
@@ -671,6 +671,36 @@ export default function ShopPage({ onOrderSubmitted }) {
     };
 
     setSubmittedOrder(newOrder);
+
+    const itemSummary = (newOrder.items || [])
+      .map((item) => `• ${item.title || 'Product'} x${item.quantity || 1}`)
+      .join('\n');
+
+    try {
+      const emailResponse = await fetch('/api/send-notification-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: newOrder.email,
+          service: 'Product purchase',
+          timestamp: new Date().toISOString(),
+          orderNumber: newOrder.orderNumber,
+          itemSummary,
+          customerName: newOrder.name,
+          message: `Thank you for your order #${newOrder.orderNumber}. Your purchase has been received and is being processed by PAZ Thriving Tribe.`,
+          productMessage: `Thank you for your order #${newOrder.orderNumber}. Your purchase has been received and is being processed by PAZ Thriving Tribe.`,
+          customMessage: `Thank you for your order #${newOrder.orderNumber}. Your purchase has been received and is being processed by PAZ Thriving Tribe.`,
+          attachmentName: null
+        })
+      });
+
+      if (!emailResponse.ok) {
+        const emailData = await emailResponse.json().catch(() => ({}));
+        console.warn('Auto purchase email failed:', emailData?.error || 'Unknown email error');
+      }
+    } catch (emailError) {
+      console.warn('Auto purchase email request failed:', emailError);
+    }
 
     if (typeof onOrderSubmitted === 'function') {
       onOrderSubmitted((current = []) => [newOrder, ...current]);
