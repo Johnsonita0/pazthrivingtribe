@@ -145,16 +145,112 @@ export default function AdminDashboard(props) {
     resetMessage,
     handleForgotPassword,
     refreshAdminData,
-    refreshLoading = false
+    refreshLoading = false,
+    storeProducts = [],
+    setStoreProducts,
+    storeBankAccount = {},
+    setStoreBankAccount,
+    shopOrders = [],
+    setShopOrders
   } = props;
 
+  const [storeProductForm, setStoreProductForm] = useState({
+    title: '',
+    description: '',
+    price: '',
+    category: 'Ebook',
+    fileUrl: '',
+    cover: '/logo/logomain.png'
+  });
+
   const [activeDashboardView, setActiveDashboardView] = useState('visitors');
+  const [commerceSubTab, setCommerceSubTab] = useState('storefront');
   const [tableFilters, setTableFilters] = useState({});
   const [selectedRowIds, setSelectedRowIds] = useState([]);
   const [viewingRow, setViewingRow] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [orderModalTab, setOrderModalTab] = useState('payment');
+  const [deliveryMessageDraft, setDeliveryMessageDraft] = useState('');
+  const [deliveryAttachment, setDeliveryAttachment] = useState(null);
   const [postingToSlider, setPostingToSlider] = useState(false);
   const [testimonialConfirmation, setTestimonialConfirmation] = useState(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
+
+  useEffect(() => {
+    if (!selectedOrder) return;
+    const defaultMessage = [
+      `Hi ${selectedOrder.name || 'there'},`,
+      '',
+      `Your order ${selectedOrder.orderNumber || ''} is ready. Please find the purchased product attached below.`,
+      '',
+      'Thank you for shopping with PAZ Thriving Tribe.',
+      'Warm regards,',
+      'PAZ Thriving Tribe Team'
+    ].join('\n');
+    setDeliveryMessageDraft(selectedOrder.customerMessage || defaultMessage);
+    setDeliveryAttachment(null);
+    setOrderModalTab('payment');
+  }, [selectedOrder]);
+
+  const handleOrderPaymentConfirmation = async (order) => {
+    if (!order) return;
+    const nextOrder = { ...order, status: 'paid', paymentConfirmedAt: new Date().toISOString() };
+    if (typeof setShopOrders === 'function') {
+      setShopOrders((currentOrders = []) => currentOrders.map((item) => item.id === order.id || item.orderNumber === order.orderNumber ? nextOrder : item));
+    }
+    setSelectedOrder(nextOrder);
+    showAdminToast('success', 'Payment confirmed', `Order ${nextOrder.orderNumber || 'N/A'} has been marked as paid.`);
+  };
+
+  const handleSendProductEmail = async (order) => {
+    if (!order || !order.email) {
+      showAdminToast('error', 'Missing customer email', 'This order does not include a delivery email address yet.');
+      return;
+    }
+
+    try {
+      const itemSummary = (order.items || []).map((item) => `• ${item.title || 'Product'} x${item.quantity || 1}`).join('\n');
+      const finalMessage = deliveryMessageDraft.trim() || 'Your purchased product is ready to be released after payment confirmation.';
+      const response = await fetch('/api/send-notification-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: order.email,
+          service: 'Product delivery',
+          timestamp: new Date().toISOString(),
+          orderNumber: order.orderNumber,
+          itemSummary,
+          customerName: order.name,
+          message: finalMessage,
+          productMessage: finalMessage,
+          attachmentName: deliveryAttachment ? deliveryAttachment.name : null,
+          customMessage: finalMessage
+        })
+      });
+
+      const responseData = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(responseData?.error || 'The delivery email could not be sent.');
+      }
+
+      const nextOrder = {
+        ...order,
+        productEmailSent: true,
+        lastEmailSentAt: new Date().toISOString(),
+        customerMessage: finalMessage,
+        productAttachmentName: deliveryAttachment ? deliveryAttachment.name : order.productAttachmentName || null
+      };
+      if (typeof setShopOrders === 'function') {
+        setShopOrders((currentOrders = []) => currentOrders.map((item) => item.id === order.id || item.orderNumber === order.orderNumber ? nextOrder : item));
+      }
+      setSelectedOrder(nextOrder);
+      setDeliveryAttachment(null);
+      showAdminToast('success', 'Delivery email sent', `The product details have been emailed to ${order.email}.`);
+    } catch (error) {
+      console.error('Failed to email product delivery:', error);
+      showAdminToast('error', 'Email not sent', error.message || 'The product email could not be sent right now.');
+    }
+  };
 
   const openTestimonialConfirmation = () => {
     if (!viewingRow) return;
@@ -365,9 +461,47 @@ export default function AdminDashboard(props) {
     setViewingRow(rowData);
   };
 
+  const handleStoreProductSubmit = (event) => {
+    event.preventDefault();
+    if (!storeProductForm.title || !storeProductForm.description || !storeProductForm.price) return;
+
+    const newProduct = {
+      id: `store-${Date.now()}`,
+      title: storeProductForm.title.trim(),
+      description: storeProductForm.description.trim(),
+      price: Number(storeProductForm.price) || 0,
+      category: storeProductForm.category || 'Ebook',
+      fileUrl: storeProductForm.fileUrl.trim() || 'https://example.com/file.pdf',
+      cover: storeProductForm.cover.trim() || '/logo/logomain.png'
+    };
+
+    setStoreProducts((current = []) => [...(Array.isArray(current) ? current : []), newProduct]);
+    setStoreProductForm({ title: '', description: '', price: '', category: 'Ebook', fileUrl: '', cover: '/logo/logomain.png' });
+    showAdminToast('success', 'Product saved', `${newProduct.title} is now available in the digital store.`);
+  };
+
+  const handleBankAccountChange = (field, value) => {
+    setStoreBankAccount((current = {}) => ({ ...current, [field]: value }));
+  };
+
   const printViewingRow = () => {
     window.print();
   };
+
+  const adminFieldStyle = {
+    width: '100%',
+    maxWidth: '100%',
+    minWidth: 0,
+    boxSizing: 'border-box',
+    display: 'block',
+    border: '1px solid #d1d5db',
+    borderRadius: '10px',
+    padding: '11px 12px',
+    fontSize: '0.95rem',
+    fontFamily: 'inherit',
+    background: '#f9fafb'
+  };
+
   if (mode === 'login' && session) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -703,6 +837,7 @@ export default function AdminDashboard(props) {
     { id: 'teens', label: 'Teens Reg', color: '#f39a2b', value: Math.max(applicants.length || 0, 0) },
     { id: 'bookings', label: 'Bookings', color: '#16a34a', value: Math.max(bookings.length || 0, 0) },
     { id: 'messages', label: 'Messages', color: '#22a564', value: Math.max(contactMessages.length || 0, 0) },
+    { id: 'commerce', label: 'Store & Orders', color: '#f59e0b', value: Math.max(shopOrders.length || 0, 0) },
     { id: 'testimonials', label: 'Testimonials', color: '#7c3aed', value: Math.max(promoSlides.length || 0, 0) },
     { id: 'slider', label: 'Published Slider', color: '#0f766e', value: Math.max(promoSlides.length || 0, 0) },
     { id: 'feedback', label: 'Parent Feedback', color: '#e88767', value: Math.max(parentFeedback.length || 0, 0) }
@@ -898,7 +1033,7 @@ export default function AdminDashboard(props) {
 
   return (
     <div className="admin-dashboard-page" style={{ minHeight: '100vh', background: '#f1f2f4', padding: '26px 20px 32px', fontFamily: 'Inter, Arial, sans-serif' }}>
-      <div style={{ maxWidth: '1280px', margin: '0 auto', border: '1px solid #dfe3e7', borderRadius: '22px', background: '#f3f2f0', padding: '28px 24px 24px' }}>
+      <div style={{ width: '100%', maxWidth: 'none', margin: '0 auto', border: '1px solid #dfe3e7', borderRadius: '22px', background: '#f3f2f0', padding: '28px 28px 24px', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap', marginBottom: '14px' }}>
           <div>
             <h1 style={{ margin: 0, fontSize: 'clamp(2.5rem, 3vw, 4rem)', lineHeight: 1.05, fontWeight: 800, color: '#1d1d1d' }}>Admin dashboard</h1>
@@ -909,13 +1044,16 @@ export default function AdminDashboard(props) {
         </div>
 
         <style>{`
-          .dashboard-stats{display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between;margin-top:30px}
-          .stat-card{flex:1 1 calc(50% - 16px);min-width:140px;border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#fff;text-align:center}
+          .dashboard-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;justify-content:space-between;margin-top:30px}
+          .stat-card{width:100%;min-width:0;border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#fff;text-align:center;box-sizing:border-box}
           .stat-card .label{font-weight:700;font-size:0.95rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.95}
           .stat-card .value{font-weight:900;font-size:2.4rem;margin-top:6px}
           .dashboard-actions-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:20px}
           .dashboard-filters{display:flex;gap:8px;align-items:center;margin-left:8px;flex-wrap:wrap}
           .dashboard-table-wrap{overflow-x:auto;margin-top:18px;-webkit-overflow-scrolling:touch;width:100%;border-radius:14px}
+          .commerce-tab-row{display:flex;gap:8px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;ms-overflow-style:none;padding-bottom:8px;border-bottom:1px solid #dfe7ef}
+          .commerce-panel-shell{width:100%;max-width:none;box-sizing:border-box;overflow:hidden}
+          .commerce-input-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;width:100%;max-width:100%;box-sizing:border-box}
           .table{min-width:1400px;width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e7eb;border-radius:14px}
           .table th,.table td{padding:12px 14px;text-align:left;vertical-align:top;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
           .table td{max-width:200px}
@@ -947,8 +1085,8 @@ export default function AdminDashboard(props) {
           @media(max-width:640px){.view-modal-content{padding:0!important;max-height:92vh!important}.response-letterhead{align-items:flex-start!important;padding:.8rem 1rem!important}.response-letterhead h3{font-size:1.1rem!important}.response-letterhead-meta{grid-template-columns:1fr!important;margin:1rem 1rem 0!important;line-height:1.7}.response-details-grid{grid-template-columns:1fr!important;padding:1rem!important}.response-details-grid>div{gap:.35rem!important}.response-details-grid label{font-size:.68rem!important}}
           @media print{@page{size:A4 portrait;margin:12mm}body *{visibility:hidden!important}.view-modal-overlay,.view-modal-overlay *{visibility:visible!important}.view-modal-overlay{position:static!important;background:transparent!important;padding:0!important}.printable-response-card{position:absolute!important;inset:0!important;width:100%!important;max-width:none!important;max-height:none!important;overflow:visible!important;padding:0!important;border:0!important;box-shadow:none!important;border-radius:0!important}.printable-response-card button,.printable-response-card i{display:none!important}.response-letterhead{border-bottom:2px solid #e88767!important}.response-details-grid{gap:6px!important;padding:10px 0!important}.response-detail-row{font-size:9pt!important;break-inside:avoid}.response-detail-label{font-size:7pt!important;padding:5px 7px!important}.response-detail-row>div{padding:5px 7px!important}}
           @media(min-width:900px){.stat-card{flex:1 1 calc(25% - 16px)}.stat-card .value{font-size:3rem}}
-          @media(max-width:640px){.stat-card{flex:1 1 100%;min-width:100%}.stat-card .value{font-size:1.9rem}.dashboard-actions-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-items:center;width:100%}.dashboard-filters{grid-column:1/-1;margin-left:0;flex-wrap:nowrap;overflow-x:auto;max-width:100%;padding-bottom:2px}.dashboard-filters label{flex:0 0 auto}.dashboard-filters select{min-width:100px!important;width:100px}.dashboard-filters .dashboard-action-button{flex:0 0 46px}.table th,.table td{padding:10px}.table{min-width:1200px;width:100%;overflow-x:auto}.table th:last-child{position:relative;background:#f8fafc;border-left:1px solid #e5e7eb;text-align:center;max-width:none;min-width:120px}.table td:last-child{position:relative;background:#fff;border-left:1px solid #f3f4f6;text-align:center}.table tbody tr:hover td:last-child{background:#fff}.admin-toast{right:12px;bottom:12px;max-width:calc(100vw - 24px)}}
-          @media(max-width:640px){.admin-dashboard-page{padding-top:72px!important}.dashboard-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.stat-card{min-width:0!important;width:auto;min-height:98px;padding:10px 4px}.stat-card .label{font-size:.63rem;line-height:1.1}.stat-card .value{font-size:1.55rem;margin-top:6px}.dashboard-refresh-button,.dashboard-action-button{width:46px;height:46px;padding:0!important;display:inline-grid;place-items:center}.dashboard-refresh-button span,.dashboard-action-button span{display:none}.dashboard-action-button i{margin:0;font-size:1rem}}
+          @media(max-width:640px){.stat-card{min-width:0!important;width:100%;min-height:98px;padding:10px 4px}.stat-card .value{font-size:1.9rem}.dashboard-actions-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-items:center;width:100%}.dashboard-filters{grid-column:1/-1;margin-left:0;flex-wrap:nowrap;overflow-x:auto;max-width:100%;padding-bottom:2px}.dashboard-filters label{flex:0 0 auto}.dashboard-filters select{min-width:100px!important;width:100px}.dashboard-filters .dashboard-action-button{flex:0 0 46px}.table th,.table td{padding:10px}.table{min-width:1200px;width:100%;overflow-x:auto}.table th:last-child{position:relative;background:#f8fafc;border-left:1px solid #e5e7eb;text-align:center;max-width:none;min-width:120px}.table td:last-child{position:relative;background:#fff;border-left:1px solid #f3f4f6;text-align:center}.table tbody tr:hover td:last-child{background:#fff}.admin-toast{right:12px;bottom:12px;max-width:calc(100vw - 24px)}.commerce-panel-shell{padding:14px 12px!important}.commerce-tab-row{padding-bottom:6px}.commerce-input-grid{grid-template-columns:1fr!important;gap:10px!important;minmax:0!important}}
+          @media(max-width:640px){.admin-dashboard-page{padding:16px 8px 24px!important}.dashboard-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.stat-card{min-width:0!important;width:100%;min-height:98px;padding:10px 4px}.stat-card .label{font-size:.63rem;line-height:1.1}.stat-card .value{font-size:1.55rem;margin-top:6px}.dashboard-refresh-button,.dashboard-action-button{width:46px;height:46px;padding:0!important;display:inline-grid;place-items:center}.dashboard-refresh-button span,.dashboard-action-button span{display:none}.dashboard-action-button i{margin:0;font-size:1rem}}
           .publish-testimonial-button{position:relative}.publish-testimonial-button::after{content:attr(data-tooltip);position:absolute;right:0;bottom:calc(100% + 9px);width:250px;padding:9px 11px;border-radius:6px;background:#24333a;color:#fff;font-size:.75rem;font-weight:600;line-height:1.4;text-align:left;opacity:0;pointer-events:none;transform:translateY(4px);transition:opacity .2s,transform .2s;z-index:3}.publish-testimonial-button::before{content:'';position:absolute;right:18px;bottom:calc(100% + 3px);border:6px solid transparent;border-top-color:#24333a;opacity:0;transition:opacity .2s;z-index:3}.publish-testimonial-button:hover::after,.publish-testimonial-button:hover::before,.publish-testimonial-button:focus-visible::after,.publish-testimonial-button:focus-visible::before{opacity:1;transform:translateY(0)}
           @media(max-width:640px){.publish-testimonial-button::after{right:auto;left:0;width:210px}.publish-testimonial-button::before{right:auto;left:18px}}
         `}</style>
@@ -971,11 +1109,140 @@ export default function AdminDashboard(props) {
 
         <div style={{ marginTop: '26px', padding: '0 2px' }}>
           <div style={{ marginTop: '18px', border: '1px solid #dfe3e7', borderRadius: '18px', background: '#f5f5f5', padding: '18px 20px 24px' }}>
-            <h2 style={{ margin: 0, fontSize: '2rem', fontWeight: 800, color: '#1a1a1a' }}>{activeDashboardLabel}</h2>
-            <p style={{ margin: '8px 0 0', fontSize: '1.05rem', color: '#4b5563' }}>
-              {activeDashboardView === 'visitors' ? 'Visitors logged from the main site.' : activeDashboardView === 'teens' ? 'Teens registration form details submitted through the public site.' : activeDashboardView === 'messages' ? 'Messages submitted via the main contact form.' : activeDashboardView === 'bookings' ? 'Session booking requests submitted through the public site.' : activeDashboardView === 'feedback' ? 'Parent mentoring feedback responses submitted through the public survey.' : activeDashboardView === 'slider' ? 'Testimonials currently published in the Client Voices slider on the home page.' : 'Testimonials submitted from the site and available for review.'}
-            </p>
+            {activeDashboardView === 'commerce' ? (
+              <>
+                <div className="commerce-tab-row" style={{ marginBottom: '22px' }}>
+                  {[
+                    { id: 'storefront', label: 'Store' },
+                    { id: 'payments', label: 'Pay' },
+                    { id: 'orders', label: 'Orders' }
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setCommerceSubTab(tab.id)}
+                      className="commerce-tab-button"
+                      style={{
+                        border: '1px solid #dfe7ef',
+                        background: commerceSubTab === tab.id ? '#111827' : '#fff',
+                        color: commerceSubTab === tab.id ? '#fff' : '#334155',
+                        borderRadius: '999px',
+                        padding: '9px 14px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        fontSize: '0.83rem',
+                        letterSpacing: '0.02em',
+                        whiteSpace: 'nowrap',
+                        flex: '0 0 auto'
+                      }}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
 
+                {commerceSubTab === 'storefront' && (
+                  <div className="commerce-panel-shell" style={{ background: '#ffffff', border: '1px solid #dfe7ef', borderRadius: '20px', padding: '22px', boxShadow: '0 12px 28px rgba(15, 23, 42, 0.08)', minWidth: 0, width: '100%', maxWidth: 'none', margin: '0 auto', boxSizing: 'border-box', overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '18px' }}>
+                      <div>
+                        <p style={{ margin: 0, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.12em', fontSize: '0.72rem', fontWeight: 800 }}>Storefront</p>
+                        <h3 style={{ margin: '8px 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#111827' }}>Product manager</h3>
+                      </div>
+                      <div style={{ background: '#fff7ed', color: '#b45309', borderRadius: '999px', padding: '8px 12px', fontSize: '0.8rem', fontWeight: 700 }}>{storeProducts.length} live products</div>
+                    </div>
+                    <form onSubmit={handleStoreProductSubmit} style={{ display: 'grid', gap: '12px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                        <input value={storeProductForm.title} onChange={(event) => setStoreProductForm((current) => ({ ...current, title: event.target.value }))} placeholder="Ebook title" style={adminFieldStyle} />
+                        <input value={storeProductForm.category} onChange={(event) => setStoreProductForm((current) => ({ ...current, category: event.target.value }))} placeholder="Category" style={adminFieldStyle} />
+                      </div>
+                      <textarea value={storeProductForm.description} onChange={(event) => setStoreProductForm((current) => ({ ...current, description: event.target.value }))} placeholder="Description" style={{ ...adminFieldStyle, minHeight: '90px', resize: 'vertical' }} />
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                        <input type="number" value={storeProductForm.price} onChange={(event) => setStoreProductForm((current) => ({ ...current, price: event.target.value }))} placeholder="Price in NGN" style={adminFieldStyle} />
+                        <input value={storeProductForm.fileUrl} onChange={(event) => setStoreProductForm((current) => ({ ...current, fileUrl: event.target.value }))} placeholder="File URL" style={adminFieldStyle} />
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center' }}>
+                        <input value={storeProductForm.cover} onChange={(event) => setStoreProductForm((current) => ({ ...current, cover: event.target.value }))} placeholder="Cover image URL" style={{ ...adminFieldStyle, flex: 1 }} />
+                        <button type="submit" style={{ border: 'none', background: 'linear-gradient(135deg, #f59e0b, #ef4444)', color: '#fff', borderRadius: '12px', padding: '12px 18px', fontWeight: 800, cursor: 'pointer', boxShadow: '0 12px 20px rgba(245, 158, 11, 0.28)' }}>Add product</button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                {commerceSubTab === 'payments' && (
+                  <div className="commerce-panel-shell" style={{ background: '#ffffff', border: '1px solid #dfe7ef', borderRadius: '20px', padding: '22px', boxShadow: '0 12px 28px rgba(15, 23, 42, 0.08)', minWidth: 0, width: '100%', maxWidth: 'none', margin: '0 auto', boxSizing: 'border-box', overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '18px', flexWrap: 'wrap' }}>
+                      <div>
+                        <p style={{ margin: 0, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.12em', fontSize: '0.72rem', fontWeight: 800 }}>Payments</p>
+                        <h3 style={{ margin: '8px 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#111827' }}>Bank transfer details</h3>
+                      </div>
+                    </div>
+                    <div className="commerce-input-grid" style={{ display: 'grid', gap: '12px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
+                      <input value={storeBankAccount?.bankName || ''} onChange={(event) => handleBankAccountChange('bankName', event.target.value)} placeholder="Bank name" style={adminFieldStyle} />
+                      <input value={storeBankAccount?.accountName || ''} onChange={(event) => handleBankAccountChange('accountName', event.target.value)} placeholder="Account name" style={adminFieldStyle} />
+                      <input value={storeBankAccount?.accountNumber || ''} onChange={(event) => handleBankAccountChange('accountNumber', event.target.value)} placeholder="Account number" style={adminFieldStyle} />
+                      <input value={storeBankAccount?.accountType || ''} onChange={(event) => handleBankAccountChange('accountType', event.target.value)} placeholder="Account type" style={adminFieldStyle} />
+                      <input value={storeBankAccount?.swiftCode || ''} onChange={(event) => handleBankAccountChange('swiftCode', event.target.value)} placeholder="Swift code (optional)" style={adminFieldStyle} />
+                      <textarea value={storeBankAccount?.note || ''} onChange={(event) => handleBankAccountChange('note', event.target.value)} placeholder="Transfer note" style={{ ...adminFieldStyle, minHeight: '88px', resize: 'vertical', gridColumn: '1 / -1' }} />
+                    </div>
+                  </div>
+                )}
+
+                {commerceSubTab === 'orders' && (
+                  <div className="commerce-panel-shell" style={{ background: '#ffffff', border: '1px solid #dfe7ef', borderRadius: '20px', padding: '22px', boxShadow: '0 12px 28px rgba(15, 23, 42, 0.08)', minWidth: 0, width: '100%', maxWidth: 'none', margin: '0 auto', boxSizing: 'border-box', overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '18px', flexWrap: 'wrap' }}>
+                      <div>
+                        <p style={{ margin: 0, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.12em', fontSize: '0.72rem', fontWeight: 800 }}>Orders</p>
+                        <h3 style={{ margin: '8px 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#111827' }}>Recent customer orders</h3>
+                      </div>
+                      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '999px', padding: '8px 12px', color: '#334155', fontWeight: 700 }}>{shopOrders.length} total</div>
+                    </div>
+
+                    <div style={{ overflowX: 'auto', width: '100%' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '760px' }}>
+                        <thead>
+                          <tr style={{ background: '#f8fafc', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.74rem' }}>
+                            <th style={{ padding: '12px 14px', textAlign: 'left' }}>Order</th>
+                            <th style={{ padding: '12px 14px', textAlign: 'left' }}>Customer</th>
+                            <th style={{ padding: '12px 14px', textAlign: 'left' }}>Items</th>
+                            <th style={{ padding: '12px 14px', textAlign: 'left' }}>Total</th>
+                            <th style={{ padding: '12px 14px', textAlign: 'left' }}>Status</th>
+                            <th style={{ padding: '12px 14px', textAlign: 'left' }}>Date</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {shopOrders.length > 0 ? shopOrders.map((order) => (
+                            <tr key={order.id || order.orderNumber} onClick={() => setSelectedOrder(order)} style={{ borderBottom: '1px solid #e2e8f0', cursor: 'pointer', transition: 'background 0.2s ease' }} onMouseEnter={(event) => { event.currentTarget.style.background = '#f8fafc'; }} onMouseLeave={(event) => { event.currentTarget.style.background = 'transparent'; }}>
+                              <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>{order.orderNumber || 'N/A'}</td>
+                              <td style={{ padding: '12px 14px' }}>
+                                <div style={{ fontWeight: 700, color: '#0f172a' }}>{order.name || 'Customer'}</div>
+                                <div style={{ color: '#64748b', fontSize: '0.82rem' }}>{order.email || 'No email'}</div>
+                              </td>
+                              <td style={{ padding: '12px 14px', color: '#334155' }}>{(order.items || []).map((item) => `${item.title} x${item.quantity}`).join(', ') || 'No items'}</td>
+                              <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(Number(order.total || 0))}</td>
+                              <td style={{ padding: '12px 14px' }}>
+                                <span style={{ background: order.status === 'paid' ? '#dcfce7' : '#fff7ed', color: order.status === 'paid' ? '#166534' : '#b45309', borderRadius: '999px', padding: '6px 10px', fontSize: '0.76rem', fontWeight: 700, textTransform: 'capitalize' }}>{order.status || 'pending'}</span>
+                              </td>
+                              <td style={{ padding: '12px 14px', color: '#475569' }}>{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}</td>
+                            </tr>
+                          )) : (
+                            <tr>
+                              <td colSpan="6" style={{ padding: '22px 14px', textAlign: 'center', color: '#64748b' }}>No checkout orders have been placed yet.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <h2 style={{ margin: 0, fontSize: '2rem', fontWeight: 800, color: '#1a1a1a' }}>{activeDashboardLabel}</h2>
+                <p style={{ margin: '8px 0 0', fontSize: '1.05rem', color: '#4b5563' }}>
+                  {activeDashboardView === 'visitors' ? 'Visitors logged from the main site.' : activeDashboardView === 'teens' ? 'Teens registration form details submitted through the public site.' : activeDashboardView === 'messages' ? 'Messages submitted via the main contact form.' : activeDashboardView === 'bookings' ? 'Session booking requests submitted through the public site.' : activeDashboardView === 'feedback' ? 'Parent mentoring feedback responses submitted through the public survey.' : activeDashboardView === 'slider' ? 'Testimonials currently published in the Client Voices slider on the home page.' : 'Testimonials submitted from the site and available for review.'}
+                </p>
+              </>
+            )}
             <div className="dashboard-actions-row">
               <button className="dashboard-refresh-button" type="button" onClick={refreshAdminData} disabled={refreshLoading} title={refreshLoading ? 'Refreshing' : 'Refresh'} aria-label={refreshLoading ? 'Refreshing' : 'Refresh'} style={{ border: '1px solid #b7d9cf', background: refreshLoading ? '#dcebe6' : '#e8f6f1', color: '#17634f', borderRadius: '999px', padding: '0.8rem 1.2rem', fontSize: '1rem', fontWeight: 700, cursor: refreshLoading ? 'wait' : 'pointer' }}>
                 <i className={`fa-solid ${refreshLoading ? 'fa-spinner fa-spin' : 'fa-rotate'}`} aria-hidden="true"></i> <span>Refresh</span>
@@ -1118,6 +1385,232 @@ export default function AdminDashboard(props) {
               <button type="button" className="delete-confirmation-delete" onClick={confirmDelete}>Delete</button>
             </div>
           </section>
+        </div>
+      )}
+
+      {selectedOrder && (
+        <div className="view-modal-overlay" onClick={() => setSelectedOrder(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 17000, padding: '20px' }}>
+          <div className="view-modal-content" onClick={(event) => event.stopPropagation()} style={{ background: '#fff', borderRadius: '18px', width: 'min(760px, 100%)', maxHeight: '88vh', overflowY: 'auto', boxShadow: '0 28px 90px rgba(15,23,42,0.35)', border: '1px solid #e2e8f0' }}>
+            <div style={{ padding: '22px 22px 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', marginBottom: '18px' }}>
+                <div>
+                  <p style={{ margin: 0, color: '#f59e0b', fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Order review</p>
+                  <h3 style={{ margin: '8px 0 0', fontSize: '1.7rem', fontWeight: 800, color: '#111827' }}>{selectedOrder.orderNumber || 'Order details'}</h3>
+                </div>
+                <button type="button" onClick={() => setSelectedOrder(null)} aria-label="Close order review" style={{ border: 'none', background: '#f1f5f9', color: '#334155', borderRadius: '10px', width: '36px', height: '36px', cursor: 'pointer', fontSize: '1.5rem' }}>×</button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '22px' }}>
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px 16px' }}>
+                  <div style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>Customer</div>
+                  <div style={{ marginTop: '8px', fontWeight: 735, color: '#0f172a' }}>{selectedOrder.name || 'Customer'}</div>
+                  <div style={{ color: '#475569', fontSize: '0.9rem' }}>{selectedOrder.email || 'No email'}</div>
+                </div>
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px 16px' }}>
+                  <div style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>Payment</div>
+                  <div style={{ marginTop: '8px', fontWeight: 800, color: '#0f172a' }}>{selectedOrder.status === 'paid' ? 'Confirmed' : 'Pending confirmation'}</div>
+                  <div style={{ color: '#475569', fontSize: '0.9rem' }}>{selectedOrder.paymentProofFile ? selectedOrder.paymentProofFile : 'No proof uploaded'}</div>
+                </div>
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px 16px' }}>
+                  <div style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>Amount</div>
+                  <div style={{ marginTop: '8px', fontWeight: 800, color: '#0f172a' }}>{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(Number(selectedOrder.total || 0))}</div>
+                  <div style={{ color: '#475569', fontSize: '0.9rem' }}>{selectedOrder.createdAt ? new Date(selectedOrder.createdAt).toLocaleDateString() : 'N/A'}</div>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '18px', alignItems: 'start' }}>
+                <section style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
+                  <h4 style={{ margin: '0 0 12px', color: '#111827', fontSize: '1rem' }}>Items</h4>
+                  <div style={{ display: 'grid', gap: '10px' }}>
+                    {(selectedOrder.items || []).length > 0 ? (selectedOrder.items || []).map((item, index) => (
+                      <div key={`${item.id || item.title || index}`} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', borderBottom: index < (selectedOrder.items || []).length - 1 ? '1px solid #e2e8f0' : 'none', paddingBottom: index < (selectedOrder.items || []).length - 1 ? '10px' : 0 }}>
+                        <div>
+                          <div style={{ fontWeight: 700, color: '#0f172a' }}>{item.title || 'Product'}</div>
+                          <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Qty: {item.quantity || 1}</div>
+                        </div>
+                        <div style={{ fontWeight: 700, color: '#0f172a' }}>{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(Number(item.price || 0) * Number(item.quantity || 1))}</div>
+                      </div>
+                    )) : <div style={{ color: '#64748b' }}>No items recorded for this order.</div>}
+                  </div>
+                </section>
+
+                <section style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
+                  <h4 style={{ margin: '0 0 12px', color: '#111827', fontSize: '1rem' }}>Proof of payment</h4>
+                  {selectedOrder.paymentProofPreview ? (
+                    <img src={selectedOrder.paymentProofPreview} alt="Payment proof preview" style={{ width: '100%', borderRadius: '10px', border: '1px solid #cbd5e1', maxHeight: '220px', objectFit: 'cover' }} />
+                  ) : (
+                    <div style={{ color: '#64748b', padding: '20px 0', textAlign: 'center' }}>No proof image attached.</div>
+                  )}
+                </section>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', margin: '16px 0 12px', padding: '4px', background: '#f1f5f9', borderRadius: '12px', border: '1px solid #e2e8f0', width: 'fit-content', maxWidth: '100%', overflowX: 'auto' }}>
+                {[
+                  { id: 'payment', label: 'Pay' },
+                  { id: 'email', label: 'Email' }
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setOrderModalTab(tab.id)}
+                    style={{
+                      border: 'none',
+                      borderRadius: '9px',
+                      background: orderModalTab === tab.id ? '#111827' : 'transparent',
+                      color: orderModalTab === tab.id ? '#fff' : '#475569',
+                      padding: '8px 14px',
+                      fontWeight: 800,
+                      fontSize: '0.76rem',
+                      letterSpacing: '0.04em',
+                      textTransform: 'uppercase',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {orderModalTab === 'payment' ? (
+                <div style={{ display: 'grid', gap: '12px', marginTop: '8px' }}>
+                  <section style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
+                    <h4 style={{ margin: '0 0 12px', color: '#111827', fontSize: '1rem' }}>Proof of payment</h4>
+                    {selectedOrder.paymentProofPreview ? (
+                      <img src={selectedOrder.paymentProofPreview} alt="Payment proof preview" style={{ width: '100%', borderRadius: '10px', border: '1px solid #cbd5e1', maxHeight: '220px', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ color: '#64748b', padding: '20px 0', textAlign: 'center' }}>No proof image attached.</div>
+                    )}
+                  </section>
+
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', paddingBottom: '8px' }}>
+                    <button type="button" onClick={() => handleOrderPaymentConfirmation(selectedOrder)} style={{ background: selectedOrder.status === 'paid' ? '#dcfce7' : 'linear-gradient(135deg, #16a34a, #15803d)', color: selectedOrder.status === 'paid' ? '#166534' : '#fff', border: 'none', borderRadius: '10px', padding: '0.85rem 1.2rem', fontWeight: 800, cursor: 'pointer' }}>
+                      {selectedOrder.status === 'paid' ? 'Payment confirmed' : 'Confirm payment'}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px', marginTop: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <h4 style={{ margin: 0, color: '#0f172a', fontSize: '1rem' }}>Send product</h4>
+                    <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{selectedOrder.email || 'No email'}</span>
+                  </div>
+                  <label style={{ display: 'block', marginBottom: '10px', fontWeight: 700, color: '#334155' }}>Custom message</label>
+                  <textarea
+                    value={deliveryMessageDraft}
+                    onChange={(event) => setDeliveryMessageDraft(event.target.value)}
+                    placeholder="Write a note to the customer before sending the product."
+                    style={{ width: '100%', minHeight: '110px', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '12px 14px', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', fontSize: '0.95rem' }}
+                  />
+                  <div style={{ marginTop: '14px' }}>
+                    <label htmlFor="delivery-product-upload" style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: '#334155' }}>Attach product file</label>
+                    <input
+                      id="delivery-product-upload"
+                      type="file"
+                      onChange={(event) => setDeliveryAttachment(event.target.files?.[0] || null)}
+                      style={{ width: '100%', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '10px 12px', background: '#fff' }}
+                    />
+                    {deliveryAttachment && (
+                      <div style={{ marginTop: '8px', color: '#166534', fontSize: '0.85rem', fontWeight: 700 }}>
+                        Selected file: {deliveryAttachment.name}
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ marginTop: '18px', background: '#ffffff', border: '1px solid #dfe8e3', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(15, 23, 42, 0.04)' }}>
+                    <div style={{ background: 'linear-gradient(135deg, #0b3a2c 0%, #123f2f 50%, #1a4b38 100%)', color: '#fff', padding: '22px 16px', textAlign: 'center' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#ffffff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '16px', padding: '10px 18px', boxShadow: '0 8px 20px rgba(0,0,0,0.12)' }}>
+                        <img src="/logo/logo2.jpeg" alt="PAZ logo" style={{ width: '38px', height: '38px', borderRadius: '12px', marginRight: '12px', objectFit: 'cover' }} />
+                        <div style={{ fontSize: '11px', letterSpacing: '0.12em', fontWeight: 800, textTransform: 'uppercase', lineHeight: 1.2, textAlign: 'left', color: '#0f172a' }}>
+                          PAZ<br />Thriving Tribe
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ padding: '18px 16px 12px', background: '#fff' }}>
+                      <div style={{ fontSize: '0.7rem', color: '#2d7a5c', letterSpacing: '0.08em', fontWeight: 800, textTransform: 'uppercase', marginBottom: '10px' }}>
+                        Subject: {selectedOrder.orderNumber ? `Your PAZ order is ready — #${selectedOrder.orderNumber}` : 'Your PAZ order update'}
+                      </div>
+
+                      <div style={{ fontWeight: 800, color: '#111827', marginBottom: '10px', fontSize: '1.05rem' }}>
+                        Hi {selectedOrder.name || selectedOrder.customerName || selectedOrder.customer_name || selectedOrder.full_name || 'there'},
+                      </div>
+
+                      <div style={{ color: '#334155', lineHeight: 1.7, whiteSpace: 'pre-wrap', fontSize: '0.93rem', marginBottom: '14px' }}>
+                        {deliveryMessageDraft || 'Your purchased product is now ready for delivery.'}
+                      </div>
+
+                      <div style={{ background: '#f3f9f6', border: '1px solid #d7e9e0', borderRadius: '12px', padding: '14px', marginBottom: '14px' }}>
+                        <div style={{ fontSize: '0.68rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: '#2d7a5c', fontWeight: 800, marginBottom: '8px' }}>
+                          Order details
+                        </div>
+                        {selectedOrder.orderNumber && (
+                          <div style={{ color: '#1f2937', fontSize: '0.9rem', marginBottom: '6px' }}>
+                            <strong>Order number:</strong> {selectedOrder.orderNumber}
+                          </div>
+                        )}
+                        {deliveryAttachment && (
+                          <div style={{ color: '#1f2937', fontSize: '0.9rem', marginBottom: '6px' }}>
+                            <strong>Product file:</strong> {deliveryAttachment.name}
+                          </div>
+                        )}
+                        <div style={{ color: '#1f2937', fontSize: '0.9rem' }}>
+                          <strong>Customer email:</strong> {selectedOrder.email || 'No email'}
+                        </div>
+                      </div>
+
+                      {(selectedOrder.items || []).length > 0 && (
+                        <div style={{ background: '#f8faf7', border: '1px solid #dfeae2', borderRadius: '12px', padding: '14px', marginBottom: '14px' }}>
+                          <div style={{ fontSize: '0.68rem', color: '#2d7a5c', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800, marginBottom: '10px' }}>Your materials</div>
+                          {(selectedOrder.items || []).map((item, index) => (
+                            <div key={`${item.id || item.title || index}`} style={{ color: '#334155', fontSize: '0.9rem', marginBottom: '6px' }}>
+                              • {item.title || 'Product'} x{item.quantity || 1}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '10px', marginBottom: '14px' }}>
+                        <a href="https://pazthrivingtribe.com" style={{ display: 'inline-block', background: '#1d9a63', color: '#fff', padding: '12px 18px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 800, textDecoration: 'none' }}>View your portal</a>
+                        <a href="mailto:hello@pazthrivingtribe.com" style={{ display: 'inline-block', background: '#fff', color: '#0f172a', border: '1px solid #dfe8e3', padding: '12px 18px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 800, textDecoration: 'none' }}>Contact support</a>
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#f7faf8', borderTop: '1px solid #dfe8e3', padding: '18px 16px 20px', textAlign: 'center' }}>
+                      <div style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Stay connected with PAZ</div>
+                      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+                        <a href="https://www.instagram.com" target="_blank" rel="noreferrer" style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#e1306c', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-label="Instagram">
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="18" height="18" rx="5" stroke="white" strokeWidth="2"/><circle cx="12" cy="12" r="4.2" stroke="white" strokeWidth="2"/><circle cx="17.3" cy="6.7" r="1.3" fill="white"/></svg>
+                        </a>
+                        <a href="https://www.facebook.com" target="_blank" rel="noreferrer" style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#1877f2', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-label="Facebook">
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 8.5H16V5.5C15.5 5.4 14.7 5.3 13.8 5.3C11.7 5.3 10.3 6.5 10.3 9V11H7.7V14.2H10.3V19H13.5V14.2H15.7L16 11H13.5V9.4C13.5 8.9 13.9 8.5 14.5 8.5Z" fill="white"/></svg>
+                        </a>
+                        <a href="https://www.linkedin.com" target="_blank" rel="noreferrer" style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#0a66c2', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-label="LinkedIn">
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.94 8.5C7.95 8.5 8.76 7.7 8.76 6.75C8.76 5.79 7.95 5 6.94 5C5.94 5 5.13 5.79 5.13 6.75C5.13 7.7 5.94 8.5 6.94 8.5ZM5.48 9.8H8.4V18.5H5.48V9.8ZM10.7 9.8H13.55V11H13.59C14.03 10.2 15.08 9.33 16.8 9.33C20.3 9.33 20.8 11.7 20.8 14.3V18.5H17.88V15C17.88 13.8 17.86 12.2 16.17 12.2C14.44 12.2 14.17 13.55 14.17 14.88V18.5H10.7V9.8Z" fill="white"/></svg>
+                        </a>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                        <a href="https://pazthrivingtribe.com" style={{ display: 'inline-block', background: '#0f172a', color: '#fff', padding: '10px 14px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 800, textDecoration: 'none' }}>Subscribe to our newsletter</a>
+                        <a href="https://pazthrivingtribe.com" style={{ display: 'inline-block', background: '#e8f6ef', color: '#0d5d46', border: '1px solid #cfeadf', padding: '10px 14px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 800, textDecoration: 'none' }}>Visit our portal</a>
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#64748b' }}>© {new Date().getFullYear()} PAZ Thriving Tribe. All rights reserved.</div>
+                      <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '6px' }}>Email: hello@pazthrivingtribe.com | Phone: +234 803 738 3820</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '18px' }}>
+                    <button type="button" onClick={() => handleSendProductEmail(selectedOrder)} style={{ background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '0.85rem 1.2rem', fontWeight: 800, cursor: 'pointer' }}>
+                      {selectedOrder.productEmailSent ? 'Resend email' : 'Send product'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '22px', paddingBottom: '22px' }}>
+                <button type="button" onClick={() => setSelectedOrder(null)} style={{ background: '#f8fafc', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '0.9rem 1.35rem', fontWeight: 800, cursor: 'pointer' }}>Close</button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

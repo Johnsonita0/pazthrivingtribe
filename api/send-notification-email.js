@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { email, service, timestamp } = req.body;
+  const { email, service, timestamp, message, productMessage, customMessage, attachmentName, customerName, orderNumber, itemSummary } = req.body;
 
   if (!email || !service) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -56,41 +56,131 @@ export default async function handler(req, res) {
       }
     }
 
+    const deliveryMessage = (productMessage || customMessage || message || '').toString().trim();
+    const fileLabel = attachmentName ? `<p><strong>Product file:</strong> ${attachmentName}</p>` : '';
+    const itemList = itemSummary ? `<p><strong>Order items:</strong><br>${itemSummary.replace(/\n/g, '<br>')}</p>` : '';
+    const resolvedCustomerName = (customerName || '').toString().trim() || 'there';
+    const recipientName = `Hi ${resolvedCustomerName},`;
+    const subjectLine = orderNumber ? `Your PAZ order is ready — #${orderNumber}` : `Your PAZ order update`;
+    const websiteUrl = process.env.VITE_APP_URL || 'https://pazthrivingtribe.com';
+    const logoUrl = `${websiteUrl}/logo/logo2.jpeg`;
+    const contactPhone = '+234 803 738 3820';
+    const bodyCopy = deliveryMessage
+      ? deliveryMessage.replace(/\n/g, '<br>')
+      : `<strong>Thank you for choosing PAZ Thriving Tribe.</strong><br><br>We are excited to share your purchase and continue supporting your growth journey.`;
+    const productCard = itemSummary
+      ? `
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background: #f8faf7; border: 1px solid #dfeae2; border-radius: 14px; margin: 22px 0 12px;">
+          <tr>
+            <td style="padding: 18px 20px;">
+              <div style="font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #2d7a5c; font-weight: 700; margin-bottom: 10px;">Your materials</div>
+              <div style="font-size: 18px; line-height: 1.5; color: #0f172a; font-weight: 700; margin-bottom: 8px;">Your purchased resources are ready</div>
+              <div style="font-size: 14px; line-height: 1.7; color: #334155;">${itemSummary.replace(/\n/g, '<br>')}</div>
+            </td>
+          </tr>
+        </table>
+      `
+      : '';
+
     // Send confirmation email to user
     // Using a simple HTML email template
     const emailHTML = `
       <!DOCTYPE html>
       <html>
         <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>${subjectLine}</title>
           <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #22C55E 0%, #16a34a 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center; }
-            .header h1 { margin: 0; font-size: 28px; }
-            .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
-            .content p { margin: 15px 0; }
-            .highlight { color: #22C55E; font-weight: 600; }
-            .cta-button { display: inline-block; background: #22C55E; color: white; padding: 12px 30px; border-radius: 6px; text-decoration: none; margin: 20px 0; font-weight: 600; }
-            .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #666; }
+            body { margin: 0; padding: 0; background: #f3f6f3; font-family: Arial, Helvetica, sans-serif; color: #1f2937; }
+            table { border-collapse: collapse; }
+            img { border: 0; outline: none; }
+            a { text-decoration: none; }
+            .container { width: 100%; max-width: 620px; margin: 0 auto; background: #ffffff; }
+            .header { background: linear-gradient(135deg, #0b3a2c 0%, #123f2f 50%, #1a4b38 100%); padding: 28px 32px; text-align: center; }
+            .logo-wrap { display: inline-block; text-align: center; background: #ffffff; border: 1px solid rgba(255,255,255,0.2); border-radius: 16px; padding: 10px 18px; box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
+            .logo { width: 52px; height: 52px; vertical-align: middle; border-radius: 12px; }
+            .brand { display: inline-block; vertical-align: middle; margin-left: 12px; color: #0f172a; font-size: 13px; letter-spacing: 0.12em; font-weight: 700; text-transform: uppercase; text-align: left; }
+            .content { padding: 36px 32px 24px; background: #ffffff; }
+            .eyebrow { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #1c7a5b; font-weight: 700; margin: 0 0 12px; }
+            .title { font-size: 30px; line-height: 1.2; color: #0f172a; margin: 0 0 18px; font-weight: 700; }
+            .message { font-size: 16px; line-height: 1.7; color: #334155; margin: 0 0 18px; }
+            .highlight-box { background: #f3f9f6; border: 1px solid #d7e9e0; border-radius: 12px; padding: 16px 18px; margin: 20px 0; }
+            .detail-row { font-size: 15px; color: #1f2937; margin: 10px 0; }
+            .cta { display: inline-block; background: #1d9a63; color: #ffffff; padding: 13px 22px; border-radius: 8px; font-size: 14px; font-weight: 700; letter-spacing: 0.02em; margin: 20px 0 8px; }
+            .cta-secondary { display: inline-block; background: #ffffff; color: #0f172a; border: 1px solid #dfe8e3; padding: 13px 22px; border-radius: 8px; font-size: 14px; font-weight: 700; letter-spacing: 0.02em; margin-left: 10px; }
+            .footer { background: #f7faf8; border-top: 1px solid #dfe8e3; padding: 28px 32px 32px; text-align: center; }
+            .footer-title { font-size: 18px; line-height: 1.3; color: #0f172a; margin: 0 0 10px; font-weight: 700; }
+            .socials { font-size: 13px; color: #475569; margin: 18px 0 0; text-align: center; }
+            .social-link { display: inline-block; width: 32px; height: 32px; border-radius: 50%; margin: 0 6px; text-align: center; line-height: 32px; vertical-align: middle; }
+            .social-link svg { width: 14px; height: 14px; vertical-align: middle; }
+            .footer-actions { margin-top: 18px; display: inline-block; }
+            .newsletter { background: #0f172a; border-radius: 10px; padding: 14px 16px; display: inline-block; color: #ffffff; font-size: 13px; font-weight: 700; margin-right: 10px; }
+            .portal-link { background: #e8f6ef; border: 1px solid #cfeadf; border-radius: 10px; padding: 14px 16px; display: inline-block; color: #0d5d46; font-size: 13px; font-weight: 700; }
+            .muted { color: #64748b; font-size: 12px; }
+            @media (max-width: 620px) {
+              .content, .header, .footer { padding-left: 18px !important; padding-right: 18px !important; }
+              .title { font-size: 24px !important; }
+              .message { font-size: 14px !important; }
+            }
           </style>
         </head>
         <body>
-          <div class="container">
-            <div class="header">
-              <h1> You're All Set!</h1>
-            </div>
-            <div class="content">
-              <p>Hi there!</p>
-              <p>Thank you for subscribing to <span class="highlight">${service}</span>! We're excited to have you on board.</p>
-              <p>We'll notify you as soon as this service launches. In the meantime, feel free to explore our platform and check out other programs we offer.</p>
-              <p>If you have any questions, reach out to us anytime—we're here to help!</p>
-              <a href="${process.env.VITE_APP_URL || 'https://pazthrivingtribe.com'}" class="cta-button">Visit PAZ Thriving Tribe</a>
-              <div class="footer">
-                <p><strong>Email:</strong> ${cleanEmail}</p>
-                <p><strong>Service:</strong> ${service}</p>
-                <p><strong>Subscribed:</strong> ${new Date(timestamp || Date.now()).toLocaleDateString()}</p>
-              </div>
-            </div>
+          <div style="padding: 24px 12px;">
+            <table role="presentation" class="container" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td class="header">
+                  <div class="logo-wrap">
+                    <img src="${logoUrl}" alt="PAZ Thriving Tribe" class="logo" />
+                    <span class="brand">PAZ<br />Thriving Tribe</span>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="content">
+                  <p class="eyebrow">Good news</p>
+                  <h1 class="title">${subjectLine}</h1>
+                  <p class="message">${recipientName}</p>
+                  <p class="message">${bodyCopy}</p>
+
+                  <div class="highlight-box">
+                    ${itemList || '<div class="detail-row"><strong>Order update:</strong> Your purchase has been processed successfully.</div>'}
+                    ${fileLabel || '<div class="detail-row"><strong>Delivery:</strong> Your product is now ready for access.</div>'}
+                    ${orderNumber ? `<div class="detail-row"><strong>Order number:</strong> ${orderNumber}</div>` : ''}
+                    <div class="detail-row"><strong>Customer email:</strong> ${cleanEmail}</div>
+                  </div>
+
+                  ${productCard}
+
+                  <p class="message">If you have any questions about your order, we are here to support you and help with anything you need.</p>
+                  <div>
+                    <a href="${websiteUrl}" class="cta">View your portal</a>
+                    <a href="mailto:hello@pazthrivingtribe.com" class="cta-secondary">Contact support</a>
+                  </div>
+                </td>
+              </tr>
+              <tr>
+                <td class="footer">
+                  <p class="footer-title">Stay connected with PAZ</p>
+                  <div class="socials">
+                    <a href="https://www.instagram.com" class="social-link">Instagram</a> &nbsp;|&nbsp;
+                    <a href="https://www.facebook.com" class="social-link">Facebook</a> &nbsp;|&nbsp;
+                    <a href="https://www.linkedin.com" class="social-link">LinkedIn</a>
+                  </div>
+                  <div class="footer-actions">
+                    <a href="${websiteUrl}" class="newsletter">Subscribe to our newsletter</a>
+                    <a href="${websiteUrl}" class="portal-link">Visit our portal</a>
+                  </div>
+                  <div class="socials">
+                    <a href="https://www.instagram.com" class="social-link">Instagram</a> &nbsp;|&nbsp;
+                    <a href="https://www.facebook.com" class="social-link">Facebook</a> &nbsp;|&nbsp;
+                    <a href="https://www.linkedin.com" class="social-link">LinkedIn</a>
+                  </div>
+                  <p class="muted" style="margin-top: 18px;">© ${new Date().getFullYear()} PAZ Thriving Tribe. All rights reserved.</p>
+                  <p class="muted">Email: hello@pazthrivingtribe.com &nbsp;|&nbsp; Phone: ${contactPhone}</p>
+                </td>
+              </tr>
+            </table>
           </div>
         </body>
       </html>
@@ -102,11 +192,13 @@ export default async function handler(req, res) {
     console.log(`  Timestamp: ${timestamp}`);
 
     return res.status(200).json({ 
-      success: true, 
+      success: true,
+      subject: subjectLine,
       message: 'Thank you for subscribing! Check your email for confirmation.',
       data: {
         email: cleanEmail,
         service: service,
+        subject: subjectLine,
         subscribedAt: timestamp || new Date().toISOString()
       }
     });

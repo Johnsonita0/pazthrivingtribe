@@ -10,6 +10,8 @@ import AdminDashboard from './AdminDashboard';
 import TeensRegistrationPage from './pages/TeensRegistrationPage';
 import BookSessionPage from './pages/BookSessionPage';
 import FeedbackPage from './pages/FeedbackPage';
+import StorePage from './pages/StorePage';
+import ShopPage from './pages/ShopPage';
 
 const whatsappTips = [
   'Need help today?',
@@ -68,6 +70,7 @@ export default function App() {
   const isRegistrationRoute = ['/teens_reg', '/teens-reg'].includes(location.pathname);
   const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/dashboard');
   const isFeedbackRoute = location.pathname === '/feedback';
+  const isStoreRoute = ['/store', '/shop'].includes(location.pathname);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -96,6 +99,75 @@ export default function App() {
       console.debug('Visitor tracking unavailable:', error);
     });
   }, [isAdminRoute, location.pathname]);
+
+  const defaultStoreProducts = [
+    {
+      id: 'ebook-confidence',
+      title: 'Confidence for Teens',
+      description: 'A step-by-step digital guide to help young people build confidence, healthy habits, and emotional resilience.',
+      price: 5500,
+      category: 'Ebook',
+      cover: '/logo/logomain.png',
+      fileUrl: 'https://example.com/files/confidence-for-teens.pdf'
+    },
+    {
+      id: 'ebook-parent-guide',
+      title: 'Thriving Parent Guide',
+      description: 'Practical strategies for communication, boundaries, and positive family routines with everyday life examples.',
+      price: 7000,
+      category: 'Guide',
+      cover: '/logo/logo2.jpeg',
+      fileUrl: 'https://example.com/files/thriving-parent-guide.pdf'
+    }
+  ];
+
+  const defaultStoreBankAccount = {
+    bankName: 'Access Bank',
+    accountName: 'Paz Thriving Tribe',
+    accountNumber: '0012345678',
+    accountType: 'Savings',
+    swiftCode: 'ABNGNGLA',
+    note: 'Please include your order name and email in the transfer narration.'
+  };
+
+  const [storeProducts, setStoreProducts] = useState(() => {
+    try {
+      const savedProducts = JSON.parse(localStorage.getItem('paz_store_products') || 'null');
+      return Array.isArray(savedProducts) && savedProducts.length ? savedProducts : defaultStoreProducts;
+    } catch (error) {
+      return defaultStoreProducts;
+    }
+  });
+
+  const [storeBankAccount, setStoreBankAccount] = useState(() => {
+    try {
+      const savedBank = JSON.parse(localStorage.getItem('paz_store_bank_account') || 'null');
+      return savedBank || defaultStoreBankAccount;
+    } catch (error) {
+      return defaultStoreBankAccount;
+    }
+  });
+
+  const [shopOrders, setShopOrders] = useState(() => {
+    try {
+      const savedOrders = JSON.parse(localStorage.getItem('paz_shop_orders') || '[]');
+      return Array.isArray(savedOrders) ? savedOrders : [];
+    } catch (error) {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('paz_store_products', JSON.stringify(storeProducts));
+  }, [storeProducts]);
+
+  useEffect(() => {
+    localStorage.setItem('paz_store_bank_account', JSON.stringify(storeBankAccount));
+  }, [storeBankAccount]);
+
+  useEffect(() => {
+    localStorage.setItem('paz_shop_orders', JSON.stringify(shopOrders));
+  }, [shopOrders]);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -1790,7 +1862,12 @@ export default function App() {
         @keyframes bounce-default { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 
         /* Layout Framework Containers */
-        .public-website-container { width: 100% !important; margin: 0; padding: 0; }
+        .public-website-container {
+          width: 100% !important;
+          margin: 0;
+          padding: 92px 0 0;
+          box-sizing: border-box;
+        }
         
         /* SLIDING HERO SECTION FRAMEWORKS */
         .hero-section {
@@ -3746,6 +3823,8 @@ export default function App() {
           <Route path="/teens-reg" element={<TeensRegistrationPage />} />
           <Route path="/book-session" element={<BookSessionPage />} />
           <Route path="/feedback" element={<FeedbackPage />} />
+          <Route path="/store" element={<div className="public-website-container"><StorePage /></div>} />
+          <Route path="/shop" element={<div className="public-website-container"><ShopPage onOrderSubmitted={setShopOrders} /></div>} />
           <Route path="/care-counseling" element={<CareCounselingPage />} />
           <Route path="/services/family" element={<ComingSoonPage title="Thriving Parents" description="Empowering parents with tools and wisdom" />} />
           <Route path="/services/marriage" element={<ComingSoonPage title="Thriving Women" description="Transforming lives, building confidence" />} />
@@ -3847,6 +3926,12 @@ export default function App() {
                 resetLoading={resetLoading}
                 resetMessage={resetMessage}
                 handleForgotPassword={handleForgotPassword}
+                storeProducts={storeProducts}
+                setStoreProducts={setStoreProducts}
+                storeBankAccount={storeBankAccount}
+                setStoreBankAccount={setStoreBankAccount}
+                shopOrders={shopOrders}
+                setShopOrders={setShopOrders}
               />
             }
           />
@@ -3949,6 +4034,12 @@ export default function App() {
                 resetLoading={resetLoading}
                 resetMessage={resetMessage}
                 handleForgotPassword={handleForgotPassword}
+                storeProducts={storeProducts}
+                setStoreProducts={setStoreProducts}
+                storeBankAccount={storeBankAccount}
+                setStoreBankAccount={setStoreBankAccount}
+                shopOrders={shopOrders}
+                setShopOrders={setShopOrders}
               />
             }
           />
@@ -3957,7 +4048,7 @@ export default function App() {
         </Routes>
 
         {/* Contact Us Section */}
-        {!isRegistrationRoute && !isAdminRoute && !isFeedbackRoute && (
+        {!isRegistrationRoute && !isAdminRoute && !isFeedbackRoute && !isStoreRoute && (
           <section id="contact" className="contact-us-section">
             <div className="contact-container-wrapper">
             <div className="contact-header-block">
@@ -4059,7 +4150,7 @@ export default function App() {
         )}
 
         {/* Global Multi-Column Footer Component */}
-        {!isAdminRoute && !isFeedbackRoute && (
+        {!isAdminRoute && !isFeedbackRoute && !isStoreRoute && (
           <footer className="workspace-fluid-footer">
             <div className="footer-columns-container">
               <div className="footer-brand-column">

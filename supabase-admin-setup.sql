@@ -2,6 +2,168 @@
 -- Required for gen_random_uuid() used in the admin table.
 create extension if not exists pgcrypto;
 
+-- ==========================================================
+-- Public storage bucket for admin proof uploads / previews
+-- ==========================================================
+-- Bucket name is intentionally fixed and public so uploaded files can
+-- always be previewed through the public URL without requiring auth.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('prof-upload', 'prof-upload', true, 5242880, ARRAY['image/png','image/jpeg','image/jpg','image/webp','application/pdf'])
+on conflict (id) do update
+set public = true,
+    file_size_limit = 5242880,
+    allowed_mime_types = excluded.allowed_mime_types;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'public preview for prof upload files'
+  ) THEN
+    EXECUTE 'CREATE POLICY "public preview for prof upload files" ON storage.objects FOR SELECT USING (bucket_id = ''prof-upload'');';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'authenticated upload to prof upload bucket'
+  ) THEN
+    EXECUTE 'CREATE POLICY "authenticated upload to prof upload bucket" ON storage.objects FOR INSERT WITH CHECK (bucket_id = ''prof-upload'' AND auth.role() = ''authenticated'');';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'authenticated update to prof upload bucket'
+  ) THEN
+    EXECUTE 'CREATE POLICY "authenticated update to prof upload bucket" ON storage.objects FOR UPDATE USING (bucket_id = ''prof-upload'' AND auth.role() = ''authenticated'') WITH CHECK (bucket_id = ''prof-upload'' AND auth.role() = ''authenticated'');';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'authenticated delete from prof upload bucket'
+  ) THEN
+    EXECUTE 'CREATE POLICY "authenticated delete from prof upload bucket" ON storage.objects FOR DELETE USING (bucket_id = ''prof-upload'' AND auth.role() = ''authenticated'');';
+  END IF;
+END
+$$;
+
+create or replace function public.prof_upload_object_url(file_path text)
+returns text
+language sql
+stable
+as $$
+  select case
+    when file_path is null or trim(file_path) = '' then null
+    else '/storage/v1/object/public/prof-upload/' || file_path
+  end;
+$$;
+
+-- E-commerce tables needed by the storefront and admin dashboard
+create table if not exists store_products (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  description text,
+  price numeric(12,2) default 0,
+  category text,
+  cover text,
+  file_url text,
+  rating numeric(3,2) default 0,
+  reviews integer default 0,
+  in_stock boolean default true,
+  stock_count integer default 0,
+  prime boolean default false,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists store_bank_accounts (
+  id uuid primary key default gen_random_uuid(),
+  bank_name text,
+  account_name text,
+  account_number text,
+  account_type text,
+  swift_code text,
+  note text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists shop_orders (
+  id uuid primary key default gen_random_uuid(),
+  order_number text unique not null,
+  customer_name text,
+  email text,
+  phone text,
+  subtotal numeric(12,2) default 0,
+  total numeric(12,2) default 0,
+  notes text,
+  status text default 'pending',
+  payment_proof_path text,
+  payment_proof_url text,
+  payment_reference text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists shop_order_items (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid references shop_orders(id) on delete cascade,
+  product_id text,
+  title text,
+  price numeric(12,2) default 0,
+  quantity integer default 1,
+  created_at timestamptz default now()
+);
+
+create index if not exists idx_store_products_category on store_products(category);
+create index if not exists idx_shop_orders_order_number on shop_orders(order_number);
+create index if not exists idx_shop_order_items_order_id on shop_order_items(order_id);
+
+create or replace function public.get_shop_order_with_items(p_order_id uuid)
+returns table (
+  order_id uuid,
+  order_number text,
+  customer_name text,
+  email text,
+  phone text,
+  subtotal numeric,
+  total numeric,
+  status text,
+  payment_proof_path text,
+  payment_proof_url text,
+  order_items jsonb
+)
+language plpgsql
+as $$
+begin
+  return query
+  with order_row as (
+    select *
+    from shop_orders
+    where id = p_order_id
+  )
+  select
+    o.id,
+    o.order_number,
+    o.customer_name,
+    o.email,
+    o.phone,
+    o.subtotal,
+    o.total,
+    o.status,
+    o.payment_proof_path,
+    o.payment_proof_url,
+    coalesce(jsonb_agg(jsonb_build_object(
+      'product_id', i.product_id,
+      'title', i.title,
+      'price', i.price,
+      'quantity', i.quantity
+    ) order by i.created_at) filter (where i.id is not null), '[]'::jsonb)
+  from order_row o
+  left join shop_order_items i on i.order_id = o.id
+  group by o.id, o.order_number, o.customer_name, o.email, o.phone, o.subtotal, o.total, o.status, o.payment_proof_path, o.payment_proof_url;
+end;
+$$;
+
 -- Create a table to register trusted site admins.
 create table if not exists site_admins (
   id uuid primary key default gen_random_uuid(),
