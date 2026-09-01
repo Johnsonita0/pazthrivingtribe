@@ -401,12 +401,20 @@ const readStoreData = () => {
   try {
     const storedProducts = JSON.parse(localStorage.getItem('paz_store_products') || 'null');
     const storedBank = JSON.parse(localStorage.getItem('paz_store_bank_account') || 'null');
-    
-    // Use new defaults if stored products are old/missing or fewer than 20
-    const productsToUse = (Array.isArray(storedProducts) && storedProducts.length >= 20) ? storedProducts : defaultProducts;
-    
+    const safeStoredProducts = Array.isArray(storedProducts) ? storedProducts.filter(Boolean) : [];
+    const mergedProducts = [...safeStoredProducts];
+    const seenIds = new Set(mergedProducts.map((product) => product?.id).filter(Boolean));
+
+    defaultProducts.forEach((product) => {
+      if (mergedProducts.length >= 20) return;
+      if (!seenIds.has(product.id)) {
+        mergedProducts.push(product);
+        seenIds.add(product.id);
+      }
+    });
+
     return {
-      products: productsToUse,
+      products: mergedProducts.slice(0, 20),
       bankAccount: storedBank || defaultBankAccount
     };
   } catch (error) {
@@ -576,6 +584,12 @@ export default function ShopPage({ onOrderSubmitted }) {
   };
 
   const addToCart = (product) => {
+    if (product.inStock === false || Number(product.stockCount || 0) <= 0) {
+      setToast({ message: `${product.title} is currently out of stock.`, type: 'error' });
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+
     setCartReminderVisible(false);
     setCart((current) => {
       const existing = current.find((item) => item.id === product.id);
@@ -585,7 +599,6 @@ export default function ShopPage({ onOrderSubmitted }) {
           )
         : [...current, { ...product, quantity: 1 }];
       
-      // Show toast notification
       setToast({
         message: `✓ ${product.title} added to cart!`,
         type: 'success'
@@ -1204,12 +1217,16 @@ export default function ShopPage({ onOrderSubmitted }) {
                       {/* Stock Info - Tight */}
                       <div style={{
                         fontSize: '11px',
-                        color: product.stockCount < 10 ? '#B12704' : '#188a00',
+                        color: product.inStock === false || Number(product.stockCount || 0) <= 0 ? '#B12704' : product.stockCount < 10 ? '#B12704' : '#188a00',
                         marginBottom: '8px',
-                        fontWeight: product.stockCount < 10 ? '600' : 'normal',
+                        fontWeight: product.inStock === false || Number(product.stockCount || 0) <= 0 ? '600' : product.stockCount < 10 ? '600' : 'normal',
                         letterSpacing: '0.2px'
                       }}>
-                        {product.stockCount < 10 ? `Only ${product.stockCount} left` : 'In stock'}
+                        {product.inStock === false || Number(product.stockCount || 0) <= 0
+                          ? 'Out of stock'
+                          : product.stockCount < 10
+                            ? `Only ${product.stockCount} left`
+                            : 'In stock'}
                       </div>
 
                       {/* Price - Bold & Prominent */}
@@ -1227,16 +1244,17 @@ export default function ShopPage({ onOrderSubmitted }) {
                     {/* Add to Cart Button - Fixed at Bottom */}
                     <button
                       onClick={() => addToCart(product)}
+                      disabled={product.inStock === false || Number(product.stockCount || 0) <= 0}
                       style={{
                         width: '100%',
-                        background: 'linear-gradient(135deg, #FF9900 0%, #FF8C00 100%)',
+                        background: product.inStock === false || Number(product.stockCount || 0) <= 0 ? '#e5e7eb' : 'linear-gradient(135deg, #FF9900 0%, #FF8C00 100%)',
                         border: 'none',
                         borderRadius: '0',
                         padding: isVerySmallScreen ? '8px 6px' : isSmallScreen ? '9px 8px' : '10px 12px',
                         fontWeight: '600',
-                        cursor: 'pointer',
+                        cursor: product.inStock === false || Number(product.stockCount || 0) <= 0 ? 'not-allowed' : 'pointer',
                         fontSize: isVerySmallScreen ? '10px' : isSmallScreen ? '11px' : '13px',
-                        color: '#111',
+                        color: product.inStock === false || Number(product.stockCount || 0) <= 0 ? '#6b7280' : '#111',
                         transition: 'all 0.2s ease',
                         display: 'flex',
                         alignItems: 'center',
@@ -1245,14 +1263,18 @@ export default function ShopPage({ onOrderSubmitted }) {
                         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.3)'
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'linear-gradient(135deg, #FF8C00 0%, #FF7A00 100%)';
+                        if (product.inStock !== false && Number(product.stockCount || 0) > 0) {
+                          e.currentTarget.style.background = 'linear-gradient(135deg, #FF8C00 0%, #FF7A00 100%)';
+                        }
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'linear-gradient(135deg, #FF9900 0%, #FF8C00 100%)';
+                        if (product.inStock !== false && Number(product.stockCount || 0) > 0) {
+                          e.currentTarget.style.background = 'linear-gradient(135deg, #FF9900 0%, #FF8C00 100%)';
+                        }
                       }}
                     >
                       <i className="fa-solid fa-cart-plus" style={{ fontSize: '14px' }}></i>
-                      <span>Add to Cart</span>
+                      <span>{product.inStock === false || Number(product.stockCount || 0) <= 0 ? 'Sold out' : 'Add to Cart'}</span>
                     </button>
                   </div>
                 ))}

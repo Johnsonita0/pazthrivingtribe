@@ -160,7 +160,9 @@ export default function AdminDashboard(props) {
     price: '',
     category: 'Ebook',
     fileUrl: '',
-    cover: '/logo/logomain.png'
+    cover: '/logo/logomain.png',
+    inStock: true,
+    stockCount: ''
   });
 
   const [activeDashboardView, setActiveDashboardView] = useState('visitors');
@@ -175,6 +177,7 @@ export default function AdminDashboard(props) {
   const [postingToSlider, setPostingToSlider] = useState(false);
   const [testimonialConfirmation, setTestimonialConfirmation] = useState(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
+  const [productDeleteTarget, setProductDeleteTarget] = useState(null);
 
   useEffect(() => {
     if (!selectedOrder) return;
@@ -478,23 +481,88 @@ export default function AdminDashboard(props) {
     setViewingRow(rowData);
   };
 
+  const [editingStoreProductId, setEditingStoreProductId] = useState(null);
+
+  const resetStoreProductForm = () => {
+    setStoreProductForm({ title: '', description: '', price: '', category: 'Ebook', fileUrl: '', cover: '/logo/logomain.png', inStock: true, stockCount: '' });
+    setEditingStoreProductId(null);
+  };
+
   const handleStoreProductSubmit = (event) => {
     event.preventDefault();
     if (!storeProductForm.title || !storeProductForm.description || !storeProductForm.price) return;
 
-    const newProduct = {
-      id: `store-${Date.now()}`,
+    const normalizedInStock = storeProductForm.inStock !== false;
+    const parsedStockCount = Number(storeProductForm.stockCount ?? 0);
+    const productValues = {
       title: storeProductForm.title.trim(),
       description: storeProductForm.description.trim(),
       price: Number(storeProductForm.price) || 0,
       category: storeProductForm.category || 'Ebook',
       fileUrl: storeProductForm.fileUrl.trim() || 'https://example.com/file.pdf',
-      cover: storeProductForm.cover.trim() || '/logo/logomain.png'
+      cover: storeProductForm.cover.trim() || '/logo/logomain.png',
+      inStock: normalizedInStock,
+      stockCount: normalizedInStock ? (Number.isFinite(parsedStockCount) && parsedStockCount >= 0 ? parsedStockCount : 1) : 0
     };
 
-    setStoreProducts((current = []) => [...(Array.isArray(current) ? current : []), newProduct]);
-    setStoreProductForm({ title: '', description: '', price: '', category: 'Ebook', fileUrl: '', cover: '/logo/logomain.png' });
-    showAdminToast('success', 'Product saved', `${newProduct.title} is now available in the digital store.`);
+    if (editingStoreProductId) {
+      setStoreProducts((current = []) => (Array.isArray(current) ? current : []).map((product) => (
+        product.id === editingStoreProductId
+          ? { ...product, ...productValues }
+          : product
+      )));
+      showAdminToast('success', 'Product updated', `${productValues.title} has been updated on the public store.`);
+    } else {
+      const newProduct = {
+        id: `store-${Date.now()}`,
+        ...productValues
+      };
+      setStoreProducts((current = []) => [...(Array.isArray(current) ? current : []), newProduct]);
+      showAdminToast('success', 'Product saved', `${newProduct.title} is now available in the digital store.`);
+    }
+
+    resetStoreProductForm();
+  };
+
+  const handleEditStoreProduct = (product) => {
+    if (!product) return;
+    setEditingStoreProductId(product.id);
+    setStoreProductForm({
+      title: product.title || '',
+      description: product.description || '',
+      price: product.price ?? '',
+      category: product.category || 'Ebook',
+      fileUrl: product.fileUrl || '',
+      cover: product.cover || '/logo/logomain.png',
+      inStock: product.inStock !== false,
+      stockCount: Number(product.stockCount ?? 0) > 0 ? Number(product.stockCount ?? 0) : ''
+    });
+  };
+
+  const toggleStoreProductAvailability = (productId) => {
+    setStoreProducts((current = []) => (Array.isArray(current) ? current : []).map((product) => {
+      if (product.id !== productId) return product;
+      const nextInStock = product.inStock === false;
+      return {
+        ...product,
+        inStock: nextInStock,
+        stockCount: nextInStock ? Math.max(Number(product.stockCount || 0), 1) : 0
+      };
+    }));
+  };
+
+  const handleDeleteStoreProduct = (productId) => {
+    if (!productId) return;
+    setStoreProducts((current = []) => (Array.isArray(current) ? current : []).filter((product) => product.id !== productId));
+    if (editingStoreProductId === productId) {
+      resetStoreProductForm();
+    }
+    showAdminToast('success', 'Product removed', 'That product has been removed from the storefront and shop pages.');
+  };
+
+  const confirmDeleteStoreProduct = (product) => {
+    if (!product) return;
+    setProductDeleteTarget(product);
   };
 
   const handleBankAccountChange = (field, value) => {
@@ -1072,6 +1140,13 @@ export default function AdminDashboard(props) {
           .commerce-tab-row{display:flex;gap:8px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;ms-overflow-style:none;padding-bottom:8px;border-bottom:1px solid #dfe7ef}
           .commerce-panel-shell{width:100%;max-width:none;box-sizing:border-box;overflow:hidden}
           .commerce-input-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;width:100%;max-width:100%;box-sizing:border-box}
+          .commerce-product-list{display:grid;gap:12px}
+          .commerce-product-card{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:12px;align-items:center;background:linear-gradient(180deg,#ffffff,#f8fafc);border:1px solid #e2e8f0;border-radius:16px;padding:12px 14px;box-shadow:0 8px 18px rgba(15,23,42,0.04)}
+          .commerce-product-media{width:96px;height:96px;border-radius:14px;overflow:hidden;background:#f1f5f9;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center}
+          .commerce-product-media img{width:100%;height:100%;object-fit:cover;display:block}
+          .commerce-product-meta{min-width:0}
+          .commerce-product-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
+          .commerce-product-actions button{min-width:72px}
           .view-modal-content{max-width:100%;box-sizing:border-box}
           .table{min-width:1400px;width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e7eb;border-radius:14px}
           .table th,.table td{padding:12px 14px;text-align:left;vertical-align:top;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1105,7 +1180,8 @@ export default function AdminDashboard(props) {
           @media print{@page{size:A4 portrait;margin:12mm}body *{visibility:hidden!important}.view-modal-overlay,.view-modal-overlay *{visibility:visible!important}.view-modal-overlay{position:static!important;background:transparent!important;padding:0!important}.printable-response-card{position:absolute!important;inset:0!important;width:100%!important;max-width:none!important;max-height:none!important;overflow:visible!important;padding:0!important;border:0!important;box-shadow:none!important;border-radius:0!important}.printable-response-card button,.printable-response-card i{display:none!important}.response-letterhead{border-bottom:2px solid #e88767!important}.response-details-grid{gap:6px!important;padding:10px 0!important}.response-detail-row{font-size:9pt!important;break-inside:avoid}.response-detail-label{font-size:7pt!important;padding:5px 7px!important}.response-detail-row>div{padding:5px 7px!important}}
           @media(min-width:900px){.stat-card{flex:1 1 calc(25% - 16px)}.stat-card .value{font-size:3rem}}
           @media(max-width:640px){.stat-card{min-width:0!important;width:100%;min-height:98px;padding:10px 4px}.stat-card .value{font-size:1.9rem}.dashboard-actions-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-items:center;width:100%}.dashboard-filters{grid-column:1/-1;margin-left:0;flex-wrap:nowrap;overflow-x:auto;max-width:100%;padding-bottom:2px}.dashboard-filters label{flex:0 0 auto}.dashboard-filters select{min-width:100px!important;width:100px}.dashboard-filters .dashboard-action-button{flex:0 0 46px}.table th,.table td{padding:10px}.table{min-width:1200px;width:100%;overflow-x:auto}.table th:last-child{position:relative;background:#f8fafc;border-left:1px solid #e5e7eb;text-align:center;max-width:none;min-width:120px}.table td:last-child{position:relative;background:#fff;border-left:1px solid #f3f4f6;text-align:center}.table tbody tr:hover td:last-child{background:#fff}.admin-toast{right:12px;bottom:12px;max-width:calc(100vw - 24px)}.commerce-panel-shell{padding:14px 12px!important}.commerce-tab-row{padding-bottom:6px}.commerce-input-grid{grid-template-columns:1fr!important;gap:10px!important;minmax:0!important}}
-          @media(max-width:640px){.admin-dashboard-page{padding:16px 8px 24px!important}.dashboard-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.stat-card{min-width:0!important;width:100%;min-height:98px;padding:10px 4px}.stat-card .label{font-size:.63rem;line-height:1.1}.stat-card .value{font-size:1.55rem;margin-top:6px}.dashboard-refresh-button,.dashboard-action-button{width:46px;height:46px;padding:0!important;display:inline-grid;place-items:center}.dashboard-refresh-button span,.dashboard-action-button span{display:none}.dashboard-action-button i{margin:0;font-size:1rem}}
+          @media(max-width:720px){.commerce-product-card{grid-template-columns:1fr;align-items:flex-start}.commerce-product-media{width:100%;height:180px}.commerce-product-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}.commerce-product-actions button{width:100%;min-width:0}.commerce-product-meta{width:100%}}
+          @media(max-width:640px){.admin-dashboard-page{padding:16px 8px 24px!important}.dashboard-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.stat-card{min-width:0!important;width:100%;min-height:98px;padding:10px 4px}.stat-card .label{font-size:.63rem;line-height:1.1}.stat-card .value{font-size:1.55rem;margin-top:6px}.dashboard-refresh-button,.dashboard-action-button{width:46px;height:46px;padding:0!important;display:inline-grid;place-items:center}.dashboard-refresh-button span,.dashboard-action-button span{display:none}.dashboard-action-button i{margin:0;font-size:1rem}.commerce-product-actions{grid-template-columns:1fr 1fr}.commerce-product-card{padding:12px}.commerce-product-title{white-space:normal!important;line-height:1.35}.commerce-product-desc{white-space:normal!important;line-height:1.5}.commerce-product-badges{margin-bottom:8px}}
           .publish-testimonial-button{position:relative}.publish-testimonial-button::after{content:attr(data-tooltip);position:absolute;right:0;bottom:calc(100% + 9px);width:250px;padding:9px 11px;border-radius:6px;background:#24333a;color:#fff;font-size:.75rem;font-weight:600;line-height:1.4;text-align:left;opacity:0;pointer-events:none;transform:translateY(4px);transition:opacity .2s,transform .2s;z-index:3}.publish-testimonial-button::before{content:'';position:absolute;right:18px;bottom:calc(100% + 3px);border:6px solid transparent;border-top-color:#24333a;opacity:0;transition:opacity .2s;z-index:3}.publish-testimonial-button:hover::after,.publish-testimonial-button:hover::before,.publish-testimonial-button:focus-visible::after,.publish-testimonial-button:focus-visible::before{opacity:1;transform:translateY(0)}
           @media(max-width:640px){.publish-testimonial-button::after{right:auto;left:0;width:210px}.publish-testimonial-button::before{right:auto;left:18px}}
         `}</style>
@@ -1179,11 +1255,96 @@ export default function AdminDashboard(props) {
                         <input type="number" value={storeProductForm.price} onChange={(event) => setStoreProductForm((current) => ({ ...current, price: event.target.value }))} placeholder="Price in NGN" style={adminFieldStyle} />
                         <input value={storeProductForm.fileUrl} onChange={(event) => setStoreProductForm((current) => ({ ...current, fileUrl: event.target.value }))} placeholder="File URL" style={adminFieldStyle} />
                       </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
+                        <select
+                          value={storeProductForm.inStock ? 'available' : 'out-of-stock'}
+                          onChange={(event) => setStoreProductForm((current) => ({ ...current, inStock: event.target.value === 'available' }))}
+                          style={adminFieldStyle}
+                        >
+                          <option value="available">Available</option>
+                          <option value="out-of-stock">Out of stock</option>
+                        </select>
+                        <input
+                          type="number"
+                          min="0"
+                          value={storeProductForm.stockCount}
+                          onChange={(event) => setStoreProductForm((current) => ({ ...current, stockCount: event.target.value }))}
+                          placeholder="Stock count"
+                          style={adminFieldStyle}
+                        />
+                      </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center' }}>
                         <input value={storeProductForm.cover} onChange={(event) => setStoreProductForm((current) => ({ ...current, cover: event.target.value }))} placeholder="Cover image URL" style={{ ...adminFieldStyle, flex: 1 }} />
-                        <button type="submit" style={{ border: 'none', background: 'linear-gradient(135deg, #f59e0b, #ef4444)', color: '#fff', borderRadius: '12px', padding: '12px 18px', fontWeight: 800, cursor: 'pointer', boxShadow: '0 12px 20px rgba(245, 158, 11, 0.28)' }}>Add product</button>
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                          <button type="submit" style={{ border: 'none', background: 'linear-gradient(135deg, #f59e0b, #ef4444)', color: '#fff', borderRadius: '12px', padding: '12px 18px', fontWeight: 800, cursor: 'pointer', boxShadow: '0 12px 20px rgba(245, 158, 11, 0.28)' }}>
+                            {editingStoreProductId ? 'Update product' : 'Add product'}
+                          </button>
+                          {editingStoreProductId && (
+                            <button type="button" onClick={resetStoreProductForm} style={{ border: '1px solid #cbd5e1', background: '#fff', color: '#334155', borderRadius: '12px', padding: '12px 14px', fontWeight: 700, cursor: 'pointer' }}>
+                              Cancel
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </form>
+
+                    <div style={{ marginTop: '24px' }}>
+                      <div style={{ marginBottom: '12px', fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#64748b' }}>Published products</div>
+                      {storeProducts.length > 0 ? (
+                        <div className="commerce-product-list">
+                          {storeProducts.map((product) => {
+                            const isAvailable = product.inStock !== false && Number(product.stockCount || 0) > 0;
+                            return (
+                              <div key={product.id} className="commerce-product-card">
+                                <div className="commerce-product-media">
+                                  <img src={product.cover || '/logo/logomain.png'} alt={product.title} />
+                                </div>
+                                <div className="commerce-product-meta">
+                                  <div className="commerce-product-badges" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
+                                    <span style={{ background: '#e0f2fe', color: '#0369a1', borderRadius: '999px', padding: '4px 8px', fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase' }}>{product.category || 'Ebook'}</span>
+                                    <span style={{ background: isAvailable ? '#dcfce7' : '#fee2e2', color: isAvailable ? '#166534' : '#b91c1c', borderRadius: '999px', padding: '4px 8px', fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase' }}>{isAvailable ? 'Available' : 'Out of stock'}</span>
+                                  </div>
+                                  <div className="commerce-product-title" style={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.title}</div>
+                                  <div className="commerce-product-desc" style={{ color: '#64748b', fontSize: '0.82rem', marginBottom: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.description || 'No description provided yet.'}</div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                    <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>₦{Number(product.price || 0).toLocaleString()}</span>
+                                    <span style={{ color: '#64748b', fontSize: '0.78rem' }}>{product.fileUrl ? 'File attached' : 'No file URL'}</span>
+                                  </div>
+                                </div>
+                                <div className="commerce-product-actions">
+                                  <button type="button" onClick={() => toggleStoreProductAvailability(product.id)} style={{ border: '1px solid #d1d5db', background: '#f8fafc', color: '#1f2937', borderRadius: '10px', padding: '8px 10px', fontWeight: 700, cursor: 'pointer' }}>{isAvailable ? 'Mark sold out' : 'Mark available'}</button>
+                                  <button type="button" onClick={() => handleEditStoreProduct(product)} style={{ border: '1px solid #cbd5e1', background: '#fff', color: '#1f2937', borderRadius: '10px', padding: '8px 10px', fontWeight: 700, cursor: 'pointer' }}>Edit</button>
+                                  <button type="button" onClick={() => confirmDeleteStoreProduct(product)} style={{ border: '1px solid #fecaca', background: '#fff1f2', color: '#b91c1c', borderRadius: '10px', padding: '8px 10px', fontWeight: 700, cursor: 'pointer' }}>Delete</button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div style={{ color: '#64748b', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '12px', padding: '18px', textAlign: 'center' }}>No products published yet.</div>
+                      )}
+                    </div>
+
+                    {productDeleteTarget && (
+                      <div onClick={() => setProductDeleteTarget(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20000, padding: '20px' }}>
+                        <div onClick={(event) => event.stopPropagation()} style={{ width: '100%', maxWidth: '420px', background: '#fff', borderRadius: '18px', boxShadow: '0 30px 80px rgba(15, 23, 42, 0.28)', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                          <div style={{ padding: '22px 22px 14px', borderBottom: '1px solid #eef2f7' }}>
+                            <div style={{ fontSize: '0.76rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#f97316', fontWeight: 800, marginBottom: '8px' }}>Delete product</div>
+                            <h4 style={{ margin: 0, color: '#0f172a', fontSize: '1.3rem', fontWeight: 800 }}>Remove this item?</h4>
+                          </div>
+                          <div style={{ padding: '18px 22px', color: '#475569', lineHeight: 1.6 }}>
+                            This will remove <strong style={{ color: '#0f172a' }}>{productDeleteTarget.title || 'this product'}</strong> from the storefront and shop pages.
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', padding: '0 22px 22px' }}>
+                            <button type="button" onClick={() => setProductDeleteTarget(null)} style={{ border: '1px solid #d1d5db', background: '#fff', color: '#334155', borderRadius: '10px', padding: '10px 16px', fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
+                            <button type="button" onClick={() => {
+                              handleDeleteStoreProduct(productDeleteTarget.id);
+                              setProductDeleteTarget(null);
+                            }} style={{ border: 'none', background: 'linear-gradient(135deg, #ef4444, #b91c1c)', color: '#fff', borderRadius: '10px', padding: '10px 16px', fontWeight: 800, cursor: 'pointer' }}>Delete product</button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -1225,6 +1386,7 @@ export default function AdminDashboard(props) {
                             <th style={{ padding: '12px 14px', textAlign: 'left' }}>Items</th>
                             <th style={{ padding: '12px 14px', textAlign: 'left' }}>Total</th>
                             <th style={{ padding: '12px 14px', textAlign: 'left' }}>Status</th>
+                            <th style={{ padding: '12px 14px', textAlign: 'left' }}>Email</th>
                             <th style={{ padding: '12px 14px', textAlign: 'left' }}>Date</th>
                           </tr>
                         </thead>
@@ -1241,11 +1403,16 @@ export default function AdminDashboard(props) {
                               <td style={{ padding: '12px 14px' }}>
                                 <span style={{ background: order.status === 'paid' ? '#dcfce7' : '#fff7ed', color: order.status === 'paid' ? '#166534' : '#b45309', borderRadius: '999px', padding: '6px 10px', fontSize: '0.76rem', fontWeight: 700, textTransform: 'capitalize' }}>{order.status || 'pending'}</span>
                               </td>
+                              <td style={{ padding: '12px 14px' }}>
+                                <span style={{ background: order.productEmailSent ? '#dcfce7' : '#fef3c7', color: order.productEmailSent ? '#166534' : '#92400e', borderRadius: '999px', padding: '6px 10px', fontSize: '0.76rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                                  {order.productEmailSent ? 'Sent' : 'Not sent'}
+                                </span>
+                              </td>
                               <td style={{ padding: '12px 14px', color: '#475569' }}>{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}</td>
                             </tr>
                           )) : (
                             <tr>
-                              <td colSpan="6" style={{ padding: '22px 14px', textAlign: 'center', color: '#64748b' }}>No checkout orders have been placed yet.</td>
+                              <td colSpan="7" style={{ padding: '22px 14px', textAlign: 'center', color: '#64748b' }}>No checkout orders have been placed yet.</td>
                             </tr>
                           )}
                         </tbody>

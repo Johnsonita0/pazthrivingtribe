@@ -113,8 +113,20 @@ const readStoreData = () => {
   try {
     const storedProducts = JSON.parse(localStorage.getItem('paz_store_products') || 'null');
     const storedBank = JSON.parse(localStorage.getItem('paz_store_bank_account') || 'null');
+    const safeStoredProducts = Array.isArray(storedProducts) ? storedProducts.filter(Boolean) : [];
+    const mergedProducts = [...safeStoredProducts];
+    const seenIds = new Set(mergedProducts.map((product) => product?.id).filter(Boolean));
+
+    defaultProducts.forEach((product) => {
+      if (mergedProducts.length >= 20) return;
+      if (!seenIds.has(product.id)) {
+        mergedProducts.push(product);
+        seenIds.add(product.id);
+      }
+    });
+
     return {
-      products: Array.isArray(storedProducts) && storedProducts.length ? storedProducts : defaultProducts,
+      products: mergedProducts.slice(0, 20),
       bankAccount: storedBank || defaultBankAccount
     };
   } catch (error) {
@@ -168,6 +180,10 @@ export default function StorePage() {
   const subtotal = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0);
 
   const addToCart = (product) => {
+    if (product.inStock === false || Number(product.stockCount || 0) <= 0) {
+      return;
+    }
+
     setCart((current) => {
       const existing = current.find((item) => item.id === product.id);
       if (existing) {
