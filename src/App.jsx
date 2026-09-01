@@ -71,6 +71,7 @@ export default function App() {
   const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/dashboard');
   const isFeedbackRoute = location.pathname === '/feedback';
   const isStoreRoute = ['/store', '/shop'].includes(location.pathname);
+  const isShopMenuActive = ['/store', '/shop'].includes(location.pathname);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -1742,8 +1743,9 @@ export default function App() {
         .nav-navigation-links.mobile-open .nav-link-item,
         .nav-navigation-links.mobile-open .nav-cta-btn { width: 100%; }
         .nav-navigation-links.mobile-open .nav-link-item { padding: 1rem 0; }
-        .nav-link-item { color: var(--text-muted); text-decoration: none; font-size: 0.88rem; font-weight: 600; background: none; border: none; cursor: pointer; padding: 0.65rem 0; font-family: inherit; transition: color 0.2s ease; display: flex; align-items: center; gap: 0.35rem; white-space: nowrap; }
+        .nav-link-item { color: var(--text-muted); text-decoration: none; font-size: 0.88rem; font-weight: 600; background: none; border: none; cursor: pointer; padding: 0.65rem 0; font-family: inherit; transition: color 0.2s ease, background-color 0.2s ease, border-radius 0.2s ease; display: flex; align-items: center; gap: 0.35rem; white-space: nowrap; }
         .nav-link-item:hover { color: var(--text-primary); }
+        .nav-link-item.active { color: var(--text-primary); background: rgba(35, 134, 54, 0.12); border-radius: 8px; padding: 0.65rem 0.8rem; }
         .nav-cta-btn {
           background-color: var(--brand-green); color: white;
           padding: 0.55rem 0.75rem;
@@ -1864,9 +1866,11 @@ export default function App() {
         /* Layout Framework Containers */
         .public-website-container {
           width: 100% !important;
+          max-width: 100% !important;
           margin: 0;
           padding: 92px 0 0;
           box-sizing: border-box;
+          overflow-x: clip;
         }
         
         /* SLIDING HERO SECTION FRAMEWORKS */
@@ -3357,6 +3361,9 @@ export default function App() {
                 </Link>
                 <Link to="/care-counseling" className="nav-link-item" onClick={() => setNavOpen(false)}>
                   <i className="fa-solid fa-hand-holding-heart"></i> Talk & Thrive
+                </Link>
+                <Link to="/store" className={`nav-link-item ${isShopMenuActive ? 'active' : ''}`} onClick={() => setNavOpen(false)}>
+                  <i className="fa-solid fa-bag-shopping"></i> Shop
                 </Link>
                 <Link to="/teens-kids-academy" className="nav-link-item" onClick={() => setNavOpen(false)}>
                   <i className="fa-solid fa-child-reaching"></i> Thriving Pre-teens & Teens

@@ -168,7 +168,7 @@ export default function StorePage() {
   };
 
   return (
-    <div style={{ height: '100dvh', minHeight: '100dvh', overflow: 'hidden', background: '#f5f1ec', color: '#1b1b1b', fontFamily: 'Inter, Arial, sans-serif' }}>
+    <div style={{ minHeight: '100vh', overflowX: 'hidden', background: '#f5f1ec', color: '#1b1b1b', fontFamily: 'Inter, Arial, sans-serif' }}>
       <style>{`
         @keyframes lift {
           0%, 100% { transform: translateY(0px); }
@@ -196,25 +196,96 @@ export default function StorePage() {
         @media (max-width: 920px) {
           .store-landing-grid {
             grid-template-columns: 1fr !important;
-            gap: 14px !important;
+            gap: 18px !important;
+            align-items: start !important;
           }
           .store-landing-panel {
             min-height: 300px !important;
+            max-height: none !important;
+            width: 100% !important;
             margin-top: 0 !important;
+          }
+          .store-landing-card {
+            max-width: 100% !important;
           }
           .store-landing-cta-row {
             margin-top: 18px !important;
+            flex-direction: column !important;
+            align-items: stretch !important;
+          }
+          .store-landing-cta-row button {
+            width: 100% !important;
+          }
+          .store-landing-header {
+            flex-wrap: wrap !important;
+            gap: 12px !important;
+          }
+          .store-landing-header .store-badge {
+            width: 100% !important;
+            justify-content: center !important;
+          }
+        }
+
+        @media (max-width: 620px) {
+          .store-landing-body {
+            padding-left: 14px !important;
+            padding-right: 14px !important;
+            min-height: auto !important;
+          }
+          .store-landing-header {
+            margin-bottom: 18px !important;
+          }
+          .store-landing-header img {
+            width: 42px !important;
+            height: 42px !important;
+          }
+          .store-landing-header > div:first-child > div > div {
+            font-size: 0.62rem !important;
+            letter-spacing: 0.08em !important;
+          }
+          .store-landing-copy {
+            text-align: left !important;
+          }
+          .store-landing-copy h1 {
+            font-size: clamp(2.2rem, 9vw, 3.2rem) !important;
+            line-height: 0.96 !important;
+            max-width: 11ch !important;
+          }
+          .store-landing-copy p {
+            font-size: 0.9rem !important;
+            line-height: 1.55 !important;
+          }
+          .store-landing-feature {
+            padding: 14px !important;
+          }
+          .store-landing-feature-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .store-landing-product-thumb {
+            height: 150px !important;
+          }
+          .store-landing-product-meta {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+          }
+          .store-landing-product-meta strong {
+            font-size: 1.45rem !important;
+          }
+          .store-landing-product-meta button {
+            width: 100% !important;
+          }
+          .store-landing-panel {
+            min-height: 0 !important;
           }
         }
       `}</style>
 
       <div style={{
         background: 'linear-gradient(135deg, #0f2d2a 0%, #163f3b 32%, #1f766a 100%)',
-        height: '100dvh',
-        minHeight: '100dvh',
-        padding: '20px 0 0',
+        minHeight: '100vh',
+        padding: '20px 0 32px',
         position: 'relative',
-        overflow: 'hidden'
+        overflowX: 'hidden'
       }}>
         <div style={{
           position: 'absolute',
@@ -223,8 +294,8 @@ export default function StorePage() {
           pointerEvents: 'none'
         }} />
 
-        <div style={{ maxWidth: '1360px', height: '100%', margin: '0 auto', padding: '0 24px', position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div className="store-landing-body" style={{ maxWidth: '1360px', minHeight: '100vh', margin: '0 auto', padding: '0 24px', position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <header className="store-landing-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
               <img src="/logo/logomain.png" alt="Paz Thriving Tribe logo" style={{ width: '52px', height: '52px', borderRadius: '16px', objectFit: 'cover' }} />
               <div>
@@ -232,7 +303,7 @@ export default function StorePage() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
+            <div className="store-badge" style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
               <div style={{
                 background: 'rgba(255,255,255,0.08)',
                 border: '1px solid rgba(255,255,255,0.15)',
@@ -320,10 +391,10 @@ export default function StorePage() {
               </div>
             </div>
 
-            <div className="store-landing-card store-landing-panel" style={{ position: 'relative', minHeight: '370px', maxHeight: '440px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="store-landing-card store-landing-panel" style={{ position: 'relative', width: '100%', maxWidth: '680px', minHeight: '370px', maxHeight: '440px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginLeft: 'auto', marginRight: '0' }}>
               <div style={{
                 position: 'absolute',
-                inset: '18px 0 0 60px',
+                inset: '18px 24px 0 24px',
                 background: 'linear-gradient(135deg, #f7f4ef 0%, #eef4ed 100%)',
                 borderRadius: '32px',
                 boxShadow: '0 28px 52px rgba(6, 18, 16, 0.22)'
@@ -373,8 +444,8 @@ export default function StorePage() {
                     </button>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '170px 1fr', gap: '16px', alignItems: 'center' }}>
-                    <div style={{
+                  <div className="store-landing-feature-grid" style={{ display: 'grid', gridTemplateColumns: '170px 1fr', gap: '16px', alignItems: 'center' }}>
+                    <div className="store-landing-product-thumb" style={{
                       borderRadius: '18px',
                       height: '170px',
                       overflow: 'hidden',
@@ -389,7 +460,7 @@ export default function StorePage() {
                     <div>
                       <h2 style={{ margin: '0 0 8px', fontSize: 'clamp(1.5rem, 2vw, 2.2rem)', lineHeight: 1.08, color: '#1f2937', fontWeight: 900 }}>{activeProduct.title}</h2>
                       <p style={{ margin: 0, color: '#4b5563', lineHeight: 1.5, fontSize: '0.92rem' }}>{activeProduct.description}</p>
-                      <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                      <div className="store-landing-product-meta" style={{ marginTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                         <strong style={{ fontSize: '1.9rem', color: '#101828' }}>{money(activeProduct.price)}</strong>
                         <button type="button" onClick={() => navigate('/shop')} style={{
                           border: '1px solid #d1d5db',

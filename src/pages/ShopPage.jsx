@@ -622,6 +622,32 @@ export default function ShopPage({ onOrderSubmitted }) {
     [cart]
   );
 
+  useEffect(() => {
+    if (!submittedOrder || !paymentProof || typeof onOrderSubmitted !== 'function') return undefined;
+
+    const syncedOrder = {
+      ...submittedOrder,
+      paymentProofFile: paymentProofFile ? paymentProofFile.name : submittedOrder.paymentProofFile || null,
+      paymentProofUploaded: !!paymentProofFile,
+      paymentProofPreview: paymentProof,
+      status: submittedOrder.status || 'pending'
+    };
+
+    setSubmittedOrder((currentOrder) => currentOrder ? { ...currentOrder, ...syncedOrder } : syncedOrder);
+
+    onOrderSubmitted((current = []) => {
+      const existingIndex = current.findIndex((order) => order.id === submittedOrder.id || order.orderNumber === submittedOrder.orderNumber);
+      if (existingIndex >= 0) {
+        const updated = [...current];
+        updated[existingIndex] = syncedOrder;
+        return updated;
+      }
+      return [syncedOrder, ...current];
+    });
+
+    return undefined;
+  }, [paymentProof, paymentProofFile, submittedOrder, onOrderSubmitted]);
+
   const handleCheckout = (event) => {
     event.preventDefault();
     if (!cart.length) return;
@@ -1545,10 +1571,20 @@ export default function ShopPage({ onOrderSubmitted }) {
                     type="file"
                     accept="image/*,.pdf"
                     onChange={(e) => {
-                      setPaymentProofFile(e.target.files[0]);
-                      if (e.target.files[0]) {
-                        setPaymentProof(URL.createObjectURL(e.target.files[0]));
+                      const file = e.target.files?.[0];
+                      setPaymentProofFile(file || null);
+
+                      if (!file) {
+                        setPaymentProof(null);
+                        return;
                       }
+
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const result = typeof reader.result === 'string' ? reader.result : null;
+                        setPaymentProof(result);
+                      };
+                      reader.readAsDataURL(file);
                     }}
                     style={{
                       padding: '8px 12px',

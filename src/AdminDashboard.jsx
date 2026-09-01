@@ -322,6 +322,23 @@ export default function AdminDashboard(props) {
   };
   const [adminToast, setAdminToast] = useState(null);
 
+  const getPaymentProofPreview = (order) => {
+    if (!order) return null;
+    const candidates = [
+      order.paymentProofPreview,
+      order.paymentProof,
+      order.paymentProofUrl,
+      order.paymentProofImage,
+      order.receiptPreview,
+      order.proofImage,
+      order.proof_url,
+      order.payment_proof_preview,
+      order.paymentProofDataUrl,
+      order.paymentProofDataUri
+    ];
+    return candidates.find((value) => typeof value === 'string' && value.trim().length > 0) || null;
+  };
+
   const showAdminToast = (type, title, message, actions = []) => {
     setAdminToast({ type, title, message, actions });
   };
@@ -1030,6 +1047,7 @@ export default function AdminDashboard(props) {
   }));
 
   const activeDashboardLabel = dashboardViews.find((view) => view.id === activeDashboardView)?.label || 'Visitors';
+  const paymentProofPreview = getPaymentProofPreview(selectedOrder);
 
   return (
     <div className="admin-dashboard-page" style={{ minHeight: '100vh', background: '#f1f2f4', padding: '26px 20px 32px', fontFamily: 'Inter, Arial, sans-serif' }}>
@@ -1054,6 +1072,7 @@ export default function AdminDashboard(props) {
           .commerce-tab-row{display:flex;gap:8px;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;ms-overflow-style:none;padding-bottom:8px;border-bottom:1px solid #dfe7ef}
           .commerce-panel-shell{width:100%;max-width:none;box-sizing:border-box;overflow:hidden}
           .commerce-input-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;width:100%;max-width:100%;box-sizing:border-box}
+          .view-modal-content{max-width:100%;box-sizing:border-box}
           .table{min-width:1400px;width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e7eb;border-radius:14px}
           .table th,.table td{padding:12px 14px;text-align:left;vertical-align:top;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
           .table td{max-width:200px}
@@ -1390,7 +1409,7 @@ export default function AdminDashboard(props) {
 
       {selectedOrder && (
         <div className="view-modal-overlay" onClick={() => setSelectedOrder(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 17000, padding: '20px' }}>
-          <div className="view-modal-content" onClick={(event) => event.stopPropagation()} style={{ background: '#fff', borderRadius: '18px', width: 'min(760px, 100%)', maxHeight: '88vh', overflowY: 'auto', boxShadow: '0 28px 90px rgba(15,23,42,0.35)', border: '1px solid #e2e8f0' }}>
+          <div className="view-modal-content" onClick={(event) => event.stopPropagation()} style={{ background: '#fff', borderRadius: '18px', width: 'min(760px, calc(100vw - 32px))', maxWidth: '100%', maxHeight: '88vh', overflowY: 'auto', boxShadow: '0 28px 90px rgba(15,23,42,0.35)', border: '1px solid #e2e8f0', boxSizing: 'border-box' }}>
             <div style={{ padding: '22px 22px 0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', marginBottom: '18px' }}>
                 <div>
@@ -1436,8 +1455,8 @@ export default function AdminDashboard(props) {
 
                 <section style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
                   <h4 style={{ margin: '0 0 12px', color: '#111827', fontSize: '1rem' }}>Proof of payment</h4>
-                  {selectedOrder.paymentProofPreview ? (
-                    <img src={selectedOrder.paymentProofPreview} alt="Payment proof preview" style={{ width: '100%', borderRadius: '10px', border: '1px solid #cbd5e1', maxHeight: '220px', objectFit: 'cover' }} />
+                  {paymentProofPreview ? (
+                    <img src={paymentProofPreview} alt="Payment proof preview" style={{ width: '100%', borderRadius: '10px', border: '1px solid #cbd5e1', maxHeight: '220px', objectFit: 'cover' }} />
                   ) : (
                     <div style={{ color: '#64748b', padding: '20px 0', textAlign: 'center' }}>No proof image attached.</div>
                   )}
@@ -1476,8 +1495,8 @@ export default function AdminDashboard(props) {
                 <div style={{ display: 'grid', gap: '12px', marginTop: '8px' }}>
                   <section style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
                     <h4 style={{ margin: '0 0 12px', color: '#111827', fontSize: '1rem' }}>Proof of payment</h4>
-                    {selectedOrder.paymentProofPreview ? (
-                      <img src={selectedOrder.paymentProofPreview} alt="Payment proof preview" style={{ width: '100%', borderRadius: '10px', border: '1px solid #cbd5e1', maxHeight: '220px', objectFit: 'cover' }} />
+                    {paymentProofPreview ? (
+                      <img src={paymentProofPreview} alt="Payment proof preview" style={{ width: '100%', borderRadius: '10px', border: '1px solid #cbd5e1', maxHeight: '220px', objectFit: 'cover' }} />
                     ) : (
                       <div style={{ color: '#64748b', padding: '20px 0', textAlign: 'center' }}>No proof image attached.</div>
                     )}
