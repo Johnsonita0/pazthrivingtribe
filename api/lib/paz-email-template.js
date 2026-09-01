@@ -1,18 +1,24 @@
 export function buildPazEmailTemplate({
   title,
   eyebrow = 'PAZ Thriving Tribe',
-  intro = '',
+  intro = 'Hello,',
   bodyHtml = '',
-  ctaLabel = 'Visit PAZ',
-  ctaUrl = process.env.VITE_APP_URL || 'https://pazthrivingtribe.org',
-  secondaryCtaLabel = 'Contact us',
-  secondaryCtaUrl = 'mailto:pazthrivingtribe@gmail.com',
+  ctaLabel = 'Apply for a section',
+  ctaUrl = `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/teens_reg`,
+  secondaryCtaLabel = 'Book for a section',
+  secondaryCtaUrl = `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/book-session`,
   accentText = '',
   footerNote = 'We are here to help your growth journey.'
 }) {
   const websiteUrl = process.env.VITE_APP_URL || 'https://pazthrivingtribe.org';
   const logoUrl = `${websiteUrl}/logo/logo2.jpeg`;
   const contactPhone = '+234 803 738 3820';
+  const whatsappUrl = 'https://wa.me/2348037383820';
+
+  const safeTitle = String(title || 'PAZ Thriving Tribe');
+  const safeEyebrow = String(eyebrow || 'PAZ Thriving Tribe');
+  const safeIntro = String(intro || 'Hello,');
+  const safeAccentText = accentText ? String(accentText) : '';
 
   return `
     <!DOCTYPE html>
@@ -20,96 +26,101 @@ export function buildPazEmailTemplate({
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>${title}</title>
-        <style>
-          body { margin: 0; padding: 0; background: #f5efe6; font-family: Arial, Helvetica, sans-serif; color: #143a2f; }
-          table { border-collapse: collapse; }
-          img { border: 0; outline: none; }
-          a { text-decoration: none; }
-          .container { width: 100%; max-width: 660px; margin: 0 auto; background: #ffffff; }
-          .header { background: linear-gradient(135deg, #0d3b2d 0%, #1b5d4b 50%, #1f7a5a 100%); padding: 26px 28px 22px; }
-          .brand-row { display: flex; align-items: center; justify-content: center; gap: 14px; }
-          .brand-logo { width: 62px; height: 62px; border-radius: 16px; background: #f8f1df; padding: 8px; box-sizing: border-box; }
-          .brand-text { text-align: left; }
-          .brand-name { font-size: 24px; font-weight: 800; letter-spacing: 0.04em; color: #f6f0df; }
-          .brand-tag { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #d1b97a; font-weight: 700; }
-          .content { background: #ffffff; padding: 30px 30px 20px; }
-          .eyebrow { margin: 0 0 12px; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: #1b654d; font-weight: 800; }
-          .title { margin: 0 0 18px; font-size: 30px; line-height: 1.2; color: #0d2f27; font-weight: 800; }
-          .intro { margin: 0 0 18px; font-size: 16px; line-height: 1.7; color: #1d3d39; }
-          .card { background: linear-gradient(180deg, #f7f7f1 0%, #edf7f0 100%); border: 1px solid #dfeee4; border-radius: 16px; padding: 22px 20px; margin: 20px 0; }
-          .card p { margin: 0 0 12px; font-size: 15px; line-height: 1.7; color: #1d3d39; }
-          .card strong { color: #0a3329; }
-          .cta-wrap { margin: 26px 0 10px; }
-          .cta-button { display: inline-block; background: linear-gradient(135deg, #d4a843 0%, #c29327 100%); color: #102b24; font-weight: 800; font-size: 14px; padding: 14px 22px; border-radius: 10px; }
-          .cta-secondary { display: inline-block; background: #eaf3ee; color: #143a2f; font-weight: 700; font-size: 14px; padding: 14px 22px; border-radius: 10px; border: 1px solid #cfe0d3; margin-left: 10px; }
-          .footer { background: #0b2a23; padding: 28px 24px 30px; color: #edf4f1; }
-          .social-row { text-align: center; padding: 8px 0 12px; }
-          .social-link { display: inline-block; font-weight: 700; padding: 8px 12px; border-radius: 999px; margin: 0 8px; color: #ffffff; }
-          .ig { background: linear-gradient(135deg, #f58529, #dd2a7b, #8134af, #515bd4); }
-          .fb { background: #1877f2; }
-          .li { background: #0a66c2; }
-          .footer-text { font-size: 12px; line-height: 1.8; color: #d7e7e2; text-align: center; }
-          .footer-text a { color: #f3cf73; }
-          @media (max-width: 620px) {
-            .content, .header, .footer { padding-left: 18px !important; padding-right: 18px !important; }
-            .title { font-size: 24px !important; }
-            .cta-secondary { margin-left: 0; margin-top: 12px; }
-          }
-        </style>
+        <title>${safeTitle}</title>
       </head>
-      <body>
-        <div style="padding: 24px 12px;">
-          <table class="container" role="presentation" width="100%" cellpadding="0" cellspacing="0">
-            <tr>
-              <td class="header">
-                <table width="100%" role="presentation">
-                  <tr>
-                    <td align="center">
-                      <div class="brand-row">
-                        <img class="brand-logo" src="${logoUrl}" alt="PAZ Thriving Tribe logo" />
-                        <div class="brand-text">
-                          <div class="brand-name">PAZ</div>
-                          <div class="brand-tag">Thriving Tribe</div>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-            <tr>
-              <td class="content">
-                <p class="eyebrow">${eyebrow}</p>
-                <h1 class="title">${title}</h1>
-                ${intro ? `<p class="intro">${intro}</p>` : ''}
-                ${accentText ? `<p class="intro" style="margin-bottom:0; color:#0d3b2d; font-weight:700;">${accentText}</p>` : ''}
-                <div class="card">${bodyHtml}</div>
-                <div class="cta-wrap">
-                  <a href="${ctaUrl}" class="cta-button">${ctaLabel}</a>
-                  <a href="${secondaryCtaUrl}" class="cta-secondary">${secondaryCtaLabel}</a>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td class="footer">
-                <div class="social-row">
-                  <a class="social-link ig" href="https://www.instagram.com">Instagram</a>
-                  <a class="social-link fb" href="https://www.facebook.com">Facebook</a>
-                  <a class="social-link li" href="https://www.linkedin.com">LinkedIn</a>
-                </div>
-                <div class="footer-text">
-                  <div style="font-size: 14px; font-weight:700; color:#f7e2a7; margin-bottom: 6px;">PAZ Thriving Tribe</div>
-                  <div>${footerNote}</div>
-                  <div>Email: <a href="mailto:pazthrivingtribe@gmail.com">pazthrivingtribe@gmail.com</a> | Phone: ${contactPhone}</div>
-                  <div>Website: <a href="${websiteUrl}">${websiteUrl}</a></div>
-                  <div style="margin-top: 8px;">© ${new Date().getFullYear()} PAZ Thriving Tribe. All rights reserved.</div>
-                </div>
-              </td>
-            </tr>
-          </table>
-        </div>
+      <body style="margin:0;padding:0;background:#edf4ef;font-family:Arial,Helvetica,sans-serif;">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#edf4ef;padding:24px 12px;border-collapse:collapse;">
+          <tr>
+            <td align="center" style="text-align:center;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:640px;width:100%;background:#ffffff;border-collapse:separate;border-spacing:0;border-radius:18px;overflow:hidden;">
+                <tr>
+                  <td align="center" style="padding:24px 20px;background:linear-gradient(135deg,#0b2f2a 0%,#123d35 52%,#1c5c4a 100%);text-align:center;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;border-collapse:separate;border-spacing:0;">
+                      <tr>
+                        <td style="padding-right:12px;">
+                          <img src="${logoUrl}" alt="PAZ logo" width="54" height="54" style="display:block;border:0;outline:none;border-radius:14px;background:#ffffff;padding:6px;" />
+                        </td>
+                        <td style="color:#f7e7b4;font-family:Arial,Helvetica,sans-serif;line-height:1.1;">
+                          <div style="font-size:24px;font-weight:900;letter-spacing:0.08em;">PAZ</div>
+                          <div style="font-size:10px;font-weight:800;letter-spacing:0.18em;opacity:0.92;">THRIVING TRIBE</div>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:26px 28px 10px;background:#ffffff;">
+                    <div style="font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#1c6d5d;font-weight:800;">${safeEyebrow}</div>
+                    <h1 style="margin:14px 0 10px;font-size:30px;line-height:1.2;color:#0d2f2a;font-weight:900;">${safeTitle}</h1>
+                    <p style="margin:0 0 12px;font-size:16px;line-height:1.7;color:#1d3d39;">${safeIntro}</p>
+                    ${safeAccentText ? `<p style="margin:0 0 16px;font-size:16px;line-height:1.7;color:#0b352d;font-weight:800;">${safeAccentText}</p>` : ''}
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:0 28px 8px;background:#ffffff;">
+                    <div style="background:#f6f9f6;border:1px solid #dfeee4;border-radius:14px;padding:18px 18px 4px;color:#1d3d39;font-size:15px;line-height:1.7;">
+                      ${bodyHtml}
+                    </div>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td align="center" style="padding:20px 20px 8px;background:#ffffff;text-align:center;">
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;border-collapse:separate;border-spacing:0;">
+                      <tr>
+                        <td style="padding-right:6px;">
+                          <a href="${ctaUrl}" style="display:inline-block;background:linear-gradient(135deg,#e3bf6a,#d4a848);color:#152b24;padding:14px 20px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:900;">${ctaLabel}</a>
+                        </td>
+                        <td style="padding-left:6px;">
+                          <a href="${secondaryCtaUrl}" style="display:inline-block;background:#edf7f0;color:#14392f;padding:14px 18px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:800;border:1px solid #d1e6d7;">${secondaryCtaLabel}</a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+
+                <tr>
+                  <td style="padding:22px 20px 26px;background:#0b2a23;color:#edf4f1;text-align:center;">
+                    <div style="margin-bottom:12px;">
+                      <a href="https://www.instagram.com/pazthrivingtribe" target="_blank" rel="noopener noreferrer" style="display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;background:linear-gradient(135deg,#f58529,#dd2a7b,#8134af,#515bd4);border-radius:50%;margin:0 6px;vertical-align:middle;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" style="display:block;margin:9px auto;vertical-align:middle;">
+                          <rect x="3.5" y="3.5" width="17" height="17" rx="5" stroke="white" stroke-width="1.8" fill="none"/>
+                          <circle cx="12" cy="12" r="4.2" stroke="white" stroke-width="1.8" fill="none"/>
+                          <circle cx="17.2" cy="6.8" r="1.1" fill="white"/>
+                        </svg>
+                      </a>
+                      <a href="https://facebook.com/pazthrivingtribe" target="_blank" rel="noopener noreferrer" style="display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;background:#1877f2;border-radius:50%;margin:0 6px;vertical-align:middle;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" style="display:block;margin:9px auto;vertical-align:middle;">
+                          <path d="M13.7 20.5v-7.7h2.6l.4-3h-3V7.4c0-.9.3-1.5 1.6-1.5h1.7V2.9c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2.4H7.3v3h2.5v7.7h3.9Z" fill="white"/>
+                        </svg>
+                      </a>
+                      <a href="${whatsappUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;background:#25d366;border-radius:50%;margin:0 6px;vertical-align:middle;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" style="display:block;margin:9px auto;vertical-align:middle;">
+                          <path d="M18.9 5.1A9.4 9.4 0 0 0 4.7 17.4L3.5 20.5l3.2-1.1a9.5 9.5 0 0 0 12.2-12.3Zm-7.2 2.7c.2 0 .5 0 .7.1.2.1.4.4.5.7.1.3.4 1.1.1 1.4-.1.2-.2.3-.5.5l-.4.2c-.2.1-.5.1-.7-.1-.3-.2-.8-.7-.9-1.1-.1-.2-.2-.5.1-.7.1-.2.3-.4.4-.6.1-.2.1-.4 0-.5-.1-.1-.3-.1-.5-.1-.3 0-.7.1-1.1.5-.4.4-1 1-1 2.6 0 1.5.9 3.1 1.9 4.2.9.9 2.1 1.5 3.5 1.8.6.1 1.1.2 1.6.1.5-.1 1.5-.7 1.7-1.3.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.6-.4-.3-.2-1.1-.6-1.3-.7-.2-.1-.4-.1-.6.1-.2.2-.7.7-.9.9-.2.2-.4.2-.7.1-.4-.2-1.5-.7-2.9-1.9-1.2-1.1-2-2.4-2.2-2.9-.2-.4-.1-.6.1-.8.1-.2.2-.4.4-.6.2-.2.3-.4.5-.6.1-.2.2-.4.2-.6.1-.1.1-.4 0-.5-.1-.1-.4-.8-.6-1.1-.2-.3-.4-.2-.6-.2h-.5Z" fill="white"/>
+                        </svg>
+                      </a>
+                      <a href="https://www.linkedin.com/company/pazthrivingtribe" target="_blank" rel="noopener noreferrer" style="display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;background:#0a66c2;border-radius:50%;margin:0 6px;vertical-align:middle;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" style="display:block;margin:9px auto;vertical-align:middle;">
+                          <path d="M6.5 8.9A1.7 1.7 0 1 1 6.5 5.5a1.7 1.7 0 0 1 0 3.4ZM4.8 10.3h3.4v9.2H4.8v-9.2Zm5.6 0h3.3v1.3h.1c.5-.9 1.7-1.8 3.5-1.8 3.7 0 4.4 2.4 4.4 5.6v5.1h-3.4v-4.7c0-1.1 0-2.6-1.6-2.6s-1.8 1.2-1.8 2.5v4.8h-3.5v-9.2Z" fill="white"/>
+                        </svg>
+                      </a>
+                    </div>
+                    <div style="font-size:12px;line-height:1.8;color:#dfeeea;">
+                      <div style="font-size:14px;font-weight:800;color:#f7d980;margin-bottom:4px;">PAZ Thriving Tribe</div>
+                      <div>${footerNote}</div>
+                      <div>Email: <a href="mailto:pazthrivingtribe@gmail.com" style="color:#f7d980;text-decoration:none;">pazthrivingtribe@gmail.com</a> | WhatsApp: <a href="${whatsappUrl}" style="color:#f7d980;text-decoration:none;">${contactPhone}</a></div>
+                      <div>Website: <a href="${websiteUrl}" style="color:#f7d980;text-decoration:none;">${websiteUrl}</a></div>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
       </body>
     </html>
   `;
 }
+

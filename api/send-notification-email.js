@@ -80,10 +80,10 @@ export default async function handler(req, res) {
         ${orderNumber ? `<p><strong>Order number:</strong> ${orderNumber}</p>` : ''}
         <p><strong>Customer email:</strong> ${cleanEmail}</p>
       `,
-      ctaLabel: 'Open PAZ portal',
-      ctaUrl: process.env.VITE_APP_URL || 'https://pazthrivingtribe.org',
-      secondaryCtaLabel: 'Contact support',
-      secondaryCtaUrl: 'mailto:pazthrivingtribe@gmail.com',
+      ctaLabel: 'Apply for a section',
+      ctaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/teens_reg`,
+      secondaryCtaLabel: 'Book for a section',
+      secondaryCtaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/book-session`,
       footerNote: 'Thank you for shopping with PAZ Thriving Tribe.'
     });
 

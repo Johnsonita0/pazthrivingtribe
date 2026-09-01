@@ -70,6 +70,26 @@ export default async function handler(req, res) {
     const resendApiKey = process.env.RESEND_API_KEY;
     if (resendApiKey) {
       try {
+        const emailHtml = buildPazEmailTemplate({
+          title: `Welcome to ${service} - PAZ Thriving Tribe`,
+          eyebrow: 'Welcome',
+          intro: 'Hi there,',
+          accentText: `Thank you for subscribing to ${service}. We are excited to have you on board.`,
+          bodyHtml: `
+            <p>We will notify you as soon as this service launches. In the meantime, feel free to explore our platform and check out our other programs.</p>
+            <p>If you have any questions, reach out to us anytime — we are here to help.</p>
+            <p><strong>Email:</strong> ${cleanEmail}</p>
+            <p><strong>Service:</strong> ${service}</p>
+            <p><strong>WhatsApp:</strong> +234 803 738 3820</p>
+            <p><strong>Subscribed:</strong> ${new Date(timestamp || Date.now()).toLocaleDateString()}</p>
+          `,
+          ctaLabel: 'Apply for a section',
+          ctaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/teens_reg`,
+          secondaryCtaLabel: 'Book for a section',
+          secondaryCtaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/book-session`,
+          footerNote: 'We are excited to journey with you.'
+        });
+
         const emailResponse = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
@@ -80,43 +100,7 @@ export default async function handler(req, res) {
             from: process.env.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.com',
             to: cleanEmail,
             subject: `Welcome to ${service} - PAZ Thriving Tribe`,
-            html: `
-              <!DOCTYPE html>
-              <html>
-                <head>
-                  <style>
-                    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; }
-                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .header { background: linear-gradient(135deg, #22C55E 0%, #16a34a 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; text-align: center; }
-                    .header h1 { margin: 0; font-size: 28px; }
-                    .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
-                    .content p { margin: 15px 0; }
-                    .highlight { color: #22C55E; font-weight: 600; }
-                    .cta-button { display: inline-block; background: #22C55E; color: white; padding: 12px 30px; border-radius: 6px; text-decoration: none; margin: 20px 0; font-weight: 600; }
-                    .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 12px; color: #666; }
-                  </style>
-                </head>
-                <body>
-                  <div class="container">
-                    <div class="header">
-                      <h1>🎉 You're All Set!</h1>
-                    </div>
-                    <div class="content">
-                      <p>Hi there!</p>
-                      <p>Thank you for subscribing to <span class="highlight">${service}</span>! We're excited to have you on board.</p>
-                      <p>We'll notify you as soon as this service launches. In the meantime, feel free to explore our platform and check out other programs we offer.</p>
-                      <p>If you have any questions, reach out to us anytime—we're here to help!</p>
-                      <a href="${process.env.VITE_APP_URL || 'https://pazthrivingtribe.com'}" class="cta-button">Visit PAZ Thriving Tribe</a>
-                      <div class="footer">
-                        <p><strong>Email:</strong> ${cleanEmail}</p>
-                        <p><strong>Service:</strong> ${service}</p>
-                        <p><strong>Subscribed:</strong> ${new Date(timestamp || Date.now()).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-                  </div>
-                </body>
-              </html>
-            `,
+            html: emailHtml,
           }),
         });
 

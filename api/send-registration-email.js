@@ -51,10 +51,10 @@ export default async function handler(req, res) {
         <p><strong>Source:</strong> ${hearAboutUs || 'Website'}</p>
         <p><strong>Note:</strong> ${note || 'No additional details'}</p>
       `,
-      ctaLabel: 'Visit PAZ website',
-      ctaUrl: process.env.VITE_APP_URL || 'https://pazthrivingtribe.org',
-      secondaryCtaLabel: 'Email us',
-      secondaryCtaUrl: 'mailto:pazthrivingtribe@gmail.com',
+      ctaLabel: 'Apply for a section',
+      ctaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/teens_reg`,
+      secondaryCtaLabel: 'Book for a section',
+      secondaryCtaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/book-session`,
       footerNote: 'We are excited to journey with you.'
     });
 

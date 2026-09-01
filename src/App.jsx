@@ -1739,13 +1739,15 @@ export default function App() {
 
         /* STICKY HEADER NAVIGATION BAR CONTROLS */
         .public-navbar {
-          display: flex; justify-content: space-between; align-items: center;
+          display: grid;
+          grid-template-columns: 1fr auto 1fr;
+          align-items: center;
           padding: 1.2rem 4rem; background-color: var(--bg-nav); border-bottom: 1px solid var(--border-color);
           position: fixed; top: 0; left: 0; right: 0; z-index: 10000;
           box-shadow: var(--shadow-sm); width: 100% !important; box-sizing: border-box;
           backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
         }
-        .nav-logo-brand-zone { display: flex; align-items: center; gap: 0.65rem; text-decoration: none; min-width: 0; }
+        .nav-logo-brand-zone { display: flex; align-items: center; justify-content: center; gap: 0.65rem; text-decoration: none; min-width: 0; grid-column: 2; justify-self: center; }
         .nav-logo-img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background-color: transparent; border: none; }
         /* Make any image path that includes 'logo/' display as a circular logo */
         img[src*="logo/"] {
@@ -1756,7 +1758,15 @@ export default function App() {
         .platform-badge-nav.active { transform: translateY(-1px); font-weight: 800; }
         .nav-vector-logo { width: 36px; height: 36px; background-color: var(--brand-green); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: white; font-size: 1.2rem; }
         .nav-brand-name { font-size: 1.15rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.3px; white-space: nowrap; }
-        .nav-navigation-links { display: flex; gap: 1rem; align-items: center; }
+        .nav-cta-group { display: flex; align-items: center; gap: 0.6rem; justify-self: end; grid-column: 3; }
+        .nav-cta-link {
+          background-color: var(--brand-green); color: white; padding: 0.6rem 0.9rem; border: none; border-radius: 8px;
+          text-decoration: none; font-weight: 700; font-size: 0.82rem; display: inline-flex; align-items: center; justify-content: center;
+          gap: 0.4rem; white-space: nowrap; transition: transform 0.2s ease, opacity 0.2s ease; box-shadow: 0 10px 18px rgba(22, 163, 74, 0.18);
+        }
+        .nav-cta-link.secondary { background: #fff; color: #0f172a; border: 1px solid #dfe7ef; box-shadow: none; }
+        .nav-cta-link:hover { transform: translateY(-1px); }
+        .nav-navigation-links { display: flex; gap: 1rem; align-items: center; justify-self: end; grid-column: 3; }
         .nav-navigation-links.mobile-open { display: flex; position: fixed; top: 70px; left: 0; right: 0; width: 100vw; flex-direction: column; align-items: stretch; justify-content: flex-start; background-color: var(--bg-nav); padding: 1.5rem 1.5rem 2.5rem; border-top: 1px solid var(--border-color); z-index: 997; height: calc(100vh - 70px); overflow-y: auto; box-shadow: 0 12px 40px rgba(0,0,0,0.12); }
         .nav-navigation-links.mobile-open .nav-link-item,
         .nav-navigation-links.mobile-open .nav-cta-btn { width: 100%; }
@@ -3033,16 +3043,20 @@ export default function App() {
         .footer-brand-headline { font-size: 1.25rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.3px; }
         .footer-brand-column p { color: var(--text-muted); font-size: 0.95rem; line-height: 1.6; margin: 0; }
         .footer-social-links { display: flex; gap: 1rem; margin-top: 1rem; }
-        .footer-social-icon { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 1.2rem; transition: all 0.2s ease; }
-        .footer-social-icon[aria-label="Facebook"] { color: #1877F2; background: rgba(24, 119, 242, 0.15); }
+        .footer-social-icon {
+          width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+          text-decoration: none; font-size: 1.2rem; transition: all 0.2s ease; background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.04);
+        }
+        .footer-social-icon[aria-label="Facebook"] { color: #1877F2; }
         .footer-social-icon[aria-label="Facebook"]:hover { background: #1877F2; color: white; }
-        .footer-social-icon[aria-label="Instagram"] { color: #E4405F; background: rgba(228, 64, 95, 0.15); }
+        .footer-social-icon[aria-label="Instagram"] { color: #E4405F; }
         .footer-social-icon[aria-label="Instagram"]:hover { background: #E4405F; color: white; }
-        .footer-social-icon[aria-label="Twitter"] { color: #1DA1F2; background: rgba(29, 161, 242, 0.15); }
+        .footer-social-icon[aria-label="Twitter"] { color: #1DA1F2; }
         .footer-social-icon[aria-label="Twitter"]:hover { background: #1DA1F2; color: white; }
-        .footer-social-icon[aria-label="YouTube"] { color: #FF0000; background: rgba(255, 0, 0, 0.15); }
+        .footer-social-icon[aria-label="YouTube"] { color: #FF0000; }
         .footer-social-icon[aria-label="YouTube"]:hover { background: #FF0000; color: white; }
-        .footer-social-icon[aria-label="LinkedIn"] { color: #0A66C2; background: rgba(10, 102, 194, 0.15); }
+        .footer-social-icon[aria-label="LinkedIn"] { color: #0A66C2; }
         .footer-social-icon[aria-label="LinkedIn"]:hover { background: #0A66C2; color: white; }
         .footer-social-icon:hover { transform: translateY(-2px); }
         .footer-links-column { display: flex; flex-direction: column; gap: 1.2rem; }
@@ -3410,10 +3424,16 @@ export default function App() {
             )}
 
             {!isAdminRoute && (
-              <a href="https://pazthrivingtribe.schoolsfocus.net/signin" className="nav-cta-btn" target="_blank" rel="noopener noreferrer" onClick={() => setNavOpen(false)}>
-                <i className="fa-solid fa-right-to-bracket" aria-hidden="true"></i>
-                <span>Portal</span>
-              </a>
+              <div className="nav-cta-group">
+                <Link to="/teens_reg" className="nav-cta-link" onClick={() => setNavOpen(false)}>
+                  <i className="fa-solid fa-user-plus" aria-hidden="true"></i>
+                  <span>Apply</span>
+                </Link>
+                <Link to="/book-session" className="nav-cta-link secondary" onClick={() => setNavOpen(false)}>
+                  <i className="fa-solid fa-calendar-check" aria-hidden="true"></i>
+                  <span>Book</span>
+                </Link>
+              </div>
             )}
           </nav>
           </header>

@@ -1757,30 +1757,33 @@ export default function AdminDashboard(props) {
                       )}
 
                       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '10px', marginBottom: '14px' }}>
-                        <a href="https://pazthrivingtribe.com" style={{ display: 'inline-block', background: '#1d9a63', color: '#fff', padding: '12px 18px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 800, textDecoration: 'none' }}>View your portal</a>
-                        <a href="mailto:hello@pazthrivingtribe.com" style={{ display: 'inline-block', background: '#fff', color: '#0f172a', border: '1px solid #dfe8e3', padding: '12px 18px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 800, textDecoration: 'none' }}>Contact support</a>
+                        <a href="https://pazthrivingtribe.org/teens_reg" style={{ display: 'inline-block', background: '#1d9a63', color: '#fff', padding: '12px 18px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 800, textDecoration: 'none' }}>Apply for a section</a>
+                        <a href="https://pazthrivingtribe.org/book-session" style={{ display: 'inline-block', background: '#fff', color: '#0f172a', border: '1px solid #dfe8e3', padding: '12px 18px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 800, textDecoration: 'none' }}>Book for a section</a>
                       </div>
                     </div>
 
                     <div style={{ background: '#f7faf8', borderTop: '1px solid #dfe8e3', padding: '18px 16px 20px', textAlign: 'center' }}>
                       <div style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Stay connected with PAZ</div>
                       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
-                        <a href="https://www.instagram.com" target="_blank" rel="noreferrer" style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#e1306c', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-label="Instagram">
+                        <a href="https://www.instagram.com/pazthrivingtribe" target="_blank" rel="noreferrer" style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#e1306c', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-label="Instagram">
                           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="3" width="18" height="18" rx="5" stroke="white" strokeWidth="2"/><circle cx="12" cy="12" r="4.2" stroke="white" strokeWidth="2"/><circle cx="17.3" cy="6.7" r="1.3" fill="white"/></svg>
                         </a>
-                        <a href="https://www.facebook.com" target="_blank" rel="noreferrer" style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#1877f2', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-label="Facebook">
+                        <a href="https://facebook.com/pazthrivingtribe" target="_blank" rel="noreferrer" style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#1877f2', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-label="Facebook">
                           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 8.5H16V5.5C15.5 5.4 14.7 5.3 13.8 5.3C11.7 5.3 10.3 6.5 10.3 9V11H7.7V14.2H10.3V19H13.5V14.2H15.7L16 11H13.5V9.4C13.5 8.9 13.9 8.5 14.5 8.5Z" fill="white"/></svg>
                         </a>
-                        <a href="https://www.linkedin.com" target="_blank" rel="noreferrer" style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#0a66c2', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-label="LinkedIn">
+                        <a href="https://wa.me/2348037383820" target="_blank" rel="noreferrer" style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#25D366', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-label="WhatsApp">
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20.52 3.48A11.83 11.83 0 0 0 12.08 1C6.26 1 1.53 5.72 1.53 11.52c0 2.05.54 4.05 1.57 5.82L1.5 22.5l5.3-1.38A10.5 10.5 0 0 0 12.08 21c5.82 0 10.55-4.72 10.55-10.52 0-2.82-1.1-5.48-3.11-7.5ZM12.08 18.98c-1.7 0-3.36-.45-4.82-1.31l-.34-.2-3.14.82.84-3.06-.2-.33A8.5 8.5 0 1 1 20.57 11.5c0 2.28-.88 4.42-2.49 6.06a8.4 8.4 0 0 1-6.0 1.42Zm4.63-6.25c-.25-.13-1.47-.72-1.7-.8-.23-.08-.4-.13-.57.12-.17.25-.64.8-.78.95-.14.16-.29.18-.54.06-.25-.13-1.04-.38-1.98-1.22-.73-.65-1.23-1.45-1.37-1.7-.14-.25-.02-.39.11-.52.11-.11.25-.29.38-.43.12-.14.16-.25.25-.42.08-.17.04-.31-.02-.43-.06-.12-.57-1.37-.78-1.88-.2-.5-.41-.43-.57-.43h-.48c-.16 0-.42.06-.64.31-.22.25-.86.84-.86 2.05 0 1.21.88 2.38.99 2.55.12.17 1.72 2.73 4.15 3.82.58.25 1.03.4 1.38.51.58.19 1.11.16 1.53.1.47-.07 1.47-.6 1.67-1.18.2-.58.2-1.07.14-1.18-.06-.12-.22-.18-.47-.31Z" fill="white"/></svg>
+                        </a>
+                        <a href="https://www.linkedin.com/company/pazthrivingtribe" target="_blank" rel="noreferrer" style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#0a66c2', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} aria-label="LinkedIn">
                           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.94 8.5C7.95 8.5 8.76 7.7 8.76 6.75C8.76 5.79 7.95 5 6.94 5C5.94 5 5.13 5.79 5.13 6.75C5.13 7.7 5.94 8.5 6.94 8.5ZM5.48 9.8H8.4V18.5H5.48V9.8ZM10.7 9.8H13.55V11H13.59C14.03 10.2 15.08 9.33 16.8 9.33C20.3 9.33 20.8 11.7 20.8 14.3V18.5H17.88V15C17.88 13.8 17.86 12.2 16.17 12.2C14.44 12.2 14.17 13.55 14.17 14.88V18.5H10.7V9.8Z" fill="white"/></svg>
                         </a>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '14px' }}>
-                        <a href="https://pazthrivingtribe.com" style={{ display: 'inline-block', background: '#0f172a', color: '#fff', padding: '10px 14px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 800, textDecoration: 'none' }}>Subscribe to our newsletter</a>
-                        <a href="https://pazthrivingtribe.com" style={{ display: 'inline-block', background: '#e8f6ef', color: '#0d5d46', border: '1px solid #cfeadf', padding: '10px 14px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 800, textDecoration: 'none' }}>Visit our portal</a>
+                        <a href="https://pazthrivingtribe.org" style={{ display: 'inline-block', background: '#0f172a', color: '#fff', padding: '10px 14px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 800, textDecoration: 'none' }}>PAZ website</a>
+                        <a href="https://wa.me/2348037383820" style={{ display: 'inline-block', background: '#e8f6ef', color: '#0d5d46', border: '1px solid #cfeadf', padding: '10px 14px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 800, textDecoration: 'none' }}>WhatsApp</a>
                       </div>
                       <div style={{ fontSize: '0.72rem', color: '#64748b' }}>© {new Date().getFullYear()} PAZ Thriving Tribe. All rights reserved.</div>
-                      <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '6px' }}>Email: hello@pazthrivingtribe.com | Phone: +234 803 738 3820</div>
+                      <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '6px' }}>Email: pazthrivingtribe@gmail.com | WhatsApp: +234 803 738 3820</div>
                     </div>
                   </div>
 
