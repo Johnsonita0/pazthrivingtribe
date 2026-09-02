@@ -32,6 +32,13 @@ BEGIN
 
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'guest upload payment proof files'
+  ) THEN
+    EXECUTE 'CREATE POLICY "guest upload payment proof files" ON storage.objects FOR INSERT WITH CHECK (bucket_id = ''prof-upload'' AND (storage.foldername(name))[1] = ''orders'');';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
     WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'authenticated update to prof upload bucket'
   ) THEN
     EXECUTE 'CREATE POLICY "authenticated update to prof upload bucket" ON storage.objects FOR UPDATE USING (bucket_id = ''prof-upload'' AND auth.role() = ''authenticated'') WITH CHECK (bucket_id = ''prof-upload'' AND auth.role() = ''authenticated'');';
@@ -168,6 +175,13 @@ BEGIN
     WHERE schemaname = 'public' AND tablename = 'shop_orders' AND policyname = 'allow public insert shop orders'
   ) THEN
     EXECUTE 'CREATE POLICY "allow public insert shop orders" ON public.shop_orders FOR INSERT WITH CHECK (true);';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'shop_orders' AND policyname = 'allow public update payment proof'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow public update payment proof" ON public.shop_orders FOR UPDATE USING (true) WITH CHECK (true);';
   END IF;
 
   IF NOT EXISTS (

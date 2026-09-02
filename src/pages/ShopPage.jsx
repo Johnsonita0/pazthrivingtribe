@@ -434,6 +434,9 @@ export default function ShopPage({ onOrderSubmitted }) {
   const [cartOpen, setCartOpen] = useState(false);
   const [cartFlights, setCartFlights] = useState([]);
   const cartButtonRef = useRef(null);
+  const fireworksCanvasRef = useRef(null);
+  const fireworksControllerRef = useRef(null);
+  const fireworksIntervalRef = useRef(null);
   const [isSmallScreen, setIsSmallScreen] = useState(() => typeof window !== 'undefined' ? window.innerWidth <= 900 : false);
   const [isVerySmallScreen, setIsVerySmallScreen] = useState(() => typeof window !== 'undefined' ? window.innerWidth <= 360 : false);
   const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false);
@@ -499,25 +502,41 @@ export default function ShopPage({ onOrderSubmitted }) {
     };
   }, [cart, submittedOrder]);
 
+  const stopSuccessConfetti = () => {
+    if (fireworksIntervalRef.current) {
+      window.clearInterval(fireworksIntervalRef.current);
+      fireworksIntervalRef.current = null;
+    }
+
+    if (fireworksControllerRef.current) {
+      fireworksControllerRef.current.reset();
+      fireworksControllerRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    if (cartOpen) return undefined;
+    stopSuccessConfetti();
+    return undefined;
+  }, [cartOpen]);
+
   const triggerSuccessConfetti = () => {
+    stopSuccessConfetti();
+
+    if (!fireworksCanvasRef.current) return;
+    fireworksControllerRef.current = confetti.create(fireworksCanvasRef.current, {
+      resize: true,
+      useWorker: true
+    });
+
+    const launchFireworks = fireworksControllerRef.current;
     const burst = (index = 0) => {
       let origin = {
         x: index % 3 === 1 ? 0.5 : index % 3 === 0 ? 0.18 : 0.82,
-        y: 0.72
+        y: 0.68
       };
 
-      const modalElement = document.querySelector('[data-cart-modal="true"]');
-      if (modalElement) {
-        const rect = modalElement.getBoundingClientRect();
-        const centerX = (rect.left + rect.width / 2) / window.innerWidth;
-        const centerY = (rect.top + rect.height * 0.28) / window.innerHeight;
-        origin = {
-          x: Math.min(Math.max(centerX, 0.1), 0.9),
-          y: Math.min(Math.max(centerY, 0.12), 0.82)
-        };
-      }
-
-      confetti({
+      launchFireworks({
         particleCount: index % 3 === 1 ? 90 : 65,
         spread: 82,
         startVelocity: 48,
@@ -533,12 +552,7 @@ export default function ShopPage({ onOrderSubmitted }) {
     };
 
     runBurst();
-    const interval = window.setInterval(runBurst, 1400);
-
-    window.setTimeout(() => {
-      window.clearInterval(interval);
-      confetti.reset();
-    }, 5200);
+    fireworksIntervalRef.current = window.setInterval(runBurst, 1400);
   };
 
   // Reset to page 1 when filters change
@@ -830,13 +844,13 @@ export default function ShopPage({ onOrderSubmitted }) {
       const fileExtension = paymentProofFile.name.includes('.')
         ? paymentProofFile.name.slice(paymentProofFile.name.lastIndexOf('.') + 1)
         : 'jpg';
-      const safeFileName = `orders/${order.orderNumber || `proof-${Date.now()}`}.${fileExtension}`;
+      const safeFileName = `orders/${order.orderNumber || 'proof'}-proof-${Date.now()}.${fileExtension}`;
 
       const { data: uploadData, error: uploadError } = await supabase
         .storage
         .from('prof-upload')
         .upload(safeFileName, paymentProofFile, {
-          upsert: true,
+          upsert: false,
           contentType: paymentProofFile.type || 'application/octet-stream'
         });
 
@@ -873,7 +887,7 @@ export default function ShopPage({ onOrderSubmitted }) {
       setTimeout(() => setToast(null), 2500);
     } catch (error) {
       console.warn('Payment proof save failed:', error);
-      setToast({ message: 'Unable to save proof image right now.', type: 'error' });
+      setToast({ message: error?.message || 'Unable to save proof image right now.', type: 'error' });
       setTimeout(() => setToast(null), 3000);
     } finally {
       setPaymentProofSaving(false);
@@ -1684,6 +1698,18 @@ export default function ShopPage({ onOrderSubmitted }) {
               borderTopLeftRadius: isSmallScreen ? '18px' : '0',
               borderTopRightRadius: isSmallScreen ? '18px' : '0'
             }}>
+              <canvas
+                ref={fireworksCanvasRef}
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
+                  pointerEvents: 'none',
+                  zIndex: 5
+                }}
+              />
               {/* Close Button with Arrow */}
               <div style={{ padding: isSmallScreen ? '12px 14px' : '16px', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
