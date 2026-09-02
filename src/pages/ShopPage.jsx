@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react';
 import confetti from 'canvas-confetti';
+import { supabase } from '../supabaseClient';
 
 const defaultBankAccount = {
   bankName: 'Access Bank',
@@ -670,32 +671,21 @@ export default function ShopPage({ onOrderSubmitted }) {
         quantity: Number(item.quantity || 1)
       }));
 
-      const { data: insertedOrder, error: orderError } = await fetch('https://kuixjzkgwgeqqbimvvzn.supabase.co/rest/v1/shop_orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
-          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || ''}`
-        },
-        body: JSON.stringify({
-          order_number: order.orderNumber,
-          customer_name: order.name,
-          email: order.email,
-          phone: order.phone,
-          subtotal: Number(order.total || 0),
-          total: Number(order.total || 0),
-          notes: order.notes || '',
-          status: order.status || 'pending'
-        })
-      }).then(async (response) => {
-        const responseText = await response.text();
-        return { response, body: responseText ? JSON.parse(responseText) : null };
-      }).then(({ response, body }) => {
-        if (!response.ok) {
-          throw new Error(body?.message || body?.error || 'Order insert failed');
-        }
-        return body;
-      });
+      const { data: insertedOrder, error: orderError } = await supabase
+        .from('shop_orders')
+        .insert([
+          {
+            order_number: order.orderNumber,
+            customer_name: order.name,
+            email: order.email,
+            phone: order.phone,
+            subtotal: Number(order.total || 0),
+            total: Number(order.total || 0),
+            notes: order.notes || '',
+            status: order.status || 'pending'
+          }
+        ])
+        .select();
 
       if (orderError) {
         throw orderError;
@@ -713,15 +703,10 @@ export default function ShopPage({ onOrderSubmitted }) {
       }));
 
       if (itemsPayload.length > 0) {
-        await fetch('https://kuixjzkgwgeqqbimvvzn.supabase.co/rest/v1/shop_order_items', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || ''}`
-          },
-          body: JSON.stringify(itemsPayload)
-        });
+        const { error: itemError } = await supabase.from('shop_order_items').insert(itemsPayload);
+        if (itemError) {
+          console.warn('Order item persistence to Supabase failed:', itemError);
+        }
       }
     } catch (error) {
       console.warn('Order persistence to Supabase failed:', error);

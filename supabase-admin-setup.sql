@@ -114,6 +114,41 @@ create table if not exists shop_order_items (
   created_at timestamptz default now()
 );
 
+alter table if exists store_products enable row level security;
+alter table if exists store_bank_accounts enable row level security;
+alter table if exists shop_orders enable row level security;
+alter table if exists shop_order_items enable row level security;
+
+create policy if not exists "allow public read storefront" on public.store_products
+for select using (true);
+
+create policy if not exists "allow public read bank accounts" on public.store_bank_accounts
+for select using (true);
+
+create policy if not exists "allow public read shop orders" on public.shop_orders
+for select using (true);
+
+create policy if not exists "allow public read order items" on public.shop_order_items
+for select using (true);
+
+create policy if not exists "allow public insert shop orders" on public.shop_orders
+for insert with check (true);
+
+create policy if not exists "allow public insert order items" on public.shop_order_items
+for insert with check (true);
+
+create policy if not exists "allow authenticated update store products" on public.store_products
+for update using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+create policy if not exists "allow authenticated update bank accounts" on public.store_bank_accounts
+for update using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+create policy if not exists "allow authenticated delete store products" on public.store_products
+for delete using (auth.role() = 'authenticated');
+
+create policy if not exists "allow authenticated delete bank accounts" on public.store_bank_accounts
+for delete using (auth.role() = 'authenticated');
+
 create index if not exists idx_store_products_category on store_products(category);
 create index if not exists idx_shop_orders_order_number on shop_orders(order_number);
 create index if not exists idx_shop_order_items_order_id on shop_order_items(order_id);
