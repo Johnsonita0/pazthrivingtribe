@@ -7,11 +7,11 @@
 
 import http from 'http';
 import url from 'url';
-import adminUpdateHandler from './api/admin-update.js';
-import trackVisitorHandler from './api/track-visitor.js';
-import resendWebhookHandler from './api/resend-webhook.js';
-import sendNotificationEmailHandler from './api/send-notification-email.js';
-import sendRegistrationEmailHandler from './api/send-registration-email.js';
+import adminUpdateHandler from './api-handlers/admin-update.js';
+import trackVisitorHandler from './api-handlers/track-visitor.js';
+import resendWebhookHandler from './api-handlers/resend-webhook.js';
+import sendNotificationEmailHandler from './api-handlers/send-notification-email.js';
+import sendRegistrationEmailHandler from './api-handlers/send-registration-email.js';
 
 try {
   process.loadEnvFile?.('.env');
@@ -55,12 +55,6 @@ const server = http.createServer((req, res) => {
       if (pathname === '/api/track-visitor' && req.method === 'POST') {
         req.body = body;
         await trackVisitorHandler(req, res);
-        return;
-      }
-
-      if (pathname === '/api/mailjet-webhook' && req.method === 'POST') {
-        req.body = body;
-        await resendWebhookHandler(req, res);
         return;
       }
 
