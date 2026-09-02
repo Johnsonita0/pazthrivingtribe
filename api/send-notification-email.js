@@ -19,6 +19,20 @@ function sendJson(res, statusCode, payload) {
   res.end(JSON.stringify(payload));
 }
 
+function getAdminEmails() {
+  const configuredEmails = [
+    process.env.ADMIN_EMAILS,
+    process.env.VITE_ADMIN_EMAILS,
+    'pazthrivingtribe@gmail.com',
+    'imeobongj@gmail.com'
+  ]
+    .flatMap((value) => String(value || '').split(',').map((email) => email.trim()))
+    .filter(Boolean)
+    .map((email) => email.toLowerCase());
+
+  return [...new Set(configuredEmails)];
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -78,48 +92,97 @@ export default async function handler(req, res) {
     const orderProductDownloadUrl = [productFileUrl, fileUrl, body?.downloadUrl, body?.productUrl].find((value) => isRealProductDownloadUrl(value)) || '';
     const resolvedProductName = (productName || itemName || 'your product').toString().trim() || 'your product';
     const resolvedAttachmentName = String(attachmentName || resolvedProductName || 'product-file.pdf').trim() || 'product-file.pdf';
-    const subjectLine = orderNumber ? `Your PAZ order is ready — #${orderNumber}` : 'Your PAZ order update';
+    const hasCompletedOrderSignal = Boolean(orderNumber) || /order|purchase|checkout|shop/i.test(String(service || ''));
+    const adminRecipients = getAdminEmails();
+    const testCustomerEmail = 'imeobongj@gmail.com';
+    const customerRecipients = Array.from(new Set([cleanEmail, testCustomerEmail].filter(Boolean)));
+    const productAttachmentFilename = resolvedAttachmentName.includes('.') ? resolvedAttachmentName : `${resolvedProductName.replace(/\s+/g, '-').toLowerCase()}.pdf`;
+    const subjectLine = orderNumber ? `Your PAZ product is ready to download — #${orderNumber}` : 'Your PAZ product is ready to download';
+    const orderNotificationSubject = orderNumber ? `PAZ payment confirmation required — #${orderNumber}` : 'PAZ payment confirmation required';
 
-    const emailHTML = buildPazEmailTemplate({
+    const customerEmailHTML = buildPazEmailTemplate({
       title: subjectLine,
       eyebrow: 'Order update',
       intro: `Hi ${resolvedCustomerName},`,
-      accentText: deliveryMessage || 'Thank you for choosing PAZ Thriving Tribe.',
+      accentText: deliveryMessage || 'Your order has been received successfully.',
       bodyHtml: `
-        <p><strong>We’re excited to share your order update.</strong></p>
+        <p><strong>We’ve received your order.</strong></p>
         <p>${(deliveryMessage || 'Thank you for choosing PAZ Thriving Tribe.').replace(/\n/g, '<br>')}</p>
-        ${itemList || '<p><strong>Delivery:</strong> Your product is now ready for access.</p>'}
+        ${itemList || '<p><strong>Order status:</strong> Your order is pending confirmation by our admin team.</p>'}
         ${orderNumber ? `<p><strong>Order number:</strong> ${orderNumber}</p>` : ''}
-        ${orderProductDownloadUrl ? `<p><strong>Download link:</strong> <a href="${orderProductDownloadUrl}" style="color:#123d35;font-weight:700;">Open product file</a></p>` : ''}
-        ${resolvedAttachmentName ? `<p><strong>Product file:</strong> ${resolvedAttachmentName}</p>` : ''}
+        <p><strong>Next step:</strong> Once payment is confirmed by our admin team, you will receive a separate email with your downloadable product file.</p>
         <p><strong>Customer email:</strong> ${cleanEmail}</p>
       `,
       productDownloadUrl: orderProductDownloadUrl,
       productName: resolvedProductName,
-      ctaLabel: orderProductDownloadUrl ? 'Download your product' : 'Apply for a section',
+      ctaLabel: orderProductDownloadUrl ? 'Download product' : 'Apply for a session',
       ctaUrl: orderProductDownloadUrl || `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/teens_reg`,
-      secondaryCtaLabel: 'Book for a section',
+      secondaryCtaLabel: 'Book for a session',
       secondaryCtaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/book-session`,
       footerNote: 'Thank you for shopping with PAZ Thriving Tribe.'
     });
 
+    const adminEmailHTML = buildPazEmailTemplate({
+      title: orderNotificationSubject,
+      eyebrow: 'Admin notification',
+      intro: `Hello PAZ team,`,
+      accentText: `A new order was placed and needs attention.`,
+      bodyHtml: `
+        <p><strong>New order alert:</strong> A customer has placed an order and payment confirmation is required.</p>
+        ${itemList || '<p><strong>Order status:</strong> Customer order has been created and is awaiting admin review.</p>'}
+        ${orderNumber ? `<p><strong>Order number:</strong> ${orderNumber}</p>` : ''}
+        <p><strong>Customer name:</strong> ${resolvedCustomerName}</p>
+        <p><strong>Customer email:</strong> ${cleanEmail}</p>
+        <p><strong>Action required:</strong> Please confirm payment in the dashboard, then send the product delivery email with the downloadable file attached.</p>
+      `,
+      productDownloadUrl: orderProductDownloadUrl,
+      productName: resolvedProductName,
+      ctaLabel: 'Review order dashboard',
+      ctaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/admin`,
+      secondaryCtaLabel: 'View shop orders',
+      secondaryCtaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/store`,
+      footerNote: 'This is an internal order notification for PAZ Thriving Tribe.'
+    });
+
     const attachments = isRealProductDownloadUrl(orderProductDownloadUrl)
       ? [{
-          filename: resolvedAttachmentName.includes('.') ? resolvedAttachmentName : `${resolvedProductName.replace(/\s+/g, '-').toLowerCase()}.pdf`,
+          filename: productAttachmentFilename,
           url: orderProductDownloadUrl
         }]
       : [];
 
-    await sendResendEmail({
-      to: cleanEmail,
-      subject: subjectLine,
-      html: emailHTML,
-      text: `PAZ Thriving Tribe\n\n${deliveryMessage || 'Thank you for choosing PAZ Thriving Tribe.'}`,
-      from: process.env.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.org',
-      attachments
-    });
+    if (hasCompletedOrderSignal && adminRecipients.length) {
+      await sendResendEmail({
+        to: adminRecipients,
+        subject: orderNotificationSubject,
+        html: adminEmailHTML,
+        text: `New PAZ order received. Customer: ${cleanEmail}. Please review and confirm payment before sending the product email.`,
+        from: process.env.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.org'
+      });
 
-    console.log(`✓ Resend notification sent to: ${cleanEmail}`);
+      await sendResendEmail({
+        to: customerRecipients,
+        subject: orderNumber ? `Your PAZ order has been received — #${orderNumber}` : 'Your PAZ order has been received',
+        html: customerEmailHTML,
+        text: `Your PAZ order has been received. We will send your product download email once payment is confirmed by admin.`,
+        from: process.env.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.org',
+        attachments: []
+      });
+
+      console.log(`✓ Admin order notification sent to: ${adminRecipients.join(', ')}`);
+      console.log(`✓ Customer order confirmation sent to: ${customerRecipients.join(', ')}`);
+    } else {
+      await sendResendEmail({
+        to: cleanEmail,
+        subject: subjectLine,
+        html: customerEmailHTML,
+        text: `PAZ Thriving Tribe\n\n${deliveryMessage || 'Thank you for choosing PAZ Thriving Tribe.'}`,
+        from: process.env.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.org',
+        attachments
+      });
+
+      console.log(`✓ Resend notification sent to: ${cleanEmail}`);
+    }
 
     return sendJson(res, 200, {
       success: true,

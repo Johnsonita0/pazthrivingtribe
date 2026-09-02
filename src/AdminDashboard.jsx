@@ -1776,8 +1776,8 @@ export default function AdminDashboard(props) {
                       )}
 
                       <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '10px', marginBottom: '14px' }}>
-                        <a href="https://pazthrivingtribe.org/teens_reg" style={{ display: 'inline-block', background: '#1d9a63', color: '#fff', padding: '12px 18px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 800, textDecoration: 'none' }}>Apply for a section</a>
-                        <a href="https://pazthrivingtribe.org/book-session" style={{ display: 'inline-block', background: '#fff', color: '#0f172a', border: '1px solid #dfe8e3', padding: '12px 18px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 800, textDecoration: 'none' }}>Book for a section</a>
+                        <a href="https://pazthrivingtribe.org/teens_reg" style={{ display: 'inline-block', background: '#1d9a63', color: '#fff', padding: '12px 18px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 800, textDecoration: 'none' }}>Apply for a session</a>
+                        <a href="https://pazthrivingtribe.org/book-session" style={{ display: 'inline-block', background: '#fff', color: '#0f172a', border: '1px solid #dfe8e3', padding: '12px 18px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 800, textDecoration: 'none' }}>Book for a session</a>
                       </div>
                     </div>
 

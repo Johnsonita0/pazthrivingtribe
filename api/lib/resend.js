@@ -27,6 +27,15 @@ export async function sendResendEmail({
 
     if (attachment.url && attachment.filename) {
       try {
+        if (String(attachment.url).startsWith('data:')) {
+          const [meta, encoded] = String(attachment.url).split(',', 2);
+          const isBase64 = meta.includes(';base64');
+          return {
+            filename: attachment.filename,
+            content: isBase64 ? String(encoded || '') : Buffer.from(decodeURIComponent(encoded || '')).toString('base64')
+          };
+        }
+
         const fileResponse = await fetch(attachment.url);
         if (!fileResponse.ok) {
           console.warn(`Skipping attachment because the file could not be fetched: ${attachment.url}`);
