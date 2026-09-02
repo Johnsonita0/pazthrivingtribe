@@ -1,5 +1,5 @@
-import { sendResendEmail } from '../api/lib/resend.js';
-import { buildPazEmailTemplate } from '../api/lib/paz-email-template.js';
+import { sendResendEmail } from './lib/resend.js';
+import { buildPazEmailTemplate } from './lib/paz-email-template.js';
 
 function sendJson(res, statusCode, payload) {
   if (typeof res.status === 'function') {

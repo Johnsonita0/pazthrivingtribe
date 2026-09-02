@@ -7,11 +7,11 @@
 
 import http from 'http';
 import url from 'url';
-import adminUpdateHandler from './api-handlers/admin-update.js';
-import trackVisitorHandler from './api-handlers/track-visitor.js';
-import resendWebhookHandler from './api-handlers/resend-webhook.js';
-import sendNotificationEmailHandler from './api-handlers/send-notification-email.js';
-import sendRegistrationEmailHandler from './api-handlers/send-registration-email.js';
+import adminUpdateHandler from './api/admin-update.js';
+import trackVisitorHandler from './api/track-visitor.js';
+import resendWebhookHandler from './api/resend-webhook.js';
+import sendNotificationEmailHandler from './api/send-notification-email.js';
+import sendRegistrationEmailHandler from './api/send-registration-email.js';
 
 try {
   process.loadEnvFile?.('.env');
