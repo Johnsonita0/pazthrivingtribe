@@ -655,7 +655,7 @@ export default function StorePage() {
                     }}
                     title="Close cart"
                   >
-                    âœ•
+                    ×
                   </button>
                 </div>
               </div>
