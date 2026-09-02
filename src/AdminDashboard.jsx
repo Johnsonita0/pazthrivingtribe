@@ -342,6 +342,7 @@ export default function AdminDashboard(props) {
     }
   };
   const [adminToast, setAdminToast] = useState(null);
+  const [proofPreviewModal, setProofPreviewModal] = useState(null);
 
   const getPaymentProofPreview = (order) => {
     if (!order) return null;
@@ -354,8 +355,12 @@ export default function AdminDashboard(props) {
       order.proofImage,
       order.proof_url,
       order.payment_proof_preview,
+      order.payment_proof_url,
+      order.payment_proof_path,
       order.paymentProofDataUrl,
-      order.paymentProofDataUri
+      order.paymentProofDataUri,
+      order.payment_proof_path ? `https://nidlwriwkfegffjckwog.supabase.co/storage/v1/object/public/prof-upload/${order.payment_proof_path}` : null,
+      order.payment_proof_path ? `/storage/v1/object/public/prof-upload/${order.payment_proof_path}` : null
     ];
     return candidates.find((value) => typeof value === 'string' && value.trim().length > 0) || null;
   };
@@ -1640,6 +1645,71 @@ export default function AdminDashboard(props) {
         </div>
       </div>
 
+      {proofPreviewModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setProofPreviewModal(null)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 22000,
+            background: 'rgba(15, 23, 42, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px'
+          }}
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              position: 'relative',
+              width: 'min(900px, calc(100vw - 36px))',
+              maxHeight: '88vh',
+              background: '#fff',
+              borderRadius: '18px',
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 26px 80px rgba(15, 23, 42, 0.32)',
+              overflow: 'hidden'
+            }}
+          >
+            <button
+              type="button"
+              aria-label="Close proof preview"
+              onClick={() => setProofPreviewModal(null)}
+              style={{
+                position: 'absolute',
+                top: '14px',
+                right: '14px',
+                width: '36px',
+                height: '36px',
+                borderRadius: '50%',
+                border: '1px solid #e2e8f0',
+                background: '#fff',
+                color: '#334155',
+                fontSize: '1.4rem',
+                cursor: 'pointer',
+                zIndex: 2
+              }}
+            >
+              ×
+            </button>
+            <img
+              src={proofPreviewModal}
+              alt="Payment proof preview"
+              style={{
+                display: 'block',
+                width: '100%',
+                maxHeight: '88vh',
+                objectFit: 'contain',
+                background: '#f8fafc'
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {adminToast && (
         <div className="admin-toast" data-type={adminToast.type} role="status" aria-live="polite">
           <div className="admin-toast-header">
@@ -1734,7 +1804,31 @@ export default function AdminDashboard(props) {
                 <section style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
                   <h4 style={{ margin: '0 0 12px', color: '#111827', fontSize: '1rem' }}>Proof of payment</h4>
                   {paymentProofPreview ? (
-                    <img src={paymentProofPreview} alt="Payment proof preview" style={{ width: '100%', borderRadius: '10px', border: '1px solid #cbd5e1', maxHeight: '220px', objectFit: 'cover' }} />
+                    <>
+                      <img src={paymentProofPreview} alt="Payment proof preview" style={{ width: '100%', borderRadius: '10px', border: '1px solid #cbd5e1', maxHeight: '220px', objectFit: 'cover' }} />
+                      <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end' }}>
+                        <button
+                          type="button"
+                          onClick={() => setProofPreviewModal(paymentProofPreview)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            background: '#111827',
+                            color: '#fff',
+                            border: 'none',
+                            borderRadius: '10px',
+                            padding: '8px 12px',
+                            fontWeight: 700,
+                            fontSize: '0.8rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <i className="fa-solid fa-expand" aria-hidden="true"></i>
+                          View image
+                        </button>
+                      </div>
+                    </>
                   ) : (
                     <div style={{ color: '#64748b', padding: '20px 0', textAlign: 'center' }}>No proof image attached.</div>
                   )}
@@ -1774,7 +1868,31 @@ export default function AdminDashboard(props) {
                   <section style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
                     <h4 style={{ margin: '0 0 12px', color: '#111827', fontSize: '1rem' }}>Proof of payment</h4>
                     {paymentProofPreview ? (
-                      <img src={paymentProofPreview} alt="Payment proof preview" style={{ width: '100%', borderRadius: '10px', border: '1px solid #cbd5e1', maxHeight: '220px', objectFit: 'cover' }} />
+                      <>
+                        <img src={paymentProofPreview} alt="Payment proof preview" style={{ width: '100%', borderRadius: '10px', border: '1px solid #cbd5e1', maxHeight: '220px', objectFit: 'cover' }} />
+                        <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end' }}>
+                          <button
+                            type="button"
+                            onClick={() => setProofPreviewModal(paymentProofPreview)}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              background: '#111827',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: '10px',
+                              padding: '8px 12px',
+                              fontWeight: 700,
+                              fontSize: '0.8rem',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <i className="fa-solid fa-expand" aria-hidden="true"></i>
+                            View image
+                          </button>
+                        </div>
+                      </>
                     ) : (
                       <div style={{ color: '#64748b', padding: '20px 0', textAlign: 'center' }}>No proof image attached.</div>
                     )}

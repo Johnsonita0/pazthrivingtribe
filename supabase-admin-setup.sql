@@ -151,6 +151,20 @@ BEGIN
 
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'store_products' AND policyname = 'allow public insert store products'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow public insert store products" ON public.store_products FOR INSERT WITH CHECK (true);';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'store_bank_accounts' AND policyname = 'allow public insert bank accounts'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow public insert bank accounts" ON public.store_bank_accounts FOR INSERT WITH CHECK (true);';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
     WHERE schemaname = 'public' AND tablename = 'shop_orders' AND policyname = 'allow public insert shop orders'
   ) THEN
     EXECUTE 'CREATE POLICY "allow public insert shop orders" ON public.shop_orders FOR INSERT WITH CHECK (true);';

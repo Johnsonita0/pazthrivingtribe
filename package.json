@@ -9,7 +9,8 @@
     "dev:all": "npm run dev & npm run dev:api",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "seed:commerce": "node scripts/seed-commerce-demo.js"
   },
   "dependencies": {
     "@supabase/auth-ui-react": "^0.4.7",

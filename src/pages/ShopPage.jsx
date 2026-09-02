@@ -733,6 +733,33 @@ export default function ShopPage({ onOrderSubmitted }) {
         quantity: Number(item.quantity || 1)
       }));
 
+      let paymentProofPath = null;
+      let paymentProofUrl = null;
+
+      if (paymentProofFile) {
+        const fileExtension = paymentProofFile.name.includes('.')
+          ? paymentProofFile.name.slice(paymentProofFile.name.lastIndexOf('.') + 1)
+          : 'jpg';
+        const safeFileName = `orders/${order.orderNumber || `proof-${Date.now()}`}.${fileExtension}`;
+        const uploadPayload = {
+          upsert: true,
+          contentType: paymentProofFile.type || 'application/octet-stream'
+        };
+
+        const { data: uploadData, error: uploadError } = await supabase
+          .storage
+          .from('prof-upload')
+          .upload(safeFileName, paymentProofFile, uploadPayload);
+
+        if (uploadError) {
+          console.warn('Payment proof upload failed:', uploadError);
+        } else {
+          paymentProofPath = uploadData?.path || safeFileName;
+          const { data: publicUrlData } = supabase.storage.from('prof-upload').getPublicUrl(paymentProofPath);
+          paymentProofUrl = publicUrlData?.publicUrl || paymentProof || null;
+        }
+      }
+
       const { data: insertedOrder, error: orderError } = await supabase
         .from('shop_orders')
         .insert([
@@ -744,7 +771,9 @@ export default function ShopPage({ onOrderSubmitted }) {
             subtotal: Number(order.total || 0),
             total: Number(order.total || 0),
             notes: order.notes || '',
-            status: order.status || 'pending'
+            status: order.status || 'pending',
+            payment_proof_path: paymentProofPath,
+            payment_proof_url: paymentProofUrl || paymentProof || null
           }
         ])
         .select();
@@ -769,6 +798,18 @@ export default function ShopPage({ onOrderSubmitted }) {
         if (itemError) {
           console.warn('Order item persistence to Supabase failed:', itemError);
         }
+      }
+
+      if (paymentProofUrl || paymentProof) {
+        setSubmittedOrder((currentOrder) => ({
+          ...(currentOrder || order),
+          paymentProofFile: paymentProofFile ? paymentProofFile.name : currentOrder?.paymentProofFile || null,
+          paymentProofUploaded: !!paymentProofFile,
+          paymentProofPreview: paymentProofUrl || paymentProof || currentOrder?.paymentProofPreview || null,
+          paymentProofUrl: paymentProofUrl || paymentProof || currentOrder?.paymentProofUrl || null,
+          payment_proof_url: paymentProofUrl || paymentProof || currentOrder?.payment_proof_url || null,
+          payment_proof_path: paymentProofPath || currentOrder?.payment_proof_path || null
+        }));
       }
     } catch (error) {
       console.warn('Order persistence to Supabase failed:', error);
