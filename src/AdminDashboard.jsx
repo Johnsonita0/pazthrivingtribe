@@ -506,7 +506,53 @@ export default function AdminDashboard(props) {
     setEditingStoreProductId(null);
   };
 
-  const handleStoreProductSubmit = (event) => {
+  const persistStoreProductToSupabase = async (product, operation = 'upsert') => {
+    if (!product || typeof product !== 'object') return;
+    const token = session?.access_token || session?.accessToken || '';
+    if (!token) return;
+
+    const payload = {
+      id: product.id,
+      title: product.title,
+      description: product.description || '',
+      price: Number(product.price || 0),
+      category: product.category || 'Ebook',
+      file_url: product.fileUrl || '',
+      cover: product.cover || '/logo/logomain.png',
+      in_stock: product.inStock !== false,
+      stock_count: Number(product.stockCount || 0),
+      rating: Number(product.rating || 0),
+      reviews: Number(product.reviews || 0),
+      prime: Boolean(product.prime || false)
+    };
+
+    try {
+      const requestBody = {
+        action: operation === 'delete' ? 'delete' : (product.id && typeof product.id === 'string' && product.id.startsWith('store-') ? 'insert' : 'upsert'),
+        table: 'store_products',
+        payload: [payload],
+        match: product.id ? { id: product.id } : undefined
+      };
+
+      if (operation === 'delete') {
+        requestBody.action = 'delete';
+      }
+
+      const response = await fetch('/api/admin-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        console.warn('Store product sync to Supabase failed:', response.statusText);
+      }
+    } catch (error) {
+      console.warn('Store product sync error:', error);
+    }
+  };
+
+  const handleStoreProductSubmit = async (event) => {
     event.preventDefault();
     if (!storeProductForm.title || !storeProductForm.description || !storeProductForm.price) return;
 
@@ -524,11 +570,14 @@ export default function AdminDashboard(props) {
     };
 
     if (editingStoreProductId) {
-      setStoreProducts((current = []) => (Array.isArray(current) ? current : []).map((product) => (
+      const updatedProducts = (Array.isArray(storeProducts) ? storeProducts : []).map((product) => (
         product.id === editingStoreProductId
           ? { ...product, ...productValues }
           : product
-      )));
+      ));
+      setStoreProducts(updatedProducts);
+      const targetProduct = updatedProducts.find((product) => product.id === editingStoreProductId) || { id: editingStoreProductId, ...productValues };
+      await persistStoreProductToSupabase(targetProduct, 'upsert');
       showAdminToast('success', 'Product updated', `${productValues.title} has been updated on the public store.`);
     } else {
       const newProduct = {
@@ -536,6 +585,7 @@ export default function AdminDashboard(props) {
         ...productValues
       };
       setStoreProducts((current = []) => [...(Array.isArray(current) ? current : []), newProduct]);
+      await persistStoreProductToSupabase(newProduct, 'upsert');
       showAdminToast('success', 'Product saved', `${newProduct.title} is now available in the digital store.`);
     }
 
@@ -557,8 +607,8 @@ export default function AdminDashboard(props) {
     });
   };
 
-  const toggleStoreProductAvailability = (productId) => {
-    setStoreProducts((current = []) => (Array.isArray(current) ? current : []).map((product) => {
+  const toggleStoreProductAvailability = async (productId) => {
+    const nextProducts = (Array.isArray(storeProducts) ? storeProducts : []).map((product) => {
       if (product.id !== productId) return product;
       const nextInStock = product.inStock === false;
       return {
@@ -566,14 +616,25 @@ export default function AdminDashboard(props) {
         inStock: nextInStock,
         stockCount: nextInStock ? Math.max(Number(product.stockCount || 0), 1) : 0
       };
-    }));
+    });
+    setStoreProducts(nextProducts);
+
+    const targetProduct = nextProducts.find((product) => product.id === productId);
+    if (targetProduct) {
+      await persistStoreProductToSupabase(targetProduct, 'upsert');
+    }
   };
 
-  const handleDeleteStoreProduct = (productId) => {
+  const handleDeleteStoreProduct = async (productId) => {
     if (!productId) return;
+    const productToDelete = (Array.isArray(storeProducts) ? storeProducts : []).find((product) => product.id === productId);
     setStoreProducts((current = []) => (Array.isArray(current) ? current : []).filter((product) => product.id !== productId));
     if (editingStoreProductId === productId) {
       resetStoreProductForm();
+    }
+
+    if (productToDelete) {
+      await persistStoreProductToSupabase({ ...productToDelete, id: productToDelete.id }, 'delete');
     }
     showAdminToast('success', 'Product removed', 'That product has been removed from the storefront and shop pages.');
   };
@@ -583,8 +644,39 @@ export default function AdminDashboard(props) {
     setProductDeleteTarget(product);
   };
 
-  const handleBankAccountChange = (field, value) => {
-    setStoreBankAccount((current = {}) => ({ ...current, [field]: value }));
+  const handleBankAccountChange = async (field, value) => {
+    const nextBankAccount = { ...(storeBankAccount || {}), [field]: value };
+    setStoreBankAccount(nextBankAccount);
+
+    const token = session?.access_token || session?.accessToken || '';
+    if (!token) return;
+
+    try {
+      const payload = {
+        bank_name: nextBankAccount.bankName || '',
+        account_name: nextBankAccount.accountName || '',
+        account_number: nextBankAccount.accountNumber || '',
+        account_type: nextBankAccount.accountType || '',
+        swift_code: nextBankAccount.swiftCode || '',
+        note: nextBankAccount.note || ''
+      };
+
+      const response = await fetch('/api/admin-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          action: 'insert',
+          table: 'store_bank_accounts',
+          payload: [payload]
+        })
+      });
+
+      if (!response.ok) {
+        console.warn('Bank account sync to Supabase failed:', response.statusText);
+      }
+    } catch (error) {
+      console.warn('Bank account sync error:', error);
+    }
   };
 
   const printViewingRow = () => {

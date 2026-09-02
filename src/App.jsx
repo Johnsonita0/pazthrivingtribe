@@ -781,6 +781,117 @@ export default function App() {
     return null;
   };
 
+  const normalizeStoreProduct = (product = {}) => {
+    const normalizedId = product.id || product.product_id || `store-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const parsedPrice = Number(product.price ?? product.amount ?? 0);
+    const normalizedInStock = product.in_stock ?? product.inStock ?? true;
+    const normalizedStockCount = Number(product.stock_count ?? product.stockCount ?? 0);
+
+    return {
+      id: normalizedId,
+      title: product.title || product.name || 'Untitled product',
+      description: product.description || '',
+      price: Number.isFinite(parsedPrice) ? parsedPrice : 0,
+      category: product.category || 'Ebook',
+      cover: product.cover || product.image || product.image_url || '/logo/logomain.png',
+      fileUrl: product.file_url || product.fileUrl || '',
+      inStock: normalizedInStock !== false,
+      stockCount: Number.isFinite(normalizedStockCount) ? normalizedStockCount : 0,
+      rating: Number(product.rating ?? 0),
+      reviews: Number(product.reviews ?? 0),
+      prime: Boolean(product.prime ?? false),
+      createdAt: product.created_at || product.createdAt || null,
+      updatedAt: product.updated_at || product.updatedAt || null
+    };
+  };
+
+  const normalizeShopOrder = (order = {}) => {
+    const rawItems = Array.isArray(order.items)
+      ? order.items
+      : Array.isArray(order.order_items)
+        ? order.order_items
+        : [];
+
+    const normalizedItems = rawItems.map((item) => ({
+      id: item.id || item.product_id || `${order.id || 'order'}-${Math.random().toString(16).slice(2)}`,
+      title: item.title || item.product_title || item.name || 'Product',
+      quantity: Number(item.quantity ?? 1),
+      price: Number(item.price ?? item.amount ?? 0),
+      fileUrl: item.file_url || item.fileUrl || item.productFileUrl || '',
+      product_id: item.product_id || item.productId || null
+    }));
+
+    return {
+      id: order.id || order.order_id || `shop-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      orderNumber: order.order_number || order.orderNumber || 'N/A',
+      name: order.customer_name || order.name || 'Customer',
+      email: order.email || order.customer_email || '',
+      phone: order.phone || order.customer_phone || '',
+      total: Number(order.total ?? order.amount ?? 0),
+      subtotal: Number(order.subtotal ?? order.total ?? order.amount ?? 0),
+      notes: order.notes || '',
+      status: order.status || 'pending',
+      paymentProofPath: order.payment_proof_path || order.paymentProofPath || '',
+      paymentProofUrl: order.payment_proof_url || order.paymentProofUrl || '',
+      createdAt: order.created_at || order.createdAt || new Date().toISOString(),
+      items: normalizedItems,
+      productEmailSent: Boolean(order.product_email_sent ?? order.productEmailSent ?? false)
+    };
+  };
+
+  const loadCommerceData = async () => {
+    try {
+      const [productsResult, bankResult, ordersResult] = await Promise.all([
+        supabase.from('store_products').select('*').order('created_at', { ascending: false }),
+        supabase.from('store_bank_accounts').select('*').order('created_at', { ascending: false }).limit(1),
+        supabase.from('shop_orders').select('*').order('created_at', { ascending: false }).limit(200)
+      ]);
+
+      if (!productsResult.error && Array.isArray(productsResult.data) && productsResult.data.length > 0) {
+        setStoreProducts(productsResult.data.map(normalizeStoreProduct));
+      } else if (!productsResult.error && Array.isArray(productsResult.data) && productsResult.data.length === 0) {
+        setStoreProducts(defaultStoreProducts);
+      }
+
+      if (!bankResult.error && Array.isArray(bankResult.data) && bankResult.data.length > 0) {
+        const bankAccount = bankResult.data[0];
+        setStoreBankAccount({
+          bankName: bankAccount.bank_name || bankAccount.bankName || defaultStoreBankAccount.bankName,
+          accountName: bankAccount.account_name || bankAccount.accountName || defaultStoreBankAccount.accountName,
+          accountNumber: bankAccount.account_number || bankAccount.accountNumber || defaultStoreBankAccount.accountNumber,
+          accountType: bankAccount.account_type || bankAccount.accountType || defaultStoreBankAccount.accountType,
+          swiftCode: bankAccount.swift_code || bankAccount.swiftCode || defaultStoreBankAccount.swiftCode,
+          note: bankAccount.note || defaultStoreBankAccount.note
+        });
+      }
+
+      if (!ordersResult.error && Array.isArray(ordersResult.data)) {
+        const orderRows = ordersResult.data;
+        const ordersWithItems = await Promise.all(orderRows.map(async (order) => {
+          try {
+            const { data: itemRows, error: itemError } = await supabase
+              .from('shop_order_items')
+              .select('*')
+              .eq('order_id', order.id)
+              .order('created_at', { ascending: false });
+
+            if (!itemError && Array.isArray(itemRows)) {
+              return normalizeShopOrder({ ...order, items: itemRows });
+            }
+          } catch (itemLookupError) {
+            console.warn('Order item lookup failed:', itemLookupError);
+          }
+
+          return normalizeShopOrder(order);
+        }));
+
+        setShopOrders(ordersWithItems);
+      }
+    } catch (error) {
+      console.warn('Commerce data could not be loaded from Supabase:', error);
+    }
+  };
+
   const fetchDynamicWebsiteContent = async () => {
     try {
       const [{ data: serviceData, error: serviceError }, { data: programData, error: programError }, { data: applicantData, error: applicantError }] = await Promise.all([
@@ -918,6 +1029,8 @@ export default function App() {
       } catch (err) {
         console.log('No social feed table available for dynamic updates:', err);
       }
+
+      await loadCommerceData();
 
       // fetch testimonials after other content
       await fetchTestimonials();

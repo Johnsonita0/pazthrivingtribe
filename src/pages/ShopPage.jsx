@@ -661,6 +661,73 @@ export default function ShopPage({ onOrderSubmitted }) {
     return undefined;
   }, [paymentProof, paymentProofFile, submittedOrder, onOrderSubmitted]);
 
+  const persistOrderToSupabase = async (order) => {
+    try {
+      const itemRows = (order.items || []).map((item) => ({
+        product_id: item.id || item.product_id || item.productId || '',
+        title: item.title || 'Product',
+        price: Number(item.price || 0),
+        quantity: Number(item.quantity || 1)
+      }));
+
+      const { data: insertedOrder, error: orderError } = await fetch('https://kuixjzkgwgeqqbimvvzn.supabase.co/rest/v1/shop_orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || ''}`
+        },
+        body: JSON.stringify({
+          order_number: order.orderNumber,
+          customer_name: order.name,
+          email: order.email,
+          phone: order.phone,
+          subtotal: Number(order.total || 0),
+          total: Number(order.total || 0),
+          notes: order.notes || '',
+          status: order.status || 'pending'
+        })
+      }).then(async (response) => {
+        const responseText = await response.text();
+        return { response, body: responseText ? JSON.parse(responseText) : null };
+      }).then(({ response, body }) => {
+        if (!response.ok) {
+          throw new Error(body?.message || body?.error || 'Order insert failed');
+        }
+        return body;
+      });
+
+      if (orderError) {
+        throw orderError;
+      }
+
+      const savedOrder = Array.isArray(insertedOrder) ? insertedOrder[0] : insertedOrder;
+      if (!savedOrder?.id) return;
+
+      const itemsPayload = itemRows.map((item) => ({
+        order_id: savedOrder.id,
+        product_id: item.product_id,
+        title: item.title,
+        price: Number(item.price || 0),
+        quantity: Number(item.quantity || 1)
+      }));
+
+      if (itemsPayload.length > 0) {
+        await fetch('https://kuixjzkgwgeqqbimvvzn.supabase.co/rest/v1/shop_order_items', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || ''}`
+          },
+          body: JSON.stringify(itemsPayload)
+        });
+      }
+    } catch (error) {
+      console.warn('Order persistence to Supabase failed:', error);
+    }
+  };
+
   const handleCheckout = async (event) => {
     event.preventDefault();
     if (!cart.length) return;
@@ -684,6 +751,7 @@ export default function ShopPage({ onOrderSubmitted }) {
     };
 
     setSubmittedOrder(newOrder);
+    await persistOrderToSupabase(newOrder);
 
     const itemSummary = (newOrder.items || [])
       .map((item) => `• ${item.title || 'Product'} x${item.quantity || 1}`)
