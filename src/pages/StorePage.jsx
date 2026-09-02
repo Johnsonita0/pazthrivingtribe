@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const defaultBankAccount = {
@@ -18,7 +18,7 @@ const defaultProducts = [
     price: 5500,
     category: 'Ebook',
     cover: '/logo/logomain.png',
-    fileUrl: 'https://example.com/files/confidence-for-teens.pdf'
+    fileUrl: ''
   },
   {
     id: 'ebook-parent-guide',
@@ -27,7 +27,7 @@ const defaultProducts = [
     price: 7000,
     category: 'Guide',
     cover: '/logo/logo2.jpeg',
-    fileUrl: 'https://example.com/files/thriving-parent-guide.pdf'
+    fileUrl: ''
   },
   {
     id: 'digital-workbook',
@@ -36,7 +36,7 @@ const defaultProducts = [
     price: 4500,
     category: 'Workbook',
     cover: '/logo/logo2.jpeg',
-    fileUrl: 'https://example.com/files/purpose-planner-workbook.pdf'
+    fileUrl: ''
   },
   {
     id: 'family-routine-kit',
@@ -45,7 +45,7 @@ const defaultProducts = [
     price: 6200,
     category: 'Planner',
     cover: '/logo/logomain.png',
-    fileUrl: 'https://example.com/files/family-routine-kit.pdf'
+    fileUrl: ''
   },
   {
     id: 'mindful-moments',
@@ -54,7 +54,7 @@ const defaultProducts = [
     price: 4800,
     category: 'Journal',
     cover: '/logo/logo2.jpeg',
-    fileUrl: 'https://example.com/files/mindful-moments-journal.pdf'
+    fileUrl: ''
   },
   {
     id: 'teen-vision-board',
@@ -63,7 +63,7 @@ const defaultProducts = [
     price: 5300,
     category: 'Workbook',
     cover: '/logo/logomain.png',
-    fileUrl: 'https://example.com/files/teen-vision-board-pack.pdf'
+    fileUrl: ''
   },
   {
     id: 'boundaries-bundle',
@@ -72,7 +72,7 @@ const defaultProducts = [
     price: 6700,
     category: 'Guide',
     cover: '/logo/logo2.jpeg',
-    fileUrl: 'https://example.com/files/boundaries-bundle.pdf'
+    fileUrl: ''
   },
   {
     id: 'purpose-pathway',
@@ -81,7 +81,7 @@ const defaultProducts = [
     price: 8200,
     category: 'Course',
     cover: '/logo/logomain.png',
-    fileUrl: 'https://example.com/files/purpose-pathway.pdf'
+    fileUrl: ''
   },
   {
     id: 'calm-parenting',
@@ -90,7 +90,7 @@ const defaultProducts = [
     price: 7100,
     category: 'Guide',
     cover: '/logo/logo2.jpeg',
-    fileUrl: 'https://example.com/files/calm-parenting-playbook.pdf'
+    fileUrl: ''
   },
   {
     id: 'summer-growth-plan',
@@ -99,7 +99,7 @@ const defaultProducts = [
     price: 5900,
     category: 'Planner',
     cover: '/logo/logomain.png',
-    fileUrl: 'https://example.com/files/summer-growth-plan.pdf'
+    fileUrl: ''
   }
 ];
 
@@ -655,7 +655,7 @@ export default function StorePage() {
                     }}
                     title="Close cart"
                   >
-                    ✕
+                    âœ•
                   </button>
                 </div>
               </div>
@@ -812,3 +812,4 @@ export default function StorePage() {
     </div>
   );
 }
+

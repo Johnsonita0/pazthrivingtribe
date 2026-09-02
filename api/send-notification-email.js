@@ -1,6 +1,15 @@
 import { sendResendEmail } from './lib/resend.js';
 import { buildPazEmailTemplate } from './lib/paz-email-template.js';
 
+function isRealProductDownloadUrl(value) {
+  if (typeof value !== 'string') return false;
+
+  const trimmed = value.trim();
+  if (!trimmed) return false;
+
+  return !/^(https?:\/\/)?(www\.)?example\.com(\/|$)/i.test(trimmed);
+}
+
 function sendJson(res, statusCode, payload) {
   if (typeof res.status === 'function') {
     return res.status(statusCode).json(payload);
@@ -66,7 +75,7 @@ export default async function handler(req, res) {
     const deliveryMessage = (productMessage || customMessage || message || '').toString().trim();
     const itemList = itemSummary ? `<p><strong>Order items:</strong><br>${String(itemSummary).replace(/\n/g, '<br>')}</p>` : '';
     const resolvedCustomerName = (customerName || '').toString().trim() || 'there';
-    const orderProductDownloadUrl = [productFileUrl, fileUrl, body?.downloadUrl, body?.productUrl].find((value) => typeof value === 'string' && value.trim().length > 0) || '';
+    const orderProductDownloadUrl = [productFileUrl, fileUrl, body?.downloadUrl, body?.productUrl].find((value) => isRealProductDownloadUrl(value)) || '';
     const resolvedProductName = (productName || itemName || 'your product').toString().trim() || 'your product';
     const resolvedAttachmentName = String(attachmentName || resolvedProductName || 'product-file.pdf').trim() || 'product-file.pdf';
     const subjectLine = orderNumber ? `Your PAZ order is ready — #${orderNumber}` : 'Your PAZ order update';

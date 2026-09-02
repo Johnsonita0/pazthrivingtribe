@@ -517,7 +517,7 @@ export default function AdminDashboard(props) {
       description: storeProductForm.description.trim(),
       price: Number(storeProductForm.price) || 0,
       category: storeProductForm.category || 'Ebook',
-      fileUrl: storeProductForm.fileUrl.trim() || 'https://example.com/file.pdf',
+      fileUrl: storeProductForm.fileUrl.trim() || '',
       cover: storeProductForm.cover.trim() || '/logo/logomain.png',
       inStock: normalizedInStock,
       stockCount: normalizedInStock ? (Number.isFinite(parsedStockCount) && parsedStockCount >= 0 ? parsedStockCount : 1) : 0

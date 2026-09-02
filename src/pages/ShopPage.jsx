@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import confetti from 'canvas-confetti';
 
 const defaultBankAccount = {
@@ -18,7 +18,7 @@ const defaultProducts = [
     price: 5500,
     category: 'Ebook',
     cover: '/logo/logomain.png',
-    fileUrl: 'https://example.com/files/confidence-for-teens.pdf',
+    fileUrl: '',
     rating: 4.5,
     reviews: 128,
     inStock: true,
@@ -32,7 +32,7 @@ const defaultProducts = [
     price: 7000,
     category: 'Guide',
     cover: '/logo/logo2.jpeg',
-    fileUrl: 'https://example.com/files/thriving-parent-guide.pdf',
+    fileUrl: '',
     rating: 4.8,
     reviews: 94,
     inStock: true,
@@ -46,7 +46,7 @@ const defaultProducts = [
     price: 4500,
     category: 'Workbook',
     cover: '/logo/logo2.jpeg',
-    fileUrl: 'https://example.com/files/purpose-planner-workbook.pdf',
+    fileUrl: '',
     rating: 4.3,
     reviews: 67,
     inStock: true,
@@ -60,7 +60,7 @@ const defaultProducts = [
     price: 6000,
     category: 'Ebook',
     cover: '/logo/logomain.png',
-    fileUrl: 'https://example.com/files/wellness-journey.pdf',
+    fileUrl: '',
     rating: 4.6,
     reviews: 156,
     inStock: true,
@@ -74,7 +74,7 @@ const defaultProducts = [
     price: 8500,
     category: 'Guide',
     cover: '/logo/logo2.jpeg',
-    fileUrl: 'https://example.com/files/leadership-manual.pdf',
+    fileUrl: '',
     rating: 4.7,
     reviews: 112,
     inStock: true,
@@ -88,7 +88,7 @@ const defaultProducts = [
     price: 5200,
     category: 'Workbook',
     cover: '/logo/logomain.png',
-    fileUrl: 'https://example.com/files/academic-workbook.pdf',
+    fileUrl: '',
     rating: 4.4,
     reviews: 203,
     inStock: true,
@@ -102,7 +102,7 @@ const defaultProducts = [
     price: 5800,
     category: 'Ebook',
     cover: '/logo/logomain.png',
-    fileUrl: 'https://example.com/files/emotional-intelligence.pdf',
+    fileUrl: '',
     rating: 4.7,
     reviews: 89,
     inStock: true,
@@ -116,7 +116,7 @@ const defaultProducts = [
     price: 7500,
     category: 'Guide',
     cover: '/logo/logo2.jpeg',
-    fileUrl: 'https://example.com/files/teen-mental-health.pdf',
+    fileUrl: '',
     rating: 4.6,
     reviews: 134,
     inStock: true,
@@ -130,7 +130,7 @@ const defaultProducts = [
     price: 4800,
     category: 'Workbook',
     cover: '/logo/logomain.png',
-    fileUrl: 'https://example.com/files/career-planning.pdf',
+    fileUrl: '',
     rating: 4.5,
     reviews: 76,
     inStock: true,
@@ -144,7 +144,7 @@ const defaultProducts = [
     price: 5200,
     category: 'Ebook',
     cover: '/logo/logomain.png',
-    fileUrl: 'https://example.com/files/communication-skills.pdf',
+    fileUrl: '',
     rating: 4.4,
     reviews: 145,
     inStock: true,
@@ -158,7 +158,7 @@ const defaultProducts = [
     price: 6500,
     category: 'Guide',
     cover: '/logo/logo2.jpeg',
-    fileUrl: 'https://example.com/files/financial-literacy.pdf',
+    fileUrl: '',
     rating: 4.8,
     reviews: 267,
     inStock: true,
@@ -172,7 +172,7 @@ const defaultProducts = [
     price: 4200,
     category: 'Workbook',
     cover: '/logo/logo2.jpeg',
-    fileUrl: 'https://example.com/files/self-esteem.pdf',
+    fileUrl: '',
     rating: 4.5,
     reviews: 92,
     inStock: true,
@@ -186,7 +186,7 @@ const defaultProducts = [
     price: 5000,
     category: 'Ebook',
     cover: '/logo/logomain.png',
-    fileUrl: 'https://example.com/files/digital-safety.pdf',
+    fileUrl: '',
     rating: 4.3,
     reviews: 118,
     inStock: true,
@@ -200,7 +200,7 @@ const defaultProducts = [
     price: 6200,
     category: 'Guide',
     cover: '/logo/logo2.jpeg',
-    fileUrl: 'https://example.com/files/social-skills.pdf',
+    fileUrl: '',
     rating: 4.6,
     reviews: 156,
     inStock: true,
@@ -214,7 +214,7 @@ const defaultProducts = [
     price: 4600,
     category: 'Workbook',
     cover: '/logo/logomain.png',
-    fileUrl: 'https://example.com/files/mindfulness.pdf',
+    fileUrl: '',
     rating: 4.7,
     reviews: 234,
     inStock: true,
@@ -228,7 +228,7 @@ const defaultProducts = [
     price: 5900,
     category: 'Ebook',
     cover: '/logo/logomain.png',
-    fileUrl: 'https://example.com/files/goal-achievement.pdf',
+    fileUrl: '',
     rating: 4.5,
     reviews: 201,
     inStock: true,
@@ -242,7 +242,7 @@ const defaultProducts = [
     price: 7200,
     category: 'Guide',
     cover: '/logo/logo2.jpeg',
-    fileUrl: 'https://example.com/files/study-excellence.pdf',
+    fileUrl: '',
     rating: 4.6,
     reviews: 189,
     inStock: true,
@@ -256,7 +256,7 @@ const defaultProducts = [
     price: 4300,
     category: 'Workbook',
     cover: '/logo/logo2.jpeg',
-    fileUrl: 'https://example.com/files/time-management.pdf',
+    fileUrl: '',
     rating: 4.4,
     reviews: 178,
     inStock: true,
@@ -270,7 +270,7 @@ const defaultProducts = [
     price: 5600,
     category: 'Ebook',
     cover: '/logo/logomain.png',
-    fileUrl: 'https://example.com/files/resilience.pdf',
+    fileUrl: '',
     rating: 4.8,
     reviews: 145,
     inStock: true,
@@ -284,7 +284,7 @@ const defaultProducts = [
     price: 6800,
     category: 'Guide',
     cover: '/logo/logo2.jpeg',
-    fileUrl: 'https://example.com/files/conflict-resolution.pdf',
+    fileUrl: '',
     rating: 4.7,
     reviews: 98,
     inStock: true,
@@ -298,7 +298,7 @@ const defaultProducts = [
     price: 3900,
     category: 'Workbook',
     cover: '/logo/logomain.png',
-    fileUrl: 'https://example.com/files/gratitude-journaling.pdf',
+    fileUrl: '',
     rating: 4.6,
     reviews: 267,
     inStock: true,
@@ -312,7 +312,7 @@ const defaultProducts = [
     price: 6100,
     category: 'Ebook',
     cover: '/logo/logomain.png',
-    fileUrl: 'https://example.com/files/personal-branding.pdf',
+    fileUrl: '',
     rating: 4.5,
     reviews: 112,
     inStock: true,
@@ -326,7 +326,7 @@ const defaultProducts = [
     price: 7100,
     category: 'Guide',
     cover: '/logo/logo2.jpeg',
-    fileUrl: 'https://example.com/files/creative-thinking.pdf',
+    fileUrl: '',
     rating: 4.7,
     reviews: 134,
     inStock: true,
@@ -340,7 +340,7 @@ const defaultProducts = [
     price: 4700,
     category: 'Workbook',
     cover: '/logo/logo2.jpeg',
-    fileUrl: 'https://example.com/files/relationship-building.pdf',
+    fileUrl: '',
     rating: 4.4,
     reviews: 143,
     inStock: true,
@@ -354,7 +354,7 @@ const defaultProducts = [
     price: 5700,
     category: 'Ebook',
     cover: '/logo/logomain.png',
-    fileUrl: 'https://example.com/files/leadership-skills.pdf',
+    fileUrl: '',
     rating: 4.6,
     reviews: 167,
     inStock: true,
@@ -368,7 +368,7 @@ const defaultProducts = [
     price: 6300,
     category: 'Guide',
     cover: '/logo/logo2.jpeg',
-    fileUrl: 'https://example.com/files/decision-making.pdf',
+    fileUrl: '',
     rating: 4.8,
     reviews: 156,
     inStock: true,
@@ -382,7 +382,7 @@ const defaultProducts = [
     price: 5100,
     category: 'Workbook',
     cover: '/logo/logomain.png',
-    fileUrl: 'https://example.com/files/passion-discovery.pdf',
+    fileUrl: '',
     rating: 4.5,
     reviews: 189,
     inStock: true,
@@ -600,7 +600,7 @@ export default function ShopPage({ onOrderSubmitted }) {
         : [...current, { ...product, quantity: 1 }];
       
       setToast({
-        message: `✓ ${product.title} added to cart!`,
+        message: `âœ“ ${product.title} added to cart!`,
         type: 'success'
       });
       setTimeout(() => setToast(null), 3000);
@@ -686,7 +686,7 @@ export default function ShopPage({ onOrderSubmitted }) {
     setSubmittedOrder(newOrder);
 
     const itemSummary = (newOrder.items || [])
-      .map((item) => `• ${item.title || 'Product'} x${item.quantity || 1}`)
+      .map((item) => `â€¢ ${item.title || 'Product'} x${item.quantity || 1}`)
       .join('\n');
     const productFileUrl = (newOrder.items || [])
       .map((item) => item.fileUrl || item.downloadUrl || item.productFileUrl)
@@ -735,7 +735,7 @@ export default function ShopPage({ onOrderSubmitted }) {
     });
 
     setToast({
-      message: `✓ Order #${orderNumber} created successfully!`,
+      message: `âœ“ Order #${orderNumber} created successfully!`,
       type: 'success'
     });
     setTimeout(() => setToast(null), 4000);
@@ -750,7 +750,7 @@ export default function ShopPage({ onOrderSubmitted }) {
         <div style={{ display: 'flex', color: '#FDB913' }}>
           {[...Array(5)].map((_, i) => (
             <span key={i} style={{ fontSize: '0.85rem' }}>
-              {i < Math.floor(rating) ? '★' : i < rating ? '★' : '☆'}
+              {i < Math.floor(rating) ? 'â˜…' : i < rating ? 'â˜…' : 'â˜†'}
             </span>
           ))}
         </div>
@@ -873,10 +873,10 @@ export default function ShopPage({ onOrderSubmitted }) {
                 <h3 style={{ margin: '0 0 12px', fontSize: '14px', fontWeight: 'bold', color: '#111' }}>Price</h3>
                 <div style={{ display: 'grid', gap: '8px' }}>
                   {[
-                    { label: 'Under ₦5,000', min: 0, max: 5000 },
-                    { label: '₦5,000 - ₦10,000', min: 5000, max: 10000 },
-                    { label: '₦10,000 - ₦20,000', min: 10000, max: 20000 },
-                    { label: 'Over ₦20,000', min: 20000, max: 50000 }
+                    { label: 'Under â‚¦5,000', min: 0, max: 5000 },
+                    { label: 'â‚¦5,000 - â‚¦10,000', min: 5000, max: 10000 },
+                    { label: 'â‚¦10,000 - â‚¦20,000', min: 10000, max: 20000 },
+                    { label: 'Over â‚¦20,000', min: 20000, max: 50000 }
                   ].map((range) => (
                     <label key={range.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
                       <input
@@ -902,7 +902,7 @@ export default function ShopPage({ onOrderSubmitted }) {
                         onChange={() => setMinRating(stars)}
                       />
                       <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        {stars === 0 ? 'Any' : <>{[...Array(stars)].map((_, i) => <span key={i} style={{ color: '#FDB913' }}>★</span>)} & Up</>}
+                        {stars === 0 ? 'Any' : <>{[...Array(stars)].map((_, i) => <span key={i} style={{ color: '#FDB913' }}>â˜…</span>)} & Up</>}
                       </span>
                     </label>
                   ))}
@@ -991,7 +991,7 @@ export default function ShopPage({ onOrderSubmitted }) {
                     onClick={() => setCategoryDrawerOpen(false)}
                     style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#444' }}
                   >
-                    ×
+                    Ã—
                   </button>
                 </div>
               </div>
@@ -1020,10 +1020,10 @@ export default function ShopPage({ onOrderSubmitted }) {
                 <h3 style={{ margin: '0 0 12px', fontSize: '14px', fontWeight: 'bold', color: '#111' }}>Price</h3>
                 <div style={{ display: 'grid', gap: '8px' }}>
                   {[
-                    { label: 'Under ₦5,000', min: 0, max: 5000 },
-                    { label: '₦5,000 - ₦10,000', min: 5000, max: 10000 },
-                    { label: '₦10,000 - ₦20,000', min: 10000, max: 20000 },
-                    { label: 'Over ₦20,000', min: 20000, max: 50000 }
+                    { label: 'Under â‚¦5,000', min: 0, max: 5000 },
+                    { label: 'â‚¦5,000 - â‚¦10,000', min: 5000, max: 10000 },
+                    { label: 'â‚¦10,000 - â‚¦20,000', min: 10000, max: 20000 },
+                    { label: 'Over â‚¦20,000', min: 20000, max: 50000 }
                   ].map((range) => (
                     <label key={range.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px' }}>
                       <input
@@ -1054,7 +1054,7 @@ export default function ShopPage({ onOrderSubmitted }) {
                         }}
                       />
                       <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        {stars === 0 ? 'Any' : <>{[...Array(stars)].map((_, i) => <span key={i} style={{ color: '#FDB913' }}>★</span>)} & Up</>}
+                        {stars === 0 ? 'Any' : <>{[...Array(stars)].map((_, i) => <span key={i} style={{ color: '#FDB913' }}>â˜…</span>)} & Up</>}
                       </span>
                     </label>
                   ))}
@@ -1178,7 +1178,7 @@ export default function ShopPage({ onOrderSubmitted }) {
                           letterSpacing: '0.5px',
                           boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
                         }}>
-                          <span>★</span>
+                          <span>â˜…</span>
                           <span>PRIME</span>
                         </div>
                       )}
@@ -1214,7 +1214,7 @@ export default function ShopPage({ onOrderSubmitted }) {
                         <div style={{ display: 'flex', color: '#FDB913', fontSize: '11px', letterSpacing: '-1px' }}>
                           {[...Array(5)].map((_, i) => (
                             <span key={i}>
-                              {i < Math.floor(product.rating) ? '★' : i < product.rating ? '★' : '☆'}
+                              {i < Math.floor(product.rating) ? 'â˜…' : i < product.rating ? 'â˜…' : 'â˜†'}
                             </span>
                           ))}
                         </div>
@@ -1312,7 +1312,7 @@ export default function ShopPage({ onOrderSubmitted }) {
                     color: currentPage === 1 ? '#999' : '#111'
                   }}
                 >
-                  ← Previous
+                  â† Previous
                 </button>
 
                 {[...Array(totalPages)].map((_, i) => {
@@ -1363,7 +1363,7 @@ export default function ShopPage({ onOrderSubmitted }) {
                     color: currentPage === totalPages ? '#999' : '#111'
                   }}
                 >
-                  Next →
+                  Next â†’
                 </button>
               </div>
             )}
@@ -1506,7 +1506,7 @@ export default function ShopPage({ onOrderSubmitted }) {
                     onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
                     title="Close cart"
                   >
-                    ✕
+                    âœ•
                   </button>
                 </div>
               </div>
@@ -1592,7 +1592,7 @@ export default function ShopPage({ onOrderSubmitted }) {
             {checkoutStage === 'success' && submittedOrder && (
               <div style={{ borderTop: '1px solid #e0e0e0', padding: '16px', overflowY: 'auto', maxHeight: '70vh' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                  <span style={{ fontSize: '24px' }}>✓</span>
+                  <span style={{ fontSize: '24px' }}>âœ“</span>
                   <h3 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold', color: '#065f46' }}>Order Confirmed</h3>
                 </div>
 
@@ -1601,7 +1601,7 @@ export default function ShopPage({ onOrderSubmitted }) {
                 </p>
 
                 <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '12px', marginBottom: '12px' }}>
-                  <strong style={{ display: 'block', marginBottom: '8px', color: '#065f46' }}>📦 Order Summary</strong>
+                  <strong style={{ display: 'block', marginBottom: '8px', color: '#065f46' }}>ðŸ“¦ Order Summary</strong>
                   {submittedOrder.items.map((item) => (
                     <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', paddingBottom: '6px', marginBottom: '6px', borderBottom: '1px solid #d1fae5', fontSize: '12px' }}>
                       <span>{item.title} x {item.quantity}</span>
@@ -1615,16 +1615,16 @@ export default function ShopPage({ onOrderSubmitted }) {
                 </div>
 
                 <div style={{ background: '#fff', border: '1px solid #d1fae5', borderRadius: '8px', padding: '12px', marginBottom: '12px', fontSize: '12px', lineHeight: '1.8', color: '#047857' }}>
-                  <strong style={{ display: 'block', marginBottom: '6px' }}>🏦 Payment Details</strong>
+                  <strong style={{ display: 'block', marginBottom: '6px' }}>ðŸ¦ Payment Details</strong>
                   <div><strong>Bank:</strong> {submittedOrder.bankAccount.bankName}</div>
                   <div><strong>Account Name:</strong> {submittedOrder.bankAccount.accountName}</div>
                   <div><strong>Account Number:</strong> {submittedOrder.bankAccount.accountNumber}</div>
-                  <div style={{ marginTop: '6px', fontStyle: 'italic' }}>📝 {submittedOrder.bankAccount.note}</div>
+                  <div style={{ marginTop: '6px', fontStyle: 'italic' }}>ðŸ“ {submittedOrder.bankAccount.note}</div>
                 </div>
 
                 <div style={{ marginBottom: '12px', border: '1px dashed #86efac', borderRadius: '8px', padding: '12px', background: '#f0fdf4' }}>
                   <label style={{ display: 'block', fontWeight: '700', marginBottom: '8px', color: '#065f46', fontSize: '13px' }}>
-                    📸 Upload Payment Proof
+                    ðŸ“¸ Upload Payment Proof
                   </label>
                   <input
                     type="file"
@@ -1657,7 +1657,7 @@ export default function ShopPage({ onOrderSubmitted }) {
                   />
                   {paymentProofFile && (
                     <div style={{ marginTop: '8px', padding: '8px', background: '#dcfce7', borderRadius: '4px', fontSize: '12px', color: '#166534' }}>
-                      ✓ {paymentProofFile.name}
+                      âœ“ {paymentProofFile.name}
                     </div>
                   )}
                   {paymentProof && paymentProofFile && paymentProofFile.type.startsWith('image') && (
@@ -1666,7 +1666,7 @@ export default function ShopPage({ onOrderSubmitted }) {
                 </div>
 
                 <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '8px', padding: '12px', fontSize: '12px', color: '#92400e' }}>
-                  <strong style={{ display: 'block', marginBottom: '6px' }}>📩 Delivery Notice</strong>
+                  <strong style={{ display: 'block', marginBottom: '6px' }}>ðŸ“© Delivery Notice</strong>
                   Your product will be sent to <strong>{submittedOrder.email}</strong> once our admin confirms payment.
                 </div>
 
@@ -1743,7 +1743,7 @@ export default function ShopPage({ onOrderSubmitted }) {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', fontWeight: '700' }}>
-              <span style={{ fontSize: '18px' }}>🛒</span>
+              <span style={{ fontSize: '18px' }}>ðŸ›’</span>
               <span>You still have items waiting to be checked out.</span>
             </div>
             <div style={{ marginTop: '6px', fontSize: '11px', color: '#9a4d1d' }}>Tap to continue checkout</div>
@@ -1761,7 +1761,7 @@ export default function ShopPage({ onOrderSubmitted }) {
             color: '#065f46'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-              <span style={{ fontSize: '24px' }}>✓</span>
+              <span style={{ fontSize: '24px' }}>âœ“</span>
               <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold' }}>Order Confirmed!</h2>
             </div>
 
@@ -1777,7 +1777,7 @@ export default function ShopPage({ onOrderSubmitted }) {
               marginBottom: '12px',
               fontSize: '13px'
             }}>
-              <strong style={{ color: '#065f46', display: 'block', marginBottom: '8px' }}>📦 Order Items:</strong>
+              <strong style={{ color: '#065f46', display: 'block', marginBottom: '8px' }}>ðŸ“¦ Order Items:</strong>
               <div style={{ display: 'grid', gap: '4px' }}>
                 {submittedOrder.items.map((item) => (
                   <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', paddingBottom: '4px' }}>
@@ -1801,7 +1801,7 @@ export default function ShopPage({ onOrderSubmitted }) {
               fontSize: '14px',
               marginBottom: '12px'
             }}>
-              <strong style={{ display: 'block', marginBottom: '8px', color: '#065f46' }}>🏦 Payment Details:</strong>
+              <strong style={{ display: 'block', marginBottom: '8px', color: '#065f46' }}>ðŸ¦ Payment Details:</strong>
               <div><strong>Bank:</strong> {submittedOrder.bankAccount.bankName}</div>
               <div><strong>Account Name:</strong> {submittedOrder.bankAccount.accountName}</div>
               <div><strong>Account Number:</strong> {submittedOrder.bankAccount.accountNumber}</div>
@@ -1815,14 +1815,14 @@ export default function ShopPage({ onOrderSubmitted }) {
               fontSize: '12px',
               marginBottom: '12px'
             }}>
-              <strong style={{ color: '#047857' }}>📩 Delivery Notice:</strong>
+              <strong style={{ color: '#047857' }}>ðŸ“© Delivery Notice:</strong>
               <p style={{ margin: '8px 0 0', color: '#047857' }}>
                 Your product will be sent to <strong>{submittedOrder.email}</strong> once our admin confirms payment.
               </p>
             </div>
 
             <p style={{ margin: 0, fontSize: '12px', color: '#047857' }}>
-              📌 Please save your order number <strong>{submittedOrder.orderNumber}</strong> for your records.
+              ðŸ“Œ Please save your order number <strong>{submittedOrder.orderNumber}</strong> for your records.
             </p>
           </div>
         )}
@@ -1908,3 +1908,4 @@ const fieldStyle = {
   background: '#f9fafb',
   fontFamily: 'inherit'
 };
+
