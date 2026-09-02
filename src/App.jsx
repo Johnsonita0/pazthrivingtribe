@@ -1852,15 +1852,35 @@ export default function App() {
 
         /* STICKY HEADER NAVIGATION BAR CONTROLS */
         .public-navbar {
-          display: grid;
-          grid-template-columns: 1fr auto 1fr;
+          display: flex;
           align-items: center;
-          padding: 1.2rem 4rem; background-color: var(--bg-nav); border-bottom: 1px solid var(--border-color);
-          position: fixed; top: 0; left: 0; right: 0; z-index: 10000;
-          box-shadow: var(--shadow-sm); width: 100% !important; box-sizing: border-box;
-          backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+          justify-content: space-between;
+          width: 100% !important;
+          min-height: 82px;
+          padding: 1.2rem 4rem;
+          background-color: var(--bg-nav);
+          border-bottom: 1px solid var(--border-color);
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 10000;
+          box-sizing: border-box;
+          box-shadow: var(--shadow-sm);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          gap: 1.25rem;
         }
-        .nav-logo-brand-zone { display: flex; align-items: center; justify-content: center; gap: 0.65rem; text-decoration: none; min-width: 0; grid-column: 2; justify-self: center; }
+        .nav-logo-brand-zone {
+          display: flex;
+          align-items: center;
+          justify-content: flex-start;
+          gap: 0.65rem;
+          text-decoration: none;
+          min-width: 0;
+          margin-right: auto;
+          flex-shrink: 0;
+        }
         .nav-logo-img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background-color: transparent; border: none; }
         /* Make any image path that includes 'logo/' display as a circular logo */
         img[src*="logo/"] {
@@ -1871,7 +1891,48 @@ export default function App() {
         .platform-badge-nav.active { transform: translateY(-1px); font-weight: 800; }
         .nav-vector-logo { width: 36px; height: 36px; background-color: var(--brand-green); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: white; font-size: 1.2rem; }
         .nav-brand-name { font-size: 1.15rem; font-weight: 700; color: var(--text-primary); letter-spacing: -0.3px; white-space: nowrap; }
-        .nav-cta-group { display: flex; align-items: center; gap: 0.6rem; justify-self: end; grid-column: 3; }
+        .nav-right-cluster {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 0.75rem;
+          margin-left: auto;
+          flex-shrink: 0;
+        }
+        .nav-shop-link {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.45rem;
+          padding: 0.72rem 1rem;
+          border-radius: 999px;
+          background: rgba(22, 163, 74, 0.08);
+          border: 1px solid rgba(22, 163, 74, 0.18);
+          color: var(--text-primary);
+          text-decoration: none;
+          font-size: 0.82rem;
+          font-weight: 700;
+          white-space: nowrap;
+          transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+          box-shadow: 0 6px 16px rgba(22, 163, 74, 0.1);
+        }
+        .nav-shop-link:hover {
+          transform: translateY(-1px);
+          background: rgba(22, 163, 74, 0.12);
+        }
+        .nav-shop-link.active {
+          background: linear-gradient(135deg, var(--brand-green) 0%, #1d7a4d 100%);
+          border-color: rgba(19, 125, 73, 0.85);
+          color: #fff;
+          box-shadow: 0 10px 22px rgba(22, 163, 74, 0.25);
+        }
+        .nav-cta-group {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 0.6rem;
+          margin-left: 0.75rem;
+        }
         .nav-cta-link {
           background-color: var(--brand-green); color: white; padding: 0.6rem 0.9rem; border: none; border-radius: 8px;
           text-decoration: none; font-weight: 700; font-size: 0.82rem; display: inline-flex; align-items: center; justify-content: center;
@@ -1879,12 +1940,19 @@ export default function App() {
         }
         .nav-cta-link.secondary { background: #fff; color: #0f172a; border: 1px solid #dfe7ef; box-shadow: none; }
         .nav-cta-link:hover { transform: translateY(-1px); }
-        .nav-navigation-links { display: flex; gap: 1rem; align-items: center; justify-self: end; grid-column: 3; }
+        .nav-navigation-links {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 1rem;
+          margin-left: auto;
+          flex-wrap: wrap;
+        }
         .nav-navigation-links.mobile-open { display: flex; position: fixed; top: 70px; left: 0; right: 0; width: 100vw; flex-direction: column; align-items: stretch; justify-content: flex-start; background-color: var(--bg-nav); padding: 1.5rem 1.5rem 2.5rem; border-top: 1px solid var(--border-color); z-index: 997; height: calc(100vh - 70px); overflow-y: auto; box-shadow: 0 12px 40px rgba(0,0,0,0.12); }
         .nav-navigation-links.mobile-open .nav-link-item,
         .nav-navigation-links.mobile-open .nav-cta-btn { width: 100%; }
         .nav-navigation-links.mobile-open .nav-link-item { padding: 1rem 0; }
-        .nav-link-item { color: var(--text-muted); text-decoration: none; font-size: 0.88rem; font-weight: 600; background: none; border: none; cursor: pointer; padding: 0.65rem 0; font-family: inherit; transition: color 0.2s ease, background-color 0.2s ease, border-radius 0.2s ease; display: flex; align-items: center; gap: 0.35rem; white-space: nowrap; }
+        .nav-link-item { color: var(--text-muted); text-decoration: none; font-size: 0.88rem; font-weight: 600; background: none; border: none; cursor: pointer; padding: 0.65rem 0.7rem; font-family: inherit; transition: color 0.2s ease, background-color 0.2s ease, border-radius 0.2s ease; display: flex; align-items: center; gap: 0.35rem; white-space: nowrap; }
         .nav-link-item:hover { color: var(--text-primary); }
         .nav-link-item.active { color: var(--text-primary); background: rgba(35, 134, 54, 0.12); border-radius: 8px; padding: 0.65rem 0.8rem; }
         .nav-cta-btn {
@@ -1907,7 +1975,15 @@ export default function App() {
         }
         .nav-cta-btn:hover span,
         .nav-cta-btn:focus-visible span { max-width: 6rem; opacity: 1; }
-        .nav-menu-toggle { display: none; background: none; border: none; color: var(--text-primary); font-size: 1.55rem; cursor: pointer; }
+        .nav-menu-toggle {
+          display: none;
+          background: none;
+          border: none;
+          color: var(--text-primary);
+          font-size: 1.55rem;
+          cursor: pointer;
+          margin-left: 0.5rem;
+        }
 
         /* Floating WhatsApp Action */
         .floating-action-shell {
@@ -3495,9 +3571,16 @@ export default function App() {
             <img src="/logo/logomain.png" alt="Paz Thriving Tribe logo" className="nav-logo-img" />
             <div className="nav-brand-name">Paz Thriving Tribe</div>
           </Link>
-          <button className="nav-menu-toggle" onClick={() => setNavOpen((current) => !current)} aria-label="Toggle navigation menu">
-            <i className={navOpen ? 'fa-solid fa-xmark' : 'fa-solid fa-bars'}></i>
-          </button>
+          <div className="nav-right-cluster">
+            {!isAdminRoute && (
+              <Link to="/store" className={`nav-shop-link ${isShopMenuActive ? 'active' : ''}`} onClick={() => setNavOpen(false)}>
+                <i className="fa-solid fa-bag-shopping"></i> Shop
+              </Link>
+            )}
+            <button className="nav-menu-toggle" onClick={() => setNavOpen((current) => !current)} aria-label="Toggle navigation menu">
+              <i className={navOpen ? 'fa-solid fa-xmark' : 'fa-solid fa-bars'}></i>
+            </button>
+          </div>
           <nav className={`nav-navigation-links ${navOpen ? 'mobile-open' : ''}`}>
             {!isAdminRoute && (
               <>
@@ -3506,9 +3589,6 @@ export default function App() {
                 </Link>
                 <Link to="/care-counseling" className="nav-link-item" onClick={() => setNavOpen(false)}>
                   <i className="fa-solid fa-hand-holding-heart"></i> Talk & Thrive
-                </Link>
-                <Link to="/store" className={`nav-link-item ${isShopMenuActive ? 'active' : ''}`} onClick={() => setNavOpen(false)}>
-                  <i className="fa-solid fa-bag-shopping"></i> Shop
                 </Link>
                 <Link to="/teens-kids-academy" className="nav-link-item" onClick={() => setNavOpen(false)}>
                   <i className="fa-solid fa-child-reaching"></i> Thriving Pre-teens & Teens

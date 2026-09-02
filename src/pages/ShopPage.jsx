@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
 import { supabase } from '../supabaseClient';
 
@@ -432,6 +432,8 @@ export default function ShopPage({ onOrderSubmitted }) {
   const [minRating, setMinRating] = useState(0);
   const [sortBy, setSortBy] = useState('relevant');
   const [cartOpen, setCartOpen] = useState(false);
+  const [cartFlights, setCartFlights] = useState([]);
+  const cartButtonRef = useRef(null);
   const [isSmallScreen, setIsSmallScreen] = useState(() => typeof window !== 'undefined' ? window.innerWidth <= 900 : false);
   const [isVerySmallScreen, setIsVerySmallScreen] = useState(() => typeof window !== 'undefined' ? window.innerWidth <= 360 : false);
   const [categoryDrawerOpen, setCategoryDrawerOpen] = useState(false);
@@ -483,7 +485,7 @@ export default function ShopPage({ onOrderSubmitted }) {
       window.clearTimeout(timeoutId);
       timeoutId = window.setTimeout(() => {
         setCartReminderVisible(true);
-      }, 600000);
+      }, 30000);
     };
 
     const eventNames = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'];
@@ -584,30 +586,90 @@ export default function ShopPage({ onOrderSubmitted }) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const addToCart = (product) => {
+  const addToCart = (product, event) => {
     if (product.inStock === false || Number(product.stockCount || 0) <= 0) {
       setToast({ message: `${product.title} is currently out of stock.`, type: 'error' });
       setTimeout(() => setToast(null), 3000);
       return;
     }
 
-    setCartReminderVisible(false);
-    setCart((current) => {
-      const existing = current.find((item) => item.id === product.id);
-      const newCart = existing
-        ? current.map((item) =>
-            item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-          )
-        : [...current, { ...product, quantity: 1 }];
-      
-      setToast({
-        message: `✓ ${product.title} added to cart!`,
-        type: 'success'
+    const originalTarget = event?.currentTarget?.getBoundingClientRect?.();
+    const cartTarget = cartButtonRef.current?.getBoundingClientRect?.();
+    const startX = originalTarget ? originalTarget.left + originalTarget.width / 2 : window.innerWidth / 2;
+    const startY = originalTarget ? originalTarget.top + originalTarget.height / 2 : window.innerHeight / 2;
+    const endX = cartTarget ? cartTarget.left + cartTarget.width / 2 : window.innerWidth - 52;
+    const endY = cartTarget ? cartTarget.top + cartTarget.height / 2 : window.innerHeight / 2;
+    const flightId = `cart-flight-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const animationDuration = 3400;
+    const cartUpdateTime = 2500;
+
+    setCartFlights((current) => [
+      ...current,
+      {
+        id: flightId,
+        product,
+        startX,
+        startY,
+        endX,
+        endY,
+        progress: 0,
+        opacity: 1,
+        scale: 1
+      }
+    ]);
+
+    const startTime = performance.now();
+    const animateFlight = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / animationDuration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const curveLift = -170 * Math.sin(Math.PI * progress);
+      const x = startX + (endX - startX) * eased;
+      const y = startY + (endY - startY) * eased + curveLift;
+      const scale = 1 - progress * 0.78;
+      const opacity = progress >= 0.96 ? 0 : 1;
+
+      setCartFlights((current) =>
+        current.map((flight) =>
+          flight.id === flightId
+            ? { ...flight, progress, x, y, scale, opacity }
+            : flight
+        )
+      );
+
+      if (elapsed < animationDuration) {
+        requestAnimationFrame(animateFlight);
+        return;
+      }
+
+      setCartFlights((current) => current.filter((flight) => flight.id !== flightId));
+    };
+
+    requestAnimationFrame(animateFlight);
+
+    const cartUpdateDelay = window.setTimeout(() => {
+      setCartReminderVisible(false);
+      setCart((current) => {
+        const existing = current.find((item) => item.id === product.id);
+        const newCart = existing
+          ? current.map((item) =>
+              item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+            )
+          : [...current, { ...product, quantity: 1 }];
+
+        setToast({
+          message: `✓ ${product.title} added to cart!`,
+          type: 'success'
+        });
+        setTimeout(() => setToast(null), 3000);
+
+        return newCart;
       });
-      setTimeout(() => setToast(null), 3000);
-      
-      return newCart;
-    });
+    }, cartUpdateTime);
+
+    window.setTimeout(() => {
+      window.clearTimeout(cartUpdateDelay);
+    }, animationDuration + 50);
   };
 
   const updateQty = (productId, delta) => {
@@ -1303,7 +1365,7 @@ export default function ShopPage({ onOrderSubmitted }) {
 
                     {/* Add to Cart Button - Fixed at Bottom */}
                     <button
-                      onClick={() => addToCart(product)}
+                      onClick={(event) => addToCart(product, event)}
                       disabled={product.inStock === false || Number(product.stockCount || 0) <= 0}
                       style={{
                         width: '100%',
@@ -1425,6 +1487,7 @@ export default function ShopPage({ onOrderSubmitted }) {
 
         {cart.length > 0 && (
           <button
+            ref={cartButtonRef}
             type="button"
             onClick={toggleCartDrawer}
             aria-label={cartOpen ? 'Close checkout drawer' : 'Open checkout drawer'}
@@ -1773,6 +1836,35 @@ export default function ShopPage({ onOrderSubmitted }) {
           </div>
         )}
 
+        {cartFlights.map((flight) => (
+          <div
+            key={flight.id}
+            aria-hidden="true"
+            style={{
+              position: 'fixed',
+              left: `${flight.x ?? flight.startX}px`,
+              top: `${flight.y ?? flight.startY}px`,
+              width: '36px',
+              height: '36px',
+              borderRadius: '12px',
+              background: 'linear-gradient(135deg, #fff7ed 0%, #ffca70 100%)',
+              border: '1px solid rgba(17,17,17,0.08)',
+              boxShadow: '0 14px 28px rgba(0,0,0,0.16)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '16px',
+              color: '#111',
+              pointerEvents: 'none',
+              zIndex: 320,
+              transform: `translate(-50%, -50%) scale(${flight.scale ?? 1})`,
+              opacity: flight.opacity ?? 1
+            }}
+          >
+            <i className="fa-solid fa-bag-shopping" aria-hidden="true" />
+          </div>
+        ))}
+
         {cartReminderVisible && (
           <div
             onClick={() => {
@@ -1781,8 +1873,9 @@ export default function ShopPage({ onOrderSubmitted }) {
             }}
             style={{
               position: 'fixed',
-              right: '20px',
-              bottom: '84px',
+              right: cartOpen ? '392px' : '68px',
+              top: '50%',
+              transform: 'translateY(-50%)',
               zIndex: 310,
               background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
               color: '#7c2d12',
@@ -1790,7 +1883,7 @@ export default function ShopPage({ onOrderSubmitted }) {
               borderRadius: '12px',
               boxShadow: '0 10px 20px rgba(0,0,0,0.12)',
               padding: '10px 14px',
-              maxWidth: '270px',
+              maxWidth: '260px',
               cursor: 'pointer',
               animation: 'cartReminderFloat 1.6s ease-in-out infinite'
             }}
