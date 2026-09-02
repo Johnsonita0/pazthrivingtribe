@@ -68,6 +68,7 @@ export default async function handler(req, res) {
     const resolvedCustomerName = (customerName || '').toString().trim() || 'there';
     const orderProductDownloadUrl = [productFileUrl, fileUrl, body?.downloadUrl, body?.productUrl].find((value) => typeof value === 'string' && value.trim().length > 0) || '';
     const resolvedProductName = (productName || itemName || 'your product').toString().trim() || 'your product';
+    const resolvedAttachmentName = String(attachmentName || resolvedProductName || 'product-file.pdf').trim() || 'product-file.pdf';
     const subjectLine = orderNumber ? `Your PAZ order is ready — #${orderNumber}` : 'Your PAZ order update';
 
     const emailHTML = buildPazEmailTemplate({
@@ -80,8 +81,8 @@ export default async function handler(req, res) {
         <p>${(deliveryMessage || 'Thank you for choosing PAZ Thriving Tribe.').replace(/\n/g, '<br>')}</p>
         ${itemList || '<p><strong>Delivery:</strong> Your product is now ready for access.</p>'}
         ${orderNumber ? `<p><strong>Order number:</strong> ${orderNumber}</p>` : ''}
-        ${attachmentName ? `<p><strong>Attached file:</strong> ${attachmentName}</p>` : ''}
         ${orderProductDownloadUrl ? `<p><strong>Download link:</strong> <a href="${orderProductDownloadUrl}" style="color:#123d35;font-weight:700;">Open product file</a></p>` : ''}
+        ${resolvedAttachmentName ? `<p><strong>Product file:</strong> ${resolvedAttachmentName}</p>` : ''}
         <p><strong>Customer email:</strong> ${cleanEmail}</p>
       `,
       productDownloadUrl: orderProductDownloadUrl,
@@ -93,12 +94,20 @@ export default async function handler(req, res) {
       footerNote: 'Thank you for shopping with PAZ Thriving Tribe.'
     });
 
+    const attachments = orderProductDownloadUrl
+      ? [{
+          filename: resolvedAttachmentName.includes('.') ? resolvedAttachmentName : `${resolvedProductName.replace(/\s+/g, '-').toLowerCase()}.pdf`,
+          url: orderProductDownloadUrl
+        }]
+      : [];
+
     await sendResendEmail({
       to: cleanEmail,
       subject: subjectLine,
       html: emailHTML,
       text: `PAZ Thriving Tribe\n\n${deliveryMessage || 'Thank you for choosing PAZ Thriving Tribe.'}`,
-      from: process.env.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.org'
+      from: process.env.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.org',
+      attachments
     });
 
     console.log(`✓ Resend notification sent to: ${cleanEmail}`);

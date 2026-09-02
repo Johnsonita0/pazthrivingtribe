@@ -5,7 +5,8 @@ export async function sendResendEmail({
   text,
   from = process.env.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.org',
   replyTo,
-  name = 'PAZ Thriving Tribe'
+  name = 'PAZ Thriving Tribe',
+  attachments = []
 }) {
   const apiKey = process.env.RESEND_API_KEY;
 
@@ -14,6 +15,32 @@ export async function sendResendEmail({
   }
 
   const recipients = Array.isArray(to) ? to : [to];
+  const normalizedAttachments = await Promise.all((attachments || []).map(async (attachment) => {
+    if (!attachment) return null;
+
+    if (attachment.content && attachment.filename) {
+      return {
+        filename: attachment.filename,
+        content: String(attachment.content)
+      };
+    }
+
+    if (attachment.url && attachment.filename) {
+      const fileResponse = await fetch(attachment.url);
+      if (!fileResponse.ok) {
+        throw new Error(`Unable to fetch attachment from ${attachment.url}`);
+      }
+
+      const arrayBuffer = await fileResponse.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      return {
+        filename: attachment.filename,
+        content: buffer.toString('base64')
+      };
+    }
+
+    return null;
+  }));
 
   const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -27,7 +54,8 @@ export async function sendResendEmail({
       subject,
       html: html || undefined,
       text: text || (html ? stripHtml(html) : undefined),
-      ...(replyTo ? { reply_to: replyTo } : {})
+      ...(replyTo ? { reply_to: replyTo } : {}),
+      ...(normalizedAttachments.length ? { attachments: normalizedAttachments.filter(Boolean) } : {})
     })
   });
 

@@ -88,28 +88,10 @@ export function buildPazEmailTemplate({
                 <tr>
                   <td style="padding:22px 20px 26px;background:#0b2a23;color:#edf4f1;text-align:center;">
                     <div style="margin-bottom:12px;">
-                      <a href="https://www.instagram.com/pazthrivingtribe" target="_blank" rel="noopener noreferrer" style="display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.15);border-radius:50%;margin:0 6px;vertical-align:middle;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" style="display:block;margin:9px auto;vertical-align:middle;">
-                          <rect x="3.5" y="3.5" width="17" height="17" rx="5" stroke="white" stroke-width="1.8" fill="none"/>
-                          <circle cx="12" cy="12" r="4.2" stroke="white" stroke-width="1.8" fill="none"/>
-                          <circle cx="17.2" cy="6.8" r="1.1" fill="white"/>
-                        </svg>
-                      </a>
-                      <a href="https://facebook.com/pazthrivingtribe" target="_blank" rel="noopener noreferrer" style="display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.15);border-radius:50%;margin:0 6px;vertical-align:middle;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" style="display:block;margin:9px auto;vertical-align:middle;">
-                          <path d="M13.7 20.5v-7.7h2.6l.4-3h-3V7.4c0-.9.3-1.5 1.6-1.5h1.7V2.9c-.3 0-1.3-.1-2.5-.1-2.5 0-4.2 1.5-4.2 4.3v2.4H7.3v3h2.5v7.7h3.9Z" fill="white"/>
-                        </svg>
-                      </a>
-                      <a href="${whatsappUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.15);border-radius:50%;margin:0 6px;vertical-align:middle;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" style="display:block;margin:9px auto;vertical-align:middle;">
-                          <path d="M18.9 5.1A9.4 9.4 0 0 0 4.7 17.4L3.5 20.5l3.2-1.1a9.5 9.5 0 0 0 12.2-12.3Zm-7.2 2.7c.2 0 .5 0 .7.1.2.1.4.4.5.7.1.3.4 1.1.1 1.4-.1.2-.2.3-.5.5l-.4.2c-.2.1-.5.1-.7-.1-.3-.2-.8-.7-.9-1.1-.1-.2-.2-.5.1-.7.1-.2.3-.4.4-.6.1-.2.1-.4 0-.5-.1-.1-.3-.1-.5-.1-.3 0-.7.1-1.1.5-.4.4-1 1-1 2.6 0 1.5.9 3.1 1.9 4.2.9.9 2.1 1.5 3.5 1.8.6.1 1.1.2 1.6.1.5-.1 1.5-.7 1.7-1.3.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.6-.4-.3-.2-1.1-.6-1.3-.7-.2-.1-.4-.1-.6.1-.2.2-.7.7-.9.9-.2.2-.4.2-.7.1-.4-.2-1.5-.7-2.9-1.9-1.2-1.1-2-2.4-2.2-2.9-.2-.4-.1-.6.1-.8.1-.2.2-.4.4-.6.2-.2.3-.4.5-.6.1-.2.2-.4.2-.6.1-.1.1-.4 0-.5-.1-.1-.4-.8-.6-1.1-.2-.3-.4-.2-.6-.2h-.5Z" fill="white"/>
-                        </svg>
-                      </a>
-                      <a href="https://www.linkedin.com/company/pazthrivingtribe" target="_blank" rel="noopener noreferrer" style="display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.15);border-radius:50%;margin:0 6px;vertical-align:middle;">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" style="display:block;margin:9px auto;vertical-align:middle;">
-                          <path d="M6.5 8.9A1.7 1.7 0 1 1 6.5 5.5a1.7 1.7 0 0 1 0 3.4ZM4.8 10.3h3.4v9.2H4.8v-9.2Zm5.6 0h3.3v1.3h.1c.5-.9 1.7-1.8 3.5-1.8 3.7 0 4.4 2.4 4.4 5.6v5.1h-3.4v-4.7c0-1.1 0-2.6-1.6-2.6s-1.8 1.2-1.8 2.5v4.8h-3.5v-9.2Z" fill="white"/>
-                        </svg>
-                      </a>
+                      <a href="https://www.instagram.com/pazthrivingtribe" target="_blank" rel="noopener noreferrer" style="display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.15);border-radius:50%;margin:0 6px;vertical-align:middle;color:#ffffff;text-decoration:none;font-size:11px;font-weight:800;">IG</a>
+                      <a href="https://facebook.com/pazthrivingtribe" target="_blank" rel="noopener noreferrer" style="display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.15);border-radius:50%;margin:0 6px;vertical-align:middle;color:#ffffff;text-decoration:none;font-size:11px;font-weight:800;">f</a>
+                      <a href="${whatsappUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.15);border-radius:50%;margin:0 6px;vertical-align:middle;color:#ffffff;text-decoration:none;font-size:11px;font-weight:800;">WA</a>
+                      <a href="https://www.linkedin.com/company/pazthrivingtribe" target="_blank" rel="noopener noreferrer" style="display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.15);border-radius:50%;margin:0 6px;vertical-align:middle;color:#ffffff;text-decoration:none;font-size:11px;font-weight:800;">in</a>
                     </div>
                     <div style="font-size:12px;line-height:1.8;color:#dfeeea;">
                       <div style="font-size:14px;font-weight:800;color:#f7d980;margin-bottom:4px;">PAZ Thriving Tribe</div>
