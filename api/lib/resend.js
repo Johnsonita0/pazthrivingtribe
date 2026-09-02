@@ -1,3 +1,17 @@
+const BLOCKED_EMAIL_RECIPIENTS = new Set([
+  'imeobongj@gmail.com'
+]);
+
+function normalizeRecipients(recipients) {
+  const list = (Array.isArray(recipients) ? recipients : [recipients])
+    .filter(Boolean)
+    .map((email) => String(email).trim().toLowerCase())
+    .filter((email) => email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    .filter((email) => !BLOCKED_EMAIL_RECIPIENTS.has(email));
+
+  return [...new Set(list)];
+}
+
 export async function sendResendEmail({
   to,
   subject,
@@ -14,7 +28,11 @@ export async function sendResendEmail({
     throw new Error('Resend API key is not configured.');
   }
 
-  const recipients = Array.isArray(to) ? to : [to];
+  const recipients = normalizeRecipients(to);
+  if (!recipients.length) {
+    throw new Error('No valid recipients available after filtering blocked addresses.');
+  }
+
   const normalizedAttachments = await Promise.all((attachments || []).map(async (attachment) => {
     if (!attachment) return null;
 
@@ -65,7 +83,7 @@ export async function sendResendEmail({
     },
     body: JSON.stringify({
       from: `${name} <${from}>`,
-      to: recipients.map((email) => String(email).trim()),
+      to: recipients,
       subject,
       html: html || undefined,
       text: text || (html ? stripHtml(html) : undefined),

@@ -23,8 +23,7 @@ function getAdminEmails() {
   const configuredEmails = [
     process.env.ADMIN_EMAILS,
     process.env.VITE_ADMIN_EMAILS,
-    'pazthrivingtribe@gmail.com',
-    'imeobongj@gmail.com'
+    'pazthrivingtribe@gmail.com'
   ]
     .flatMap((value) => String(value || '').split(',').map((email) => email.trim()))
     .filter(Boolean)
@@ -94,8 +93,7 @@ export default async function handler(req, res) {
     const resolvedAttachmentName = String(attachmentName || resolvedProductName || 'product-file.pdf').trim() || 'product-file.pdf';
     const hasCompletedOrderSignal = Boolean(orderNumber) || /order|purchase|checkout|shop/i.test(String(service || ''));
     const adminRecipients = getAdminEmails();
-    const testCustomerEmail = 'imeobongj@gmail.com';
-    const customerRecipients = Array.from(new Set([cleanEmail, testCustomerEmail].filter(Boolean)));
+    const customerRecipients = Array.from(new Set([cleanEmail].filter(Boolean)));
     const productAttachmentFilename = resolvedAttachmentName.includes('.') ? resolvedAttachmentName : `${resolvedProductName.replace(/\s+/g, '-').toLowerCase()}.pdf`;
     const orderReceiptSubject = orderNumber ? `Your PAZ order has been received — #${orderNumber}` : 'Your PAZ order has been received';
     const productReadySubject = orderNumber ? `Your PAZ product is ready to download — #${orderNumber}` : 'Your PAZ product is ready to download';
@@ -146,6 +144,7 @@ export default async function handler(req, res) {
       footerNote: 'Your product has been released by PAZ Thriving Tribe.'
     });
 
+    const adminDashboardUrl = `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/admin`;
     const adminEmailHTML = buildPazEmailTemplate({
       title: orderNotificationSubject,
       eyebrow: 'Admin notification',
@@ -161,10 +160,10 @@ export default async function handler(req, res) {
       `,
       productDownloadUrl: '',
       productName: resolvedProductName,
-      ctaLabel: 'Book for a session',
-      ctaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/book-session`,
-      secondaryCtaLabel: 'Apply for a session',
-      secondaryCtaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/teens_reg`,
+      ctaLabel: 'View order in dashboard',
+      ctaUrl: adminDashboardUrl,
+      secondaryCtaLabel: 'Open admin dashboard',
+      secondaryCtaUrl: adminDashboardUrl,
       footerNote: 'This is an internal order notification for PAZ Thriving Tribe.'
     });
 

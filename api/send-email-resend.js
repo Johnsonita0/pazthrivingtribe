@@ -1,3 +1,5 @@
+import { sendResendEmail } from './lib/resend.js';
+
 /**
  * Enhanced Email Sending Endpoint using Resend
  * To use this endpoint:
@@ -67,8 +69,7 @@ export default async function handler(req, res) {
     }
 
     // Send email via Resend (if API key is configured)
-    const resendApiKey = process.env.RESEND_API_KEY;
-    if (resendApiKey) {
+    if (process.env.RESEND_API_KEY) {
       try {
         const emailHtml = buildPazEmailTemplate({
           title: `Welcome to ${service} - PAZ Thriving Tribe`,
@@ -90,25 +91,12 @@ export default async function handler(req, res) {
           footerNote: 'We are excited to journey with you.'
         });
 
-        const emailResponse = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${resendApiKey}`,
-          },
-          body: JSON.stringify({
-            from: process.env.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.com',
-            to: cleanEmail,
-            subject: `Welcome to ${service} - PAZ Thriving Tribe`,
-            html: emailHtml,
-          }),
+        await sendResendEmail({
+          to: cleanEmail,
+          subject: `Welcome to ${service} - PAZ Thriving Tribe`,
+          html: emailHtml,
+          from: process.env.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.com'
         });
-
-        const emailData = await emailResponse.json();
-        if (!emailResponse.ok) {
-          console.error('Resend API error:', emailData);
-          throw new Error(emailData.message || 'Failed to send email via Resend');
-        }
 
         console.log(`✓ Email sent successfully via Resend to: ${cleanEmail}`);
       } catch (emailError) {
