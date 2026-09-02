@@ -97,11 +97,12 @@ export default async function handler(req, res) {
     const testCustomerEmail = 'imeobongj@gmail.com';
     const customerRecipients = Array.from(new Set([cleanEmail, testCustomerEmail].filter(Boolean)));
     const productAttachmentFilename = resolvedAttachmentName.includes('.') ? resolvedAttachmentName : `${resolvedProductName.replace(/\s+/g, '-').toLowerCase()}.pdf`;
-    const subjectLine = orderNumber ? `Your PAZ product is ready to download — #${orderNumber}` : 'Your PAZ product is ready to download';
+    const orderReceiptSubject = orderNumber ? `Your PAZ order has been received — #${orderNumber}` : 'Your PAZ order has been received';
+    const productReadySubject = orderNumber ? `Your PAZ product is ready to download — #${orderNumber}` : 'Your PAZ product is ready to download';
     const orderNotificationSubject = orderNumber ? `PAZ payment confirmation required — #${orderNumber}` : 'PAZ payment confirmation required';
 
-    const customerEmailHTML = buildPazEmailTemplate({
-      title: subjectLine,
+    const customerReceiptHTML = buildPazEmailTemplate({
+      title: orderReceiptSubject,
       eyebrow: 'Order update',
       intro: `Hi ${resolvedCustomerName},`,
       accentText: deliveryMessage || 'Your order has been received successfully.',
@@ -110,7 +111,30 @@ export default async function handler(req, res) {
         <p>${(deliveryMessage || 'Thank you for choosing PAZ Thriving Tribe.').replace(/\n/g, '<br>')}</p>
         ${itemList || '<p><strong>Order status:</strong> Your order is pending confirmation by our admin team.</p>'}
         ${orderNumber ? `<p><strong>Order number:</strong> ${orderNumber}</p>` : ''}
-        <p><strong>Next step:</strong> Once payment is confirmed by our admin team, you will receive a separate email with your downloadable product file.</p>
+        <p><strong>Next step:</strong> Once payment is confirmed by our admin team, we will send your product download email with the file attached.</p>
+        <p><strong>Customer email:</strong> ${cleanEmail}</p>
+      `,
+      productDownloadUrl: '',
+      productName: resolvedProductName,
+      ctaLabel: 'Book for a session',
+      ctaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/book-session`,
+      secondaryCtaLabel: 'Apply for a session',
+      secondaryCtaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/teens_reg`,
+      footerNote: 'Thank you for shopping with PAZ Thriving Tribe.'
+    });
+
+    const productReadyEmailHTML = buildPazEmailTemplate({
+      title: productReadySubject,
+      eyebrow: 'Order update',
+      intro: `Hi ${resolvedCustomerName},`,
+      accentText: deliveryMessage || 'Your package is ready to download.',
+      bodyHtml: `
+        <p><strong>Your product is ready.</strong></p>
+        <p>${(deliveryMessage || 'Thank you for choosing PAZ Thriving Tribe.').replace(/\n/g, '<br>')}</p>
+        ${itemList || '<p><strong>Order status:</strong> Your payment has been confirmed and your download is ready.</p>'}
+        ${orderNumber ? `<p><strong>Order number:</strong> ${orderNumber}</p>` : ''}
+        ${orderProductDownloadUrl ? `<p><strong>Download link:</strong> <a href="${orderProductDownloadUrl}" style="color:#123d35;font-weight:700;">Open product file</a></p>` : ''}
+        ${resolvedAttachmentName ? `<p><strong>Product file:</strong> ${resolvedAttachmentName}</p>` : ''}
         <p><strong>Customer email:</strong> ${cleanEmail}</p>
       `,
       productDownloadUrl: orderProductDownloadUrl,
@@ -119,7 +143,7 @@ export default async function handler(req, res) {
       ctaUrl: orderProductDownloadUrl || `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/teens_reg`,
       secondaryCtaLabel: 'Book for a session',
       secondaryCtaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/book-session`,
-      footerNote: 'Thank you for shopping with PAZ Thriving Tribe.'
+      footerNote: 'Your product has been released by PAZ Thriving Tribe.'
     });
 
     const adminEmailHTML = buildPazEmailTemplate({
@@ -135,12 +159,12 @@ export default async function handler(req, res) {
         <p><strong>Customer email:</strong> ${cleanEmail}</p>
         <p><strong>Action required:</strong> Please confirm payment in the dashboard, then send the product delivery email with the downloadable file attached.</p>
       `,
-      productDownloadUrl: orderProductDownloadUrl,
+      productDownloadUrl: '',
       productName: resolvedProductName,
-      ctaLabel: 'Review order dashboard',
-      ctaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/admin`,
-      secondaryCtaLabel: 'View shop orders',
-      secondaryCtaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/store`,
+      ctaLabel: 'Book for a session',
+      ctaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/book-session`,
+      secondaryCtaLabel: 'Apply for a session',
+      secondaryCtaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/teens_reg`,
       footerNote: 'This is an internal order notification for PAZ Thriving Tribe.'
     });
 
@@ -151,7 +175,18 @@ export default async function handler(req, res) {
         }]
       : [];
 
-    if (hasCompletedOrderSignal && adminRecipients.length) {
+    if (String(service).toLowerCase().includes('product delivery') || String(service).toLowerCase().includes('delivery')) {
+      await sendResendEmail({
+        to: customerRecipients,
+        subject: productReadySubject,
+        html: productReadyEmailHTML,
+        text: `Your PAZ product is ready to download. Please use the attached file or download link in the email.`,
+        from: process.env.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.org',
+        attachments
+      });
+
+      console.log(`✓ Product-ready email sent to: ${customerRecipients.join(', ')}`);
+    } else if (hasCompletedOrderSignal && adminRecipients.length) {
       await sendResendEmail({
         to: adminRecipients,
         subject: orderNotificationSubject,
@@ -162,8 +197,8 @@ export default async function handler(req, res) {
 
       await sendResendEmail({
         to: customerRecipients,
-        subject: orderNumber ? `Your PAZ order has been received — #${orderNumber}` : 'Your PAZ order has been received',
-        html: customerEmailHTML,
+        subject: orderReceiptSubject,
+        html: customerReceiptHTML,
         text: `Your PAZ order has been received. We will send your product download email once payment is confirmed by admin.`,
         from: process.env.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.org',
         attachments: []
@@ -174,14 +209,14 @@ export default async function handler(req, res) {
     } else {
       await sendResendEmail({
         to: cleanEmail,
-        subject: subjectLine,
-        html: customerEmailHTML,
+        subject: orderReceiptSubject,
+        html: customerReceiptHTML,
         text: `PAZ Thriving Tribe\n\n${deliveryMessage || 'Thank you for choosing PAZ Thriving Tribe.'}`,
         from: process.env.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.org',
         attachments
       });
 
-      console.log(`✓ Resend notification sent to: ${cleanEmail}`);
+      console.log(`✓ Receipt email sent to: ${cleanEmail}`);
     }
 
     return sendJson(res, 200, {
