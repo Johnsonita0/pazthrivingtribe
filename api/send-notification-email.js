@@ -103,7 +103,7 @@ export default async function handler(req, res) {
       footerNote: 'Thank you for shopping with PAZ Thriving Tribe.'
     });
 
-    const attachments = orderProductDownloadUrl
+    const attachments = isRealProductDownloadUrl(orderProductDownloadUrl)
       ? [{
           filename: resolvedAttachmentName.includes('.') ? resolvedAttachmentName : `${resolvedProductName.replace(/\s+/g, '-').toLowerCase()}.pdf`,
           url: orderProductDownloadUrl
@@ -135,7 +135,7 @@ export default async function handler(req, res) {
   } catch (error) {
     console.error('Error processing notification:', error);
     return sendJson(res, 500, {
-      error: 'Failed to process subscription',
+      error: 'The product email could not be sent.',
       details: error.message
     });
   }

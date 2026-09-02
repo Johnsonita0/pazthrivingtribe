@@ -184,11 +184,11 @@ export default function AdminDashboard(props) {
     const defaultMessage = [
       `Hi ${selectedOrder.name || 'there'},`,
       '',
-      `Your order ${selectedOrder.orderNumber || ''} is ready. Please find the purchased product attached below.`,
+      `Your order ${selectedOrder.orderNumber || ''} is now ready. Your purchased material is prepared for you below.`,
       '',
-      'Thank you for shopping with PAZ Thriving Tribe.',
+      'Thank you for choosing PAZ Thriving Tribe.',
       'Warm regards,',
-      'PAZ Thriving Tribe Team'
+      'The PAZ Thriving Tribe Team'
     ].join('\n');
     setDeliveryMessageDraft(selectedOrder.customerMessage || defaultMessage);
     setDeliveryAttachment(null);

@@ -26,17 +26,23 @@ export async function sendResendEmail({
     }
 
     if (attachment.url && attachment.filename) {
-      const fileResponse = await fetch(attachment.url);
-      if (!fileResponse.ok) {
-        throw new Error(`Unable to fetch attachment from ${attachment.url}`);
-      }
+      try {
+        const fileResponse = await fetch(attachment.url);
+        if (!fileResponse.ok) {
+          console.warn(`Skipping attachment because the file could not be fetched: ${attachment.url}`);
+          return null;
+        }
 
-      const arrayBuffer = await fileResponse.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      return {
-        filename: attachment.filename,
-        content: buffer.toString('base64')
-      };
+        const arrayBuffer = await fileResponse.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        return {
+          filename: attachment.filename,
+          content: buffer.toString('base64')
+        };
+      } catch (fetchError) {
+        console.warn(`Skipping attachment because fetching failed: ${attachment.url}`, fetchError.message || fetchError);
+        return null;
+      }
     }
 
     return null;
