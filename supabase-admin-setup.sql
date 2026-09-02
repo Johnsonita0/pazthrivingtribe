@@ -119,35 +119,79 @@ alter table if exists store_bank_accounts enable row level security;
 alter table if exists shop_orders enable row level security;
 alter table if exists shop_order_items enable row level security;
 
-create policy if not exists "allow public read storefront" on public.store_products
-for select using (true);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'store_products' AND policyname = 'allow public read storefront'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow public read storefront" ON public.store_products FOR SELECT USING (true);';
+  END IF;
 
-create policy if not exists "allow public read bank accounts" on public.store_bank_accounts
-for select using (true);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'store_bank_accounts' AND policyname = 'allow public read bank accounts'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow public read bank accounts" ON public.store_bank_accounts FOR SELECT USING (true);';
+  END IF;
 
-create policy if not exists "allow public read shop orders" on public.shop_orders
-for select using (true);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'shop_orders' AND policyname = 'allow public read shop orders'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow public read shop orders" ON public.shop_orders FOR SELECT USING (true);';
+  END IF;
 
-create policy if not exists "allow public read order items" on public.shop_order_items
-for select using (true);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'shop_order_items' AND policyname = 'allow public read order items'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow public read order items" ON public.shop_order_items FOR SELECT USING (true);';
+  END IF;
 
-create policy if not exists "allow public insert shop orders" on public.shop_orders
-for insert with check (true);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'shop_orders' AND policyname = 'allow public insert shop orders'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow public insert shop orders" ON public.shop_orders FOR INSERT WITH CHECK (true);';
+  END IF;
 
-create policy if not exists "allow public insert order items" on public.shop_order_items
-for insert with check (true);
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'shop_order_items' AND policyname = 'allow public insert order items'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow public insert order items" ON public.shop_order_items FOR INSERT WITH CHECK (true);';
+  END IF;
 
-create policy if not exists "allow authenticated update store products" on public.store_products
-for update using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'store_products' AND policyname = 'allow authenticated update store products'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow authenticated update store products" ON public.store_products FOR UPDATE USING (auth.role() = ''authenticated'') WITH CHECK (auth.role() = ''authenticated'');';
+  END IF;
 
-create policy if not exists "allow authenticated update bank accounts" on public.store_bank_accounts
-for update using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'store_bank_accounts' AND policyname = 'allow authenticated update bank accounts'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow authenticated update bank accounts" ON public.store_bank_accounts FOR UPDATE USING (auth.role() = ''authenticated'') WITH CHECK (auth.role() = ''authenticated'');';
+  END IF;
 
-create policy if not exists "allow authenticated delete store products" on public.store_products
-for delete using (auth.role() = 'authenticated');
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'store_products' AND policyname = 'allow authenticated delete store products'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow authenticated delete store products" ON public.store_products FOR DELETE USING (auth.role() = ''authenticated'');';
+  END IF;
 
-create policy if not exists "allow authenticated delete bank accounts" on public.store_bank_accounts
-for delete using (auth.role() = 'authenticated');
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'store_bank_accounts' AND policyname = 'allow authenticated delete bank accounts'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow authenticated delete bank accounts" ON public.store_bank_accounts FOR DELETE USING (auth.role() = ''authenticated'');';
+  END IF;
+END
+$$;
 
 create index if not exists idx_store_products_category on store_products(category);
 create index if not exists idx_shop_orders_order_number on shop_orders(order_number);
