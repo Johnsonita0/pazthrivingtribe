@@ -14,6 +14,13 @@ set public = true,
     file_size_limit = 5242880,
     allowed_mime_types = excluded.allowed_mime_types;
 
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('product-files', 'product-files', false, 52428800, ARRAY['application/pdf','application/zip','application/octet-stream','image/png','image/jpeg','image/webp'])
+on conflict (id) do update
+set public = false,
+    file_size_limit = 52428800,
+    allowed_mime_types = excluded.allowed_mime_types;
+
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -49,6 +56,24 @@ BEGIN
     WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'authenticated delete from prof upload bucket'
   ) THEN
     EXECUTE 'CREATE POLICY "authenticated delete from prof upload bucket" ON storage.objects FOR DELETE USING (bucket_id = ''prof-upload'' AND auth.role() = ''authenticated'');';
+  END IF;
+END
+$$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'authenticated upload product files'
+  ) THEN
+    EXECUTE 'CREATE POLICY "authenticated upload product files" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = ''product-files'');';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'authenticated update product files'
+  ) THEN
+    EXECUTE 'CREATE POLICY "authenticated update product files" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = ''product-files'') WITH CHECK (bucket_id = ''product-files'');';
   END IF;
 END
 $$;

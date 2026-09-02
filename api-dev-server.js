@@ -12,6 +12,7 @@ import trackVisitorHandler from './api/track-visitor.js';
 import resendWebhookHandler from './api/resend-webhook.js';
 import sendNotificationEmailHandler from './api/send-notification-email.js';
 import sendRegistrationEmailHandler from './api/send-registration-email.js';
+import completeShopPaymentHandler from './api/complete-shop-payment.js';
 
 try {
   process.loadEnvFile?.('.env');
@@ -117,6 +118,12 @@ const server = http.createServer((req, res) => {
       if (pathname === '/api/send-notification-email' && req.method === 'POST') {
         req.body = body ? JSON.parse(body) : {};
         await sendNotificationEmailHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/complete-shop-payment' && req.method === 'POST') {
+        req.body = body ? JSON.parse(body) : {};
+        await completeShopPaymentHandler(req, res);
         return;
       }
 

@@ -423,7 +423,7 @@ const readStoreData = () => {
   }
 };
 
-export default function ShopPage({ onOrderSubmitted }) {
+export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '' }) {
   const [storeData, setStoreData] = useState(readStoreData);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
@@ -455,6 +455,28 @@ export default function ShopPage({ onOrderSubmitted }) {
   const [paymentProofFile, setPaymentProofFile] = useState(null);
   const [cartReminderVisible, setCartReminderVisible] = useState(false);
   const [paymentProofSaving, setPaymentProofSaving] = useState(false);
+  const [paystackReady, setPaystackReady] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+
+  useEffect(() => {
+    if (window.PaystackPop) {
+      setPaystackReady(true);
+      return undefined;
+    }
+
+    const existingScript = document.getElementById('paystack-inline-js');
+    if (existingScript) {
+      existingScript.addEventListener('load', () => setPaystackReady(true), { once: true });
+      return undefined;
+    }
+
+    const script = document.createElement('script');
+    script.id = 'paystack-inline-js';
+    script.src = 'https://js.paystack.co/v1/inline.js';
+    script.onload = () => setPaystackReady(true);
+    document.body.appendChild(script);
+    return () => script.onload = null;
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('paz_store_products', JSON.stringify(storeData.products));
@@ -787,6 +809,7 @@ export default function ShopPage({ onOrderSubmitted }) {
             total: Number(order.total || 0),
             notes: order.notes || '',
             status: order.status || 'pending',
+            payment_reference: order.paymentReference || order.payment_reference || null,
             payment_proof_path: paymentProofPath,
             payment_proof_url: paymentProofUrl || paymentProof || null
           }
@@ -896,14 +919,30 @@ export default function ShopPage({ onOrderSubmitted }) {
 
   const handleCheckout = async (event) => {
     event.preventDefault();
-    if (!cart.length) return;
+    const customerEmail = checkoutForm.email.trim().toLowerCase();
+    if (!cart.length || paymentLoading) return;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+      setToast({ message: 'Please enter a valid email address for payment and delivery.', type: 'error' });
+      setTimeout(() => setToast(null), 3500);
+      return;
+    }
+    if (!paystackReady || !window.PaystackPop) {
+      setToast({ message: 'Payment checkout is still loading. Please try again shortly.', type: 'error' });
+      setTimeout(() => setToast(null), 3500);
+      return;
+    }
+    if (!paystackPublicKey || paystackPublicKey.includes('demo_key_update_from_admin')) {
+      setToast({ message: 'Paystack is not configured yet. Please contact the site administrator.', type: 'error' });
+      setTimeout(() => setToast(null), 3500);
+      return;
+    }
 
     const orderNumber = `PAZ-${Date.now().toString().slice(-6)}`;
     const newOrder = {
       id: `shop-${Date.now()}`,
       orderNumber,
       name: checkoutForm.name || 'Customer',
-      email: checkoutForm.email || 'customer@example.com',
+      email: customerEmail,
       phone: checkoutForm.phone || 'N/A',
       total: subtotal,
       items: cart,
@@ -912,70 +951,56 @@ export default function ShopPage({ onOrderSubmitted }) {
       paymentProofFile: paymentProofFile ? paymentProofFile.name : null,
       paymentProofUploaded: !!paymentProofFile,
       paymentProofPreview: paymentProof || null,
-      status: 'pending',
+      status: 'paid',
       createdAt: new Date().toISOString()
     };
 
-    setSubmittedOrder(newOrder);
-    await persistOrderToSupabase(newOrder);
+    setPaymentLoading(true);
+    const paymentHandler = window.PaystackPop.setup({
+      key: paystackPublicKey,
+      email: customerEmail,
+      amount: Math.round(subtotal * 100),
+      currency: 'NGN',
+      ref: orderNumber,
+      metadata: {
+        custom_fields: [{ display_name: 'Customer name', variable_name: 'customer_name', value: newOrder.name }]
+      },
+      callback: async (response) => {
+        try {
+          const completionResponse = await fetch('/api/complete-shop-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              reference: response.reference,
+              orderNumber,
+              email: customerEmail,
+              customerName: newOrder.name,
+              items: cart.map((item) => ({ id: item.id, quantity: item.quantity }))
+            })
+          });
+          const completionData = await completionResponse.json().catch(() => ({}));
+          if (!completionResponse.ok) throw new Error(completionData?.error || 'Payment completed, but delivery could not be confirmed.');
 
-    const itemSummary = (newOrder.items || [])
-      .map((item) => `• ${item.title || 'Product'} x${item.quantity || 1}`)
-      .join('\n');
-    const productFileUrl = (newOrder.items || [])
-      .map((item) => item.fileUrl || item.downloadUrl || item.productFileUrl)
-      .find((value) => typeof value === 'string' && value.trim().length > 0) || null;
-    const productName = (newOrder.items || []).find((item) => typeof item.title === 'string' && item.title.trim())?.title || 'your product';
-
-    try {
-      const emailResponse = await fetch('/api/send-notification-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: newOrder.email,
-          service: 'Product purchase',
-          timestamp: new Date().toISOString(),
-          orderNumber: newOrder.orderNumber,
-          itemSummary,
-          customerName: newOrder.name,
-          message: `Thank you for your order #${newOrder.orderNumber}. Your purchase has been received and is being processed by PAZ Thriving Tribe.`,
-          productMessage: `Thank you for your order #${newOrder.orderNumber}. Your purchase has been received and is being processed by PAZ Thriving Tribe.`,
-          customMessage: `Thank you for your order #${newOrder.orderNumber}. Your purchase has been received and is being processed by PAZ Thriving Tribe.`,
-          attachmentName: productName,
-          productFileUrl,
-          productName,
-          itemName: productName
-        })
-      });
-
-      if (!emailResponse.ok) {
-        const emailData = await emailResponse.json().catch(() => ({}));
-        console.warn('Auto purchase email failed:', emailData?.error || 'Unknown email error');
-      }
-    } catch (emailError) {
-      console.warn('Auto purchase email request failed:', emailError);
-    }
-
-    if (typeof onOrderSubmitted === 'function') {
-      onOrderSubmitted((current = []) => [newOrder, ...current]);
-    }
-
-    setCheckoutStage('success');
-
-    window.requestAnimationFrame(() => {
-      window.setTimeout(() => {
-        triggerSuccessConfetti();
-      }, 120);
+          const paidOrder = { ...newOrder, paymentReference: response.reference, deliverySent: true };
+          setSubmittedOrder(paidOrder);
+          await persistOrderToSupabase(paidOrder);
+          if (typeof onOrderSubmitted === 'function') onOrderSubmitted((current = []) => [paidOrder, ...current]);
+          setCheckoutStage('success');
+          window.requestAnimationFrame(() => window.setTimeout(triggerSuccessConfetti, 120));
+          setToast({ message: `Payment successful. Your file has been sent to ${customerEmail}.`, type: 'success' });
+          setTimeout(() => setToast(null), 5000);
+          setCheckoutForm({ name: '', email: '', phone: '', notes: '' });
+          setCart([]);
+        } catch (error) {
+          setToast({ message: error.message || 'Payment succeeded but delivery could not be completed.', type: 'error' });
+          setTimeout(() => setToast(null), 5000);
+        } finally {
+          setPaymentLoading(false);
+        }
+      },
+      onClose: () => setPaymentLoading(false)
     });
-
-    setToast({
-      message: `✓ Order #${orderNumber} created successfully!`,
-      type: 'success'
-    });
-    setTimeout(() => setToast(null), 4000);
-
-    setCheckoutForm({ name: '', email: '', phone: '', notes: '' });
-    setCart([]);
+    paymentHandler.openIframe();
   };
 
   const StarRating = ({ rating }) => {
@@ -1869,7 +1894,7 @@ export default function ShopPage({ onOrderSubmitted }) {
                   <div style={{ marginTop: '6px', fontStyle: 'italic' }}>💬 {submittedOrder.bankAccount.note}</div>
                 </div>
 
-                <div style={{ marginBottom: '12px', border: '1px dashed #86efac', borderRadius: '8px', padding: '12px', background: '#f0fdf4' }}>
+                {false && <div style={{ marginBottom: '12px', border: '1px dashed #86efac', borderRadius: '8px', padding: '12px', background: '#f0fdf4' }}>
                   <label style={{ display: 'block', fontWeight: '700', marginBottom: '8px', color: '#065f46', fontSize: '13px' }}>
                     📷 Upload Payment Proof
                   </label>
@@ -1930,11 +1955,11 @@ export default function ShopPage({ onOrderSubmitted }) {
                       {paymentProofSaving ? 'Saving proof...' : 'Save proof image'}
                     </button>
                   )}
-                </div>
+                </div>}
 
                 <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '8px', padding: '12px', fontSize: '12px', color: '#92400e' }}>
                   <strong style={{ display: 'block', marginBottom: '6px' }}>📦 Delivery Notice</strong>
-                  Your product will be sent to <strong>{submittedOrder.email}</strong> once our admin confirms payment.
+                  Your product files have been sent to <strong>{submittedOrder.email}</strong>. Please check your inbox and spam folder.
                 </div>
 
                 <button

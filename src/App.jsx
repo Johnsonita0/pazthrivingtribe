@@ -548,7 +548,7 @@ export default function App() {
   const [formDocumentFile, setFormDocumentFile] = useState(null);
 
   // --- Paystack Integration Settings ---
-  const [paystackPublicKey, setPaystackPublicKey] = useState('pk_test_demo_key_update_from_admin');
+  const [paystackPublicKey, setPaystackPublicKey] = useState(import.meta.env.VITE_PAYSTACK_PUBLIC_KEY || 'pk_test_demo_key_update_from_admin');
   const [teensKidsMonthlyFee, setTeensKidsMonthlyFee] = useState(30000);
   const [tempPaystackKey, setTempPaystackKey] = useState(paystackPublicKey);
   const [tempMonthlyFee, setTempMonthlyFee] = useState(teensKidsMonthlyFee);
@@ -4063,7 +4063,7 @@ export default function App() {
           <Route path="/book-session" element={<BookSessionPage />} />
           <Route path="/feedback" element={<FeedbackPage />} />
           <Route path="/store" element={<div className="public-website-container"><StorePage /></div>} />
-          <Route path="/shop" element={<div className="public-website-container"><ShopPage onOrderSubmitted={setShopOrders} /></div>} />
+          <Route path="/shop" element={<div className="public-website-container"><ShopPage onOrderSubmitted={setShopOrders} paystackPublicKey={paystackPublicKey} /></div>} />
           <Route path="/care-counseling" element={<CareCounselingPage />} />
           <Route path="/services/family" element={<ComingSoonPage title="Thriving Parents" description="Empowering parents with tools and wisdom" />} />
           <Route path="/services/marriage" element={<ComingSoonPage title="Thriving Women" description="Transforming lives, building confidence" />} />

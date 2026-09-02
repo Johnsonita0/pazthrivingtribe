@@ -164,6 +164,7 @@ export default function AdminDashboard(props) {
     inStock: true,
     stockCount: ''
   });
+    const [productFileUploading, setProductFileUploading] = useState(false);
 
   const [activeDashboardView, setActiveDashboardView] = useState('visitors');
   const [commerceSubTab, setCommerceSubTab] = useState('storefront');
@@ -583,6 +584,30 @@ export default function AdminDashboard(props) {
   };
 
   const handleStoreProductSubmit = async (event) => {
+
+      const handleProductFileUpload = async (event) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        try {
+          setProductFileUploading(true);
+          const safeName = file.name.replace(/[^a-z0-9._-]/gi, '-');
+          const filePath = `products/${Date.now()}-${safeName}`;
+          const { data, error } = await supabase.storage.from('product-files').upload(filePath, file, {
+            upsert: false,
+            contentType: file.type || 'application/octet-stream'
+          });
+          if (error) throw error;
+          setStoreProductForm((current) => ({ ...current, fileUrl: data?.path || filePath }));
+          showAdminToast('success', 'Product file uploaded', 'The private product file is ready to save with this product.');
+        } catch (error) {
+          console.warn('Product file upload failed:', error);
+          showAdminToast('error', 'File upload failed', error.message || 'The product file could not be uploaded.');
+        } finally {
+          setProductFileUploading(false);
+          event.target.value = '';
+        }
+      };
     event.preventDefault();
     if (!storeProductForm.title || !storeProductForm.description || !storeProductForm.price) return;
 
@@ -1439,7 +1464,11 @@ export default function AdminDashboard(props) {
                       <textarea value={storeProductForm.description} onChange={(event) => setStoreProductForm((current) => ({ ...current, description: event.target.value }))} placeholder="Description" style={{ ...adminFieldStyle, minHeight: '90px', resize: 'vertical' }} />
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
                         <input type="number" value={storeProductForm.price} onChange={(event) => setStoreProductForm((current) => ({ ...current, price: event.target.value }))} placeholder="Price in NGN" style={adminFieldStyle} />
-                        <input value={storeProductForm.fileUrl} onChange={(event) => setStoreProductForm((current) => ({ ...current, fileUrl: event.target.value }))} placeholder="File URL" style={adminFieldStyle} />
+                        <div style={{ display: 'grid', gap: '8px', minWidth: 0 }}>
+                          <input value={storeProductForm.fileUrl} onChange={(event) => setStoreProductForm((current) => ({ ...current, fileUrl: event.target.value }))} placeholder="Product file path or URL" style={adminFieldStyle} />
+                          <input type="file" accept=".pdf,.zip,image/*" onChange={handleProductFileUpload} disabled={productFileUploading} style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', border: '1px solid #d1d5db', borderRadius: '10px', padding: '8px', background: '#fff', fontSize: '0.82rem' }} />
+                          {productFileUploading && <span style={{ color: '#64748b', fontSize: '0.78rem' }}>Uploading product file...</span>}
+                        </div>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
                         <select
