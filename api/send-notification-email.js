@@ -48,6 +48,11 @@ export default async function handler(req, res) {
 
   const body = req.body || {};
   const { email, service, timestamp, message, productMessage, customMessage, attachmentName, customerName, orderNumber, itemSummary, productFileUrl, fileUrl, productName, itemName } = body;
+  const rawAttachments = Array.isArray(body?.attachments)
+    ? body.attachments
+    : Array.isArray(body?.productAttachments)
+      ? body.productAttachments
+      : [];
 
   if (!email || !service) {
     return sendJson(res, 400, { error: 'Missing required fields' });
@@ -167,12 +172,24 @@ export default async function handler(req, res) {
       footerNote: 'This is an internal order notification for PAZ Thriving Tribe.'
     });
 
-    const attachments = isRealProductDownloadUrl(orderProductDownloadUrl)
-      ? [{
-          filename: productAttachmentFilename,
-          url: orderProductDownloadUrl
-        }]
-      : [];
+    const normalizedAttachmentList = rawAttachments
+      .filter((entry) => entry && (entry.url || entry.content || entry.filename))
+      .map((entry) => {
+        if (entry.url && entry.filename) return { filename: entry.filename, url: entry.url };
+        if (entry.content && entry.filename) return { filename: entry.filename, content: String(entry.content) };
+        if (typeof entry === 'string' && isRealProductDownloadUrl(entry)) return { filename: productAttachmentFilename, url: entry };
+        return null;
+      })
+      .filter(Boolean);
+
+    const attachments = normalizedAttachmentList.length
+      ? normalizedAttachmentList
+      : isRealProductDownloadUrl(orderProductDownloadUrl)
+        ? [{
+            filename: productAttachmentFilename,
+            url: orderProductDownloadUrl
+          }]
+        : [];
 
     if (String(service).toLowerCase().includes('product delivery') || String(service).toLowerCase().includes('delivery')) {
       await sendResendEmail({

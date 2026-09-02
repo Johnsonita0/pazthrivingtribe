@@ -856,6 +856,7 @@ export default function App() {
       if (!bankResult.error && Array.isArray(bankResult.data) && bankResult.data.length > 0) {
         const bankAccount = bankResult.data[0];
         setStoreBankAccount({
+          id: bankAccount.id || undefined,
           bankName: bankAccount.bank_name || bankAccount.bankName || defaultStoreBankAccount.bankName,
           accountName: bankAccount.account_name || bankAccount.accountName || defaultStoreBankAccount.accountName,
           accountNumber: bankAccount.account_number || bankAccount.accountNumber || defaultStoreBankAccount.accountNumber,
@@ -3377,9 +3378,9 @@ export default function App() {
           .portal-main-workspace { height: 100vh; overflow: hidden; }
           .portal-workspace-body-content { padding: 1.5rem; }
           .portal-workspace-header { padding: 1rem 1.5rem; }
-          .dashboard-tab-buttons { padding: 0.45rem 0.65rem; gap: 0.35rem; overflow-x: auto; flex-wrap: nowrap; white-space: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; border-radius: 12px; }
+          .dashboard-tab-buttons { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.35rem; padding: 0.45rem 0.65rem; overflow: visible; flex-wrap: nowrap; white-space: nowrap; -webkit-overflow-scrolling: touch; scrollbar-width: none; border-radius: 12px; width: 100%; }
           .dashboard-tab-buttons::-webkit-scrollbar { display: none; }
-          .dashboard-tab-button { padding: 0.5rem 0.7rem; font-size: 0.72rem; line-height: 1.2; border-radius: 999px; min-height: 32px; }
+          .dashboard-tab-button { padding: 0.55rem 0.45rem; font-size: 0.72rem; line-height: 1.2; border-radius: 999px; min-height: 32px; width: 100%; min-width: 0; text-align: center; }
           .dashboard-tab-badge { min-width: 18px; height: 18px; font-size: 0.62rem; }
           .dashboard-editor-card { padding: 1.5rem; border-radius: 12px; }
           .cms-creation-form-layout { grid-template-columns: 1fr; }
@@ -3404,8 +3405,8 @@ export default function App() {
         }
         @media (max-width: 640px) {
           .portal-workspace-body-content { padding: 1rem; }
-          .dashboard-tab-buttons { padding: 0.4rem 0.6rem; gap: 0.3rem; }
-          .dashboard-tab-button { padding: 0.45rem 0.65rem; font-size: 0.7rem; min-height: 30px; }
+          .dashboard-tab-buttons { padding: 0.4rem 0.6rem; gap: 0.3rem; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+          .dashboard-tab-button { padding: 0.45rem 0.45rem; font-size: 0.7rem; min-height: 30px; width: 100%; min-width: 0; text-align: center; }
           .dashboard-editor-card { padding: 1.25rem; }
           .dashboard-table th,
           .dashboard-table td { padding: 0.6rem 0.5rem; font-size: 0.8rem; }

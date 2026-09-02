@@ -451,6 +451,7 @@ export default function ShopPage({ onOrderSubmitted }) {
   const [paymentProof, setPaymentProof] = useState(null);
   const [paymentProofFile, setPaymentProofFile] = useState(null);
   const [cartReminderVisible, setCartReminderVisible] = useState(false);
+  const [paymentProofSaving, setPaymentProofSaving] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('paz_store_products', JSON.stringify(storeData.products));
@@ -813,6 +814,69 @@ export default function ShopPage({ onOrderSubmitted }) {
       }
     } catch (error) {
       console.warn('Order persistence to Supabase failed:', error);
+    }
+  };
+
+  const savePaymentProofToSupabase = async (order) => {
+    if (!order || !paymentProofFile) {
+      setToast({ message: 'Upload a payment proof image first.', type: 'error' });
+      setTimeout(() => setToast(null), 2500);
+      return;
+    }
+
+    try {
+      setPaymentProofSaving(true);
+
+      const fileExtension = paymentProofFile.name.includes('.')
+        ? paymentProofFile.name.slice(paymentProofFile.name.lastIndexOf('.') + 1)
+        : 'jpg';
+      const safeFileName = `orders/${order.orderNumber || `proof-${Date.now()}`}.${fileExtension}`;
+
+      const { data: uploadData, error: uploadError } = await supabase
+        .storage
+        .from('prof-upload')
+        .upload(safeFileName, paymentProofFile, {
+          upsert: true,
+          contentType: paymentProofFile.type || 'application/octet-stream'
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data: publicUrlData } = supabase.storage.from('prof-upload').getPublicUrl(uploadData?.path || safeFileName);
+      const paymentProofUrl = publicUrlData?.publicUrl || paymentProof || null;
+
+      const { error: updateError } = await supabase
+        .from('shop_orders')
+        .update({
+          payment_proof_path: uploadData?.path || safeFileName,
+          payment_proof_url: paymentProofUrl
+        })
+        .eq('order_number', order.orderNumber);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      setSubmittedOrder((currentOrder) => ({
+        ...(currentOrder || order),
+        paymentProofFile: paymentProofFile.name,
+        paymentProofUploaded: true,
+        paymentProofPreview: paymentProofUrl || paymentProof || currentOrder?.paymentProofPreview || null,
+        paymentProofUrl: paymentProofUrl || paymentProof || currentOrder?.paymentProofUrl || null,
+        payment_proof_url: paymentProofUrl || paymentProof || currentOrder?.payment_proof_url || null,
+        payment_proof_path: uploadData?.path || safeFileName
+      }));
+
+      setToast({ message: 'Payment proof saved successfully.', type: 'success' });
+      setTimeout(() => setToast(null), 2500);
+    } catch (error) {
+      console.warn('Payment proof save failed:', error);
+      setToast({ message: 'Unable to save proof image right now.', type: 'error' });
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setPaymentProofSaving(false);
     }
   };
 
@@ -1819,6 +1883,26 @@ export default function ShopPage({ onOrderSubmitted }) {
                   )}
                   {paymentProof && paymentProofFile && paymentProofFile.type.startsWith('image') && (
                     <img src={paymentProof} alt="Payment proof preview" style={{ marginTop: '8px', maxWidth: '100%', borderRadius: '4px', maxHeight: '100px' }} />
+                  )}
+                  {paymentProof && paymentProofFile && (
+                    <button
+                      type="button"
+                      onClick={() => savePaymentProofToSupabase(submittedOrder)}
+                      disabled={paymentProofSaving}
+                      style={{
+                        width: '100%',
+                        marginTop: '12px',
+                        background: paymentProofSaving ? '#e5e7eb' : '#16a34a',
+                        color: paymentProofSaving ? '#4b5563' : '#fff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '10px 12px',
+                        fontWeight: '700',
+                        cursor: paymentProofSaving ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      {paymentProofSaving ? 'Saving proof...' : 'Save proof image'}
+                    </button>
                   )}
                 </div>
 

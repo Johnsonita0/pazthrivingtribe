@@ -174,6 +174,8 @@ export default function AdminDashboard(props) {
   const [orderModalTab, setOrderModalTab] = useState('payment');
   const [deliveryMessageDraft, setDeliveryMessageDraft] = useState('');
   const [deliveryAttachment, setDeliveryAttachment] = useState(null);
+  const [itemAttachmentMap, setItemAttachmentMap] = useState({});
+  const [bankAccountSaving, setBankAccountSaving] = useState(false);
   const [postingToSlider, setPostingToSlider] = useState(false);
   const [testimonialConfirmation, setTestimonialConfirmation] = useState(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
@@ -192,6 +194,7 @@ export default function AdminDashboard(props) {
     ].join('\n');
     setDeliveryMessageDraft(selectedOrder.customerMessage || defaultMessage);
     setDeliveryAttachment(null);
+    setItemAttachmentMap({});
     setOrderModalTab('payment');
   }, [selectedOrder]);
 
@@ -221,12 +224,32 @@ export default function AdminDashboard(props) {
     }
 
     try {
+      const attachments = await Promise.all(
+        Object.entries(itemAttachmentMap)
+          .filter(([, files]) => Array.isArray(files) && files.length > 0)
+          .flatMap(([itemKey, files]) => files.map((file) => ({
+            itemKey,
+            file
+          })))
+          .map(async ({ itemKey, file }) => {
+            const base64 = await fileToBase64(file);
+            return {
+              filename: file.name,
+              content: base64,
+              itemKey
+            };
+          })
+      );
+
       const itemSummary = (order.items || []).map((item) => `• ${item.title || 'Product'} x${item.quantity || 1}`).join('\n');
       const productFileUrl = (order.items || [])
         .map((item) => item.fileUrl || item.downloadUrl || item.productFileUrl)
         .find((value) => typeof value === 'string' && value.trim().length > 0) || null;
       const productName = (order.items || []).find((item) => typeof item.title === 'string' && item.title.trim())?.title || 'your product';
       const finalMessage = deliveryMessageDraft.trim() || 'Your purchased product is ready to be released after payment confirmation.';
+
+      const attachmentList = attachments.length ? attachments : (deliveryAttachment ? [{ filename: deliveryAttachment.name, content: await fileToBase64(deliveryAttachment) }] : []);
+
       const response = await fetch('/api/send-notification-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -244,7 +267,9 @@ export default function AdminDashboard(props) {
           productFileUrl,
           fileUrl: productFileUrl,
           productName,
-          itemName: productName
+          itemName: productName,
+          attachments: attachmentList,
+          productAttachments: attachmentList
         })
       });
 
@@ -652,36 +677,78 @@ export default function AdminDashboard(props) {
   const handleBankAccountChange = async (field, value) => {
     const nextBankAccount = { ...(storeBankAccount || {}), [field]: value };
     setStoreBankAccount(nextBankAccount);
+  };
 
-    const token = session?.access_token || session?.accessToken || '';
-    if (!token) return;
+  const handleSaveBankAccount = async () => {
+    const payload = {
+      bank_name: (storeBankAccount?.bankName || '').trim(),
+      account_name: (storeBankAccount?.accountName || '').trim(),
+      account_number: (storeBankAccount?.accountNumber || '').trim(),
+      account_type: (storeBankAccount?.accountType || '').trim(),
+      swift_code: (storeBankAccount?.swiftCode || '').trim(),
+      note: (storeBankAccount?.note || '').trim()
+    };
+
+    if (!payload.bank_name || !payload.account_name || !payload.account_number) {
+      showAdminToast('error', 'Incomplete bank details', 'Please add the bank name, account name, and account number before saving.');
+      return;
+    }
 
     try {
-      const payload = {
-        bank_name: nextBankAccount.bankName || '',
-        account_name: nextBankAccount.accountName || '',
-        account_number: nextBankAccount.accountNumber || '',
-        account_type: nextBankAccount.accountType || '',
-        swift_code: nextBankAccount.swiftCode || '',
-        note: nextBankAccount.note || ''
-      };
+      setBankAccountSaving(true);
 
+      const existingBankId = storeBankAccount?.id;
       const response = await fetch('/api/admin-update', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          action: 'insert',
-          table: 'store_bank_accounts',
-          payload: [payload]
-        })
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || session?.accessToken || ''}` },
+        body: JSON.stringify(
+          existingBankId
+            ? {
+                action: 'update',
+                table: 'store_bank_accounts',
+                payload,
+                match: { id: existingBankId }
+              }
+            : {
+                action: 'insert',
+                table: 'store_bank_accounts',
+                payload: [payload]
+              }
+        )
       });
 
+      const responseData = await response.json().catch(() => ({}));
       if (!response.ok) {
-        console.warn('Bank account sync to Supabase failed:', response.statusText);
+        throw new Error(responseData?.error || 'The bank account could not be saved.');
       }
+
+      const insertedBank = Array.isArray(responseData?.data) ? responseData.data[0] : responseData?.data || null;
+      if (insertedBank && insertedBank.id) {
+        setStoreBankAccount((current = {}) => ({ ...current, id: insertedBank.id }));
+      }
+
+      showAdminToast('success', 'Bank account saved', 'Your banking details are now available to customers during checkout.');
     } catch (error) {
-      console.warn('Bank account sync error:', error);
+      console.warn('Bank account save failed:', error);
+      showAdminToast('error', 'Bank account not saved', error.message || 'Please try again.');
+    } finally {
+      setBankAccountSaving(false);
     }
+  };
+
+  const fileToBase64 = async (file) => {
+    if (!file) return '';
+
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = typeof reader.result === 'string' ? reader.result : '';
+        const encoded = result.includes(',') ? result.split(',')[1] : result;
+        resolve(encoded || '');
+      };
+      reader.onerror = () => reject(new Error('Failed to read file.'));
+      reader.readAsDataURL(file);
+    });
   };
 
   const printViewingRow = () => {
@@ -1264,6 +1331,8 @@ export default function AdminDashboard(props) {
           .commerce-product-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
           .commerce-product-actions button{min-width:72px}
           .view-modal-content{max-width:100%;box-sizing:border-box}
+          .order-review-columns{min-width:0}
+          .delivery-item-upload input{font-size:.82rem}
           .table{min-width:1400px;width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5e7eb;border-radius:14px}
           .table th,.table td{padding:12px 14px;text-align:left;vertical-align:top;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
           .table td{max-width:200px}
@@ -1293,6 +1362,7 @@ export default function AdminDashboard(props) {
           .testimonial-confirmation-modal{display:flex!important;flex-direction:column;max-height:calc(100vh - 40px)!important;box-sizing:border-box;overflow:hidden}.testimonial-confirmation-preview{min-height:0;overflow:hidden;display:flex;flex-direction:column}.testimonial-confirmation-quote{max-height:min(46vh,420px);overflow-y:auto;-webkit-overflow-scrolling:touch}.testimonial-confirmation-actions{flex-shrink:0;padding-top:1rem;border-top:1px solid #e2e8f0}
           @media(max-width:640px){.testimonial-confirmation-modal{padding:20px!important}.testimonial-confirmation-quote{max-height:42vh}.testimonial-confirmation-actions{flex-wrap:wrap}.testimonial-confirmation-actions button{flex:1 1 120px}}
           @media(max-width:640px){.view-modal-content{padding:0!important;max-height:92vh!important}.response-letterhead{align-items:flex-start!important;padding:.8rem 1rem!important}.response-letterhead h3{font-size:1.1rem!important}.response-letterhead-meta{grid-template-columns:1fr!important;margin:1rem 1rem 0!important;line-height:1.7}.response-details-grid{grid-template-columns:1fr!important;padding:1rem!important}.response-details-grid>div{gap:.35rem!important}.response-details-grid label{font-size:.68rem!important}}
+          @media(max-width:720px){.order-review-columns{grid-template-columns:1fr!important;gap:12px!important}.delivery-item-upload{padding:10px!important}.delivery-item-upload input{font-size:.76rem}}
           @media print{@page{size:A4 portrait;margin:12mm}body *{visibility:hidden!important}.view-modal-overlay,.view-modal-overlay *{visibility:visible!important}.view-modal-overlay{position:static!important;background:transparent!important;padding:0!important}.printable-response-card{position:absolute!important;inset:0!important;width:100%!important;max-width:none!important;max-height:none!important;overflow:visible!important;padding:0!important;border:0!important;box-shadow:none!important;border-radius:0!important}.printable-response-card button,.printable-response-card i{display:none!important}.response-letterhead{border-bottom:2px solid #e88767!important}.response-details-grid{gap:6px!important;padding:10px 0!important}.response-detail-row{font-size:9pt!important;break-inside:avoid}.response-detail-label{font-size:7pt!important;padding:5px 7px!important}.response-detail-row>div{padding:5px 7px!important}}
           @media(min-width:900px){.stat-card{flex:1 1 calc(25% - 16px)}.stat-card .value{font-size:3rem}}
           @media(max-width:640px){.stat-card{min-width:0!important;width:100%;min-height:98px;padding:10px 4px}.stat-card .value{font-size:1.9rem}.dashboard-actions-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-items:center;width:100%}.dashboard-filters{grid-column:1/-1;margin-left:0;flex-wrap:nowrap;overflow-x:auto;max-width:100%;padding-bottom:2px}.dashboard-filters label{flex:0 0 auto}.dashboard-filters select{min-width:100px!important;width:100px}.dashboard-filters .dashboard-action-button{flex:0 0 46px}.table th,.table td{padding:10px}.table{min-width:1200px;width:100%;overflow-x:auto}.table th:last-child{position:relative;background:#f8fafc;border-left:1px solid #e5e7eb;text-align:center;max-width:none;min-width:120px}.table td:last-child{position:relative;background:#fff;border-left:1px solid #f3f4f6;text-align:center}.table tbody tr:hover td:last-child{background:#fff}.admin-toast{right:12px;bottom:12px;max-width:calc(100vw - 24px);z-index:21000}.commerce-panel-shell{padding:14px 12px!important;width:100% !important;max-width:100% !important}.commerce-tab-row{padding-bottom:6px;width:100%}.commerce-tab-row button{flex:1 1 0;min-width:90px}.commerce-input-grid{grid-template-columns:1fr!important;gap:10px!important;minmax:0!important}}
@@ -1479,6 +1549,24 @@ export default function AdminDashboard(props) {
                       <input value={storeBankAccount?.accountType || ''} onChange={(event) => handleBankAccountChange('accountType', event.target.value)} placeholder="Account type" style={adminFieldStyle} />
                       <input value={storeBankAccount?.swiftCode || ''} onChange={(event) => handleBankAccountChange('swiftCode', event.target.value)} placeholder="Swift code (optional)" style={adminFieldStyle} />
                       <textarea value={storeBankAccount?.note || ''} onChange={(event) => handleBankAccountChange('note', event.target.value)} placeholder="Transfer note" style={{ ...adminFieldStyle, minHeight: '88px', resize: 'vertical', gridColumn: '1 / -1' }} />
+                      <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end' }}>
+                        <button
+                          type="button"
+                          onClick={handleSaveBankAccount}
+                          disabled={bankAccountSaving}
+                          style={{
+                            border: 'none',
+                            background: bankAccountSaving ? '#cbd5e1' : 'linear-gradient(135deg, #0f766e, #115e59)',
+                            color: '#fff',
+                            borderRadius: '10px',
+                            padding: '0.8rem 1.2rem',
+                            fontWeight: 800,
+                            cursor: bankAccountSaving ? 'not-allowed' : 'pointer'
+                          }}
+                        >
+                          {bankAccountSaving ? 'Saving...' : 'Save bank account'}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -1785,7 +1873,7 @@ export default function AdminDashboard(props) {
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '18px', alignItems: 'start' }}>
+              <div className="order-review-columns" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '18px', alignItems: 'start' }}>
                 <section style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
                   <h4 style={{ margin: '0 0 12px', color: '#111827', fontSize: '1rem' }}>Items</h4>
                   <div style={{ display: 'grid', gap: '10px' }}>
@@ -1918,13 +2006,36 @@ export default function AdminDashboard(props) {
                     style={{ width: '100%', minHeight: '110px', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '12px 14px', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', fontSize: '0.95rem' }}
                   />
                   <div style={{ marginTop: '14px' }}>
-                    <label htmlFor="delivery-product-upload" style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: '#334155' }}>Attach product file</label>
+                    <label htmlFor="delivery-product-upload" style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: '#334155' }}>Attach product files</label>
                     <input
                       id="delivery-product-upload"
                       type="file"
                       onChange={(event) => setDeliveryAttachment(event.target.files?.[0] || null)}
-                      style={{ width: '100%', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '10px 12px', background: '#fff' }}
+                      style={{ width: '100%', maxWidth: '100%', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '10px 12px', background: '#fff', boxSizing: 'border-box' }}
                     />
+                    <div style={{ marginTop: '6px', color: '#64748b', fontSize: '0.78rem', lineHeight: 1.45 }}>Use the item uploaders below when an order contains different files for different products.</div>
+                    {(selectedOrder.items || []).map((item, index) => (
+                      <div className="delivery-item-upload" key={`${item.id || item.title || index}`} style={{ marginTop: '12px', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px 12px', background: '#f8fafc', minWidth: 0 }}>
+                        <div style={{ fontWeight: 800, color: '#0f172a', marginBottom: '8px', overflowWrap: 'anywhere' }}>{item.title || 'Product'} x{item.quantity || 1}</div>
+                        <input
+                          type="file"
+                          multiple
+                          onChange={(event) => {
+                            const nextFiles = Array.from(event.target.files || []);
+                            setItemAttachmentMap((current) => ({
+                              ...current,
+                              [item.id || `${item.title || 'product'}-${index}`]: nextFiles
+                            }));
+                          }}
+                          style={{ width: '100%', maxWidth: '100%', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 10px', background: '#fff', boxSizing: 'border-box' }}
+                        />
+                        {(itemAttachmentMap[item.id || `${item.title || 'product'}-${index}`] || []).length > 0 && (
+                          <div style={{ marginTop: '8px', color: '#166534', fontSize: '0.8rem', fontWeight: 700, overflowWrap: 'anywhere', lineHeight: 1.45 }}>
+                            {((itemAttachmentMap[item.id || `${item.title || 'product'}-${index}`] || []).map((file) => file.name)).join(', ')}
+                          </div>
+                        )}
+                      </div>
+                    ))}
                     {deliveryAttachment && (
                       <div style={{ marginTop: '8px', color: '#166534', fontSize: '0.85rem', fontWeight: 700 }}>
                         Selected file: {deliveryAttachment.name}
