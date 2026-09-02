@@ -688,6 +688,10 @@ export default function ShopPage({ onOrderSubmitted }) {
     const itemSummary = (newOrder.items || [])
       .map((item) => `• ${item.title || 'Product'} x${item.quantity || 1}`)
       .join('\n');
+    const productFileUrl = (newOrder.items || [])
+      .map((item) => item.fileUrl || item.downloadUrl || item.productFileUrl)
+      .find((value) => typeof value === 'string' && value.trim().length > 0) || null;
+    const productName = (newOrder.items || []).find((item) => typeof item.title === 'string' && item.title.trim())?.title || 'your product';
 
     try {
       const emailResponse = await fetch('/api/send-notification-email', {
@@ -703,7 +707,10 @@ export default function ShopPage({ onOrderSubmitted }) {
           message: `Thank you for your order #${newOrder.orderNumber}. Your purchase has been received and is being processed by PAZ Thriving Tribe.`,
           productMessage: `Thank you for your order #${newOrder.orderNumber}. Your purchase has been received and is being processed by PAZ Thriving Tribe.`,
           customMessage: `Thank you for your order #${newOrder.orderNumber}. Your purchase has been received and is being processed by PAZ Thriving Tribe.`,
-          attachmentName: null
+          attachmentName: productName,
+          productFileUrl,
+          productName,
+          itemName: productName
         })
       });
 

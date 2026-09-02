@@ -24,7 +24,8 @@ export default async function handler(req, res) {
     return sendJson(res, 405, { error: 'Method not allowed' });
   }
 
-  const { email, service, timestamp, message, productMessage, customMessage, attachmentName, customerName, orderNumber, itemSummary } = req.body || {};
+  const body = req.body || {};
+  const { email, service, timestamp, message, productMessage, customMessage, attachmentName, customerName, orderNumber, itemSummary, productFileUrl, fileUrl, productName, itemName } = body;
 
   if (!email || !service) {
     return sendJson(res, 400, { error: 'Missing required fields' });
@@ -65,6 +66,8 @@ export default async function handler(req, res) {
     const deliveryMessage = (productMessage || customMessage || message || '').toString().trim();
     const itemList = itemSummary ? `<p><strong>Order items:</strong><br>${String(itemSummary).replace(/\n/g, '<br>')}</p>` : '';
     const resolvedCustomerName = (customerName || '').toString().trim() || 'there';
+    const orderProductDownloadUrl = [productFileUrl, fileUrl, body?.downloadUrl, body?.productUrl].find((value) => typeof value === 'string' && value.trim().length > 0) || '';
+    const resolvedProductName = (productName || itemName || 'your product').toString().trim() || 'your product';
     const subjectLine = orderNumber ? `Your PAZ order is ready — #${orderNumber}` : 'Your PAZ order update';
 
     const emailHTML = buildPazEmailTemplate({
@@ -76,12 +79,15 @@ export default async function handler(req, res) {
         <p><strong>We’re excited to share your order update.</strong></p>
         <p>${(deliveryMessage || 'Thank you for choosing PAZ Thriving Tribe.').replace(/\n/g, '<br>')}</p>
         ${itemList || '<p><strong>Delivery:</strong> Your product is now ready for access.</p>'}
-        ${attachmentName ? `<p><strong>Product file:</strong> ${attachmentName}</p>` : ''}
         ${orderNumber ? `<p><strong>Order number:</strong> ${orderNumber}</p>` : ''}
+        ${attachmentName ? `<p><strong>Attached file:</strong> ${attachmentName}</p>` : ''}
+        ${orderProductDownloadUrl ? `<p><strong>Download link:</strong> <a href="${orderProductDownloadUrl}" style="color:#123d35;font-weight:700;">Open product file</a></p>` : ''}
         <p><strong>Customer email:</strong> ${cleanEmail}</p>
       `,
-      ctaLabel: 'Apply for a section',
-      ctaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/teens_reg`,
+      productDownloadUrl: orderProductDownloadUrl,
+      productName: resolvedProductName,
+      ctaLabel: orderProductDownloadUrl ? 'Download your product' : 'Apply for a section',
+      ctaUrl: orderProductDownloadUrl || `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/teens_reg`,
       secondaryCtaLabel: 'Book for a section',
       secondaryCtaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/book-session`,
       footerNote: 'Thank you for shopping with PAZ Thriving Tribe.'

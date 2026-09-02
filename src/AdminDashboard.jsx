@@ -222,6 +222,10 @@ export default function AdminDashboard(props) {
 
     try {
       const itemSummary = (order.items || []).map((item) => `• ${item.title || 'Product'} x${item.quantity || 1}`).join('\n');
+      const productFileUrl = (order.items || [])
+        .map((item) => item.fileUrl || item.downloadUrl || item.productFileUrl)
+        .find((value) => typeof value === 'string' && value.trim().length > 0) || null;
+      const productName = (order.items || []).find((item) => typeof item.title === 'string' && item.title.trim())?.title || 'your product';
       const finalMessage = deliveryMessageDraft.trim() || 'Your purchased product is ready to be released after payment confirmation.';
       const response = await fetch('/api/send-notification-email', {
         method: 'POST',
@@ -235,8 +239,12 @@ export default function AdminDashboard(props) {
           customerName: order.name || 'Customer',
           message: finalMessage,
           productMessage: finalMessage,
-          attachmentName: deliveryAttachment ? deliveryAttachment.name : null,
-          customMessage: finalMessage
+          attachmentName: deliveryAttachment ? deliveryAttachment.name : productName,
+          customMessage: finalMessage,
+          productFileUrl,
+          fileUrl: productFileUrl,
+          productName,
+          itemName: productName
         })
       });
 
