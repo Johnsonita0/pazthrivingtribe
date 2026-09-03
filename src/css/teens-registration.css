@@ -295,6 +295,54 @@
   font-size: 1.4rem;
 }
 
+.teens-registration-calendar-title {
+  display: flex;
+  justify-content: center;
+  gap: 0.25rem;
+}
+
+.teens-registration-calendar-title button {
+  height: auto;
+  padding: 0.25rem;
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.teens-registration-calendar-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.45rem;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 0.15rem;
+}
+
+.teens-registration-calendar-options button {
+  border: 1px solid #dfe7ee;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #334155;
+  cursor: pointer;
+  padding: 0.55rem 0.35rem;
+  font: inherit;
+}
+
+.teens-registration-calendar-options button.selected {
+  background: #166534;
+  border-color: #166534;
+  color: #fff;
+  font-weight: 800;
+}
+
+.teens-registration-calendar-options button:disabled {
+  color: #cbd5e1;
+  cursor: not-allowed;
+}
+
+.teens-registration-year-options {
+  grid-template-columns: repeat(4, 1fr);
+}
+
 .teens-registration-calendar-header button:hover,
 .teens-registration-calendar-grid button:hover:not(:disabled) {
   background: #ecfdf5;

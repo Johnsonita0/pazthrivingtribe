@@ -40,6 +40,7 @@ const baseSteps = {
 
 function DateOfBirthPicker({ value, onChange }) {
   const [open, setOpen] = useState(false);
+  const [viewMode, setViewMode] = useState('calendar');
   const parsedValue = value ? new Date(`${value}T12:00:00`) : null;
   const [viewDate, setViewDate] = useState(parsedValue || new Date());
   const [activeDate, setActiveDate] = useState(parsedValue || new Date());
@@ -49,6 +50,8 @@ function DateOfBirthPicker({ value, onChange }) {
   const firstWeekday = monthStart.getDay();
   const daysInMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
   const days = Array.from({ length: firstWeekday + daysInMonth }, (_, index) => index < firstWeekday ? null : index - firstWeekday + 1);
+  const years = Array.from({ length: today.getFullYear() - 1990 + 1 }, (_, index) => today.getFullYear() - index);
+  const months = Array.from({ length: 12 }, (_, index) => new Date(2000, index, 1).toLocaleDateString(undefined, { month: 'long' }));
   const formatDate = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
   useEffect(() => {
@@ -63,6 +66,19 @@ function DateOfBirthPicker({ value, onChange }) {
     onChange(formatDate(selected));
     setActiveDate(selected);
     setOpen(false);
+    setViewMode('calendar');
+  };
+
+  const chooseMonth = (month) => {
+    const next = new Date(viewDate.getFullYear(), month, 1);
+    if (next.getFullYear() === today.getFullYear() && month > today.getMonth()) return;
+    setViewDate(next);
+    setViewMode('calendar');
+  };
+
+  const chooseYear = (year) => {
+    setViewDate(new Date(year, Math.min(viewDate.getMonth(), year === today.getFullYear() ? today.getMonth() : 11), 1));
+    setViewMode('calendar');
   };
 
   const moveActiveDate = (offset) => {
@@ -85,8 +101,10 @@ function DateOfBirthPicker({ value, onChange }) {
       if (event.key === 'ArrowDown') moveActiveDate(7);
       if (event.key === 'Enter' && activeDate <= today) chooseDay(activeDate.getDate());
     }}>
-      <div className="teens-registration-calendar-header"><button type="button" onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))} aria-label="Previous month">‹</button><strong>{viewDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</strong><button type="button" onClick={() => { const next = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1); if (next <= today) setViewDate(next); }} aria-label="Next month">›</button></div>
-      <div className="teens-registration-calendar-weekdays">{['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => <span key={`${day}-${index}`}>{day}</span>)}</div>
+      <div className="teens-registration-calendar-header"><button type="button" onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))} aria-label="Previous month">‹</button><div className="teens-registration-calendar-title"><button type="button" onClick={() => setViewMode('month')}>{viewDate.toLocaleDateString(undefined, { month: 'long' })}</button><button type="button" onClick={() => setViewMode('year')}>{viewDate.getFullYear()}</button></div><button type="button" onClick={() => { const next = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1); if (next <= today) setViewDate(next); }} aria-label="Next month">›</button></div>
+      {viewMode === 'month' && <div className="teens-registration-calendar-options" role="listbox" aria-label="Select month">{months.map((month, index) => <button key={month} type="button" disabled={viewDate.getFullYear() === today.getFullYear() && index > today.getMonth()} className={index === viewDate.getMonth() ? 'selected' : ''} onClick={() => chooseMonth(index)}>{month}</button>)}</div>}
+      {viewMode === 'year' && <div className="teens-registration-calendar-options teens-registration-year-options" role="listbox" aria-label="Select year">{years.map((year) => <button key={year} type="button" className={year === viewDate.getFullYear() ? 'selected' : ''} onClick={() => chooseYear(year)}>{year}</button>)}</div>}
+      {viewMode === 'calendar' && <><div className="teens-registration-calendar-weekdays">{['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => <span key={`${day}-${index}`}>{day}</span>)}</div>
       <div className="teens-registration-calendar-grid">{days.map((day, index) => {
         if (!day) return <span key={`empty-${index}`} />;
         const date = new Date(viewDate.getFullYear(), viewDate.getMonth(), day, 12);
@@ -94,13 +112,13 @@ function DateOfBirthPicker({ value, onChange }) {
         const isSelected = dateValue === value;
         const isActive = formatDate(activeDate) === dateValue;
         return <button key={dateValue} type="button" className={`${isSelected ? 'selected' : ''} ${isActive ? 'active' : ''}`} disabled={date > today} onClick={() => chooseDay(day)}>{day}</button>;
-      })}</div>
+      })}</div></>}
       <div className="teens-registration-calendar-hint">Use arrow keys to move · Enter to choose</div>
     </div>}
   </div>;
 }
 
-export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
+export default function TeensRegistrationPage() {
   const [formData, setFormData] = useState(initialForm);
   const [currentStep, setCurrentStep] = useState(0);
   const [submitted, setSubmitted] = useState(false);
@@ -109,20 +127,7 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
   const [lastSubmittedEmail, setLastSubmittedEmail] = useState('');
   const [confirmationEmailSent, setConfirmationEmailSent] = useState(true);
   const [formToast, setFormToast] = useState({ message: '', type: 'error' });
-  const [paystackReady, setPaystackReady] = useState(false);
   const formCardRef = useRef(null);
-
-  useEffect(() => {
-    if (window.PaystackPop) {
-      setPaystackReady(true);
-      return undefined;
-    }
-    const script = document.createElement('script');
-    script.src = 'https://js.paystack.co/v1/inline.js';
-    script.onload = () => setPaystackReady(true);
-    document.body.appendChild(script);
-    return () => { script.onload = null; };
-  }, []);
 
   const currentChild = formData.children[selectedChildIndex] || formData.children[0];
 
@@ -371,8 +376,12 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
           notes: formData.note || 'No additional notes'
         };
 
-        payload.payment_reference = paymentReference;
-        payload.payment_status = 'paid';
+        if (paymentReference) {
+          payload.payment_reference = paymentReference;
+          payload.payment_status = 'paid';
+        } else {
+          payload.payment_status = 'pending';
+        }
 
         if (withOptionalFields) {
           payload.children_count = formData.children.length;
@@ -415,8 +424,8 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
                 childrenCount: formData.children.length,
                 hearAboutUs: formData.hearAboutUs || 'Website registration',
                 note: formData.note || 'No additional notes',
-                paymentReference,
-                paymentStatus: 'paid'
+                paymentReference: paymentReference || null,
+                paymentStatus: paymentReference ? 'paid' : 'pending'
               })
             });
 
@@ -461,8 +470,6 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
     }
   };
 
-  void persistRegistration;
-
   const handleSubmit = async (event) => {
     event.preventDefault();
     if (saving) return;
@@ -471,45 +478,7 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
       setFormToast({ message: validationError, type: 'error' });
       return;
     }
-    if (!paystackReady || !window.PaystackPop) {
-      setFormToast({ message: 'Payment checkout is still loading. Please try again shortly.', type: 'error' });
-      return;
-    }
-    if (!paystackPublicKey || paystackPublicKey.includes('demo_key_update_from_admin')) {
-      setFormToast({ message: 'Paystack is not configured yet.', type: 'error' });
-      return;
-    }
-    setSaving(true);
-    const paymentHandler = window.PaystackPop.setup({
-      key: paystackPublicKey,
-      email: formData.email,
-      amount: 500000,
-      currency: 'NGN',
-      ref: `REG-${Date.now()}`,
-      metadata: { custom_fields: [{ display_name: 'Service', variable_name: 'service', value: 'Registration' }, { display_name: 'Program', variable_name: 'program', value: formData.children[0]?.programType || 'Thriving Teens Academy' }] },
-      callback: async (response) => {
-        try {
-          const completionResponse = await fetch('/api/complete-service-payment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-            type: 'registration', reference: response.reference, email: formData.email,
-            details: { registration_type: formData.registrationType, parent_or_guardian_name: formData.contactName, full_name: formData.children[0]?.childName || formData.contactName, phone: formData.phone, home_address: formData.homeAddress, children_count: formData.children.length, source: formData.hearAboutUs || 'Website registration', children_details: formData.children, notes: formData.note || 'No additional notes', track: formData.children[0]?.programType || 'Thriving Teens Academy' }
-          }) });
-          const completion = await completionResponse.json().catch(() => ({}));
-          if (!completionResponse.ok) throw new Error(completion.error || 'Payment completed but registration could not be saved.');
-          setLastSubmittedEmail(formData.email);
-          setConfirmationEmailSent(true);
-          setSubmitted(true);
-          setFormData(initialForm);
-          setSelectedChildIndex(0);
-          setCurrentStep(0);
-          setSaving(false);
-        } catch (error) {
-          setFormToast({ message: error.message, type: 'error' });
-          setSaving(false);
-        }
-      },
-      onClose: () => { setSaving(false); setFormToast({ message: 'Payment was cancelled.', type: 'error' }); }
-    });
-    paymentHandler.openIframe();
+    await persistRegistration();
   };
 
   const renderRegistrantTypeStep = () => (

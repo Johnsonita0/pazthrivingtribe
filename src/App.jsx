@@ -1492,20 +1492,17 @@ export default function App() {
     if (bookingSubmitting) return;
     setBookingSubmitting(true);
 
-    const message = [
-      `Client type: ${bookingForm.clientType}`,
-      `Session type: ${bookingForm.sessionType}`,
-      `Preferred time: ${bookingForm.preferredTime}`,
-      `Concern: ${bookingForm.concern}`
-    ].join(' | ');
-
     try {
-      const { error } = await supabase.from('tribe_applicants').insert([{
-        full_name: bookingForm.name,
+      const { error } = await supabase.from('tribe_bookings').insert([{
+        registration_type: bookingForm.clientType,
+        contact_name: bookingForm.name,
         email: bookingForm.email,
         phone: bookingForm.phone,
-        track: 'talk-thrive',
-        message
+        program_type: 'Talk & Thrive Counseling',
+        preferred_time: bookingForm.preferredTime,
+        session_format: bookingForm.sessionType,
+        notes: bookingForm.concern,
+        payment_status: 'pending'
       }]);
 
       if (error) throw error;
@@ -1515,16 +1512,9 @@ export default function App() {
       setToastType('success');
     } catch (err) {
       console.error('Home banner booking submission failed:', err);
-      await addApplicant({
-        fullName: bookingForm.name,
-        email: bookingForm.email,
-        phone: bookingForm.phone,
-        track: 'talk-thrive',
-        message
-      });
-      setBookingSubmitted(true);
-      setToastMessage('Booking request stored locally and will be processed as soon as the service is restored.');
-      setToastType('success');
+      setBookingSubmitted(false);
+      setToastMessage('We could not save your booking right now. Please try again shortly.');
+      setToastType('error');
     } finally {
       setBookingForm({ name: '', email: '', phone: '', clientType: 'Individual', sessionType: 'Virtual', preferredTime: 'Any time', concern: '' });
       setBookingSubmitting(false);
