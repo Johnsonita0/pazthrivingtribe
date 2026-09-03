@@ -1,3 +1,11 @@
+@media (max-width: 760px) {
+  input:focus,
+  textarea:focus,
+  [contenteditable="true"]:focus {
+    scroll-margin-top: 24px;
+    scroll-margin-bottom: 42vh;
+  }
+}
 /* src/index.css */
 html, body, #root {
   margin: 0 !important;

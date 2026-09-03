@@ -39,33 +39,64 @@ const baseSteps = {
 };
 
 function DateOfBirthPicker({ value, onChange }) {
-  const [year = '', month = '', day = ''] = value ? value.split('-') : [];
-  const years = Array.from({ length: 30 }, (_, index) => String(new Date().getFullYear() - index));
-  const months = Array.from({ length: 12 }, (_, index) => String(index + 1).padStart(2, '0'));
-  const days = Array.from({ length: 31 }, (_, index) => String(index + 1).padStart(2, '0'));
-  const update = (part, nextValue) => {
-    const next = { year, month, day, [part]: nextValue };
-    onChange(next.year && next.month && next.day ? `${next.year}-${next.month}-${next.day}` : '');
+  const [open, setOpen] = useState(false);
+  const parsedValue = value ? new Date(`${value}T12:00:00`) : null;
+  const [viewDate, setViewDate] = useState(parsedValue || new Date());
+  const [activeDate, setActiveDate] = useState(parsedValue || new Date());
+  const pickerRef = useRef(null);
+  const today = new Date();
+  const monthStart = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+  const firstWeekday = monthStart.getDay();
+  const daysInMonth = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0).getDate();
+  const days = Array.from({ length: firstWeekday + daysInMonth }, (_, index) => index < firstWeekday ? null : index - firstWeekday + 1);
+  const formatDate = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+
+  useEffect(() => {
+    const close = (event) => { if (!pickerRef.current?.contains(event.target)) setOpen(false); };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, []);
+
+  const chooseDay = (day) => {
+    const selected = new Date(viewDate.getFullYear(), viewDate.getMonth(), day, 12);
+    if (selected > today) return;
+    onChange(formatDate(selected));
+    setActiveDate(selected);
+    setOpen(false);
   };
 
-  const Option = ({ ariaLabel, currentValue, options, placeholder, part }) => {
-    const [open, setOpen] = useState(false);
-    const [query, setQuery] = useState('');
-    const visibleOptions = options.filter((option) => option.toLowerCase().includes(query.toLowerCase()));
-    return <div className="teens-registration-dob-option">
-      <button type="button" aria-label={ariaLabel} aria-expanded={open} onClick={() => setOpen((current) => !current)}>{currentValue || placeholder}<span aria-hidden="true">⌄</span></button>
-      {open && <div className="teens-registration-dob-menu">
-        <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${placeholder.toLowerCase()}...`} aria-label={`Search ${placeholder.toLowerCase()}`} />
-        {visibleOptions.map((option) => <button type="button" key={option} onClick={() => { update(part, option); setOpen(false); setQuery(''); }}>{option}</button>)}
-        {visibleOptions.length === 0 && <span>No matches found.</span>}
-      </div>}
-    </div>;
+  const moveActiveDate = (offset) => {
+    const next = new Date(activeDate);
+    next.setDate(next.getDate() + offset);
+    if (next > today || next.getFullYear() < 1990) return;
+    setActiveDate(next);
+    setViewDate(next);
   };
 
-  return <div className="teens-registration-dob-grid">
-    <Option ariaLabel="Birth year" currentValue={year} options={years} placeholder="Year" part="year" />
-    <Option ariaLabel="Birth month" currentValue={month} options={months} placeholder="Month" part="month" />
-    <Option ariaLabel="Birth day" currentValue={day} options={days} placeholder="Day" part="day" />
+  return <div ref={pickerRef} className="teens-registration-date-picker">
+    <button type="button" className="teens-registration-date-trigger" aria-label="Date of birth" aria-expanded={open} onClick={() => setOpen((current) => !current)}>
+      <span>{value || 'Choose date of birth'}</span><span aria-hidden="true">▣</span>
+    </button>
+    {open && <div className="teens-registration-calendar" role="dialog" aria-label="Choose date of birth" onKeyDown={(event) => {
+      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'ArrowLeft') moveActiveDate(-1);
+      if (event.key === 'ArrowRight') moveActiveDate(1);
+      if (event.key === 'ArrowUp') moveActiveDate(-7);
+      if (event.key === 'ArrowDown') moveActiveDate(7);
+      if (event.key === 'Enter' && activeDate <= today) chooseDay(activeDate.getDate());
+    }}>
+      <div className="teens-registration-calendar-header"><button type="button" onClick={() => setViewDate(new Date(viewDate.getFullYear(), viewDate.getMonth() - 1, 1))} aria-label="Previous month">‹</button><strong>{viewDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}</strong><button type="button" onClick={() => { const next = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 1); if (next <= today) setViewDate(next); }} aria-label="Next month">›</button></div>
+      <div className="teens-registration-calendar-weekdays">{['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => <span key={`${day}-${index}`}>{day}</span>)}</div>
+      <div className="teens-registration-calendar-grid">{days.map((day, index) => {
+        if (!day) return <span key={`empty-${index}`} />;
+        const date = new Date(viewDate.getFullYear(), viewDate.getMonth(), day, 12);
+        const dateValue = formatDate(date);
+        const isSelected = dateValue === value;
+        const isActive = formatDate(activeDate) === dateValue;
+        return <button key={dateValue} type="button" className={`${isSelected ? 'selected' : ''} ${isActive ? 'active' : ''}`} disabled={date > today} onClick={() => chooseDay(day)}>{day}</button>;
+      })}</div>
+      <div className="teens-registration-calendar-hint">Use arrow keys to move · Enter to choose</div>
+    </div>}
   </div>;
 }
 
