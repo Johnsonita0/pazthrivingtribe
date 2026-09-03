@@ -446,7 +446,7 @@ const normalizeProduct = (product = {}) => ({
   currency: product.currency || 'NGN',
   isFree: Boolean(product.is_free ?? product.isFree ?? false),
   category: product.category || 'Ebook',
-  cover: product.cover || product.image || product.image_url || '/logo/logomain.png',
+  cover: product.cover || product.cover_url || product.cover_image || product.image || product.image_url || product.imageUrl || '/logo/logomain.png',
   fileUrl: product.file_url || product.fileUrl || '',
   inStock: product.in_stock ?? product.inStock ?? true,
   stockCount: Number(product.stock_count ?? product.stockCount ?? 0),
@@ -460,6 +460,11 @@ const productCoverUrl = (product) => {
   const cover = String(product?.cover || '').trim();
   if (!cover) return '/logo/logomain.png';
   if (/^(https?:|data:|blob:)/i.test(cover)) return cover;
+  const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '');
+  if (cover.startsWith('/storage/v1/object/public/')) return `${supabaseUrl}${cover}`;
+  if (supabaseUrl && !cover.startsWith('/')) {
+    return `${supabaseUrl}/storage/v1/object/public/prof-upload/${cover.split('/').map(encodeURIComponent).join('/')}`;
+  }
   return `/${cover.replace(/^\/+/, '')}`;
 };
 
