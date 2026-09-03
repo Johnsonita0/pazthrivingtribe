@@ -118,7 +118,7 @@ function DateOfBirthPicker({ value, onChange }) {
   </div>;
 }
 
-export default function TeensRegistrationPage() {
+export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
   const [formData, setFormData] = useState(initialForm);
   const [currentStep, setCurrentStep] = useState(0);
   const [submitted, setSubmitted] = useState(false);
@@ -127,7 +127,27 @@ export default function TeensRegistrationPage() {
   const [lastSubmittedEmail, setLastSubmittedEmail] = useState('');
   const [confirmationEmailSent, setConfirmationEmailSent] = useState(true);
   const [formToast, setFormToast] = useState({ message: '', type: 'error' });
+  const [paystackReady, setPaystackReady] = useState(false);
   const formCardRef = useRef(null);
+
+  useEffect(() => {
+    if (window.PaystackPop) {
+      setPaystackReady(true);
+      return undefined;
+    }
+    const existingScript = document.getElementById('paystack-inline-js');
+    if (existingScript) {
+      existingScript.addEventListener('load', () => setPaystackReady(true), { once: true });
+      return undefined;
+    }
+    const script = document.createElement('script');
+    script.id = 'paystack-inline-js';
+    script.src = 'https://js.paystack.co/v1/inline.js';
+    script.onload = () => setPaystackReady(true);
+    script.onerror = () => setFormToast({ message: 'Unable to load payment checkout. Please try again later.', type: 'error' });
+    document.body.appendChild(script);
+    return () => { script.onload = null; };
+  }, []);
 
   const currentChild = formData.children[selectedChildIndex] || formData.children[0];
 
@@ -478,7 +498,38 @@ export default function TeensRegistrationPage() {
       setFormToast({ message: validationError, type: 'error' });
       return;
     }
-    await persistRegistration();
+    if (!paystackReady || !window.PaystackPop) {
+      setFormToast({ message: 'Payment checkout is still loading. Please try again shortly.', type: 'error' });
+      return;
+    }
+    if (!paystackPublicKey || paystackPublicKey.includes('demo_key_update_from_admin')) {
+      setFormToast({ message: 'Paystack is not configured yet. Please contact the site administrator.', type: 'error' });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const paymentHandler = window.PaystackPop.setup({
+        key: paystackPublicKey,
+        email: formData.email,
+        amount: 5000 * 100,
+        currency: 'NGN',
+        ref: `REG-${Date.now()}`,
+        metadata: { custom_fields: [{ display_name: 'Service', variable_name: 'service', value: 'Teens registration' }] },
+        callback: async (response) => {
+          await persistRegistration(response.reference);
+        },
+        onClose: () => {
+          setSaving(false);
+          setFormToast({ message: 'Payment was cancelled. You can try again anytime.', type: 'error' });
+        }
+      });
+      paymentHandler.openIframe();
+    } catch (error) {
+      console.error('Unable to open registration payment:', error);
+      setSaving(false);
+      setFormToast({ message: 'We could not open the payment window. Please try again.', type: 'error' });
+    }
   };
 
   const renderRegistrantTypeStep = () => (

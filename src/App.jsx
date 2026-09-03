@@ -1492,32 +1492,69 @@ export default function App() {
     if (bookingSubmitting) return;
     setBookingSubmitting(true);
 
-    try {
-      const { error } = await supabase.from('tribe_bookings').insert([{
-        registration_type: bookingForm.clientType,
-        contact_name: bookingForm.name,
-        email: bookingForm.email,
-        phone: bookingForm.phone,
-        program_type: 'Talk & Thrive Counseling',
-        preferred_time: bookingForm.preferredTime,
-        session_format: bookingForm.sessionType,
-        notes: bookingForm.concern,
-        payment_status: 'pending'
-      }]);
-
-      if (error) throw error;
-
-      setBookingSubmitted(true);
-      setToastMessage('Booking request submitted successfully. Our team will follow up promptly.');
-      setToastType('success');
-    } catch (err) {
-      console.error('Home banner booking submission failed:', err);
-      setBookingSubmitted(false);
-      setToastMessage('We could not save your booking right now. Please try again shortly.');
-      setToastType('error');
-    } finally {
-      setBookingForm({ name: '', email: '', phone: '', clientType: 'Individual', sessionType: 'Virtual', preferredTime: 'Any time', concern: '' });
+    if (!paystackPublicKey || paystackPublicKey.includes('demo_key_update_from_admin')) {
       setBookingSubmitting(false);
+      setToastMessage('Paystack is not configured yet. Please contact the site administrator.');
+      setToastType('error');
+      return;
+    }
+
+    try {
+      const paymentHandler = window.PaystackPop?.setup({
+        key: paystackPublicKey,
+        email: bookingForm.email,
+        amount: 5000 * 100,
+        currency: 'NGN',
+        ref: `BOOK-${Date.now()}`,
+        metadata: { custom_fields: [{ display_name: 'Service', variable_name: 'service', value: 'Talk & Thrive booking' }] },
+        callback: async (response) => {
+          try {
+            const completionResponse = await fetch('/api/complete-service-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'booking',
+                reference: response.reference,
+                email: bookingForm.email,
+                details: {
+                  registration_type: bookingForm.clientType,
+                  contact_name: bookingForm.name,
+                  phone: bookingForm.phone,
+                  program_type: 'Talk & Thrive Counseling',
+                  preferred_time: bookingForm.preferredTime,
+                  session_format: bookingForm.sessionType,
+                  notes: bookingForm.concern
+                }
+              })
+            });
+            const completion = await completionResponse.json().catch(() => ({}));
+            if (!completionResponse.ok) throw new Error(completion.error || 'Payment completed but booking could not be saved.');
+            setBookingSubmitted(true);
+            setToastMessage('Payment successful. Your booking request has been submitted.');
+            setToastType('success');
+            setBookingForm({ name: '', email: '', phone: '', clientType: 'Individual', sessionType: 'Virtual', preferredTime: 'Any time', concern: '' });
+          } catch (error) {
+            console.error('Paid booking completion failed:', error);
+            setBookingSubmitted(false);
+            setToastMessage(error.message || 'Payment completed but booking could not be saved.');
+            setToastType('error');
+          } finally {
+            setBookingSubmitting(false);
+          }
+        },
+        onClose: () => {
+          setBookingSubmitting(false);
+          setToastMessage('Payment was cancelled. You can try again anytime.');
+          setToastType('error');
+        }
+      });
+      if (!paymentHandler) throw new Error('Payment checkout is unavailable.');
+      paymentHandler.openIframe();
+    } catch (error) {
+      console.error('Unable to open booking payment:', error);
+      setBookingSubmitting(false);
+      setToastMessage('We could not open the payment window. Please try again.');
+      setToastType('error');
     }
   };
 

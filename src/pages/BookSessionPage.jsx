@@ -77,7 +77,7 @@ export default function BookSessionPage({ paystackPublicKey = '' }) {
       if (!paystackReady || !window.PaystackPop) throw new Error('Payment checkout is still loading. Please try again shortly.');
       if (!paystackPublicKey || paystackPublicKey.includes('demo_key_update_from_admin')) throw new Error('Paystack is not configured yet.');
       const paymentHandler = window.PaystackPop.setup({
-        key: paystackPublicKey, email: form.email, amount: 500000, currency: 'NGN', ref: `BOOK-${Date.now()}`,
+        key: paystackPublicKey, email: form.email, amount: 5000 * 100, currency: 'NGN', ref: `BOOK-${Date.now()}`,
         metadata: { custom_fields: [{ display_name: 'Service', variable_name: 'service', value: 'Booking session' }, { display_name: 'Program', variable_name: 'program', value: form.programType }] },
         callback: async (response) => {
           try {
