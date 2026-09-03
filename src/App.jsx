@@ -134,30 +134,7 @@ export default function App() {
     note: 'Please include your order name and email in the transfer narration.'
   };
 
-  const normalizeStoreProducts = (products) => {
-    const safeProducts = Array.isArray(products) ? products.filter(Boolean) : [];
-    const mergedProducts = [...safeProducts];
-    const seenIds = new Set(mergedProducts.map((product) => product?.id).filter(Boolean));
-
-    defaultStoreProducts.forEach((product) => {
-      if (mergedProducts.length >= 20) return;
-      if (!seenIds.has(product.id)) {
-        mergedProducts.push(product);
-        seenIds.add(product.id);
-      }
-    });
-
-    return mergedProducts.slice(0, 20);
-  };
-
-  const [storeProducts, setStoreProducts] = useState(() => {
-    try {
-      const savedProducts = JSON.parse(localStorage.getItem('paz_store_products') || 'null');
-      return normalizeStoreProducts(savedProducts ?? defaultStoreProducts);
-    } catch (error) {
-      return defaultStoreProducts;
-    }
-  });
+  const [storeProducts, setStoreProducts] = useState(defaultStoreProducts);
 
   const [storeBankAccount, setStoreBankAccount] = useState(() => {
     try {
@@ -176,10 +153,6 @@ export default function App() {
       return [];
     }
   });
-
-  useEffect(() => {
-    localStorage.setItem('paz_store_products', JSON.stringify(storeProducts));
-  }, [storeProducts]);
 
   useEffect(() => {
     localStorage.setItem('paz_store_bank_account', JSON.stringify(storeBankAccount));

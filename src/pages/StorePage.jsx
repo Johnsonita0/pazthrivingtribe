@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../supabaseClient';
 
 const defaultBankAccount = {
   bankName: 'Access Bank',
@@ -109,24 +110,27 @@ const money = (value) => new Intl.NumberFormat('en-NG', {
   maximumFractionDigits: 0
 }).format(Number(value || 0));
 
+const normalizeProduct = (product = {}) => ({
+  ...product,
+  id: product.id || product.product_id,
+  title: product.title || product.name || 'Untitled product',
+  description: product.description || '',
+  price: Number(product.price ?? product.amount ?? 0),
+  category: product.category || 'Ebook',
+  cover: product.cover || product.image || product.image_url || '/logo/logomain.png',
+  fileUrl: product.file_url || product.fileUrl || '',
+  inStock: product.in_stock ?? product.inStock ?? true,
+  stockCount: Number(product.stock_count ?? product.stockCount ?? 0),
+  rating: Number(product.rating ?? 0),
+  reviews: Number(product.reviews ?? 0),
+  prime: Boolean(product.prime ?? false)
+});
+
 const readStoreData = () => {
   try {
-    const storedProducts = JSON.parse(localStorage.getItem('paz_store_products') || 'null');
     const storedBank = JSON.parse(localStorage.getItem('paz_store_bank_account') || 'null');
-    const safeStoredProducts = Array.isArray(storedProducts) ? storedProducts.filter(Boolean) : [];
-    const mergedProducts = [...safeStoredProducts];
-    const seenIds = new Set(mergedProducts.map((product) => product?.id).filter(Boolean));
-
-    defaultProducts.forEach((product) => {
-      if (mergedProducts.length >= 20) return;
-      if (!seenIds.has(product.id)) {
-        mergedProducts.push(product);
-        seenIds.add(product.id);
-      }
-    });
-
     return {
-      products: mergedProducts.slice(0, 20),
+      products: defaultProducts,
       bankAccount: storedBank || defaultBankAccount
     };
   } catch (error) {
@@ -136,11 +140,30 @@ const readStoreData = () => {
 
 export default function StorePage() {
   const navigate = useNavigate();
-  const [storeData] = useState(readStoreData);
+  const [storeData, setStoreData] = useState(readStoreData);
   const [cart, setCart] = useState([]);
   const [activeProductIndex, setActiveProductIndex] = useState(0);
   const [cartOpen, setCartOpen] = useState(false);
   const [isSmallScreen, setIsSmallScreen] = useState(() => window.innerWidth <= 768);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadLatestProducts = async () => {
+      const { data, error } = await supabase
+        .from('store_products')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!active || error || !Array.isArray(data) || data.length === 0) return;
+      setStoreData((current) => ({ ...current, products: data.map(normalizeProduct) }));
+    };
+
+    loadLatestProducts();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const recentProducts = (storeData.products || []).slice(0, 12);
   const featuredProductRotationMs = 7 * 1000;

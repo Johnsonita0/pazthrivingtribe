@@ -3,6 +3,11 @@ import { Link, Navigate } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 
 const formatName = (value) => typeof value === 'string' ? value.replace(/\b\w/g, (letter) => letter.toUpperCase()) : value;
+const getStoredFileName = (value) => {
+  if (!value || typeof value !== 'string') return '';
+  const cleanValue = value.split('?')[0].replace(/\\/g, '/');
+  return decodeURIComponent(cleanValue.slice(cleanValue.lastIndexOf('/') + 1));
+};
 const formatReferenceId = (value) => {
   const compactId = String(value || '').replace(/[^a-z0-9]/gi, '').slice(0, 8).toUpperCase();
   return compactId ? `PT-${compactId}` : 'N/A';
@@ -158,7 +163,12 @@ export default function AdminDashboard(props) {
     inStock: true,
     stockCount: ''
   });
-    const [productFileUploading, setProductFileUploading] = useState(false);
+  const [productFileUploading, setProductFileUploading] = useState(false);
+  const [coverFileUploading, setCoverFileUploading] = useState(false);
+  const [productFileName, setProductFileName] = useState('');
+  const [coverFileName, setCoverFileName] = useState('');
+  const [productFileDragActive, setProductFileDragActive] = useState(false);
+  const [coverFileDragActive, setCoverFileDragActive] = useState(false);
 
   const [activeDashboardView, setActiveDashboardView] = useState('visitors');
   const [commerceSubTab, setCommerceSubTab] = useState('storefront');
@@ -410,6 +420,8 @@ export default function AdminDashboard(props) {
 
   const resetStoreProductForm = () => {
     setStoreProductForm({ title: '', description: '', price: '', category: 'Ebook', fileUrl: '', cover: '/logo/logomain.png', inStock: true, stockCount: '' });
+    setProductFileName('');
+    setCoverFileName('');
     setEditingStoreProductId(null);
   };
 
@@ -434,8 +446,18 @@ export default function AdminDashboard(props) {
     };
 
     try {
+      if (operation === 'insert') {
+        const { error: directInsertError } = await supabase.from('store_products').insert(payload);
+        if (!directInsertError) return true;
+        console.warn('Direct store product insert failed, trying admin API:', directInsertError.message);
+      } else if (operation === 'upsert') {
+        const { error: directUpdateError } = await supabase.from('store_products').update(payload).eq('id', product.id);
+        if (!directUpdateError) return true;
+        console.warn('Direct store product update failed, trying admin API:', directUpdateError.message);
+      }
+
       const requestBody = {
-        action: operation === 'delete' ? 'delete' : (product.id && typeof product.id === 'string' && product.id.startsWith('store-') ? 'insert' : 'update'),
+        action: operation === 'delete' ? 'delete' : operation === 'insert' ? 'insert' : 'update',
         table: 'store_products',
         payload: [payload],
         match: product.id ? { id: product.id } : undefined
@@ -453,7 +475,13 @@ export default function AdminDashboard(props) {
 
       if (!response.ok) {
         console.warn('Store product sync to Supabase failed:', response.statusText);
-        if (operation !== 'delete' && product.id && !String(product.id).startsWith('store-')) {
+        if (operation === 'insert') {
+          const { error: fallbackError } = await supabase
+            .from('store_products')
+            .insert(payload);
+          if (!fallbackError) return true;
+          console.warn('Direct store product insert fallback failed:', fallbackError.message);
+        } else if (operation !== 'delete' && product.id) {
           const { error: fallbackError } = await supabase
             .from('store_products')
             .update(payload)
@@ -469,8 +497,8 @@ export default function AdminDashboard(props) {
     }
   };
 
-  const handleProductFileUpload = async (event) => {
-    const file = event.target.files?.[0];
+  const handleProductFileUpload = async (fileOrEvent) => {
+    const file = fileOrEvent?.target ? fileOrEvent.target.files?.[0] : fileOrEvent;
     if (!file) return;
 
     try {
@@ -483,19 +511,78 @@ export default function AdminDashboard(props) {
       });
       if (error) throw error;
       setStoreProductForm((current) => ({ ...current, fileUrl: data?.path || filePath }));
+      setProductFileName(file.name);
       showAdminToast('success', 'Product file uploaded', 'The private product file is ready to save with this product.');
     } catch (error) {
       console.warn('Product file upload failed:', error);
       showAdminToast('error', 'File upload failed', error.message || 'The product file could not be uploaded.');
     } finally {
       setProductFileUploading(false);
-      event.target.value = '';
+      if (fileOrEvent?.target) fileOrEvent.target.value = '';
     }
+  };
+
+  const handleCoverFileUpload = async (fileOrEvent) => {
+    const file = fileOrEvent?.target ? fileOrEvent.target.files?.[0] : fileOrEvent;
+    if (!file) return;
+
+    try {
+      setCoverFileUploading(true);
+      const safeName = file.name.replace(/[^a-z0-9._-]/gi, '-');
+      const filePath = `products/covers/${Date.now()}-${safeName}`;
+      const { data, error } = await supabase.storage.from('prof-upload').upload(filePath, file, {
+        upsert: false,
+        contentType: file.type || 'application/octet-stream'
+      });
+      if (error) throw error;
+
+      const { data: publicUrlData } = supabase.storage.from('prof-upload').getPublicUrl(data?.path || filePath);
+      setStoreProductForm((current) => ({ ...current, cover: publicUrlData?.publicUrl || data?.path || filePath }));
+      setCoverFileName(file.name);
+      showAdminToast('success', 'Cover image uploaded', 'The cover image is ready to save with this product.');
+    } catch (error) {
+      console.warn('Cover image upload failed:', error);
+      showAdminToast('error', 'Cover upload failed', error.message || 'The cover image could not be uploaded.');
+    } finally {
+      setCoverFileUploading(false);
+      if (fileOrEvent?.target) fileOrEvent.target.value = '';
+    }
+  };
+
+  const handleFileDragOver = (event, setDragActive) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+    setDragActive(true);
+  };
+
+  const handleFileDragLeave = (event, setDragActive) => {
+    event.preventDefault();
+    setDragActive(false);
+  };
+
+  const handleProductFileDrop = (event) => {
+    event.preventDefault();
+    setProductFileDragActive(false);
+    if (!productFileUploading) handleProductFileUpload(event.dataTransfer.files?.[0]);
+  };
+
+  const handleCoverFileDrop = (event) => {
+    event.preventDefault();
+    setCoverFileDragActive(false);
+    if (!coverFileUploading) handleCoverFileUpload(event.dataTransfer.files?.[0]);
   };
 
   const handleStoreProductSubmit = async (event) => {
     event.preventDefault();
     if (!storeProductForm.title || !storeProductForm.description || !storeProductForm.price) return;
+    if (productFileUploading || coverFileUploading) {
+      showAdminToast('warning', 'Uploads still in progress', 'Wait for the selected files to finish uploading before saving the product.');
+      return;
+    }
+    if (!editingStoreProductId && !storeProductForm.fileUrl.trim()) {
+      showAdminToast('warning', 'Product file required', 'Choose a PDF or ZIP file so it can be uploaded to Supabase Storage before publishing.');
+      return;
+    }
 
     const normalizedInStock = storeProductForm.inStock !== false;
     const parsedStockCount = Number(storeProductForm.stockCount ?? 0);
@@ -516,18 +603,26 @@ export default function AdminDashboard(props) {
           ? { ...product, ...productValues }
           : product
       ));
-      setStoreProducts(updatedProducts);
       const targetProduct = updatedProducts.find((product) => product.id === editingStoreProductId) || { id: editingStoreProductId, ...productValues };
-      resetStoreProductForm();
       const persisted = await persistStoreProductToSupabase(targetProduct, 'upsert');
-      showAdminToast(persisted ? 'success' : 'warning', persisted ? 'Product updated' : 'Product updated locally', persisted ? `${productValues.title} has been updated on the public store.` : 'The editor was cleared, but the server sync could not be completed.');
+      if (!persisted) {
+        showAdminToast('error', 'Product was not updated', 'Supabase could not save this product. Your changes are still in the editor.');
+        return;
+      }
+      setStoreProducts(updatedProducts);
+      resetStoreProductForm();
+      showAdminToast('success', 'Product updated', `${productValues.title} has been updated on the public store.`);
     } else {
       const newProduct = {
-        id: `store-${Date.now()}`,
+        id: crypto.randomUUID(),
         ...productValues
       };
+      const persisted = await persistStoreProductToSupabase(newProduct, 'insert');
+      if (!persisted) {
+        showAdminToast('error', 'Product was not saved', 'Supabase could not save this product. Your entries are still in the editor.');
+        return;
+      }
       setStoreProducts((current = []) => [...(Array.isArray(current) ? current : []), newProduct]);
-      await persistStoreProductToSupabase(newProduct, 'upsert');
       showAdminToast('success', 'Product saved', `${newProduct.title} is now available in the digital store.`);
     }
 
@@ -549,6 +644,8 @@ export default function AdminDashboard(props) {
       inStock: product.inStock !== false,
       stockCount: Number(product.stockCount ?? 0) > 0 ? Number(product.stockCount ?? 0) : ''
     });
+    setProductFileName(getStoredFileName(product.fileUrl));
+    setCoverFileName(getStoredFileName(product.cover));
     window.requestAnimationFrame(() => {
       productEditorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       productEditorRef.current?.querySelector('input')?.focus();
@@ -1146,9 +1243,18 @@ export default function AdminDashboard(props) {
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
                         <input type="number" value={storeProductForm.price} onChange={(event) => setStoreProductForm((current) => ({ ...current, price: event.target.value }))} placeholder="Price in NGN" style={adminFieldStyle} />
                         <div style={{ display: 'grid', gap: '8px', minWidth: 0 }}>
-                          <input value={storeProductForm.fileUrl} onChange={(event) => setStoreProductForm((current) => ({ ...current, fileUrl: event.target.value }))} placeholder="Product file path or URL" style={adminFieldStyle} />
-                          <input type="file" accept=".pdf,.zip,image/*" onChange={handleProductFileUpload} disabled={productFileUploading} style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', border: '1px solid #d1d5db', borderRadius: '10px', padding: '8px', background: '#fff', fontSize: '0.82rem' }} />
+                          <label style={{ color: '#475569', fontSize: '0.78rem', fontWeight: 700 }}>Product file</label>
+                          <label
+                            onDragOver={(event) => handleFileDragOver(event, setProductFileDragActive)}
+                            onDragLeave={(event) => handleFileDragLeave(event, setProductFileDragActive)}
+                            onDrop={handleProductFileDrop}
+                            style={{ display: 'grid', placeItems: 'center', gap: '4px', minHeight: '58px', padding: '8px', boxSizing: 'border-box', border: `1px dashed ${productFileDragActive ? '#f97316' : '#cbd5e1'}`, borderRadius: '10px', background: productFileDragActive ? '#fff7ed' : '#f8fafc', color: '#475569', cursor: productFileUploading ? 'wait' : 'pointer', textAlign: 'center', transition: 'border-color 160ms ease, background 160ms ease' }}
+                          >
+                            <input type="file" accept=".pdf,.zip,application/pdf,application/zip" onChange={handleProductFileUpload} disabled={productFileUploading} style={{ display: 'none' }} />
+                            <span style={{ fontWeight: 700 }}>{productFileDragActive ? 'Drop product file here' : 'Drag PDF or ZIP here, or click to choose'}</span>
+                          </label>
                           {productFileUploading && <span style={{ color: '#64748b', fontSize: '0.78rem' }}>Uploading product file...</span>}
+                          {!productFileUploading && productFileName && <span style={{ color: '#64748b', fontSize: '0.78rem', overflowWrap: 'anywhere' }}>Attached: {productFileName}<br />Storage path: product-files/{storeProductForm.fileUrl}</span>}
                         </div>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
@@ -1169,8 +1275,21 @@ export default function AdminDashboard(props) {
                           style={adminFieldStyle}
                         />
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center' }}>
-                        <input value={storeProductForm.cover} onChange={(event) => setStoreProductForm((current) => ({ ...current, cover: event.target.value }))} placeholder="Cover image URL" style={{ ...adminFieldStyle, flex: 1 }} />
+                      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: '12px', alignItems: 'center' }}>
+                        <div style={{ display: 'grid', gap: '8px', minWidth: 0 }}>
+                          <label style={{ color: '#475569', fontSize: '0.78rem', fontWeight: 700 }}>Cover image</label>
+                          <label
+                            onDragOver={(event) => handleFileDragOver(event, setCoverFileDragActive)}
+                            onDragLeave={(event) => handleFileDragLeave(event, setCoverFileDragActive)}
+                            onDrop={handleCoverFileDrop}
+                            style={{ display: 'grid', placeItems: 'center', gap: '4px', minHeight: '58px', padding: '8px', boxSizing: 'border-box', border: `1px dashed ${coverFileDragActive ? '#f97316' : '#cbd5e1'}`, borderRadius: '10px', background: coverFileDragActive ? '#fff7ed' : '#f8fafc', color: '#475569', cursor: coverFileUploading ? 'wait' : 'pointer', textAlign: 'center', transition: 'border-color 160ms ease, background 160ms ease' }}
+                          >
+                            <input type="file" accept="image/*" onChange={handleCoverFileUpload} disabled={coverFileUploading} style={{ display: 'none' }} />
+                            <span style={{ fontWeight: 700 }}>{coverFileDragActive ? 'Drop cover image here' : 'Drag an image here, or click to choose'}</span>
+                          </label>
+                          {coverFileUploading && <span style={{ color: '#64748b', fontSize: '0.78rem' }}>Uploading cover image...</span>}
+                          {!coverFileUploading && coverFileName && <span style={{ color: '#64748b', fontSize: '0.78rem' }}>Attached: {coverFileName}</span>}
+                        </div>
                         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                           <button type="submit" style={{ border: 'none', background: 'linear-gradient(135deg, #f59e0b, #ef4444)', color: '#fff', borderRadius: '12px', padding: '12px 18px', fontWeight: 800, cursor: 'pointer', boxShadow: '0 12px 20px rgba(245, 158, 11, 0.28)' }}>
                             {editingStoreProductId ? 'Update product' : 'Add product'}
@@ -1204,7 +1323,7 @@ export default function AdminDashboard(props) {
                                   <div className="commerce-product-desc" style={{ color: '#64748b', fontSize: '0.82rem', marginBottom: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.description || 'No description provided yet.'}</div>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                                     <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>₦{Number(product.price || 0).toLocaleString()}</span>
-                                    <span style={{ color: '#64748b', fontSize: '0.78rem' }}>{product.fileUrl ? 'File attached' : 'No file URL'}</span>
+                                    <span style={{ color: '#64748b', fontSize: '0.78rem', overflowWrap: 'anywhere' }}>{product.fileUrl ? `File attached: product-files/${product.fileUrl}` : 'No product file'}</span>
                                   </div>
                                 </div>
                                 <div className="commerce-product-actions">

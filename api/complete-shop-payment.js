@@ -40,7 +40,14 @@ function getAdminEmails() {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return sendJson(res, 405, { error: 'Method not allowed' });
 
-  const body = req.body || {};
+  let body = req.body || {};
+  if (typeof body === 'string') {
+    try {
+      body = JSON.parse(body);
+    } catch (error) {
+      return sendJson(res, 400, { error: 'Invalid JSON body.' });
+    }
+  }
   const email = cleanEmail(body.email);
   const reference = String(body.reference || '').trim();
   const items = Array.isArray(body.items) ? body.items : [];

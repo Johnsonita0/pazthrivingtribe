@@ -75,6 +75,20 @@ BEGIN
   ) THEN
     EXECUTE 'CREATE POLICY "authenticated update product files" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = ''product-files'') WITH CHECK (bucket_id = ''product-files'');';
   END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'authenticated read product files'
+  ) THEN
+    EXECUTE 'CREATE POLICY "authenticated read product files" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = ''product-files'');';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'authenticated delete product files'
+  ) THEN
+    EXECUTE 'CREATE POLICY "authenticated delete product files" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = ''product-files'');';
+  END IF;
 END
 $$;
 
@@ -106,6 +120,21 @@ create table if not exists store_products (
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+-- Keep existing projects compatible when this setup script is run after the table exists.
+alter table if exists store_products add column if not exists title text;
+alter table if exists store_products add column if not exists description text;
+alter table if exists store_products add column if not exists price numeric(12,2) default 0;
+alter table if exists store_products add column if not exists category text;
+alter table if exists store_products add column if not exists cover text;
+alter table if exists store_products add column if not exists file_url text;
+alter table if exists store_products add column if not exists rating numeric(3,2) default 0;
+alter table if exists store_products add column if not exists reviews integer default 0;
+alter table if exists store_products add column if not exists in_stock boolean default true;
+alter table if exists store_products add column if not exists stock_count integer default 0;
+alter table if exists store_products add column if not exists prime boolean default false;
+alter table if exists store_products add column if not exists created_at timestamptz default now();
+alter table if exists store_products add column if not exists updated_at timestamptz default now();
 
 create table if not exists store_bank_accounts (
   id uuid primary key default gen_random_uuid(),

@@ -53,6 +53,12 @@ const server = http.createServer((req, res) => {
         return;
       }
 
+      if (pathname === '/api/complete-shop-payment' && req.method === 'POST') {
+        req.body = body;
+        await completeShopPaymentHandler(req, res);
+        return;
+      }
+
       if (pathname === '/api/track-visitor' && req.method === 'POST') {
         req.body = body;
         await trackVisitorHandler(req, res);

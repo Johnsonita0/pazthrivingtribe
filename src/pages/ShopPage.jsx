@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
+import { getCountries, getCountryCallingCode, isValidPhoneNumber, parsePhoneNumberFromString } from 'libphonenumber-js';
 import { supabase } from '../supabaseClient';
 
 const defaultBankAccount = {
@@ -10,6 +11,11 @@ const defaultBankAccount = {
   swiftCode: 'ABNGNGLA',
   note: 'Please include your order name and email in the transfer narration.'
 };
+
+const phoneCountries = getCountries().map((code) => ({
+  code,
+  dialCode: `+${getCountryCallingCode(code)}`
+}));
 
 const defaultProducts = [
   {
@@ -398,24 +404,27 @@ const money = (value) => new Intl.NumberFormat('en-NG', {
   maximumFractionDigits: 0
 }).format(Number(value || 0));
 
+const normalizeProduct = (product = {}) => ({
+  ...product,
+  id: product.id || product.product_id,
+  title: product.title || product.name || 'Untitled product',
+  description: product.description || '',
+  price: Number(product.price ?? product.amount ?? 0),
+  category: product.category || 'Ebook',
+  cover: product.cover || product.image || product.image_url || '/logo/logomain.png',
+  fileUrl: product.file_url || product.fileUrl || '',
+  inStock: product.in_stock ?? product.inStock ?? true,
+  stockCount: Number(product.stock_count ?? product.stockCount ?? 0),
+  rating: Number(product.rating ?? 0),
+  reviews: Number(product.reviews ?? 0),
+  prime: Boolean(product.prime ?? false)
+});
+
 const readStoreData = () => {
   try {
-    const storedProducts = JSON.parse(localStorage.getItem('paz_store_products') || 'null');
     const storedBank = JSON.parse(localStorage.getItem('paz_store_bank_account') || 'null');
-    const safeStoredProducts = Array.isArray(storedProducts) ? storedProducts.filter(Boolean) : [];
-    const mergedProducts = [...safeStoredProducts];
-    const seenIds = new Set(mergedProducts.map((product) => product?.id).filter(Boolean));
-
-    defaultProducts.forEach((product) => {
-      if (mergedProducts.length >= 20) return;
-      if (!seenIds.has(product.id)) {
-        mergedProducts.push(product);
-        seenIds.add(product.id);
-      }
-    });
-
     return {
-      products: mergedProducts.slice(0, 20),
+      products: defaultProducts,
       bankAccount: storedBank || defaultBankAccount
     };
   } catch (error) {
@@ -446,7 +455,8 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const [checkoutForm, setCheckoutForm] = useState({
     name: '',
     email: '',
-    phone: '',
+    countryCode: 'NG',
+    phoneNumber: '',
     notes: ''
   });
   const [submittedOrder, setSubmittedOrder] = useState(null);
@@ -469,6 +479,28 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   }, [storeProducts, storeBankAccount]);
 
   useEffect(() => {
+    let active = true;
+
+    const loadLatestProducts = async () => {
+      const { data, error } = await supabase
+        .from('store_products')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!active || error || !Array.isArray(data) || data.length === 0) return;
+
+      const latestProducts = data.map(normalizeProduct);
+      setStoreData((current) => ({ ...current, products: latestProducts }));
+      setCart((current) => current.filter((item) => latestProducts.some((product) => product.id === item.id)));
+    };
+
+    loadLatestProducts();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (window.PaystackPop) {
       setPaystackReady(true);
       return undefined;
@@ -489,7 +521,6 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('paz_store_products', JSON.stringify(storeData.products));
     localStorage.setItem('paz_store_bank_account', JSON.stringify(storeData.bankAccount));
   }, [storeData]);
 
@@ -638,6 +669,15 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
       setToast({ message: `${product.title} is currently out of stock.`, type: 'error' });
       setTimeout(() => setToast(null), 3000);
       return;
+    }
+
+    if (submittedOrder || checkoutStage === 'success') {
+      setCart([]);
+      setSubmittedOrder(null);
+      setCheckoutStage('details');
+      setPaymentProof(null);
+      setPaymentProofFile(null);
+      setCheckoutForm({ name: '', email: '', countryCode: 'NG', phoneNumber: '', notes: '' });
     }
 
     const originalTarget = event?.currentTarget?.getBoundingClientRect?.();
@@ -940,9 +980,18 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const handleCheckout = async (event) => {
     event.preventDefault();
     const customerEmail = checkoutForm.email.trim().toLowerCase();
+    const selectedCountry = phoneCountries.find((country) => country.code === checkoutForm.countryCode) || phoneCountries[0];
+    const localDigits = checkoutForm.phoneNumber.replace(/\D/g, '');
+    const parsedPhone = parsePhoneNumberFromString(localDigits, selectedCountry.code);
+    const internationalPhone = parsedPhone?.number || '';
     if (!cart.length || paymentLoading) return;
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
       setToast({ message: 'Please enter a valid email address for payment and delivery.', type: 'error' });
+      setTimeout(() => setToast(null), 3500);
+      return;
+    }
+    if (!parsedPhone || !isValidPhoneNumber(localDigits, selectedCountry.code)) {
+      setToast({ message: `Enter a valid ${selectedCountry.code} phone number for ${selectedCountry.dialCode}.`, type: 'error' });
       setTimeout(() => setToast(null), 3500);
       return;
     }
@@ -963,7 +1012,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
       orderNumber,
       name: checkoutForm.name || 'Customer',
       email: customerEmail,
-      phone: checkoutForm.phone || 'N/A',
+      phone: internationalPhone,
       total: subtotal,
       items: cart,
       notes: checkoutForm.notes || '',
@@ -1015,8 +1064,9 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
             window.requestAnimationFrame(() => window.setTimeout(triggerSuccessConfetti, 120));
             setToast({ message: `Payment successful. Your file has been sent to ${customerEmail}.`, type: 'success' });
             setTimeout(() => setToast(null), 5000);
-            setCheckoutForm({ name: '', email: '', phone: '', notes: '' });
+            setCheckoutForm({ name: '', email: '', countryCode: 'NG', phoneNumber: '', notes: '' });
             setCart([]);
+            setCartOpen(true);
           } catch (error) {
             setToast({ message: error.message || 'Payment succeeded but delivery could not be completed.', type: 'error' });
             setTimeout(() => setToast(null), 5000);
@@ -1878,13 +1928,31 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                     required
                     style={{ padding: '10px 12px', border: '1px solid #d5d9d9', borderRadius: '8px', fontSize: '14px' }}
                   />
-                  <input
-                    type="tel"
-                    placeholder="Phone"
-                    value={checkoutForm.phone}
-                    onChange={(e) => setCheckoutForm({ ...checkoutForm, phone: e.target.value })}
-                    style={{ padding: '10px 12px', border: '1px solid #d5d9d9', borderRadius: '8px', fontSize: '14px' }}
-                  />
+                  <div className="checkout-phone-fields">
+                    <select
+                      aria-label="Country"
+                      value={checkoutForm.countryCode}
+                      onChange={(e) => setCheckoutForm({ ...checkoutForm, countryCode: e.target.value, phoneNumber: '' })}
+                      style={{ width: '100%', minWidth: 0, padding: '10px 6px', border: '1px solid #d5d9d9', borderRadius: '8px', fontSize: '14px', background: '#fff' }}
+                    >
+                      {phoneCountries.map((country) => (
+                        <option key={country.code} value={country.code}>{country.code} ({country.dialCode})</option>
+                      ))}
+                    </select>
+                    <input
+                      type="tel"
+                      inputMode="numeric"
+                      placeholder={checkoutForm.countryCode === 'NG' ? 'Phone number (11 digits)' : 'Phone number'}
+                      value={checkoutForm.phoneNumber}
+                      onChange={(e) => {
+                        setCheckoutForm({ ...checkoutForm, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 15) });
+                      }}
+                      required
+                      maxLength={15}
+                      aria-label="National phone number"
+                      style={{ padding: '10px 12px', border: '1px solid #d5d9d9', borderRadius: '8px', fontSize: '14px' }}
+                    />
+                  </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', background: '#f8fafc', color: '#334155', fontSize: '12px' }}>
                     <i className="fa-solid fa-lock" aria-hidden="true" />
@@ -1938,14 +2006,6 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                     <span>Total:</span>
                     <span>{money(submittedOrder.total)}</span>
                   </div>
-                </div>
-
-                <div style={{ background: '#fff', border: '1px solid #d1fae5', borderRadius: '8px', padding: '12px', marginBottom: '12px', fontSize: '12px', lineHeight: '1.8', color: '#047857' }}>
-                  <strong style={{ display: 'block', marginBottom: '6px' }}>🏦 Payment Details</strong>
-                  <div><strong>Bank:</strong> {submittedOrder.bankAccount.bankName}</div>
-                  <div><strong>Account Name:</strong> {submittedOrder.bankAccount.accountName}</div>
-                  <div><strong>Account Number:</strong> {submittedOrder.bankAccount.accountNumber}</div>
-                  <div style={{ marginTop: '6px', fontStyle: 'italic' }}>💬 {submittedOrder.bankAccount.note}</div>
                 </div>
 
                 {false && <div style={{ marginBottom: '12px', border: '1px dashed #86efac', borderRadius: '8px', padding: '12px', background: '#f0fdf4' }}>
@@ -2012,8 +2072,8 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                 </div>}
 
                 <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '8px', padding: '12px', fontSize: '12px', color: '#92400e' }}>
-                  <strong style={{ display: 'block', marginBottom: '6px' }}>📦 Delivery Notice</strong>
-                  Your product files have been sent to <strong>{submittedOrder.email}</strong>. Please check your inbox and spam folder.
+                  <strong style={{ display: 'block', marginBottom: '6px' }}>📧 File delivery</strong>
+                  Your product files have been sent to <strong>{submittedOrder.email}</strong>. Please check your inbox and spam folder for the message from PAZ Thriving Tribe.
                 </div>
 
                 <button
@@ -2173,21 +2233,6 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
             </div>
 
             <div style={{
-              background: '#fff',
-              border: '1px solid #6ee7b7',
-              borderRadius: '4px',
-              padding: '12px',
-              lineHeight: '1.8',
-              fontSize: '14px',
-              marginBottom: '12px'
-            }}>
-              <strong style={{ display: 'block', marginBottom: '8px', color: '#065f46' }}>🏦 Payment Details:</strong>
-              <div><strong>Bank:</strong> {submittedOrder.bankAccount.bankName}</div>
-              <div><strong>Account Name:</strong> {submittedOrder.bankAccount.accountName}</div>
-              <div><strong>Account Number:</strong> {submittedOrder.bankAccount.accountNumber}</div>
-            </div>
-
-            <div style={{
               background: '#f0fdf4',
               border: '1px solid #bbf7d0',
               borderRadius: '4px',
@@ -2195,9 +2240,9 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
               fontSize: '12px',
               marginBottom: '12px'
             }}>
-              <strong style={{ color: '#047857' }}>📦 Delivery Notice:</strong>
+              <strong style={{ color: '#047857' }}>📧 File delivery:</strong>
               <p style={{ margin: '8px 0 0', color: '#047857' }}>
-                Your product will be sent to <strong>{submittedOrder.email}</strong> once our admin confirms payment.
+                Your product files have been sent to <strong>{submittedOrder.email}</strong>. Please check your inbox and spam folder for the delivery email.
               </p>
             </div>
 
@@ -2209,6 +2254,17 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
       </div>
 
       <style>{`
+        .checkout-phone-fields {
+          display: grid;
+          grid-template-columns: minmax(82px, 0.55fr) minmax(0, 1.45fr);
+          gap: 8px;
+          width: 100%;
+        }
+        @media (max-width: 420px) {
+          .checkout-phone-fields {
+            grid-template-columns: minmax(74px, 0.45fr) minmax(0, 1.55fr);
+          }
+        }
         @keyframes slideIn {
           from {
             transform: translateX(100%);
