@@ -456,6 +456,13 @@ const normalizeProduct = (product = {}) => ({
   createdAt: product.created_at || product.createdAt || null
 });
 
+const productCoverUrl = (product) => {
+  const cover = String(product?.cover || '').trim();
+  if (!cover) return '/logo/logomain.png';
+  if (/^(https?:|data:|blob:)/i.test(cover)) return cover;
+  return `/${cover.replace(/^\/+/, '')}`;
+};
+
 const isNewProduct = (product) => {
   const createdAt = Date.parse(product?.createdAt || product?.created_at || '');
   return Number.isFinite(createdAt) && Date.now() - createdAt >= 0 && Date.now() - createdAt <= 7 * 24 * 60 * 60 * 1000;
@@ -1627,7 +1634,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                       justifyContent: 'center',
                       position: 'relative'
                     }}>
-                      <img src={product.cover} alt={product.title} style={{
+                      <img src={productCoverUrl(product)} alt={product.title} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/logo/logomain.png'; }} style={{
                         width: '100%',
                         height: '100%',
                         objectFit: 'cover'
@@ -1945,7 +1952,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
 
               <div style={{ display: 'grid', gridTemplateColumns: isSmallScreen ? '1fr' : '140px minmax(0, 1fr)', gap: isSmallScreen ? '8px' : '16px', alignItems: 'start' }}>
                 <div style={{ width: '100%', maxWidth: isSmallScreen ? '140px' : 'none', justifySelf: isSmallScreen ? 'center' : 'stretch' }}>
-                  <img src={selectedProduct.cover || '/logo/logomain.png'} alt={selectedProduct.title} style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'cover', borderRadius: '14px', border: '1px solid #e5e7eb', boxShadow: '0 8px 18px rgba(15, 23, 42, 0.08)' }} />
+                  <img src={productCoverUrl(selectedProduct)} alt={selectedProduct.title} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/logo/logomain.png'; }} style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'cover', borderRadius: '14px', border: '1px solid #e5e7eb', boxShadow: '0 8px 18px rgba(15, 23, 42, 0.08)' }} />
                   <div style={{ display: 'grid', gap: '4px', marginTop: '8px', padding: '9px 10px', borderRadius: '11px', background: '#f8fafc', border: '1px solid #e2e8f0', color: '#475569', fontSize: '0.7rem', lineHeight: 1.35 }}>
                     <span><strong style={{ color: '#334155' }}>Category:</strong> {selectedProduct.category || 'Product'}</span>
                     <span><strong style={{ color: '#334155' }}>Delivery:</strong> Email attachment</span>
@@ -2102,7 +2109,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                   {cart.map((item) => (
                     <div key={item.id} style={{ borderBottom: '1px solid #e0e0e0', paddingBottom: '16px' }}>
                       <div style={{ display: 'flex', gap: '12px', marginBottom: '8px' }}>
-                        <img src={item.cover} alt={item.title} style={{ width: '60px', height: '60px', borderRadius: '4px', objectFit: 'cover' }} />
+                        <img src={productCoverUrl(item)} alt={item.title} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/logo/logomain.png'; }} style={{ width: '60px', height: '60px', borderRadius: '4px', objectFit: 'cover' }} />
                         <div style={{ flex: 1 }}>
                           <h4 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: 'bold' }}>{item.title}</h4>
                           <div style={{ color: '#666', fontSize: '12px' }}>Qty: {item.quantity}</div>
@@ -2359,7 +2366,8 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
             }}
           >
             <img
-              src={flight.product?.cover || '/logo/logomain.png'}
+              src={productCoverUrl(flight.product)}
+              onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/logo/logomain.png'; }}
               alt=""
               style={{ width: '100%', height: '100%', borderRadius: '12px', objectFit: 'cover' }}
             />
