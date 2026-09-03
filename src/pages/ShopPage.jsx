@@ -1290,7 +1290,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
 
       {/* Main Content */}
       <div style={{ display: isProductPage ? 'contents' : 'block', maxWidth: '1400px', margin: '0 auto', padding: isSmallScreen ? '16px 14px 50px' : '20px 14px 50px', paddingLeft: isSmallScreen ? '14px' : '268px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
+        <div style={{ display: isProductPage ? 'none' : 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
           {!isSmallScreen && (
             <aside style={{ 
               background: '#fff', 
