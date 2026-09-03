@@ -533,6 +533,17 @@ export default function App() {
   const emailInputRef = useRef(null);
 
   useEffect(() => {
+    if (window.PaystackPop) return undefined;
+    const existingScript = document.getElementById('paystack-inline-js');
+    if (existingScript) return undefined;
+    const script = document.createElement('script');
+    script.id = 'paystack-inline-js';
+    script.src = 'https://js.paystack.co/v1/inline.js';
+    document.body.appendChild(script);
+    return () => { script.onload = null; };
+  }, []);
+
+  useEffect(() => {
     const selected = socialNewsFeed.find((item) => item.platform === socialEditTarget);
     if (selected) {
       setSocialPreviewTitle(selected.title);
@@ -1500,6 +1511,7 @@ export default function App() {
     }
 
     try {
+      if (!window.PaystackPop) throw new Error('Payment checkout is still loading. Please try again shortly.');
       const paymentHandler = window.PaystackPop?.setup({
         key: paystackPublicKey,
         email: bookingForm.email,
