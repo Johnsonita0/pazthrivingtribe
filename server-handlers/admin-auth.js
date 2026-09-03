@@ -1,14 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
-import { loadEnv } from 'vite'
-
-const loadLocalEnv = () => {
-  const mode = process.env.NODE_ENV || 'development'
-  const env = loadEnv(mode, process.cwd(), '')
-  Object.assign(process.env, env)
-}
 
 const getEnv = () => {
-  loadLocalEnv()
   return {
     supabaseUrl: process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
     serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY,

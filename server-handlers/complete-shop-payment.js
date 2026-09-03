@@ -26,7 +26,22 @@ function formatMoney(value) {
   }).format(Number(value || 0));
 }
 
-const currencyRatesToNgn = { NGN: 1, USD: 1500, GBP: 1900, EUR: 1650, GHS: 95, KES: 11, ZAR: 85 };
+const fallbackCurrencyRatesToNgn = { NGN: 1, USD: 1500, GBP: 1900, EUR: 1650, GHS: 95, KES: 11, ZAR: 85 };
+
+async function getCurrencyRatesToNgn() {
+  try {
+    const response = await fetch('https://open.er-api.com/v6/latest/NGN');
+    const payload = await response.json();
+    if (!response.ok || payload?.result !== 'success' || !payload?.rates) throw new Error('Exchange-rate provider unavailable');
+    return Object.entries(payload.rates).reduce((rates, [currency, ngnPerCurrency]) => {
+      const numericRate = Number(ngnPerCurrency);
+      if (Number.isFinite(numericRate) && numericRate > 0) rates[currency] = 1 / numericRate;
+      return rates;
+    }, { NGN: 1 });
+  } catch (error) {
+    return fallbackCurrencyRatesToNgn;
+  }
+}
 
 function getAdminEmails() {
   return [...new Set([
@@ -60,7 +75,7 @@ export default async function handler(req, res) {
 
   const paystackSecret = process.env.PAYSTACK_SECRET_KEY || process.env.PAYSTACK_SECRET;
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !serviceRoleKey || !process.env.RESEND_API_KEY || (!isFreeOrder && !paystackSecret)) {
     return sendJson(res, 500, { error: 'Payment delivery is not configured on the server.' });
   }
@@ -104,6 +119,7 @@ export default async function handler(req, res) {
       return sendJson(res, 400, { error: 'This free delivery request includes a paid product.' });
     }
 
+    const currencyRatesToNgn = await getCurrencyRatesToNgn();
     const expectedAmount = normalizedItems.reduce((sum, item) => sum + Number(item.product.price || 0) * (currencyRatesToNgn[item.product.currency || 'NGN'] || 1) * item.quantity, 0);
     if (!isFreeOrder && Number(transaction.amount) !== Math.round(expectedAmount * 100)) {
       return sendJson(res, 402, { error: 'The payment amount does not match this order.' });
@@ -125,7 +141,11 @@ export default async function handler(req, res) {
       if (/^https?:\/\//i.test(filePath)) {
         fileResponse = await fetch(filePath);
       } else {
-        const { data: fileData, error: fileError } = await supabase.storage.from('product-files').download(filePath);
+        const storagePath = filePath
+          .replace(/^\/storage\/v1\/object\/(?:public|authenticated|sign)\/product-files\//i, '')
+          .replace(/^product-files\//i, '')
+          .replace(/^\/+/, '');
+        const { data: fileData, error: fileError } = await supabase.storage.from('product-files').download(storagePath);
         if (fileError) {
           console.warn(`Product file unavailable for ${item.product.title}:`, fileError.message);
           missingFiles.push(item.product.title || 'Untitled product');

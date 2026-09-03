@@ -16,7 +16,7 @@ const phoneCountries = getCountries().map((code) => ({
   code,
   dialCode: `+${getCountryCallingCode(code)}`
 }));
-const currencyRatesToNgn = { NGN: 1, USD: 1500, GBP: 1900, EUR: 1650, GHS: 95, KES: 11, ZAR: 85 };
+const fallbackCurrencyRatesToNgn = { NGN: 1, USD: 1500, GBP: 1900, EUR: 1650, GHS: 95, KES: 11, ZAR: 85 };
 const currencySymbols = { NGN: '₦', USD: '$', GBP: '£', EUR: '€', GHS: 'GH₵', KES: 'KSh', ZAR: 'R' };
 
 const defaultProducts = [
@@ -406,8 +406,7 @@ const money = (value) => new Intl.NumberFormat('en-NG', {
   maximumFractionDigits: 0
 }).format(Number(value || 0));
 
-const productNgnPrice = (product) => product.isFree ? 0 : Number(product.price || 0) * (currencyRatesToNgn[product.currency || 'NGN'] || 1);
-const productPriceLabel = (product) => product.isFree ? 'Free' : `${currencySymbols[product.currency || 'NGN'] || ''}${Number(product.price || 0).toLocaleString()}${product.currency && product.currency !== 'NGN' ? ` (≈ ₦${productNgnPrice(product).toLocaleString()})` : ''}`;
+const productPriceLabel = (product) => product.isFree ? 'Free' : `${currencySymbols[product.currency || 'NGN'] || ''}${Number(product.price || 0).toLocaleString()}`;
 
 const normalizeProduct = (product = {}) => ({
   ...product,
@@ -448,6 +447,9 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const [minRating, setMinRating] = useState(0);
   const [sortBy, setSortBy] = useState('relevant');
   const [cartOpen, setCartOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [calculatorCurrency, setCalculatorCurrency] = useState('NGN');
+  const [currencyRatesToNgn, setCurrencyRatesToNgn] = useState(fallbackCurrencyRatesToNgn);
   const [cartFlights, setCartFlights] = useState([]);
   const cartButtonRef = useRef(null);
   const fireworksCanvasRef = useRef(null);
@@ -474,6 +476,22 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const [paymentProofSaving, setPaymentProofSaving] = useState(false);
   const [paystackReady, setPaystackReady] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const productNgnPrice = (product) => product.isFree ? 0 : Number(product.price || 0) * (currencyRatesToNgn[product.currency || 'NGN'] || 1);
+  const calculatorRate = currencyRatesToNgn[calculatorCurrency] || 1;
+  const calculatorAmount = selectedProduct?.isFree ? 0 : selectedProduct ? productNgnPrice(selectedProduct) / calculatorRate : 0;
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/currency-rates')
+      .then((response) => response.ok ? response.json() : null)
+      .then((payload) => {
+        if (active && payload?.ratesToNgn) setCurrencyRatesToNgn((current) => ({ ...current, ...payload.ratesToNgn }));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!Array.isArray(storeProducts) || storeProducts.length === 0) return;
@@ -1495,7 +1513,10 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                 minWidth: 0
               }}>
                 {visibleProducts.map((product) => (
-                  <div key={product.id} style={{
+                  <div key={product.id} onClick={() => {
+                    setSelectedProduct(product);
+                    setCalculatorCurrency(product.currency || 'NGN');
+                  }} style={{
                     background: '#fff',
                     border: '1px solid #ddd',
                     borderRadius: '12px',
@@ -1626,7 +1647,10 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
 
                     {/* Add to Cart Button - Fixed at Bottom */}
                     <button
-                      onClick={(event) => addToCart(product, event)}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        addToCart(product, event);
+                      }}
                       disabled={product.inStock === false || Number(product.stockCount || 0) <= 0}
                       style={{
                         width: '100%',
@@ -1806,6 +1830,72 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
             </span>
             <i className="fa-solid fa-cart-shopping" aria-hidden="true" />
           </button>
+        )}
+
+        {selectedProduct && (
+          <div
+            role="presentation"
+            onClick={() => setSelectedProduct(null)}
+            style={{ position: 'fixed', inset: 0, zIndex: 260, display: 'grid', placeItems: 'start center', padding: isSmallScreen ? '78px 12px 12px' : '88px 20px 16px', background: 'rgba(15, 23, 42, 0.55)', backdropFilter: 'blur(4px)', overflow: 'hidden' }}
+          >
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="product-details-title"
+              onClick={(event) => event.stopPropagation()}
+              style={{ width: 'min(720px, 100%)', maxHeight: 'calc(100vh - 104px)', overflow: 'hidden', background: '#fff', borderRadius: isSmallScreen ? '16px' : '22px', boxShadow: '0 28px 80px rgba(15, 23, 42, 0.3)', padding: isSmallScreen ? '12px' : '18px', boxSizing: 'border-box' }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', marginBottom: '12px' }}>
+                <div>
+                  <div style={{ color: '#f97316', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '6px' }}>{selectedProduct.category || 'Product'}</div>
+                  <h2 id="product-details-title" style={{ margin: 0, color: '#111827', fontSize: isSmallScreen ? '1.3rem' : '1.7rem', lineHeight: 1.2 }}>{selectedProduct.title}</h2>
+                </div>
+                <button type="button" onClick={() => setSelectedProduct(null)} aria-label="Close product details" style={{ width: '34px', height: '34px', border: '1px solid #d1d5db', borderRadius: '50%', background: '#fff', color: '#334155', fontSize: '1.2rem', cursor: 'pointer', flexShrink: 0 }}>×</button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: isSmallScreen ? '1fr' : '140px minmax(0, 1fr)', gap: isSmallScreen ? '8px' : '16px', alignItems: 'start' }}>
+                <div style={{ width: '100%', maxWidth: isSmallScreen ? '140px' : 'none', justifySelf: isSmallScreen ? 'center' : 'stretch' }}>
+                  <img src={selectedProduct.cover || '/logo/logomain.png'} alt={selectedProduct.title} style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'cover', borderRadius: '14px', border: '1px solid #e5e7eb', boxShadow: '0 8px 18px rgba(15, 23, 42, 0.08)' }} />
+                  <div style={{ display: 'grid', gap: '4px', marginTop: '8px', padding: '9px 10px', borderRadius: '11px', background: '#f8fafc', border: '1px solid #e2e8f0', color: '#475569', fontSize: '0.7rem', lineHeight: 1.35 }}>
+                    <span><strong style={{ color: '#334155' }}>Category:</strong> {selectedProduct.category || 'Product'}</span>
+                    <span><strong style={{ color: '#334155' }}>Delivery:</strong> Email attachment</span>
+                    <span><strong style={{ color: '#334155' }}>Status:</strong> {selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? 'Out of stock' : 'Available'}</span>
+                  </div>
+                </div>
+                <div>
+                  <p style={{ margin: '0 0 10px', color: '#475569', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{selectedProduct.description || 'No description provided yet.'}</p>
+                  <div style={{ display: 'flex', gap: '10px', alignItems: 'baseline', flexWrap: 'wrap', marginBottom: '10px' }}>
+                    <strong style={{ color: selectedProduct.isFree ? '#15803d' : '#b12704', fontSize: '1.35rem' }}>{productPriceLabel(selectedProduct)}</strong>
+                    <span style={{ color: '#64748b', fontSize: '0.82rem' }}>{selectedProduct.isFree ? 'Free email delivery' : 'Digital product'}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '10px', color: '#64748b', fontSize: '0.8rem' }}>
+                    <span>{'★'.repeat(Math.round(selectedProduct.rating || 0)) || 'No rating'}{selectedProduct.reviews ? ` (${selectedProduct.reviews} reviews)` : ''}</span>
+                    <span>{selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? 'Out of stock' : `${selectedProduct.stockCount} available`}</span>
+                  </div>
+
+                  {!selectedProduct.isFree && <div style={{ padding: '14px', border: '1px solid #fed7aa', borderRadius: '12px', background: '#fffaf5' }}>
+                    <div style={{ color: '#9a3412', fontWeight: 800, marginBottom: '10px' }}>Currency calculator</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 112px', gap: '8px', alignItems: 'center' }}>
+                      <div style={{ padding: '11px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#fff', color: '#111827', fontWeight: 800 }}>{currencySymbols[calculatorCurrency] || calculatorCurrency}{calculatorAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
+                      <select value={calculatorCurrency} onChange={(event) => setCalculatorCurrency(event.target.value)} aria-label="Calculator currency" style={{ padding: '10px 8px', border: '1px solid #f3b562', borderRadius: '8px', background: '#fff', color: '#334155', fontWeight: 800 }}>
+                        {Object.keys(currencyRatesToNgn).map((currency) => <option key={currency} value={currency}>{currency}</option>)}
+                      </select>
+                    </div>
+                    <div style={{ marginTop: '8px', color: '#64748b', fontSize: '0.76rem' }}>Approximate equivalent based on current currency conversion.</div>
+                  </div>}
+                  <div style={{ marginTop: '14px', padding: '13px 14px', border: '1px solid #dbeafe', borderRadius: '12px', background: '#eff6ff', color: '#1e3a8a', fontSize: '0.82rem', lineHeight: 1.6 }}>
+                    <strong style={{ display: 'block', marginBottom: '5px' }}>How delivery works</strong>
+                    {selectedProduct.isFree ? 'Enter your details and request the free product. We will email the file directly to you.' : 'After payment is confirmed, we email the file as an attachment to the address you provide.'} Open the email, download the attachment, and use your device PDF or ZIP app to open it.
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px', flexWrap: 'wrap' }}>
+                <button type="button" onClick={() => setSelectedProduct(null)} style={{ border: '1px solid #cbd5e1', borderRadius: '9px', padding: '11px 18px', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer', flex: isSmallScreen ? '1 1 120px' : '0 0 auto' }}>Close</button>
+                <button type="button" onClick={(event) => { addToCart(selectedProduct, event); setSelectedProduct(null); }} disabled={selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0} style={{ border: 'none', borderRadius: '9px', padding: '11px 18px', background: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? '#e5e7eb' : '#f97316', color: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? '#64748b' : '#fff', fontWeight: 800, cursor: 'pointer', flex: isSmallScreen ? '1 1 160px' : '0 0 auto' }}>{selectedProduct.isFree ? 'Request product' : 'Add to cart'}</button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Cart Sidebar (when cart is open) */}
@@ -2109,7 +2199,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
 
                 <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '8px', padding: '12px', fontSize: '12px', color: '#92400e' }}>
                   <strong style={{ display: 'block', marginBottom: '6px' }}>📧 File delivery</strong>
-                  Your product files have been sent to <strong>{submittedOrder.email}</strong>. Please check your inbox and spam folder for the message from PAZ Thriving Tribe.
+                  Your product files have been sent to <strong>{submittedOrder.email}</strong>. Check your inbox and spam folder, open the delivery email, then download and open the attached PDF or ZIP file on your device.
                 </div>
 
                 <button
@@ -2278,7 +2368,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
             }}>
               <strong style={{ color: '#047857' }}>📧 File delivery:</strong>
               <p style={{ margin: '8px 0 0', color: '#047857' }}>
-                Your product files have been sent to <strong>{submittedOrder.email}</strong>. Please check your inbox and spam folder for the delivery email.
+                Your product files have been sent to <strong>{submittedOrder.email}</strong>. Check your inbox and spam folder, open the delivery email, then download and open the attached PDF or ZIP file on your device.
               </p>
             </div>
 

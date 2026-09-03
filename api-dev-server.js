@@ -7,12 +7,17 @@
 
 import http from 'http';
 import url from 'url';
-import adminUpdateHandler from './api/admin-update.js';
-import trackVisitorHandler from './api/track-visitor.js';
-import resendWebhookHandler from './api/resend-webhook.js';
-import sendNotificationEmailHandler from './api/send-notification-email.js';
-import sendRegistrationEmailHandler from './api/send-registration-email.js';
-import completeShopPaymentHandler from './api/complete-shop-payment.js';
+import adminAuthHandler from './server-handlers/admin-auth.js';
+import adminHealthHandler from './server-handlers/admin-health.js';
+import adminUpdateHandler from './server-handlers/admin-update.js';
+import fetchMetaHandler from './server-handlers/fetch-meta.js';
+import paystackWebhookHandler from './server-handlers/paystack-webhook.js';
+import trackVisitorHandler from './server-handlers/track-visitor.js';
+import resendWebhookHandler from './server-handlers/resend-webhook.js';
+import sendNotificationEmailHandler from './server-handlers/send-notification-email.js';
+import sendRegistrationEmailHandler from './server-handlers/send-registration-email.js';
+import completeShopPaymentHandler from './server-handlers/complete-shop-payment.js';
+import currencyRatesHandler from './server-handlers/currency-rates.js';
 
 try {
   process.loadEnvFile?.('.env');
@@ -53,15 +58,43 @@ const server = http.createServer((req, res) => {
         return;
       }
 
+      if (pathname === '/api/admin-auth' && req.method === 'POST') {
+        req.body = body ? JSON.parse(body) : {};
+        await adminAuthHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/admin-health' && req.method === 'GET') {
+        await adminHealthHandler(req, res);
+        return;
+      }
+
       if (pathname === '/api/complete-shop-payment' && req.method === 'POST') {
         req.body = body;
         await completeShopPaymentHandler(req, res);
         return;
       }
 
+      if (pathname === '/api/currency-rates' && req.method === 'GET') {
+        await currencyRatesHandler(req, res);
+        return;
+      }
+
       if (pathname === '/api/track-visitor' && req.method === 'POST') {
         req.body = body;
         await trackVisitorHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/fetch-meta' && req.method === 'GET') {
+        req.query = parsedUrl.query;
+        await fetchMetaHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/paystack-webhook' && req.method === 'POST') {
+        req.body = body;
+        await paystackWebhookHandler(req, res);
         return;
       }
 
@@ -124,12 +157,6 @@ const server = http.createServer((req, res) => {
       if (pathname === '/api/send-notification-email' && req.method === 'POST') {
         req.body = body ? JSON.parse(body) : {};
         await sendNotificationEmailHandler(req, res);
-        return;
-      }
-
-      if (pathname === '/api/complete-shop-payment' && req.method === 'POST') {
-        req.body = body ? JSON.parse(body) : {};
-        await completeShopPaymentHandler(req, res);
         return;
       }
 
