@@ -10,6 +10,7 @@ import sendNotificationEmailHandler from '../server-handlers/send-notification-e
 import sendRegistrationEmailHandler from '../server-handlers/send-registration-email.js';
 import trackVisitorHandler from '../server-handlers/track-visitor.js';
 import completeServicePaymentHandler from '../server-handlers/complete-service-payment.js';
+import productPreviewHandler from '../server-handlers/product-preview.js';
 
 const handlers = {
   '/admin-auth': adminAuthHandler,
@@ -17,6 +18,7 @@ const handlers = {
   '/admin-update': adminUpdateHandler,
   '/complete-shop-payment': completeShopPaymentHandler,
   '/complete-service-payment': completeServicePaymentHandler,
+  '/product-preview': productPreviewHandler,
   '/currency-rates': currencyRatesHandler,
   '/fetch-meta': fetchMetaHandler,
   '/paystack-webhook': paystackWebhookHandler,
