@@ -457,13 +457,14 @@ const normalizeProduct = (product = {}) => ({
 });
 
 const productCoverUrl = (product) => {
-  const cover = String(product?.cover || '').trim();
+  const cover = String(product?.cover || product?.cover_url || product?.cover_image || product?.image || product?.image_url || product?.imageUrl || '').trim();
   if (!cover) return '/logo/logomain.png';
   if (/^(https?:|data:|blob:)/i.test(cover)) return cover;
   const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '');
   if (cover.startsWith('/storage/v1/object/public/')) return `${supabaseUrl}${cover}`;
-  if (supabaseUrl && !cover.startsWith('/')) {
-    return `${supabaseUrl}/storage/v1/object/public/prof-upload/${cover.split('/').map(encodeURIComponent).join('/')}`;
+  const storagePath = cover.replace(/^\/+/, '');
+  if (supabaseUrl && storagePath.startsWith('products/')) {
+    return `${supabaseUrl}/storage/v1/object/public/prof-upload/${storagePath.split('/').map(encodeURIComponent).join('/')}`;
   }
   return `/${cover.replace(/^\/+/, '')}`;
 };
@@ -583,7 +584,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     if (!Array.isArray(storeProducts) || storeProducts.length === 0) return;
     setStoreData((current) => ({
       ...current,
-      products: storeProducts,
+      products: storeProducts.map(normalizeProduct),
       bankAccount: storeBankAccount || current.bankAccount
     }));
     setCart((current) => current.filter((item) => storeProducts.some((product) => product.id === item.id)));

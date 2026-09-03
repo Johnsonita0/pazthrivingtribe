@@ -783,7 +783,7 @@ export default function App() {
       currency: product.currency || 'NGN',
       isFree: Boolean(product.is_free ?? product.isFree ?? false),
       category: product.category || 'Ebook',
-      cover: product.cover || product.image || product.image_url || '/logo/logomain.png',
+      cover: product.cover || product.cover_url || product.cover_image || product.image || product.image_url || product.imageUrl || '/logo/logomain.png',
       fileUrl: product.file_url || product.fileUrl || '',
       inStock: normalizedInStock !== false,
       stockCount: Number.isFinite(normalizedStockCount) ? normalizedStockCount : 0,
