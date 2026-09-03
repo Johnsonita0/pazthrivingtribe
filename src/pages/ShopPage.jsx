@@ -511,8 +511,8 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
 
   useEffect(() => {
     if (!productName || !storeData.products?.length) return;
-    const requestedSlug = decodeURIComponent(productName).toLowerCase();
-    const product = storeData.products.find((item) => productSlug(item) === requestedSlug || String(item.id).toLowerCase() === requestedSlug);
+    const requestedSlug = decodeURIComponent(productName).trim().toLowerCase();
+    const product = storeData.products.map(normalizeProduct).find((item) => productSlug(item).toLowerCase() === requestedSlug || String(item.id).trim().toLowerCase() === requestedSlug);
     if (product) {
       const frame = window.requestAnimationFrame(() => {
         setSelectedProduct(product);
@@ -1892,6 +1892,17 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
             </span>
             <i className="fa-solid fa-cart-shopping" aria-hidden="true" />
           </button>
+        )}
+
+        {isProductPage && !selectedProduct && (
+          <main style={{ minHeight: 'calc(100vh - 100px)', display: 'grid', placeItems: 'center', padding: isSmallScreen ? '32px 16px' : '64px 24px', background: '#f8fafc' }}>
+            <section style={{ width: 'min(560px, 100%)', padding: isSmallScreen ? '28px 20px' : '40px', textAlign: 'center', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '18px', boxShadow: '0 16px 40px rgba(15, 23, 42, 0.08)' }}>
+              <div style={{ color: '#f97316', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Product page</div>
+              <h1 style={{ margin: '10px 0', color: '#111827', fontSize: '1.5rem' }}>{storeData.products?.length ? 'Product not found' : 'Loading product...'}</h1>
+              <p style={{ margin: '0 0 22px', color: '#64748b', lineHeight: 1.6 }}>{storeData.products?.length ? 'This product link may be outdated or the product is no longer available.' : 'The product details are loading. Please wait a moment.'}</p>
+              <button type="button" onClick={() => navigate('/shop')} style={{ border: 'none', borderRadius: '9px', padding: '11px 18px', background: '#166534', color: '#fff', fontWeight: 800, cursor: 'pointer' }}>Return to shop</button>
+            </section>
+          </main>
         )}
 
         {selectedProduct && (
