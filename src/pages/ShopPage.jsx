@@ -411,24 +411,27 @@ const productPriceLabel = (product) => product.isFree ? 'Free' : `${currencySymb
 
 const productSlug = (product) => encodeURIComponent(String(product?.title || product?.id || 'product').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
 
-const playCartFlightSound = () => {
+let cartAudioContext;
+
+const playCartFlightSound = async () => {
   try {
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) return;
-    const audioContext = new AudioContextClass();
+    cartAudioContext ||= new AudioContextClass();
+    if (cartAudioContext.state === 'suspended') await cartAudioContext.resume();
+    const audioContext = cartAudioContext;
     const oscillator = audioContext.createOscillator();
     const gain = audioContext.createGain();
     oscillator.type = 'sine';
-    oscillator.frequency.setValueAtTime(520, audioContext.currentTime);
-    oscillator.frequency.exponentialRampToValueAtTime(860, audioContext.currentTime + 0.12);
+    oscillator.frequency.setValueAtTime(480, audioContext.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(920, audioContext.currentTime + 0.14);
     gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.08, audioContext.currentTime + 0.015);
-    gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.16);
+    gain.gain.exponentialRampToValueAtTime(0.16, audioContext.currentTime + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.22);
     oscillator.connect(gain);
     gain.connect(audioContext.destination);
     oscillator.start();
-    oscillator.stop(audioContext.currentTime + 0.17);
-    oscillator.addEventListener('ended', () => { void audioContext.close(); }, { once: true });
+    oscillator.stop(audioContext.currentTime + 0.23);
   } catch {
     // Audio is optional and can be unavailable in restricted browsers.
   }
@@ -749,7 +752,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
       setCheckoutForm({ name: '', email: '', countryCode: 'NG', phoneNumber: '', notes: '' });
     }
 
-    playCartFlightSound();
+    void playCartFlightSound();
 
     const originalTarget = event?.currentTarget?.getBoundingClientRect?.();
     const cartTarget = cartButtonRef.current?.getBoundingClientRect?.();
