@@ -137,13 +137,6 @@ export default function AdminDashboard(props) {
     setTempMonthlyFee,
     setPaystackPublicKey,
     setTeensKidsMonthlyFee,
-    showForgotPasswordModal,
-    setShowForgotPasswordModal,
-    resetEmail,
-    setResetEmail,
-    resetLoading,
-    resetMessage,
-    handleForgotPassword,
     refreshAdminData,
     refreshLoading = false,
     storeProducts = [],
@@ -172,11 +165,6 @@ export default function AdminDashboard(props) {
   const [selectedRowIds, setSelectedRowIds] = useState([]);
   const [viewingRow, setViewingRow] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [orderModalTab, setOrderModalTab] = useState('payment');
-  const [deliveryMessageDraft, setDeliveryMessageDraft] = useState('');
-  const [deliveryAttachment, setDeliveryAttachment] = useState(null);
-  const [itemAttachmentMap, setItemAttachmentMap] = useState({});
-  const [bankAccountSaving, setBankAccountSaving] = useState(false);
   const [postingToSlider, setPostingToSlider] = useState(false);
   const [testimonialConfirmation, setTestimonialConfirmation] = useState(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
@@ -184,120 +172,7 @@ export default function AdminDashboard(props) {
 
   useEffect(() => {
     if (!selectedOrder) return;
-    const defaultMessage = [
-      `Hi ${selectedOrder.name || 'there'},`,
-      '',
-      `Your order ${selectedOrder.orderNumber || ''} is now ready. Your purchased material is prepared for you below.`,
-      '',
-      'Thank you for choosing PAZ Thriving Tribe.',
-      'Warm regards,',
-      'The PAZ Thriving Tribe Team'
-    ].join('\n');
-    setDeliveryMessageDraft(selectedOrder.customerMessage || defaultMessage);
-    setDeliveryAttachment(null);
-    setItemAttachmentMap({});
-    setOrderModalTab('payment');
   }, [selectedOrder]);
-
-  const handleOrderPaymentConfirmation = async (order) => {
-    if (!order) return;
-    const nextOrder = { ...order, status: 'paid', paymentConfirmedAt: new Date().toISOString() };
-    if (typeof setShopOrders === 'function') {
-      setShopOrders((currentOrders = []) => currentOrders.map((item) => item.id === order.id || item.orderNumber === order.orderNumber ? nextOrder : item));
-    }
-    setSelectedOrder(nextOrder);
-    showAdminToast('success', 'Payment confirmed', `Order ${nextOrder.orderNumber || 'N/A'} has been marked as paid.`);
-  };
-
-  const handleSendProductEmail = async (order) => {
-    const orderEmail = String(
-      order?.email ||
-      order?.customerEmail ||
-      order?.customer_email ||
-      order?.contact_email ||
-      order?.emailAddress ||
-      ''
-    ).trim();
-
-    if (!order || !orderEmail) {
-      showAdminToast('error', 'Missing customer email', 'This order does not include a delivery email address yet.');
-      return;
-    }
-
-    try {
-      const attachments = await Promise.all(
-        Object.entries(itemAttachmentMap)
-          .filter(([, files]) => Array.isArray(files) && files.length > 0)
-          .flatMap(([itemKey, files]) => files.map((file) => ({
-            itemKey,
-            file
-          })))
-          .map(async ({ itemKey, file }) => {
-            const base64 = await fileToBase64(file);
-            return {
-              filename: file.name,
-              content: base64,
-              itemKey
-            };
-          })
-      );
-
-      const itemSummary = (order.items || []).map((item) => `• ${item.title || 'Product'} x${item.quantity || 1}`).join('\n');
-      const productFileUrl = (order.items || [])
-        .map((item) => item.fileUrl || item.downloadUrl || item.productFileUrl)
-        .find((value) => typeof value === 'string' && value.trim().length > 0) || null;
-      const productName = (order.items || []).find((item) => typeof item.title === 'string' && item.title.trim())?.title || 'your product';
-      const finalMessage = deliveryMessageDraft.trim() || 'Your purchased product is ready to be released after payment confirmation.';
-
-      const attachmentList = attachments.length ? attachments : (deliveryAttachment ? [{ filename: deliveryAttachment.name, content: await fileToBase64(deliveryAttachment) }] : []);
-
-      const response = await fetch('/api/send-notification-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: orderEmail,
-          service: 'Product delivery',
-          timestamp: new Date().toISOString(),
-          orderNumber: order.orderNumber,
-          itemSummary,
-          customerName: order.name || 'Customer',
-          message: finalMessage,
-          productMessage: finalMessage,
-          attachmentName: deliveryAttachment ? deliveryAttachment.name : productName,
-          customMessage: finalMessage,
-          productFileUrl,
-          fileUrl: productFileUrl,
-          productName,
-          itemName: productName,
-          attachments: attachmentList,
-          productAttachments: attachmentList
-        })
-      });
-
-      const responseData = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(responseData?.error || 'The delivery email could not be sent.');
-      }
-
-      const nextOrder = {
-        ...order,
-        email: orderEmail,
-        productEmailSent: true,
-        lastEmailSentAt: new Date().toISOString(),
-        customerMessage: finalMessage,
-        productAttachmentName: deliveryAttachment ? deliveryAttachment.name : order.productAttachmentName || null
-      };
-      if (typeof setShopOrders === 'function') {
-        setShopOrders((currentOrders = []) => currentOrders.map((item) => item.id === order.id || item.orderNumber === order.orderNumber ? nextOrder : item));
-      }
-      setSelectedOrder(nextOrder);
-      setDeliveryAttachment(null);
-      showAdminToast('success', 'Delivery email sent', `The product details have been emailed to ${orderEmail}.`);
-    } catch (error) {
-      console.error('Failed to email product delivery:', error);
-      showAdminToast('error', 'Email not sent', error.message || 'The product email could not be sent right now.');
-    }
-  };
 
   const openTestimonialConfirmation = () => {
     if (!viewingRow) return;
@@ -583,31 +458,31 @@ export default function AdminDashboard(props) {
     }
   };
 
+  const handleProductFileUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setProductFileUploading(true);
+      const safeName = file.name.replace(/[^a-z0-9._-]/gi, '-');
+      const filePath = `products/${Date.now()}-${safeName}`;
+      const { data, error } = await supabase.storage.from('product-files').upload(filePath, file, {
+        upsert: false,
+        contentType: file.type || 'application/octet-stream'
+      });
+      if (error) throw error;
+      setStoreProductForm((current) => ({ ...current, fileUrl: data?.path || filePath }));
+      showAdminToast('success', 'Product file uploaded', 'The private product file is ready to save with this product.');
+    } catch (error) {
+      console.warn('Product file upload failed:', error);
+      showAdminToast('error', 'File upload failed', error.message || 'The product file could not be uploaded.');
+    } finally {
+      setProductFileUploading(false);
+      event.target.value = '';
+    }
+  };
+
   const handleStoreProductSubmit = async (event) => {
-
-      const handleProductFileUpload = async (event) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        try {
-          setProductFileUploading(true);
-          const safeName = file.name.replace(/[^a-z0-9._-]/gi, '-');
-          const filePath = `products/${Date.now()}-${safeName}`;
-          const { data, error } = await supabase.storage.from('product-files').upload(filePath, file, {
-            upsert: false,
-            contentType: file.type || 'application/octet-stream'
-          });
-          if (error) throw error;
-          setStoreProductForm((current) => ({ ...current, fileUrl: data?.path || filePath }));
-          showAdminToast('success', 'Product file uploaded', 'The private product file is ready to save with this product.');
-        } catch (error) {
-          console.warn('Product file upload failed:', error);
-          showAdminToast('error', 'File upload failed', error.message || 'The product file could not be uploaded.');
-        } finally {
-          setProductFileUploading(false);
-          event.target.value = '';
-        }
-      };
     event.preventDefault();
     if (!storeProductForm.title || !storeProductForm.description || !storeProductForm.price) return;
 
@@ -699,83 +574,6 @@ export default function AdminDashboard(props) {
     setProductDeleteTarget(product);
   };
 
-  const handleBankAccountChange = async (field, value) => {
-    const nextBankAccount = { ...(storeBankAccount || {}), [field]: value };
-    setStoreBankAccount(nextBankAccount);
-  };
-
-  const handleSaveBankAccount = async () => {
-    const payload = {
-      bank_name: (storeBankAccount?.bankName || '').trim(),
-      account_name: (storeBankAccount?.accountName || '').trim(),
-      account_number: (storeBankAccount?.accountNumber || '').trim(),
-      account_type: (storeBankAccount?.accountType || '').trim(),
-      swift_code: (storeBankAccount?.swiftCode || '').trim(),
-      note: (storeBankAccount?.note || '').trim()
-    };
-
-    if (!payload.bank_name || !payload.account_name || !payload.account_number) {
-      showAdminToast('error', 'Incomplete bank details', 'Please add the bank name, account name, and account number before saving.');
-      return;
-    }
-
-    try {
-      setBankAccountSaving(true);
-
-      const existingBankId = storeBankAccount?.id;
-      const response = await fetch('/api/admin-update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || session?.accessToken || ''}` },
-        body: JSON.stringify(
-          existingBankId
-            ? {
-                action: 'update',
-                table: 'store_bank_accounts',
-                payload,
-                match: { id: existingBankId }
-              }
-            : {
-                action: 'insert',
-                table: 'store_bank_accounts',
-                payload: [payload]
-              }
-        )
-      });
-
-      const responseData = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(responseData?.error || 'The bank account could not be saved.');
-      }
-
-      const insertedBank = Array.isArray(responseData?.data) ? responseData.data[0] : responseData?.data || null;
-      if (insertedBank && insertedBank.id) {
-        setStoreBankAccount((current = {}) => ({ ...current, id: insertedBank.id }));
-      }
-
-      showAdminToast('success', 'Bank account saved', 'Your banking details are now available to customers during checkout.');
-    } catch (error) {
-      console.warn('Bank account save failed:', error);
-      showAdminToast('error', 'Bank account not saved', error.message || 'Please try again.');
-    } finally {
-      setBankAccountSaving(false);
-    }
-  };
-
-  const fileToBase64 = async (file) => {
-    if (!file) return '';
-
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = typeof reader.result === 'string' ? reader.result : '';
-        const encoded = result.includes(',') ? result.split(',')[1] : result;
-        resolve(encoded || '');
-      };
-      reader.onerror = () => reject(new Error('Failed to read file.'));
-      reader.readAsDataURL(file);
-    });
-  };
-
   const printViewingRow = () => {
     window.print();
   };
@@ -863,7 +661,7 @@ export default function AdminDashboard(props) {
             </h1>
           </div>
 
-          <form onSubmit={handleSignIn} style={{ display: 'grid', gap: '18px' }}>
+          <form onSubmit={handleSignIn} autoComplete="on" style={{ display: 'grid', gap: '18px' }}>
             <div>
               <label style={{ display: 'block', marginBottom: '8px', fontSize: '1.05rem', fontWeight: 700, color: '#1f1f1f' }}>
                 Email
@@ -881,6 +679,7 @@ export default function AdminDashboard(props) {
                 <input
                   ref={emailInputRef}
                   type="email"
+                  autoComplete="username"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="admin@paztribe.org"
@@ -914,6 +713,7 @@ export default function AdminDashboard(props) {
                 <span style={{ fontSize: '1.1rem', color: '#556778', marginRight: '12px' }}>🔒</span>
                 <input
                   type="password"
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
@@ -980,146 +780,7 @@ export default function AdminDashboard(props) {
             Enter your administrator credentials to access the dashboard.
           </div>
 
-          <div style={{ marginTop: '18px', textAlign: 'center' }}>
-            <button
-              type="button"
-              onClick={() => setShowForgotPasswordModal(true)}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#1a5ea8',
-                cursor: 'pointer',
-                fontSize: '0.9rem',
-                fontWeight: 600,
-                textDecoration: 'underline',
-                padding: 0,
-                fontFamily: 'inherit'
-              }}
-            >
-              Forgot your password?
-            </button>
-          </div>
         </div>
-
-        {showForgotPasswordModal && (
-          <div
-            style={{
-              position: 'fixed',
-              inset: 0,
-              background: 'rgba(17, 17, 17, 0.45)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '20px'
-            }}
-            onClick={() => !resetLoading && setShowForgotPasswordModal(false)}
-          >
-            <div
-              onClick={(event) => event.stopPropagation()}
-              style={{
-                width: '100%',
-                maxWidth: '420px',
-                background: '#ffffff',
-                borderRadius: '18px',
-                border: '1px solid #dfe6ef',
-                padding: '22px 20px',
-                boxShadow: '0 20px 44px rgba(0, 0, 0, 0.14)'
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
-                <div>
-                  <div style={{ color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.72rem', fontWeight: 700 }}>
-                    Password Recovery
-                  </div>
-                  <h3 style={{ margin: '6px 0 0', fontSize: '1.5rem' }}>Reset Your Password</h3>
-                </div>
-                <button 
-                  className="publish-testimonial-button"
-                  type="button"
-                  onClick={() => !resetLoading && setShowForgotPasswordModal(false)}
-                  disabled={resetLoading}
-                  aria-label="Close dialog"
-                  style={{
-                    border: 'none',
-                    background: 'transparent',
-                    color: '#4b5563',
-                    fontSize: '2rem',
-                    cursor: resetLoading ? 'not-allowed' : 'pointer',
-                    lineHeight: 1
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-
-              <form onSubmit={handleForgotPassword} style={{ display: 'grid', gap: '14px' }}>
-                <p style={{ margin: 0, color: '#5a6471', fontSize: '0.96rem', lineHeight: 1.5 }}>
-                  Enter your admin email address and we’ll send you a reset link.
-                </p>
-
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  background: '#eef5fb',
-                  border: '1px solid #d4dfeb',
-                  borderRadius: '12px',
-                  minHeight: '52px',
-                  padding: '0 12px'
-                }}>
-                  <span style={{ marginRight: '8px', color: '#4f5d6a' }}>✉</span>
-                  <input
-                    type="email"
-                    value={resetEmail}
-                    onChange={(e) => setResetEmail(e.target.value)}
-                    placeholder="admin@paztribe.org"
-                    required
-                    disabled={resetLoading}
-                    style={{
-                      width: '100%',
-                      border: 'none',
-                      background: 'transparent',
-                      outline: 'none',
-                      fontSize: '1rem',
-                      fontFamily: 'inherit',
-                      color: '#1f2937'
-                    }}
-                  />
-                </div>
-
-                {resetMessage && (
-                  <div
-                    style={{
-                      padding: '0.75rem 1rem',
-                      borderRadius: '8px',
-                      fontSize: '0.9rem',
-                      fontWeight: '500',
-                      backgroundColor: resetMessage.includes('✓') ? '#d4edda' : '#f8d7da',
-                      color: resetMessage.includes('✓') ? '#155724' : '#842029',
-                      border: `1px solid ${resetMessage.includes('✓') ? '#c3e6cb' : '#f5c2c7'}`
-                    }}
-                  >
-                    {resetMessage}
-                  </div>
-                )}
-
-                <button
-                  type="submit"
-                  className="form-submit-action-btn"
-                  disabled={resetLoading || !resetEmail.trim()}
-                  style={{
-                    marginTop: '0.5rem',
-                    minHeight: '52px',
-                    fontSize: '1.1rem',
-                    fontWeight: 700,
-                    borderRadius: '12px'
-                  }}
-                >
-                  {resetLoading ? 'Sending...' : 'Send Reset Link'}
-                </button>
-              </form>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
@@ -1322,6 +983,8 @@ export default function AdminDashboard(props) {
   }));
 
   const activeDashboardLabel = dashboardViews.find((view) => view.id === activeDashboardView)?.label || 'Visitors';
+  const tableDashboardViews = ['visitors', 'teens', 'bookings', 'messages', 'testimonials', 'slider', 'feedback'];
+  const showDashboardTable = tableDashboardViews.includes(activeDashboardView);
   const paymentProofPreview = getPaymentProofPreview(selectedOrder);
 
   return (
@@ -1568,34 +1231,24 @@ export default function AdminDashboard(props) {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '18px', flexWrap: 'wrap' }}>
                       <div>
                         <p style={{ margin: 0, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.12em', fontSize: '0.72rem', fontWeight: 800 }}>Payments</p>
-                        <h3 style={{ margin: '8px 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#111827' }}>Bank transfer details</h3>
+                        <h3 style={{ margin: '8px 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#111827' }}>Paystack payment history</h3>
                       </div>
+                      <div style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', borderRadius: '999px', padding: '8px 12px', fontSize: '0.8rem', fontWeight: 800 }}>{shopOrders.filter((order) => order.status === 'paid').length} successful</div>
                     </div>
-                    <div className="commerce-input-grid" style={{ display: 'grid', gap: '12px', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
-                      <input value={storeBankAccount?.bankName || ''} onChange={(event) => handleBankAccountChange('bankName', event.target.value)} placeholder="Bank name" style={adminFieldStyle} />
-                      <input value={storeBankAccount?.accountName || ''} onChange={(event) => handleBankAccountChange('accountName', event.target.value)} placeholder="Account name" style={adminFieldStyle} />
-                      <input value={storeBankAccount?.accountNumber || ''} onChange={(event) => handleBankAccountChange('accountNumber', event.target.value)} placeholder="Account number" style={adminFieldStyle} />
-                      <input value={storeBankAccount?.accountType || ''} onChange={(event) => handleBankAccountChange('accountType', event.target.value)} placeholder="Account type" style={adminFieldStyle} />
-                      <input value={storeBankAccount?.swiftCode || ''} onChange={(event) => handleBankAccountChange('swiftCode', event.target.value)} placeholder="Swift code (optional)" style={adminFieldStyle} />
-                      <textarea value={storeBankAccount?.note || ''} onChange={(event) => handleBankAccountChange('note', event.target.value)} placeholder="Transfer note" style={{ ...adminFieldStyle, minHeight: '88px', resize: 'vertical', gridColumn: '1 / -1' }} />
-                      <div style={{ gridColumn: '1 / -1', display: 'flex', justifyContent: 'flex-end' }}>
-                        <button
-                          type="button"
-                          onClick={handleSaveBankAccount}
-                          disabled={bankAccountSaving}
-                          style={{
-                            border: 'none',
-                            background: bankAccountSaving ? '#cbd5e1' : 'linear-gradient(135deg, #0f766e, #115e59)',
-                            color: '#fff',
-                            borderRadius: '10px',
-                            padding: '0.8rem 1.2rem',
-                            fontWeight: 800,
-                            cursor: bankAccountSaving ? 'not-allowed' : 'pointer'
-                          }}
-                        >
-                          {bankAccountSaving ? 'Saving...' : 'Save bank account'}
-                        </button>
-                      </div>
+                    <div style={{ overflowX: 'auto', width: '100%' }}>
+                      <table style={{ width: '100%', minWidth: '680px', borderCollapse: 'collapse' }}>
+                        <thead><tr style={{ background: '#f8fafc', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.72rem' }}><th style={{ padding: '12px 14px', textAlign: 'left' }}>Order</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Customer</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Amount</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Paystack reference</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Status</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Date</th></tr></thead>
+                        <tbody>{shopOrders.length > 0 ? shopOrders.map((order) => (
+                          <tr key={order.id || order.orderNumber} onClick={() => setSelectedOrder(order)} style={{ borderBottom: '1px solid #e2e8f0', cursor: 'pointer' }}>
+                            <td style={{ padding: '12px 14px', fontWeight: 700 }}>{order.orderNumber || 'N/A'}</td>
+                            <td style={{ padding: '12px 14px' }}><div style={{ fontWeight: 700 }}>{order.name || 'Customer'}</div><div style={{ color: '#64748b', fontSize: '0.8rem' }}>{order.email || 'No email'}</div></td>
+                            <td style={{ padding: '12px 14px', fontWeight: 700 }}>{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(Number(order.total || 0))}</td>
+                            <td style={{ padding: '12px 14px', color: '#475569', fontFamily: 'monospace', fontSize: '0.78rem' }}>{order.paymentReference || order.payment_reference || 'Pending'}</td>
+                            <td style={{ padding: '12px 14px' }}><span style={{ background: order.status === 'paid' ? '#dcfce7' : '#fff7ed', color: order.status === 'paid' ? '#166534' : '#b45309', borderRadius: '999px', padding: '6px 10px', fontSize: '0.76rem', fontWeight: 700, textTransform: 'capitalize' }}>{order.status || 'pending'}</span></td>
+                            <td style={{ padding: '12px 14px', color: '#475569' }}>{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}</td>
+                          </tr>
+                        )) : <tr><td colSpan="6" style={{ padding: '22px 14px', textAlign: 'center', color: '#64748b' }}>No Paystack payments have been recorded yet.</td></tr>}</tbody>
+                      </table>
                     </div>
                   </div>
                 )}
@@ -1637,8 +1290,8 @@ export default function AdminDashboard(props) {
                                 <span style={{ background: order.status === 'paid' ? '#dcfce7' : '#fff7ed', color: order.status === 'paid' ? '#166534' : '#b45309', borderRadius: '999px', padding: '6px 10px', fontSize: '0.76rem', fontWeight: 700, textTransform: 'capitalize' }}>{order.status || 'pending'}</span>
                               </td>
                               <td style={{ padding: '12px 14px' }}>
-                                <span style={{ background: order.productEmailSent ? '#dcfce7' : '#fef3c7', color: order.productEmailSent ? '#166534' : '#92400e', borderRadius: '999px', padding: '6px 10px', fontSize: '0.76rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                                  {order.productEmailSent ? 'Sent' : 'Not sent'}
+                                <span style={{ background: order.deliverySent || order.productEmailSent ? '#dcfce7' : '#fef3c7', color: order.deliverySent || order.productEmailSent ? '#166534' : '#92400e', borderRadius: '999px', padding: '6px 10px', fontSize: '0.76rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                                  {order.deliverySent || order.productEmailSent ? 'Auto-sent' : 'Not delivered'}
                                 </span>
                               </td>
                               <td style={{ padding: '12px 14px', color: '#475569' }}>{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}</td>
@@ -1662,6 +1315,7 @@ export default function AdminDashboard(props) {
                 </p>
               </>
             )}
+            {showDashboardTable && <>
             <div className="dashboard-actions-row">
               <button className="dashboard-refresh-button" type="button" onClick={refreshAdminData} disabled={refreshLoading} title={refreshLoading ? 'Refreshing' : 'Refresh'} aria-label={refreshLoading ? 'Refreshing' : 'Refresh'} style={{ border: '1px solid #b7d9cf', background: refreshLoading ? '#dcebe6' : '#e8f6f1', color: '#17634f', borderRadius: '999px', padding: '0.8rem 1.2rem', fontSize: '1rem', fontWeight: 700, cursor: refreshLoading ? 'wait' : 'pointer' }}>
                 <i className={`fa-solid ${refreshLoading ? 'fa-spinner fa-spin' : 'fa-rotate'}`} aria-hidden="true"></i> <span>Refresh</span>
@@ -1758,6 +1412,7 @@ export default function AdminDashboard(props) {
                 </tbody>
               </table>
             </div>
+            </>}
           </div>
         </div>
       </div>
@@ -1952,35 +1607,7 @@ export default function AdminDashboard(props) {
                 </section>
               </div>
 
-              <div style={{ display: 'flex', gap: '8px', margin: '16px 0 12px', padding: '4px', background: '#f1f5f9', borderRadius: '12px', border: '1px solid #e2e8f0', width: 'fit-content', maxWidth: '100%', overflowX: 'auto' }}>
-                {[
-                  { id: 'payment', label: 'Pay' },
-                  { id: 'email', label: 'Email' }
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    type="button"
-                    onClick={() => setOrderModalTab(tab.id)}
-                    style={{
-                      border: 'none',
-                      borderRadius: '9px',
-                      background: orderModalTab === tab.id ? '#111827' : 'transparent',
-                      color: orderModalTab === tab.id ? '#fff' : '#475569',
-                      padding: '8px 14px',
-                      fontWeight: 800,
-                      fontSize: '0.76rem',
-                      letterSpacing: '0.04em',
-                      textTransform: 'uppercase',
-                      cursor: 'pointer',
-                      whiteSpace: 'nowrap'
-                    }}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-              </div>
-
-              {orderModalTab === 'payment' ? (
+              {/*
                 <div style={{ display: 'grid', gap: '12px', marginTop: '8px' }}>
                   <section style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
                     <h4 style={{ margin: '0 0 12px', color: '#111827', fontSize: '1rem' }}>Proof of payment</h4>
@@ -2014,66 +1641,6 @@ export default function AdminDashboard(props) {
                       <div style={{ color: '#64748b', padding: '20px 0', textAlign: 'center' }}>No proof image attached.</div>
                     )}
                   </section>
-
-                  <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', paddingBottom: '8px' }}>
-                    <button type="button" onClick={() => handleOrderPaymentConfirmation(selectedOrder)} style={{ background: selectedOrder.status === 'paid' ? '#dcfce7' : 'linear-gradient(135deg, #16a34a, #15803d)', color: selectedOrder.status === 'paid' ? '#166534' : '#fff', border: 'none', borderRadius: '10px', padding: '0.85rem 1.2rem', fontWeight: 800, cursor: 'pointer' }}>
-                      {selectedOrder.status === 'paid' ? 'Payment confirmed' : 'Confirm payment'}
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px', marginTop: '8px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                    <h4 style={{ margin: 0, color: '#0f172a', fontSize: '1rem' }}>Send product</h4>
-                    <span style={{ color: '#64748b', fontSize: '0.8rem' }}>{selectedOrder.email || 'No email'}</span>
-                  </div>
-                  <label style={{ display: 'block', marginBottom: '10px', fontWeight: 700, color: '#334155' }}>Custom message</label>
-                  <textarea
-                    value={deliveryMessageDraft}
-                    onChange={(event) => setDeliveryMessageDraft(event.target.value)}
-                    placeholder="Write a note to the customer before sending the product."
-                    style={{ width: '100%', minHeight: '110px', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '12px 14px', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', fontSize: '0.95rem' }}
-                  />
-                  <div style={{ marginTop: '14px' }}>
-                    <label htmlFor="delivery-product-upload" style={{ display: 'block', marginBottom: '8px', fontWeight: 700, color: '#334155' }}>Attach product files</label>
-                    <input
-                      id="delivery-product-upload"
-                      type="file"
-                      onChange={(event) => setDeliveryAttachment(event.target.files?.[0] || null)}
-                      style={{ width: '100%', maxWidth: '100%', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '10px 12px', background: '#fff', boxSizing: 'border-box' }}
-                    />
-                    <div style={{ marginTop: '6px', color: '#64748b', fontSize: '0.78rem', lineHeight: 1.45 }}>Use the item uploaders below when an order contains different files for different products.</div>
-                    {(selectedOrder.items || []).map((item, index) => (
-                      <div className="delivery-item-upload" key={`${item.id || item.title || index}`} style={{ marginTop: '12px', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px 12px', background: '#f8fafc', minWidth: 0 }}>
-                        <div style={{ fontWeight: 800, color: '#0f172a', marginBottom: '8px', overflowWrap: 'anywhere' }}>{item.title || 'Product'} x{item.quantity || 1}</div>
-                        <input
-                          type="file"
-                          multiple
-                          onChange={(event) => {
-                            const nextFiles = Array.from(event.target.files || []);
-                            setItemAttachmentMap((current) => ({
-                              ...current,
-                              [item.id || `${item.title || 'product'}-${index}`]: nextFiles
-                            }));
-                          }}
-                          style={{ width: '100%', maxWidth: '100%', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 10px', background: '#fff', boxSizing: 'border-box' }}
-                        />
-                        {(itemAttachmentMap[item.id || `${item.title || 'product'}-${index}`] || []).length > 0 && (
-                          <div style={{ marginTop: '8px', color: '#166534', fontSize: '0.8rem', fontWeight: 700, overflowWrap: 'anywhere', lineHeight: 1.45 }}>
-                            {((itemAttachmentMap[item.id || `${item.title || 'product'}-${index}`] || []).map((file) => file.name)).join(', ')}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    {deliveryAttachment && (
-                      <div style={{ marginTop: '8px', color: '#166534', fontSize: '0.85rem', fontWeight: 700 }}>
-                        Selected file: {deliveryAttachment.name}
-                      </div>
-                    )}
-                  </div>
-
-                  <div style={{ marginTop: '18px', background: '#ffffff', border: '1px solid #dfe8e3', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 8px 24px rgba(15, 23, 42, 0.04)' }}>
-                    <div style={{ background: 'linear-gradient(135deg, #0b3a2c 0%, #123f2f 50%, #1a4b38 100%)', color: '#fff', padding: '22px 16px', textAlign: 'center' }}>
                       <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#ffffff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '16px', padding: '10px 18px', boxShadow: '0 8px 20px rgba(0,0,0,0.12)' }}>
                         <img src="/logo/logo2.jpeg" alt="PAZ logo" style={{ width: '38px', height: '38px', borderRadius: '12px', marginRight: '12px', objectFit: 'cover' }} />
                         <div style={{ fontSize: '11px', letterSpacing: '0.12em', fontWeight: 800, textTransform: 'uppercase', lineHeight: 1.2, textAlign: 'left', color: '#0f172a' }}>
@@ -2162,7 +1729,7 @@ export default function AdminDashboard(props) {
                     </button>
                   </div>
                 </div>
-              )}
+              */}
 
               <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '22px', paddingBottom: '22px' }}>
                 <button type="button" onClick={() => setSelectedOrder(null)} style={{ background: '#f8fafc', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '0.9rem 1.35rem', fontWeight: 800, cursor: 'pointer' }}>Close</button>
