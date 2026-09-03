@@ -35,7 +35,8 @@ const baseSteps = {
   contact: { id: 'contact', label: 'Contact Details', title: 'Parent or guardian details', description: 'Add the main contact details for this registration.' },
   children: { id: 'children', label: 'Children', title: 'Add your children', description: 'Add each child and complete their profile one by one.' },
   program: { id: 'program', label: 'Program Match', title: 'Program preferences', description: 'Choose the session and focus area for the selected child.' },
-  review: { id: 'review', label: 'Review', title: 'Review and confirm', description: 'Check the full registration before submitting.' }
+  review: { id: 'review', label: 'Review', title: 'Review and confirm', description: 'Check the full registration before continuing to payment.' },
+  payment: { id: 'payment', label: 'Payment', title: 'Complete payment', description: 'Pay the registration fee to submit your application.' }
 };
 
 function DateOfBirthPicker({ value, onChange }) {
@@ -137,7 +138,9 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
     }
     const existingScript = document.getElementById('paystack-inline-js');
     if (existingScript) {
-      existingScript.addEventListener('load', () => setPaystackReady(true), { once: true });
+      const markReady = () => setPaystackReady(Boolean(window.PaystackPop));
+      existingScript.addEventListener('load', markReady, { once: true });
+      if (window.PaystackPop) markReady();
       return undefined;
     }
     const script = document.createElement('script');
@@ -177,7 +180,8 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
       { ...baseSteps.children, label: childrenLabel, title: childrenTitle, description: childrenDescription },
       baseSteps.contact,
       baseSteps.program,
-      baseSteps.review
+      baseSteps.review,
+      baseSteps.payment
     ];
   }, [formData.registrationType]);
 
@@ -219,6 +223,27 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
       formCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   }, [currentStep]);
+
+  useEffect(() => {
+    const scrollFocusedField = (event) => {
+      const field = event.target.closest('.teens-registration-field');
+      if (!field) return;
+      window.setTimeout(() => field.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+    };
+    const viewport = window.visualViewport;
+    const keepFocusedFieldVisible = () => {
+      const field = document.activeElement?.closest?.('.teens-registration-field');
+      if (field && viewport && viewport.height < window.innerHeight * 0.8) {
+        field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    };
+    document.addEventListener('focusin', scrollFocusedField);
+    viewport?.addEventListener('resize', keepFocusedFieldVisible);
+    return () => {
+      document.removeEventListener('focusin', scrollFocusedField);
+      viewport?.removeEventListener('resize', keepFocusedFieldVisible);
+    };
+  }, []);
 
   const getFriendlyRegistrationError = (error) => {
     const rawMessage = String(error?.message || error || '');
@@ -528,7 +553,7 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
     } catch (error) {
       console.error('Unable to open registration payment:', error);
       setSaving(false);
-      setFormToast({ message: 'We could not open the payment window. Please try again.', type: 'error' });
+      setFormToast({ message: error?.message || 'We could not open the payment window. Please try again.', type: 'error' });
     }
   };
 
@@ -769,12 +794,23 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
     </div>
   );
 
+  const renderPaymentStep = () => (
+    <div className="teens-registration-payment-step">
+      <div className="teens-registration-payment-card">
+        <span className="teens-registration-payment-label">Registration fee</span>
+        <strong>NGN 5,000</strong>
+        <p>Pay securely with Paystack. Your application will only be submitted after payment is verified.</p>
+      </div>
+    </div>
+  );
+
   const renderStepContent = () => {
     const stepId = currentStepMeta?.id;
     if (stepId === 'type') return renderRegistrantTypeStep();
     if (stepId === 'contact') return renderContactStep();
     if (stepId === 'children') return renderChildrenStep();
     if (stepId === 'program') return renderProgramStep();
+    if (stepId === 'payment') return renderPaymentStep();
     return renderReviewStep();
   };
 
@@ -856,7 +892,7 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
                 </button>
               ) : (
                 <button type="submit" className="teens-registration-submit" disabled={saving}>
-                  {saving ? 'Submitting...' : 'Submit Registration'}
+                  {saving ? 'Processing payment...' : 'Pay NGN 5,000 and submit'}
                 </button>
               )}
             </div>

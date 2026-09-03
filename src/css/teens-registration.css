@@ -1,5 +1,6 @@
 .teens-registration-page {
   min-height: calc(100vh - 112px);
+  scroll-padding-bottom: 42vh;
   padding: 2.5rem 1rem 3rem;
   display: flex;
   justify-content: center;
@@ -51,7 +52,8 @@
 
 .teens-registration-progress {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(120px, 1fr));
+  min-width: 720px;
   gap: 0.75rem;
   margin-bottom: 1rem;
 }
@@ -392,9 +394,15 @@
 
 /* Keep focused fields above the on-screen keyboard on mobile. */
 @media (max-width: 760px) {
+  .teens-registration-page,
+  .teens-registration-card {
+    scroll-padding-top: 24px;
+    scroll-padding-bottom: 42vh;
+  }
+
   .teens-registration-field:focus-within {
     scroll-margin-top: 24px;
-    scroll-margin-bottom: 38vh;
+    scroll-margin-bottom: 42vh;
   }
 }
 
@@ -463,6 +471,43 @@
   background: #fff1f2;
   border-color: #fecdd3;
   color: #be123c;
+}
+
+.teens-registration-payment-step {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0;
+}
+
+.teens-registration-payment-card {
+  width: min(100%, 520px);
+  border: 1px solid #b9e4c9;
+  border-radius: 16px;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #ecfdf5, #eff6ff);
+  text-align: center;
+}
+
+.teens-registration-payment-label {
+  display: block;
+  color: #166534;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.teens-registration-payment-card strong {
+  display: block;
+  margin-top: 0.35rem;
+  color: #0f5132;
+  font-size: 2rem;
+}
+
+.teens-registration-payment-card p {
+  margin: 0.75rem 0 0;
+  color: #475569;
+  line-height: 1.55;
 }
 
 .teens-registration-review {

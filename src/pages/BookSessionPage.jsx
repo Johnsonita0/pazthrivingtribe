@@ -41,6 +41,27 @@ export default function BookSessionPage({ paystackPublicKey = '' }) {
     return () => clearTimeout(t);
   }, [toast]);
 
+  useEffect(() => {
+    const scrollFocusedField = (event) => {
+      const field = event.target.closest('.teens-registration-field');
+      if (!field) return;
+      window.setTimeout(() => field.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+    };
+    const viewport = window.visualViewport;
+    const keepFocusedFieldVisible = () => {
+      const field = document.activeElement?.closest?.('.teens-registration-field');
+      if (field && viewport && viewport.height < window.innerHeight * 0.8) {
+        field.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    };
+    document.addEventListener('focusin', scrollFocusedField);
+    viewport?.addEventListener('resize', keepFocusedFieldVisible);
+    return () => {
+      document.removeEventListener('focusin', scrollFocusedField);
+      viewport?.removeEventListener('resize', keepFocusedFieldVisible);
+    };
+  }, []);
+
   const programs = useMemo(() => ([
     'Thriving Kids', 'Thriving Teens', 'One-on-One Coaching', 'Counselling', 'Workshop'
   ]), []);
