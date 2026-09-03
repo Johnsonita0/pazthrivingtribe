@@ -15,6 +15,7 @@ const formatReferenceId = (value) => {
 const productCurrencies = ['NGN', 'USD', 'GBP', 'EUR', 'GHS', 'KES', 'ZAR'];
 const currencySymbols = { NGN: '₦', USD: '$', GBP: '£', EUR: '€', GHS: 'GH₵', KES: 'KSh', ZAR: 'R' };
 const currencyRatesToNgn = { NGN: 1, USD: 1500, GBP: 1900, EUR: 1650, GHS: 95, KES: 11, ZAR: 85 };
+const productCategories = ['Ebook', 'Planner', 'Guide', 'Workbook', 'Journal', 'Course', 'Audio', 'Bundle'];
 
 function AdminTabBar({ selectedTab, onChangeTab }) {
   const adminTabs = [
@@ -658,6 +659,7 @@ export default function AdminDashboard(props) {
     } else {
       const newProduct = {
         id: crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
         ...productValues
       };
       const persisted = await persistStoreProductToSupabase(newProduct, 'insert');
@@ -1309,7 +1311,9 @@ export default function AdminDashboard(props) {
                     <form ref={productEditorRef} onSubmit={handleStoreProductSubmit} style={{ display: 'grid', gap: '12px', scrollMarginTop: '24px' }}>
                       <div className="commerce-form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
                         <input value={storeProductForm.title} onChange={(event) => setStoreProductForm((current) => ({ ...current, title: event.target.value }))} placeholder="Ebook title" style={adminFieldStyle} />
-                        <input value={storeProductForm.category} onChange={(event) => setStoreProductForm((current) => ({ ...current, category: event.target.value }))} placeholder="Category" style={adminFieldStyle} />
+                        <select value={storeProductForm.category} onChange={(event) => setStoreProductForm((current) => ({ ...current, category: event.target.value }))} aria-label="Product type" style={adminFieldStyle}>
+                          {productCategories.map((category) => <option key={category} value={category}>{category}</option>)}
+                        </select>
                       </div>
                       <textarea value={storeProductForm.description} onChange={(event) => setStoreProductForm((current) => ({ ...current, description: event.target.value }))} placeholder="Description" style={{ ...adminFieldStyle, minHeight: '90px', resize: 'vertical' }} />
                       <div className="commerce-form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>

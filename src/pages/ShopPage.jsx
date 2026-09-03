@@ -452,8 +452,14 @@ const normalizeProduct = (product = {}) => ({
   stockCount: Number(product.stock_count ?? product.stockCount ?? 0),
   rating: Number(product.rating ?? 0),
   reviews: Number(product.reviews ?? 0),
-  prime: Boolean(product.prime ?? false)
+  prime: Boolean(product.prime ?? false),
+  createdAt: product.created_at || product.createdAt || null
 });
+
+const isNewProduct = (product) => {
+  const createdAt = Date.parse(product?.createdAt || product?.created_at || '');
+  return Number.isFinite(createdAt) && Date.now() - createdAt >= 0 && Date.now() - createdAt <= 7 * 24 * 60 * 60 * 1000;
+};
 
 const readStoreData = () => {
   try {
@@ -1643,6 +1649,9 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                           <span>★</span>
                           <span>PRIME</span>
                         </div>
+                      )}
+                      {isNewProduct(product) && (
+                        <div style={{ position: 'absolute', top: '8px', left: '8px', background: '#dc2626', color: '#fff', padding: '4px 8px', borderRadius: '4px', fontSize: '10px', fontWeight: 900, letterSpacing: '0.5px', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>NEW</div>
                       )}
                     </div>
 
