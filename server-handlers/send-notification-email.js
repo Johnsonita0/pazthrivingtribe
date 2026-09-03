@@ -167,8 +167,9 @@ export default async function handler(req, res) {
       productName: resolvedProductName,
       ctaLabel: 'View order in dashboard',
       ctaUrl: adminDashboardUrl,
-      secondaryCtaLabel: 'Open admin dashboard',
-      secondaryCtaUrl: adminDashboardUrl,
+      showSecondaryCta: true,
+      secondaryCtaLabel: 'Payment history',
+      secondaryCtaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/dashboard?view=payment-history`,
       footerNote: 'This is an internal order notification for PAZ Thriving Tribe.'
     });
 

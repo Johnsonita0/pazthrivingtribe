@@ -5,6 +5,7 @@ export function buildPazEmailTemplate({
   bodyHtml = '',
   ctaLabel = 'Apply for a session',
   ctaUrl = `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/teens_reg`,
+  showSecondaryCta = true,
   secondaryCtaLabel = 'Book for a session',
   secondaryCtaUrl = `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/book-session`,
   accentText = '',
@@ -77,9 +78,7 @@ export function buildPazEmailTemplate({
                         <td style="padding-right:6px;">
                           <a href="${ctaUrl}" style="display:inline-block;background:linear-gradient(135deg,#e3bf6a,#d4a848);color:#152b24;padding:14px 20px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:900;">${ctaLabel}</a>
                         </td>
-                        <td style="padding-left:6px;">
-                          <a href="${secondaryCtaUrl}" style="display:inline-block;background:#edf7f0;color:#14392f;padding:14px 18px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:800;border:1px solid #d1e6d7;">${secondaryCtaLabel}</a>
-                        </td>
+                        ${showSecondaryCta ? `<td style="padding-left:6px;"><a href="${secondaryCtaUrl}" style="display:inline-block;background:#edf7f0;color:#14392f;padding:14px 18px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:800;border:1px solid #d1e6d7;">${secondaryCtaLabel}</a></td>` : ''}
                       </tr>
                     </table>
                   </td>

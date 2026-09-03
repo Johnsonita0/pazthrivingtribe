@@ -186,6 +186,9 @@ export default async function handler(req, res) {
       productName: 'PAZ digital products',
       ctaLabel: 'Open admin dashboard',
       ctaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/admin`,
+      showSecondaryCta: true,
+      secondaryCtaLabel: 'Payment history',
+      secondaryCtaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/dashboard?view=payment-history`,
       footerNote: 'Internal payment notification for PAZ Thriving Tribe.'
     });
     const html = buildPazEmailTemplate({

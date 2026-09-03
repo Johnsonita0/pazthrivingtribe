@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { supabase } from './supabaseClient';
 
 const formatName = (value) => typeof value === 'string' ? value.replace(/\b\w/g, (letter) => letter.toUpperCase()) : value;
@@ -44,6 +44,7 @@ function AdminTabBar({ selectedTab, onChangeTab }) {
 }
 
 export default function AdminDashboard(props) {
+  const location = useLocation();
   const emailInputRef = useRef(null);
   const productEditorRef = useRef(null);
   const [isMobileView, setIsMobileView] = useState(false);
@@ -186,6 +187,11 @@ export default function AdminDashboard(props) {
   const [testimonialConfirmation, setTestimonialConfirmation] = useState(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
   const [productDeleteTarget, setProductDeleteTarget] = useState(null);
+
+  useEffect(() => {
+    if (mode !== 'dashboard' || location.search !== '?view=payment-history') return;
+    setActiveDashboardView('payment-history');
+  }, [location.search, mode]);
 
   useEffect(() => {
     if (!selectedOrder) return;
