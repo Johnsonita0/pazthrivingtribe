@@ -116,6 +116,8 @@ const normalizeProduct = (product = {}) => ({
   title: product.title || product.name || 'Untitled product',
   description: product.description || '',
   price: Number(product.price ?? product.amount ?? 0),
+  currency: product.currency || 'NGN',
+  isFree: Boolean(product.is_free ?? product.isFree ?? false),
   category: product.category || 'Ebook',
   cover: product.cover || product.image || product.image_url || '/logo/logomain.png',
   fileUrl: product.file_url || product.fileUrl || '',

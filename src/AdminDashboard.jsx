@@ -12,6 +12,9 @@ const formatReferenceId = (value) => {
   const compactId = String(value || '').replace(/[^a-z0-9]/gi, '').slice(0, 8).toUpperCase();
   return compactId ? `PT-${compactId}` : 'N/A';
 };
+const productCurrencies = ['NGN', 'USD', 'GBP', 'EUR', 'GHS', 'KES', 'ZAR'];
+const currencySymbols = { NGN: '₦', USD: '$', GBP: '£', EUR: '€', GHS: 'GH₵', KES: 'KSh', ZAR: 'R' };
+const currencyRatesToNgn = { NGN: 1, USD: 1500, GBP: 1900, EUR: 1650, GHS: 95, KES: 11, ZAR: 85 };
 
 function AdminTabBar({ selectedTab, onChangeTab }) {
   const adminTabs = [
@@ -157,6 +160,8 @@ export default function AdminDashboard(props) {
     title: '',
     description: '',
     price: '',
+    currency: 'NGN',
+    isFree: false,
     category: 'Ebook',
     fileUrl: '',
     cover: '/logo/logomain.png',
@@ -419,7 +424,7 @@ export default function AdminDashboard(props) {
   const [editingStoreProductId, setEditingStoreProductId] = useState(null);
 
   const resetStoreProductForm = () => {
-    setStoreProductForm({ title: '', description: '', price: '', category: 'Ebook', fileUrl: '', cover: '/logo/logomain.png', inStock: true, stockCount: '' });
+    setStoreProductForm({ title: '', description: '', price: '', currency: 'NGN', isFree: false, category: 'Ebook', fileUrl: '', cover: '/logo/logomain.png', inStock: true, stockCount: '' });
     setProductFileName('');
     setCoverFileName('');
     setEditingStoreProductId(null);
@@ -435,6 +440,8 @@ export default function AdminDashboard(props) {
       title: product.title,
       description: product.description || '',
       price: Number(product.price || 0),
+      currency: product.currency || 'NGN',
+      is_free: Boolean(product.isFree),
       category: product.category || 'Ebook',
       file_url: product.fileUrl || '',
       cover: product.cover || '/logo/logomain.png',
@@ -574,7 +581,7 @@ export default function AdminDashboard(props) {
 
   const handleStoreProductSubmit = async (event) => {
     event.preventDefault();
-    if (!storeProductForm.title || !storeProductForm.description || !storeProductForm.price) return;
+    if (!storeProductForm.title || !storeProductForm.description || (!storeProductForm.isFree && !storeProductForm.price)) return;
     if (productFileUploading || coverFileUploading) {
       showAdminToast('warning', 'Uploads still in progress', 'Wait for the selected files to finish uploading before saving the product.');
       return;
@@ -590,6 +597,8 @@ export default function AdminDashboard(props) {
       title: storeProductForm.title.trim(),
       description: storeProductForm.description.trim(),
       price: Number(storeProductForm.price) || 0,
+      currency: storeProductForm.currency || 'NGN',
+      isFree: Boolean(storeProductForm.isFree),
       category: storeProductForm.category || 'Ebook',
       fileUrl: storeProductForm.fileUrl.trim() || '',
       cover: storeProductForm.cover.trim() || '/logo/logomain.png',
@@ -638,6 +647,8 @@ export default function AdminDashboard(props) {
       title: product.title || '',
       description: product.description || '',
       price: product.price ?? '',
+      currency: product.currency || 'NGN',
+      isFree: Boolean(product.isFree),
       category: product.category || 'Ebook',
       fileUrl: product.fileUrl || '',
       cover: product.cover || '/logo/logomain.png',
@@ -1241,7 +1252,21 @@ export default function AdminDashboard(props) {
                       </div>
                       <textarea value={storeProductForm.description} onChange={(event) => setStoreProductForm((current) => ({ ...current, description: event.target.value }))} placeholder="Description" style={{ ...adminFieldStyle, minHeight: '90px', resize: 'vertical' }} />
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-                        <input type="number" value={storeProductForm.price} onChange={(event) => setStoreProductForm((current) => ({ ...current, price: event.target.value }))} placeholder="Price in NGN" style={adminFieldStyle} />
+                        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 92px', gap: '8px', minWidth: 0, alignItems: 'start' }}>
+                          <div style={{ position: 'relative', minWidth: 0, display: 'flex', alignItems: 'center' }}>
+                            <span aria-hidden="true" style={{ position: 'absolute', inset: '0 auto 0 0', width: '34px', display: 'grid', placeItems: 'center', color: '#475569', fontWeight: 800, pointerEvents: 'none', zIndex: 1 }}>{currencySymbols[storeProductForm.currency] || storeProductForm.currency}</span>
+                            <input type="text" inputMode="decimal" pattern="[0-9]*[.]?[0-9]*" value={storeProductForm.price} onChange={(event) => setStoreProductForm((current) => ({ ...current, price: event.target.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1') }))} placeholder="Enter amount" disabled={storeProductForm.isFree} aria-label={`Amount in ${storeProductForm.currency}`} style={{ ...adminFieldStyle, height: '46px', paddingLeft: '34px', fontWeight: 700, color: '#111827' }} />
+                          </div>
+                          <select value={storeProductForm.currency} onChange={(event) => setStoreProductForm((current) => {
+                            const nextCurrency = event.target.value;
+                            const previousRate = currencyRatesToNgn[current.currency] || 1;
+                            const nextRate = currencyRatesToNgn[nextCurrency] || 1;
+                            const convertedPrice = current.price ? Math.round((Number(current.price) * previousRate / nextRate) * 100) / 100 : current.price;
+                            return { ...current, currency: nextCurrency, price: convertedPrice };
+                          })} disabled={storeProductForm.isFree} aria-label="Product currency" style={{ ...adminFieldStyle, height: '46px', padding: '10px 6px', fontSize: '0.82rem', fontWeight: 800, color: '#334155', background: '#fffaf0', border: '1px solid #f3b562', outline: 'none', boxShadow: '0 3px 10px rgba(245, 158, 11, 0.08)' }}>
+                            {productCurrencies.map((currency) => <option key={currency} value={currency}>{currency}</option>)}
+                          </select>
+                        </div>
                         <div style={{ display: 'grid', gap: '8px', minWidth: 0 }}>
                           <label style={{ color: '#475569', fontSize: '0.78rem', fontWeight: 700 }}>Product file</label>
                           <label
@@ -1257,6 +1282,10 @@ export default function AdminDashboard(props) {
                           {!productFileUploading && productFileName && <span style={{ color: '#64748b', fontSize: '0.78rem', overflowWrap: 'anywhere' }}>Attached: {productFileName}<br />Storage path: product-files/{storeProductForm.fileUrl}</span>}
                         </div>
                       </div>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#334155', fontWeight: 700, fontSize: '0.88rem' }}>
+                        <input type="checkbox" checked={storeProductForm.isFree} onChange={(event) => setStoreProductForm((current) => ({ ...current, isFree: event.target.checked, price: event.target.checked ? '0' : current.price }))} />
+                        Free product (email delivery without Paystack)
+                      </label>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
                         <select
                           value={storeProductForm.inStock ? 'available' : 'out-of-stock'}
@@ -1322,7 +1351,7 @@ export default function AdminDashboard(props) {
                                   <div className="commerce-product-title" style={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.title}</div>
                                   <div className="commerce-product-desc" style={{ color: '#64748b', fontSize: '0.82rem', marginBottom: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.description || 'No description provided yet.'}</div>
                                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                    <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>₦{Number(product.price || 0).toLocaleString()}</span>
+                                    <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>{product.isFree ? 'Free' : `${currencySymbols[product.currency || 'NGN'] || product.currency || ''}${Number(product.price || 0).toLocaleString()}`}</span>
                                     <span style={{ color: '#64748b', fontSize: '0.78rem', overflowWrap: 'anywhere' }}>{product.fileUrl ? `File attached: product-files/${product.fileUrl}` : 'No product file'}</span>
                                   </div>
                                 </div>

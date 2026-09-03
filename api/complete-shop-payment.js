@@ -26,6 +26,8 @@ function formatMoney(value) {
   }).format(Number(value || 0));
 }
 
+const currencyRatesToNgn = { NGN: 1, USD: 1500, GBP: 1900, EUR: 1650, GHS: 95, KES: 11, ZAR: 85 };
+
 function getAdminEmails() {
   return [...new Set([
     process.env.ADMIN_EMAILS,
@@ -51,33 +53,36 @@ export default async function handler(req, res) {
   const email = cleanEmail(body.email);
   const reference = String(body.reference || '').trim();
   const items = Array.isArray(body.items) ? body.items : [];
+  const isFreeOrder = body.free === true;
 
   if (!email) return sendJson(res, 400, { error: 'A valid customer email is required.' });
-  if (!reference || !items.length) return sendJson(res, 400, { error: 'Payment reference and order items are required.' });
+  if ((!isFreeOrder && !reference) || !items.length) return sendJson(res, 400, { error: isFreeOrder ? 'Order items are required.' : 'Payment reference and order items are required.' });
 
   const paystackSecret = process.env.PAYSTACK_SECRET_KEY || process.env.PAYSTACK_SECRET;
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!paystackSecret || !supabaseUrl || !serviceRoleKey || !process.env.RESEND_API_KEY) {
+  if (!supabaseUrl || !serviceRoleKey || !process.env.RESEND_API_KEY || (!isFreeOrder && !paystackSecret)) {
     return sendJson(res, 500, { error: 'Payment delivery is not configured on the server.' });
   }
 
   try {
-    const verifyResponse = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
-      headers: { Authorization: `Bearer ${paystackSecret}` }
-    });
-    const verifyData = await verifyResponse.json().catch(() => ({}));
-    const transaction = verifyData?.data;
-
-    if (!verifyResponse.ok || verifyData?.status !== true || transaction?.status !== 'success') {
-      return sendJson(res, 402, { error: 'Paystack could not confirm this payment.' });
+    let transaction = null;
+    if (!isFreeOrder) {
+      const verifyResponse = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
+        headers: { Authorization: `Bearer ${paystackSecret}` }
+      });
+      const verifyData = await verifyResponse.json().catch(() => ({}));
+      transaction = verifyData?.data;
+      if (!verifyResponse.ok || verifyData?.status !== true || transaction?.status !== 'success') {
+        return sendJson(res, 402, { error: 'Paystack could not confirm this payment.' });
+      }
     }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
     const productIds = [...new Set(items.map((item) => String(item.id || '').trim()).filter(Boolean))];
     const { data: products, error: productsError } = await supabase
       .from('store_products')
-      .select('id,title,price,file_url')
+      .select('id,title,price,currency,file_url,is_free')
       .in('id', productIds);
 
     if (productsError) throw productsError;
@@ -95,8 +100,12 @@ export default async function handler(req, res) {
       return sendJson(res, 400, { error: 'One or more purchased products are no longer available.' });
     }
 
-    const expectedAmount = normalizedItems.reduce((sum, item) => sum + Number(item.product.price || 0) * item.quantity, 0);
-    if (Number(transaction.amount) !== Math.round(expectedAmount * 100)) {
+    if (isFreeOrder && normalizedItems.some((item) => !item.product.is_free)) {
+      return sendJson(res, 400, { error: 'This free delivery request includes a paid product.' });
+    }
+
+    const expectedAmount = normalizedItems.reduce((sum, item) => sum + Number(item.product.price || 0) * (currencyRatesToNgn[item.product.currency || 'NGN'] || 1) * item.quantity, 0);
+    if (!isFreeOrder && Number(transaction.amount) !== Math.round(expectedAmount * 100)) {
       return sendJson(res, 402, { error: 'The payment amount does not match this order.' });
     }
 
@@ -110,10 +119,11 @@ export default async function handler(req, res) {
       }
 
       let fileResponse;
-      let filename = safeFilename(item.product.title, 'product-file');
+      const sourceFilename = filePath.split('?')[0].split('/').pop() || '';
+      const extensionMatch = sourceFilename.match(/(\.[a-z0-9]{1,8})$/i);
+      const productFilename = `${safeFilename(item.product.title, 'product-file')}${extensionMatch ? extensionMatch[1].toLowerCase() : ''}`;
       if (/^https?:\/\//i.test(filePath)) {
         fileResponse = await fetch(filePath);
-        filename = safeFilename(filePath.split('/').pop(), `${filename}.pdf`);
       } else {
         const { data: fileData, error: fileError } = await supabase.storage.from('product-files').download(filePath);
         if (fileError) {
@@ -122,13 +132,13 @@ export default async function handler(req, res) {
           continue;
         }
         const buffer = Buffer.from(await fileData.arrayBuffer());
-        attachments.push({ filename: safeFilename(filePath.split('/').pop(), `${filename}.pdf`), content: buffer.toString('base64') });
+        attachments.push({ filename: productFilename, content: buffer.toString('base64') });
         continue;
       }
 
       if (fileResponse?.ok) {
         const buffer = Buffer.from(await fileResponse.arrayBuffer());
-        attachments.push({ filename, content: buffer.toString('base64') });
+        attachments.push({ filename: productFilename, content: buffer.toString('base64') });
       } else {
         missingFiles.push(item.product.title || 'Untitled product');
       }
@@ -146,13 +156,13 @@ export default async function handler(req, res) {
     const customerName = String(body.customerName || 'Customer').trim();
     const subject = `Your PAZ products are ready — #${orderNumber}`;
     const adminRecipients = getAdminEmails();
-    const adminSubject = `Payment received — ${orderNumber}`;
+    const adminSubject = isFreeOrder ? `Free product requested — ${orderNumber}` : `Payment received — ${orderNumber}`;
     const adminHtml = buildPazEmailTemplate({
       title: adminSubject,
       eyebrow: 'Payment received',
       intro: 'Hello PAZ team,',
-      accentText: 'A Paystack payment has been verified successfully.',
-      bodyHtml: `<p><strong>Payment confirmed.</strong> A customer has completed a purchase on the PAZ storefront.</p><p><strong>Order number:</strong> ${orderNumber}</p><p><strong>Customer:</strong> ${customerName}</p><p><strong>Customer email:</strong> ${email}</p><p><strong>Items purchased:</strong><br>${itemSummary.replace(/\n/g, '<br>')}</p><p><strong>Verified amount:</strong> ${formatMoney(transaction.amount / 100)}</p><p>The customer has received the selected product files as email attachments.</p>`,
+      accentText: isFreeOrder ? 'A free product request has been completed.' : 'A Paystack payment has been verified successfully.',
+      bodyHtml: `<p><strong>${isFreeOrder ? 'Free product request completed.' : 'Payment confirmed.'}</strong> A customer has completed a ${isFreeOrder ? 'free product request' : 'purchase'} on the PAZ storefront.</p><p><strong>Order number:</strong> ${orderNumber}</p><p><strong>Customer:</strong> ${customerName}</p><p><strong>Customer email:</strong> ${email}</p><p><strong>Items:</strong><br>${itemSummary.replace(/\n/g, '<br>')}</p>${isFreeOrder ? '' : `<p><strong>Verified amount:</strong> ${formatMoney(transaction.amount / 100)}</p>`}<p>The customer has received the selected product files as email attachments.</p>`,
       productName: 'PAZ digital products',
       ctaLabel: 'Open admin dashboard',
       ctaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/admin`,
@@ -160,10 +170,10 @@ export default async function handler(req, res) {
     });
     const html = buildPazEmailTemplate({
       title: subject,
-      eyebrow: 'Payment confirmed',
+      eyebrow: isFreeOrder ? 'Free product delivery' : 'Payment confirmed',
       intro: `Hi ${customerName},`,
-      accentText: 'Your payment was successful and your purchased files are attached to this email.',
-      bodyHtml: `<p><strong>Payment confirmed.</strong></p><p>Your digital products are attached below.</p><p><strong>Order number:</strong> ${orderNumber}</p><p><strong>Order items:</strong><br>${itemSummary.replace(/\n/g, '<br>')}</p>`,
+      accentText: isFreeOrder ? 'Your requested free product is attached to this email.' : 'Your payment was successful and your purchased files are attached to this email.',
+      bodyHtml: `<p><strong>${isFreeOrder ? 'Free product request confirmed.' : 'Payment confirmed.'}</strong></p><p>Your digital products are attached below.</p><p><strong>Order number:</strong> ${orderNumber}</p><p><strong>Order items:</strong><br>${itemSummary.replace(/\n/g, '<br>')}</p>`,
       productName: 'PAZ digital products',
       ctaLabel: 'Visit PAZ Thriving Tribe',
       ctaUrl: process.env.VITE_APP_URL || 'https://pazthrivingtribe.org',
@@ -175,14 +185,14 @@ export default async function handler(req, res) {
         to: email,
         subject,
         html,
-        text: `Payment confirmed. Your selected PAZ products are attached to this email. Order: ${orderNumber}`,
+        text: `${isFreeOrder ? 'Your requested free PAZ products' : 'Payment confirmed. Your selected PAZ products'} are attached to this email. Order: ${orderNumber}`,
         attachments
       }),
       ...adminRecipients.map((recipient) => sendResendEmail({
         to: recipient,
         subject: adminSubject,
         html: adminHtml,
-        text: `Payment received and verified. Order: ${orderNumber}. Customer: ${customerName} (${email}). Items: ${itemSummary}. Amount: ${formatMoney(transaction.amount / 100)}.`,
+        text: `${isFreeOrder ? 'Free product request received' : 'Payment received and verified'}. Order: ${orderNumber}. Customer: ${customerName} (${email}). Items: ${itemSummary}.${isFreeOrder ? '' : ` Amount: ${formatMoney(transaction.amount / 100)}.`}`,
         attachments: []
       }))
     ]);

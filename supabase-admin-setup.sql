@@ -112,6 +112,8 @@ create table if not exists store_products (
   category text,
   cover text,
   file_url text,
+  currency text default 'NGN',
+  is_free boolean default false,
   rating numeric(3,2) default 0,
   reviews integer default 0,
   in_stock boolean default true,
@@ -128,6 +130,8 @@ alter table if exists store_products add column if not exists price numeric(12,2
 alter table if exists store_products add column if not exists category text;
 alter table if exists store_products add column if not exists cover text;
 alter table if exists store_products add column if not exists file_url text;
+alter table if exists store_products add column if not exists currency text default 'NGN';
+alter table if exists store_products add column if not exists is_free boolean default false;
 alter table if exists store_products add column if not exists rating numeric(3,2) default 0;
 alter table if exists store_products add column if not exists reviews integer default 0;
 alter table if exists store_products add column if not exists in_stock boolean default true;

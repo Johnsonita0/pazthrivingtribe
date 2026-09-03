@@ -16,6 +16,8 @@ const phoneCountries = getCountries().map((code) => ({
   code,
   dialCode: `+${getCountryCallingCode(code)}`
 }));
+const currencyRatesToNgn = { NGN: 1, USD: 1500, GBP: 1900, EUR: 1650, GHS: 95, KES: 11, ZAR: 85 };
+const currencySymbols = { NGN: '₦', USD: '$', GBP: '£', EUR: '€', GHS: 'GH₵', KES: 'KSh', ZAR: 'R' };
 
 const defaultProducts = [
   {
@@ -404,12 +406,17 @@ const money = (value) => new Intl.NumberFormat('en-NG', {
   maximumFractionDigits: 0
 }).format(Number(value || 0));
 
+const productNgnPrice = (product) => product.isFree ? 0 : Number(product.price || 0) * (currencyRatesToNgn[product.currency || 'NGN'] || 1);
+const productPriceLabel = (product) => product.isFree ? 'Free' : `${currencySymbols[product.currency || 'NGN'] || ''}${Number(product.price || 0).toLocaleString()}${product.currency && product.currency !== 'NGN' ? ` (≈ ₦${productNgnPrice(product).toLocaleString()})` : ''}`;
+
 const normalizeProduct = (product = {}) => ({
   ...product,
   id: product.id || product.product_id,
   title: product.title || product.name || 'Untitled product',
   description: product.description || '',
   price: Number(product.price ?? product.amount ?? 0),
+  currency: product.currency || 'NGN',
+  isFree: Boolean(product.is_free ?? product.isFree ?? false),
   category: product.category || 'Ebook',
   cover: product.cover || product.image || product.image_url || '/logo/logomain.png',
   fileUrl: product.file_url || product.fileUrl || '',
@@ -644,7 +651,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     : filteredBySearch.filter((product) => product.category === selectedCategory);
 
   const allVisibleProducts = filteredByCategory.filter((product) => {
-    const inPriceRange = product.price >= priceRange[0] && product.price <= priceRange[1];
+    const inPriceRange = productNgnPrice(product) >= priceRange[0] && productNgnPrice(product) <= priceRange[1];
     const hasMinRating = (product.rating || 0) >= minRating;
     return inPriceRange && hasMinRating;
   }).sort((a, b) => {
@@ -791,9 +798,10 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   };
 
   const subtotal = useMemo(
-    () => cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0), 0),
+    () => cart.reduce((sum, item) => sum + productNgnPrice(item) * Number(item.quantity || 0), 0),
     [cart]
   );
+  const cartIsFree = cart.length > 0 && cart.every((item) => item.isFree);
 
   useEffect(() => {
     if (!submittedOrder || !paymentProof || typeof onOrderSubmitted !== 'function') return undefined;
@@ -826,7 +834,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
       const itemRows = (order.items || []).map((item) => ({
         product_id: item.id || item.product_id || item.productId || '',
         title: item.title || 'Product',
-        price: Number(item.price || 0),
+        price: productNgnPrice(item),
         quantity: Number(item.quantity || 1)
       }));
 
@@ -995,12 +1003,12 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
       setTimeout(() => setToast(null), 3500);
       return;
     }
-    if (!paystackReady || !window.PaystackPop) {
+    if (!cartIsFree && (!paystackReady || !window.PaystackPop)) {
       setToast({ message: 'Payment checkout is still loading. Please try again shortly.', type: 'error' });
       setTimeout(() => setToast(null), 3500);
       return;
     }
-    if (!paystackPublicKey || paystackPublicKey.includes('demo_key_update_from_admin')) {
+    if (!cartIsFree && (!paystackPublicKey || paystackPublicKey.includes('demo_key_update_from_admin'))) {
       setToast({ message: 'Paystack is not configured yet. Please contact the site administrator.', type: 'error' });
       setTimeout(() => setToast(null), 3500);
       return;
@@ -1026,6 +1034,32 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
 
     setPaymentLoading(true);
     try {
+      if (cartIsFree) {
+        const freeResponse = await fetch('/api/complete-shop-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            free: true,
+            orderNumber,
+            email: customerEmail,
+            customerName: newOrder.name,
+            items: cart.map((item) => ({ id: item.id, quantity: item.quantity }))
+          })
+        });
+        const freeData = await freeResponse.json().catch(() => ({}));
+        if (!freeResponse.ok) throw new Error(freeData?.error || 'Free product delivery could not be completed.');
+        const freeOrder = { ...newOrder, status: 'free', deliverySent: true };
+        setSubmittedOrder(freeOrder);
+        await persistOrderToSupabase(freeOrder);
+        if (typeof onOrderSubmitted === 'function') onOrderSubmitted((current = []) => [freeOrder, ...current]);
+        setCheckoutStage('success');
+        setToast({ message: `Your free product has been sent to ${customerEmail}.`, type: 'success' });
+        setCheckoutForm({ name: '', email: '', countryCode: 'NG', phoneNumber: '', notes: '' });
+        setCart([]);
+        setCartOpen(true);
+        return;
+      }
+
       const paymentHandler = window.PaystackPop.setup({
         key: paystackPublicKey,
         email: customerEmail,
@@ -1585,7 +1619,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                         marginBottom: isVerySmallScreen ? '6px' : isSmallScreen ? '8px' : '10px',
                         letterSpacing: '-0.5px'
                       }}>
-                        {money(product.price)}
+                        {productPriceLabel(product)}
                       </div>
                     </div>
 
@@ -1891,7 +1925,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                         <div style={{ flex: 1 }}>
                           <h4 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: 'bold' }}>{item.title}</h4>
                           <div style={{ color: '#666', fontSize: '12px' }}>Qty: {item.quantity}</div>
-                          <div style={{ fontWeight: 'bold', color: '#111' }}>{money(item.price * item.quantity)}</div>
+                          <div style={{ fontWeight: 'bold', color: '#111' }}>{item.isFree ? 'Free' : money(productNgnPrice(item) * item.quantity)}</div>
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
@@ -1956,28 +1990,28 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', background: '#f8fafc', color: '#334155', fontSize: '12px' }}>
                     <i className="fa-solid fa-lock" aria-hidden="true" />
-                    <span>{paystackReady ? 'Secure payment by Paystack' : 'Loading secure Paystack checkout...'}</span>
+                    <span>{cartIsFree ? 'Free delivery by email' : paystackReady ? 'Secure payment by Paystack' : 'Loading secure Paystack checkout...'}</span>
                   </div>
 
                   <button
                     type="submit"
-                    disabled={paymentLoading || !paystackReady}
+                    disabled={paymentLoading || (!cartIsFree && !paystackReady)}
                     aria-busy={paymentLoading}
                     style={{
-                      background: paymentLoading || !paystackReady ? '#d1d5db' : 'linear-gradient(135deg, #FF9900, #FF8A00)',
+                      background: paymentLoading || (!cartIsFree && !paystackReady) ? '#d1d5db' : 'linear-gradient(135deg, #FF9900, #FF8A00)',
                       border: 'none',
                       borderRadius: '10px',
                       padding: '12px 14px',
                       fontWeight: '800',
-                      cursor: paymentLoading || !paystackReady ? 'wait' : 'pointer',
-                      color: paymentLoading || !paystackReady ? '#6b7280' : '#111',
+                      cursor: paymentLoading || (!cartIsFree && !paystackReady) ? 'wait' : 'pointer',
+                      color: paymentLoading || (!cartIsFree && !paystackReady) ? '#6b7280' : '#111',
                       fontSize: '14px',
                       marginTop: '6px',
                       boxShadow: '0 10px 18px rgba(255, 153, 0, 0.24)'
                     }}
                   >
-                    <i className={`fa-solid ${paymentLoading || !paystackReady ? 'fa-spinner fa-spin' : 'fa-lock'}`} aria-hidden="true" />
-                    {paymentLoading ? 'Opening secure payment...' : paystackReady ? 'Pay with Paystack' : 'Loading Paystack...'}
+                    <i className={`fa-solid ${paymentLoading || (!cartIsFree && !paystackReady) ? 'fa-spinner fa-spin' : cartIsFree ? 'fa-envelope' : 'fa-lock'}`} aria-hidden="true" />
+                    {paymentLoading ? (cartIsFree ? 'Sending free product...' : 'Opening secure payment...') : cartIsFree ? 'Request free product' : paystackReady ? 'Pay with Paystack' : 'Loading Paystack...'}
                   </button>
                 </form>
               </div>
@@ -1999,7 +2033,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                   {submittedOrder.items.map((item) => (
                     <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', paddingBottom: '6px', marginBottom: '6px', borderBottom: '1px solid #d1fae5', fontSize: '12px' }}>
                       <span>{item.title} x {item.quantity}</span>
-                      <span style={{ fontWeight: '600' }}>{money(item.price * item.quantity)}</span>
+                      <span style={{ fontWeight: '600' }}>{item.isFree ? 'Free' : money(productNgnPrice(item) * item.quantity)}</span>
                     </div>
                   ))}
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '700', marginTop: '8px', color: '#065f46' }}>
@@ -2222,7 +2256,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                 {submittedOrder.items.map((item) => (
                   <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', paddingBottom: '4px' }}>
                     <span>{item.title} x {item.quantity}</span>
-                    <span style={{ fontWeight: '600' }}>{money(item.price * item.quantity)}</span>
+                    <span style={{ fontWeight: '600' }}>{item.isFree ? 'Free' : money(productNgnPrice(item) * item.quantity)}</span>
                   </div>
                 ))}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '700', marginTop: '8px', paddingTop: '8px', borderTop: '2px solid #6ee7b7' }}>
