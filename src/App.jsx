@@ -440,10 +440,6 @@ export default function App() {
   const [socialPreviewEmbedUrl, setSocialPreviewEmbedUrl] = useState('https://www.youtube.com/embed/-vOSeWpU1Xs');
   const [socialMetadataLoading, setSocialMetadataLoading] = useState(false);
   const [youtubeEmbedUrl, setYoutubeEmbedUrl] = useState('https://www.youtube.com/embed/-vOSeWpU1Xs');
-  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
-  const [resetLoading, setResetLoading] = useState(false);
-  const [resetMessage, setResetMessage] = useState('');
 
   // --- State for Auto-Sliding Social Media News Updates Screen ---
   const [activeNewsIndex, setActiveNewsIndex] = useState(0);
@@ -1101,36 +1097,6 @@ export default function App() {
     }
 
     setLoading(false);
-  };
-
-  const handleForgotPassword = async (e) => {
-    e.preventDefault();
-    setResetLoading(true);
-    setResetMessage('');
-
-    try {
-      const response = await fetch('/api/admin-password-reset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: resetEmail.trim() })
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data?.error || 'Unable to send reset link.');
-      }
-
-      setResetMessage('✓ ' + (data?.message || 'Password reset email sent successfully.'));
-      setTimeout(() => {
-        setShowForgotPasswordModal(false);
-        setResetEmail('');
-        setResetMessage('');
-      }, 1800);
-    } catch (error) {
-      setResetMessage(`✕ ${error?.message || 'Could not send reset link.'}`);
-    } finally {
-      setResetLoading(false);
-    }
   };
 
   const handleSignOut = async () => {
@@ -4158,13 +4124,6 @@ export default function App() {
                 setTempMonthlyFee={setTempMonthlyFee}
                 setPaystackPublicKey={setPaystackPublicKey}
                 setTeensKidsMonthlyFee={setTeensKidsMonthlyFee}
-                showForgotPasswordModal={showForgotPasswordModal}
-                setShowForgotPasswordModal={setShowForgotPasswordModal}
-                resetEmail={resetEmail}
-                setResetEmail={setResetEmail}
-                resetLoading={resetLoading}
-                resetMessage={resetMessage}
-                handleForgotPassword={handleForgotPassword}
                 storeProducts={storeProducts}
                 setStoreProducts={setStoreProducts}
                 storeBankAccount={storeBankAccount}
@@ -4266,13 +4225,6 @@ export default function App() {
                 setTempMonthlyFee={setTempMonthlyFee}
                 setPaystackPublicKey={setPaystackPublicKey}
                 setTeensKidsMonthlyFee={setTeensKidsMonthlyFee}
-                showForgotPasswordModal={showForgotPasswordModal}
-                setShowForgotPasswordModal={setShowForgotPasswordModal}
-                resetEmail={resetEmail}
-                setResetEmail={setResetEmail}
-                resetLoading={resetLoading}
-                resetMessage={resetMessage}
-                handleForgotPassword={handleForgotPassword}
                 storeProducts={storeProducts}
                 setStoreProducts={setStoreProducts}
                 storeBankAccount={storeBankAccount}

@@ -457,38 +457,6 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '' }) {
   const [paymentProofSaving, setPaymentProofSaving] = useState(false);
   const [paystackReady, setPaystackReady] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
-  const cartAudioContextRef = useRef(null);
-
-  const playCartSound = (type) => {
-    if (typeof window === 'undefined') return;
-
-    try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContext) return;
-
-      const audioContext = cartAudioContextRef.current || new AudioContext();
-      cartAudioContextRef.current = audioContext;
-      if (audioContext.state === 'suspended') audioContext.resume();
-
-      const oscillator = audioContext.createOscillator();
-      const gain = audioContext.createGain();
-      const startTime = audioContext.currentTime;
-      const isDropSound = type === 'drop';
-
-      oscillator.type = isDropSound ? 'sine' : 'triangle';
-      oscillator.frequency.setValueAtTime(isDropSound ? 420 : 620, startTime);
-      if (isDropSound) oscillator.frequency.exponentialRampToValueAtTime(260, startTime + 0.16);
-      gain.gain.setValueAtTime(0.0001, startTime);
-      gain.gain.exponentialRampToValueAtTime(isDropSound ? 0.16 : 0.1, startTime + 0.01);
-      gain.gain.exponentialRampToValueAtTime(0.0001, startTime + (isDropSound ? 0.2 : 0.1));
-      oscillator.connect(gain);
-      gain.connect(audioContext.destination);
-      oscillator.start(startTime);
-      oscillator.stop(startTime + (isDropSound ? 0.2 : 0.1));
-    } catch {
-      // Sound is optional and may be unavailable in some browsers.
-    }
-  };
 
   useEffect(() => {
     if (window.PaystackPop) {
@@ -662,7 +630,6 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '' }) {
       return;
     }
 
-    playCartSound('click');
     const originalTarget = event?.currentTarget?.getBoundingClientRect?.();
     const cartTarget = cartButtonRef.current?.getBoundingClientRect?.();
     const startX = originalTarget ? originalTarget.left + originalTarget.width / 2 : window.innerWidth / 2;
@@ -670,8 +637,8 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '' }) {
     const endX = cartTarget ? cartTarget.left + cartTarget.width / 2 : window.innerWidth - 52;
     const endY = cartTarget ? cartTarget.top + cartTarget.height / 2 : window.innerHeight / 2;
     const flightId = `cart-flight-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    const animationDuration = 2000;
-    const cartUpdateTime = 2000;
+    const animationDuration = 3400;
+    const cartUpdateTime = 2500;
 
     setCartFlights((current) => [
       ...current,
@@ -712,7 +679,6 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '' }) {
         return;
       }
 
-      playCartSound('drop');
       setCartFlights((current) => current.filter((flight) => flight.id !== flightId));
     };
 
