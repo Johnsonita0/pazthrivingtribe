@@ -43,7 +43,7 @@ export default async function handler(req, res) {
 
   if (supabaseUrl && serviceRoleKey && requestedSlug) {
     const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
-    const { data } = await supabase.from('store_products').select('id,title,description,cover,cover_url,cover_image,image,image_url,imageUrl').limit(200);
+    const { data } = await supabase.from('store_products').select('id,title,description,cover').limit(200);
     product = (data || []).find((item) => slugify(item.title || item.id) === requestedSlug || String(item.id || '').toLowerCase() === requestedSlug) || null;
   }
 
