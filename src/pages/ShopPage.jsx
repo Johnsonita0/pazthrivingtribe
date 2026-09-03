@@ -1053,6 +1053,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
         await persistOrderToSupabase(freeOrder);
         if (typeof onOrderSubmitted === 'function') onOrderSubmitted((current = []) => [freeOrder, ...current]);
         setCheckoutStage('success');
+        window.requestAnimationFrame(() => window.setTimeout(triggerSuccessConfetti, 120));
         setToast({ message: `Your free product has been sent to ${customerEmail}.`, type: 'success' });
         setCheckoutForm({ name: '', email: '', countryCode: 'NG', phoneNumber: '', notes: '' });
         setCart([]);
@@ -1979,10 +1980,11 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                       placeholder={checkoutForm.countryCode === 'NG' ? 'Phone number (11 digits)' : 'Phone number'}
                       value={checkoutForm.phoneNumber}
                       onChange={(e) => {
-                        setCheckoutForm({ ...checkoutForm, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 15) });
+                        const maxDigits = checkoutForm.countryCode === 'NG' ? 11 : 15;
+                        setCheckoutForm({ ...checkoutForm, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, maxDigits) });
                       }}
                       required
-                      maxLength={15}
+                      maxLength={checkoutForm.countryCode === 'NG' ? 11 : 15}
                       aria-label="National phone number"
                       style={{ padding: '10px 12px', border: '1px solid #d5d9d9', borderRadius: '8px', fontSize: '14px' }}
                     />
