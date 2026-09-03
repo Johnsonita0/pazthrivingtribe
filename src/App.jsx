@@ -12,6 +12,7 @@ import BookSessionPage from './pages/BookSessionPage';
 import FeedbackPage from './pages/FeedbackPage';
 import StorePage from './pages/StorePage';
 import ShopPage from './pages/ShopPage';
+import PaystackCallbackPage from './pages/PaystackCallbackPage';
 
 const whatsappTips = [
   'Need help today?',
@@ -4030,6 +4031,7 @@ export default function App() {
           <Route path="/feedback" element={<FeedbackPage />} />
           <Route path="/store" element={<div className="public-website-container"><StorePage /></div>} />
           <Route path="/shop" element={<div className="public-website-container"><ShopPage onOrderSubmitted={setShopOrders} paystackPublicKey={paystackPublicKey} /></div>} />
+          <Route path="/payment/callback" element={<PaystackCallbackPage />} />
           <Route path="/care-counseling" element={<CareCounselingPage />} />
           <Route path="/services/family" element={<ComingSoonPage title="Thriving Parents" description="Empowering parents with tools and wisdom" />} />
           <Route path="/services/marriage" element={<ComingSoonPage title="Thriving Women" description="Transforming lives, building confidence" />} />

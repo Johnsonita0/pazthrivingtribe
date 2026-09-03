@@ -963,7 +963,11 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '' }) {
       currency: 'NGN',
       ref: orderNumber,
       metadata: {
-        custom_fields: [{ display_name: 'Customer name', variable_name: 'customer_name', value: newOrder.name }]
+        order_number: orderNumber,
+        custom_fields: [
+          { display_name: 'Customer name', variable_name: 'customer_name', value: newOrder.name },
+          { display_name: 'Order number', variable_name: 'order_number', value: orderNumber }
+        ]
       },
       callback: async (response) => {
         try {

@@ -33,6 +33,15 @@ Alternate fix: if Vercel does not expose `SUPABASE_SERVICE_ROLE_KEY` to the func
 
 The admin endpoint is available at `/api/admin-update`.
 
+### Paystack Test Mode URLs
+
+Set these URLs in Paystack Dashboard under **Settings > API Keys & Webhooks > Test Mode**:
+
+- Callback URL: `https://pazthrivingtribe.org/payment/callback`
+- Webhook URL: `https://pazthrivingtribe.org/api/paystack-webhook`
+
+The webhook verifies the `x-paystack-signature` header and updates matching `shop_orders` records after a successful charge. Add `PAYSTACK_SECRET_KEY` to the Vercel Production or Preview environment using the matching Paystack test secret key.
+
 ### Supabase production setup
 
 Recommended step: create a `site_admins` table in Supabase and add your admin user(s). This lets the serverless endpoint authenticate admin rights securely.
