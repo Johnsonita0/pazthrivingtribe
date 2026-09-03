@@ -188,7 +188,7 @@ export default async function handler(req, res) {
       ctaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/admin`,
       showSecondaryCta: true,
       secondaryCtaLabel: 'Payment history',
-      secondaryCtaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/dashboard?view=payment-history`,
+      secondaryCtaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/dashboard?view=payment-history&reference=${encodeURIComponent(reference)}`,
       footerNote: 'Internal payment notification for PAZ Thriving Tribe.'
     });
     const html = buildPazEmailTemplate({

@@ -188,11 +188,15 @@ export default function AdminDashboard(props) {
   const [testimonialConfirmation, setTestimonialConfirmation] = useState(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
   const [productDeleteTarget, setProductDeleteTarget] = useState(null);
+  const paymentReference = new URLSearchParams(location.search).get('reference') || '';
 
   useEffect(() => {
-    if (mode !== 'dashboard' || location.search !== '?view=payment-history') return;
+    if (mode !== 'dashboard' || !paymentReference) return;
     setActiveDashboardView('payment-history');
-  }, [location.search, mode]);
+    if (paymentReference.toUpperCase().startsWith('BOOK-')) setPaymentHistoryTab('booking');
+    if (paymentReference.toUpperCase().startsWith('REG-')) setPaymentHistoryTab('teens');
+    if (paymentReference.toUpperCase().startsWith('PAZ-')) setPaymentHistoryTab('store');
+  }, [location.search, mode, paymentReference]);
 
   useEffect(() => {
     if (!selectedOrder) return;
@@ -1176,6 +1180,9 @@ export default function AdminDashboard(props) {
   const teenPaymentRows = paymentHistoryRows.filter((payment) => payment.service === 'Registration');
   const storePaymentRows = paymentHistoryRows.filter((payment) => payment.service === 'Store purchase');
   const selectedPaymentRows = paymentHistoryTab === 'booking' ? bookingPaymentRows : paymentHistoryTab === 'teens' ? teenPaymentRows : storePaymentRows;
+  const visiblePaymentRows = paymentReference
+    ? selectedPaymentRows.filter((payment) => String(payment.reference || '').trim() === paymentReference)
+    : selectedPaymentRows;
 
   return (
     <div className="admin-dashboard-page" style={{ minHeight: '100vh', background: '#f1f2f4', padding: '26px 20px 32px', fontFamily: 'Inter, Arial, sans-serif' }}>
@@ -1487,8 +1494,8 @@ export default function AdminDashboard(props) {
                     <div style={{ overflowX: 'auto', width: '100%' }}>
                       <table style={{ width: '100%', minWidth: '680px', borderCollapse: 'collapse' }}>
                         <thead><tr style={{ background: '#f8fafc', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.72rem' }}><th style={{ padding: '12px 14px', textAlign: 'left' }}>Service</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Customer</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Amount</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Paystack reference</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Mode</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Status</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Date</th></tr></thead>
-                        <tbody>{selectedPaymentRows.length > 0 ? selectedPaymentRows.map((payment, index) => (
-                          <tr key={payment.id || `${payment.reference}-${index}`} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <tbody>{visiblePaymentRows.length > 0 ? visiblePaymentRows.map((payment, index) => (
+                          <tr key={payment.id || `${payment.reference}-${index}`} style={{ borderBottom: '1px solid #e2e8f0', background: paymentReference ? '#ecfdf5' : 'transparent' }}>
                             <td style={{ padding: '12px 14px', fontWeight: 700 }}>{payment.service}</td>
                             <td style={{ padding: '12px 14px' }}><div style={{ fontWeight: 700 }}>{payment.customer || 'Customer'}</div><div style={{ color: '#64748b', fontSize: '0.8rem' }}>{payment.email || 'No email'}</div></td>
                             <td style={{ padding: '12px 14px', fontWeight: 700 }}>{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(Number(payment.amount || 0))}</td>
@@ -1497,7 +1504,7 @@ export default function AdminDashboard(props) {
                             <td style={{ padding: '12px 14px' }}><span style={{ background: payment.status === 'paid' ? '#dcfce7' : '#fff7ed', color: payment.status === 'paid' ? '#166534' : '#b45309', borderRadius: '999px', padding: '6px 10px', fontSize: '0.76rem', fontWeight: 700, textTransform: 'capitalize' }}>{payment.status || 'pending'}</span></td>
                             <td style={{ padding: '12px 14px', color: '#475569' }}>{payment.date ? new Date(payment.date).toLocaleDateString() : 'N/A'}</td>
                           </tr>
-                        )) : <tr><td colSpan="7" style={{ padding: '22px 14px', textAlign: 'center', color: '#64748b' }}>No Paystack payments have been recorded yet.</td></tr>}</tbody>
+                        )) : <tr><td colSpan="7" style={{ padding: '22px 14px', textAlign: 'center', color: '#64748b' }}>{paymentReference ? `No transaction found for reference ${paymentReference}.` : 'No Paystack payments have been recorded yet.'}</td></tr>}</tbody>
                       </table>
                     </div>
                   </div>

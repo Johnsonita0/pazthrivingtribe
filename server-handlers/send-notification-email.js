@@ -47,7 +47,7 @@ export default async function handler(req, res) {
   }
 
   const body = req.body || {};
-  const { email, service, timestamp, message, productMessage, customMessage, attachmentName, customerName, orderNumber, itemSummary, productFileUrl, fileUrl, productName, itemName } = body;
+  const { email, service, timestamp, message, productMessage, customMessage, attachmentName, customerName, orderNumber, itemSummary, productFileUrl, fileUrl, productName, itemName, paymentReference, reference } = body;
   const rawAttachments = Array.isArray(body?.attachments)
     ? body.attachments
     : Array.isArray(body?.productAttachments)
@@ -169,7 +169,7 @@ export default async function handler(req, res) {
       ctaUrl: adminDashboardUrl,
       showSecondaryCta: true,
       secondaryCtaLabel: 'Payment history',
-      secondaryCtaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/dashboard?view=payment-history`,
+      secondaryCtaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/dashboard?view=payment-history${(paymentReference || reference) ? `&reference=${encodeURIComponent(paymentReference || reference)}` : ''}`,
       footerNote: 'This is an internal order notification for PAZ Thriving Tribe.'
     });
 
