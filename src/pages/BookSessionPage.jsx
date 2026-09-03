@@ -185,12 +185,12 @@ export default function BookSessionPage({ paystackPublicKey = '' }) {
 
             <label className="teens-registration-field">
               <span>Preferred Date</span>
-              <input type="date" name="preferredDate" value={form.preferredDate} onChange={handleChange} />
+              <input type="text" name="preferredDate" value={form.preferredDate} onChange={handleChange} placeholder="YYYY-MM-DD" />
             </label>
 
             <label className="teens-registration-field">
               <span>Preferred Time</span>
-              <input type="time" name="preferredTime" value={form.preferredTime} onChange={handleChange} />
+              <input type="text" name="preferredTime" value={form.preferredTime} onChange={handleChange} placeholder="e.g. 3:00 PM" />
             </label>
 
             <label className="teens-registration-field">

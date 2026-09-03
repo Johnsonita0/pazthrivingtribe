@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import CustomDropdown from './components/CustomDropdown';
 
 export default function ThriverRegistrationModal({
   visible,
@@ -357,43 +358,17 @@ export default function ThriverRegistrationModal({
                   </div>
                   <div className="form-input-container">
                     <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Client Type</label>
-                    <select
-                      value={bookingForm.clientType}
-                      onChange={(e) => setBookingForm((prev) => ({ ...prev, clientType: e.target.value }))}
-                      className="plain-text-input"
-                    >
-                      <option value="Individual">Individual</option>
-                      <option value="Parent">Parent / Guardian</option>
-                      <option value="Teen">Teen</option>
-                      <option value="Woman">Woman / Young Adult</option>
-                    </select>
+                    <CustomDropdown value={bookingForm.clientType} onChange={(value) => setBookingForm((prev) => ({ ...prev, clientType: value }))} ariaLabel="Client type" options={[{ value: 'Individual', label: 'Individual' }, { value: 'Parent', label: 'Parent / Guardian' }, { value: 'Teen', label: 'Teen' }, { value: 'Woman', label: 'Woman / Young Adult' }]} />
                   </div>
                 </div>
                 <div className="registration-fields-grid">
                   <div className="form-input-container">
                     <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Session Type</label>
-                    <select
-                      value={bookingForm.sessionType}
-                      onChange={(e) => setBookingForm((prev) => ({ ...prev, sessionType: e.target.value }))}
-                      className="plain-text-input"
-                    >
-                      <option value="Virtual">Virtual</option>
-                      <option value="In-person">In-person</option>
-                      <option value="Hybrid">Hybrid</option>
-                    </select>
+                    <CustomDropdown value={bookingForm.sessionType} onChange={(value) => setBookingForm((prev) => ({ ...prev, sessionType: value }))} ariaLabel="Session type" options={[{ value: 'Virtual', label: 'Virtual' }, { value: 'In-person', label: 'In-person' }, { value: 'Hybrid', label: 'Hybrid' }]} />
                   </div>
                   <div className="form-input-container">
                     <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Preferred Time</label>
-                    <select
-                      value={bookingForm.preferredTime}
-                      onChange={(e) => setBookingForm((prev) => ({ ...prev, preferredTime: e.target.value }))}
-                      className="plain-text-input"
-                    >
-                      <option value="Any time">Any time</option>
-                      <option value="Morning">Morning</option>
-                      <option value="Afternoon">Afternoon</option>
-                      <option value="Evening">Evening</option>
-                    </select>
+                    <CustomDropdown value={bookingForm.preferredTime} onChange={(value) => setBookingForm((prev) => ({ ...prev, preferredTime: value }))} ariaLabel="Preferred time" options={['Any time', 'Morning', 'Afternoon', 'Evening'].map((value) => ({ value, label: value }))} />
                   </div>
                 </div>
                 <div className="form-input-container">

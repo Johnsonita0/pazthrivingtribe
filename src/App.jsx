@@ -13,6 +13,7 @@ import FeedbackPage from './pages/FeedbackPage';
 import StorePage from './pages/StorePage';
 import ShopPage from './pages/ShopPage';
 import PaystackCallbackPage from './pages/PaystackCallbackPage';
+import CustomDropdown from './components/CustomDropdown';
 
 const whatsappTips = [
   'Need help today?',
@@ -5355,32 +5356,18 @@ function CareCounselingPage() {
                       </div>
                       <div className="form-input-container">
                         <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Client Type</label>
-                        <select value={bookingForm.clientType} onChange={(e) => setBookingForm((prev) => ({ ...prev, clientType: e.target.value }))} className="plain-text-input">
-                          <option value="Individual">Individual</option>
-                          <option value="Parent">Parent / Guardian</option>
-                          <option value="Teen">Teen</option>
-                          <option value="Woman">Woman / Young Adult</option>
-                        </select>
+                        <CustomDropdown value={bookingForm.clientType} onChange={(value) => setBookingForm((prev) => ({ ...prev, clientType: value }))} ariaLabel="Client type" options={[{ value: 'Individual', label: 'Individual' }, { value: 'Parent', label: 'Parent / Guardian' }, { value: 'Teen', label: 'Teen' }, { value: 'Woman', label: 'Woman / Young Adult' }]} />
                       </div>
                     </div>
 
                     <div className="talk-thrive-modal-grid">
                       <div className="form-input-container">
                         <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Session Type</label>
-                        <select value={bookingForm.sessionType} onChange={(e) => setBookingForm((prev) => ({ ...prev, sessionType: e.target.value }))} className="plain-text-input">
-                          <option value="Virtual">Virtual</option>
-                          <option value="In-person">In-person</option>
-                          <option value="Hybrid">Hybrid</option>
-                        </select>
+                        <CustomDropdown value={bookingForm.sessionType} onChange={(value) => setBookingForm((prev) => ({ ...prev, sessionType: value }))} ariaLabel="Session type" options={[{ value: 'Virtual', label: 'Virtual' }, { value: 'In-person', label: 'In-person' }, { value: 'Hybrid', label: 'Hybrid' }]} />
                       </div>
                       <div className="form-input-container">
                         <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Preferred Time</label>
-                        <select value={bookingForm.preferredTime} onChange={(e) => setBookingForm((prev) => ({ ...prev, preferredTime: e.target.value }))} className="plain-text-input">
-                          <option value="Any time">Any time</option>
-                          <option value="Morning">Morning</option>
-                          <option value="Afternoon">Afternoon</option>
-                          <option value="Evening">Evening</option>
-                        </select>
+                        <CustomDropdown value={bookingForm.preferredTime} onChange={(value) => setBookingForm((prev) => ({ ...prev, preferredTime: value }))} ariaLabel="Preferred time" options={['Any time', 'Morning', 'Afternoon', 'Evening'].map((value) => ({ value, label: value }))} />
                       </div>
                     </div>
 
@@ -5461,11 +5448,7 @@ function HomeIntakeForm({ onSubmitApplicant }) {
         </div>
         <div className="form-input-container">
           <label style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)' }}>Targeted Intake Track Selection</label>
-          <select required value={track} onChange={(e) => setTrack(e.target.value)} className="plain-text-input" style={{ height: '46px' }}>
-            <option value="family">Thriving Parents</option>
-            <option value="marriage">Thriving Women</option>
-            <option value="children">Thriving Pre-teen & Teens</option>
-          </select>
+          <CustomDropdown value={track} onChange={setTrack} ariaLabel="Intake track" options={[{ value: 'family', label: 'Thriving Parents' }, { value: 'marriage', label: 'Thriving Women' }, { value: 'children', label: 'Thriving Pre-teen & Teens' }]} />
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import { supabase } from './supabaseClient';
+import CustomDropdown from './components/CustomDropdown';
 
 const formatName = (value) => typeof value === 'string' ? value.replace(/\b\w/g, (letter) => letter.toUpperCase()) : value;
 const getStoredFileName = (value) => {
@@ -1318,9 +1319,7 @@ export default function AdminDashboard(props) {
                     <form ref={productEditorRef} onSubmit={handleStoreProductSubmit} style={{ display: 'grid', gap: '12px', scrollMarginTop: '24px' }}>
                       <div className="commerce-form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
                         <input value={storeProductForm.title} onChange={(event) => setStoreProductForm((current) => ({ ...current, title: event.target.value }))} placeholder="Ebook title" style={adminFieldStyle} />
-                        <select value={storeProductForm.category} onChange={(event) => setStoreProductForm((current) => ({ ...current, category: event.target.value }))} aria-label="Product type" style={adminFieldStyle}>
-                          {productCategories.map((category) => <option key={category} value={category}>{category}</option>)}
-                        </select>
+                        <CustomDropdown value={storeProductForm.category} onChange={(value) => setStoreProductForm((current) => ({ ...current, category: value }))} ariaLabel="Product type" options={productCategories.map((category) => ({ value: category, label: category }))} />
                       </div>
                       <textarea value={storeProductForm.description} onChange={(event) => setStoreProductForm((current) => ({ ...current, description: event.target.value }))} placeholder="Description" style={{ ...adminFieldStyle, minHeight: '90px', resize: 'vertical' }} />
                       <div className="commerce-form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
@@ -1329,15 +1328,12 @@ export default function AdminDashboard(props) {
                             <span aria-hidden="true" style={{ position: 'absolute', inset: '0 auto 0 0', width: '34px', display: 'grid', placeItems: 'center', color: '#475569', fontWeight: 800, pointerEvents: 'none', zIndex: 1 }}>{currencySymbols[storeProductForm.currency] || storeProductForm.currency}</span>
                             <input type="text" inputMode="decimal" pattern="[0-9]*[.]?[0-9]*" value={storeProductForm.price} onChange={(event) => setStoreProductForm((current) => ({ ...current, price: event.target.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1') }))} placeholder="Enter amount" disabled={storeProductForm.isFree} aria-label={`Amount in ${storeProductForm.currency}`} style={{ ...adminFieldStyle, height: '46px', paddingLeft: '34px', fontWeight: 700, color: '#111827' }} />
                           </div>
-                          <select value={storeProductForm.currency} onChange={(event) => setStoreProductForm((current) => {
-                            const nextCurrency = event.target.value;
+                          <CustomDropdown value={storeProductForm.currency} onChange={(nextCurrency) => setStoreProductForm((current) => {
                             const previousRate = currencyRatesToNgn[current.currency] || 1;
                             const nextRate = currencyRatesToNgn[nextCurrency] || 1;
                             const convertedPrice = current.price ? Math.round((Number(current.price) * previousRate / nextRate) * 100) / 100 : current.price;
                             return { ...current, currency: nextCurrency, price: convertedPrice };
-                          })} disabled={storeProductForm.isFree} aria-label="Product currency" style={{ ...adminFieldStyle, height: '46px', padding: '10px 6px', fontSize: '0.82rem', fontWeight: 800, color: '#334155', background: '#fffaf0', border: '1px solid #f3b562', outline: 'none', boxShadow: '0 3px 10px rgba(245, 158, 11, 0.08)' }}>
-                            {productCurrencies.map((currency) => <option key={currency} value={currency}>{currency}</option>)}
-                          </select>
+                          })} ariaLabel="Product currency" options={productCurrencies.map((currency) => ({ value: currency, label: currency }))} />
                         </div>
                         <div style={{ display: 'grid', gap: '8px', minWidth: 0 }}>
                           <label style={{ color: '#475569', fontSize: '0.78rem', fontWeight: 700 }}>Product file</label>
@@ -1359,14 +1355,7 @@ export default function AdminDashboard(props) {
                         Free product (email delivery without Paystack)
                       </label>
                       <div className="commerce-form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
-                        <select
-                          value={storeProductForm.inStock ? 'available' : 'out-of-stock'}
-                          onChange={(event) => setStoreProductForm((current) => ({ ...current, inStock: event.target.value === 'available' }))}
-                          style={adminFieldStyle}
-                        >
-                          <option value="available">Available</option>
-                          <option value="out-of-stock">Out of stock</option>
-                        </select>
+                        <CustomDropdown value={storeProductForm.inStock ? 'available' : 'out-of-stock'} onChange={(value) => setStoreProductForm((current) => ({ ...current, inStock: value === 'available' }))} ariaLabel="Stock status" options={[{ value: 'available', label: 'Available' }, { value: 'out-of-stock', label: 'Out of stock' }]} />
                         <input
                           type="number"
                           min="0"
@@ -1602,10 +1591,7 @@ export default function AdminDashboard(props) {
                     {filterOptions.map((filter) => (
                       <label key={filter.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.95rem', color: '#374151', fontWeight: 600 }}>
                         {filter.label}
-                        <select value={activeFilters[filter.key] || ''} onChange={(e) => setTableFilters((current) => ({ ...current, [activeDashboardView]: { ...current[activeDashboardView], [filter.key]: e.target.value } }))} style={{ minWidth: '150px', padding: '8px', borderRadius: '8px' }}>
-                          <option value="">All {filter.label.toLowerCase()}s</option>
-                          {filter.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                        </select>
+                        <CustomDropdown value={activeFilters[filter.key] || ''} onChange={(value) => setTableFilters((current) => ({ ...current, [activeDashboardView]: { ...current[activeDashboardView], [filter.key]: value } }))} ariaLabel={filter.label} placeholder={`All ${filter.label.toLowerCase()}s`} options={[{ value: '', label: `All ${filter.label.toLowerCase()}s` }, ...filter.options.map((option) => ({ value: option, label: option }))]} />
                       </label>
                     ))}
                     <button type="button" className="dashboard-action-button" onClick={() => setTableFilters((current) => ({ ...current, [activeDashboardView]: {} }))} aria-label="Clear filters" title="Clear filters" style={{ border: '1px solid #d8dfe7', background: '#fff', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer' }}><i className="fa-solid fa-filter-circle-xmark" aria-hidden="true"></i> <span>Clear</span></button>

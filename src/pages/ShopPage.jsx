@@ -473,10 +473,10 @@ function SearchableOptionPicker({ value, options, onChange, label }) {
       </button>
       {open && (
         <div style={{ position: 'absolute', zIndex: 20, top: 'calc(100% + 6px)', left: 0, right: 0, maxHeight: '260px', overflow: 'auto', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '10px', background: '#fff', boxShadow: '0 14px 30px rgba(15, 23, 42, 0.16)' }}>
-          <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${label.toLowerCase()}...`} style={{ width: '100%', boxSizing: 'border-box', padding: '9px 10px', border: '1px solid #cbd5e1', borderRadius: '7px', marginBottom: '6px' }} />
-          {filteredOptions.length > 0 ? filteredOptions.map((option) => (
+          <div style={{ position: 'sticky', top: '-8px', zIndex: 1, paddingBottom: '6px', background: '#fff' }}><input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${label.toLowerCase()}...`} style={{ width: '100%', boxSizing: 'border-box', padding: '9px 10px', border: '1px solid #cbd5e1', borderRadius: '7px' }} /></div>
+          <div>{filteredOptions.length > 0 ? filteredOptions.map((option) => (
             <button key={option} type="button" onClick={() => { onChange(option); setOpen(false); setQuery(''); }} style={{ display: 'block', width: '100%', padding: '9px 10px', border: 0, borderRadius: '6px', background: option === value ? '#fff7ed' : '#fff', color: '#334155', textAlign: 'left', fontWeight: option === value ? 800 : 600, cursor: 'pointer' }}>{option}</button>
-          )) : <div style={{ padding: '10px', color: '#64748b', fontSize: '0.8rem' }}>No matches found.</div>}
+          )) : <div style={{ padding: '10px', color: '#64748b', fontSize: '0.8rem' }}>No matches found.</div>}</div>
         </div>
       )}
     </div>
@@ -1559,24 +1559,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
               <div>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
                   Sort by:
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    style={{
-                      border: '1px solid #d5d9d9',
-                      borderRadius: '4px',
-                      padding: '6px 8px',
-                      fontSize: '14px',
-                      background: '#fff',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <option value="relevant">Relevance</option>
-                    <option value="price-low">Price: Low to High</option>
-                    <option value="price-high">Price: High to Low</option>
-                    <option value="rating">Highest Rated</option>
-                    <option value="newest">Newest</option>
-                  </select>
+                  <SearchableOptionPicker value={sortBy} options={['relevant', 'price-low', 'price-high', 'rating', 'newest']} onChange={setSortBy} label="Sort products" />
                 </label>
               </div>
             </div>
@@ -2161,16 +2144,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                     style={{ padding: '10px 12px', border: '1px solid #d5d9d9', borderRadius: '8px', fontSize: '14px' }}
                   />
                   <div className="checkout-phone-fields">
-                    <select
-                      aria-label="Country"
-                      value={checkoutForm.countryCode}
-                      onChange={(e) => setCheckoutForm({ ...checkoutForm, countryCode: e.target.value, phoneNumber: '' })}
-                      style={{ width: '100%', minWidth: 0, padding: '10px 6px', border: '1px solid #d5d9d9', borderRadius: '8px', fontSize: '14px', background: '#fff' }}
-                    >
-                      {phoneCountries.map((country) => (
-                        <option key={country.code} value={country.code}>{country.code} ({country.dialCode})</option>
-                      ))}
-                    </select>
+                    <SearchableOptionPicker value={checkoutForm.countryCode} options={phoneCountries.map((country) => `${country.code} (${country.dialCode})`)} onChange={(value) => setCheckoutForm({ ...checkoutForm, countryCode: value.split(' ')[0], phoneNumber: '' })} label="Country" />
                     <input
                       type="tel"
                       inputMode="numeric"
