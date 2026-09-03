@@ -100,16 +100,18 @@ export default function BookSessionPage({ paystackPublicKey = '' }) {
       const paymentHandler = window.PaystackPop.setup({
         key: paystackPublicKey, email: form.email, amount: 5000 * 100, currency: 'NGN', ref: `BOOK-${Date.now()}`,
         metadata: { custom_fields: [{ display_name: 'Service', variable_name: 'service', value: 'Booking session' }, { display_name: 'Program', variable_name: 'program', value: form.programType }] },
-        callback: async (response) => {
-          try {
+        callback: (response) => {
+          void (async () => {
+            try {
             const completionResponse = await fetch('/api/complete-service-payment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'booking', reference: response.reference, email: form.email, details: payload }) });
             const completion = await completionResponse.json().catch(() => ({}));
             if (!completionResponse.ok) throw new Error(completion.error || 'Payment completed but booking could not be saved.');
             setToast('Payment successful. Booking submitted.');
             setSubmitted(true);
             setForm(createInitial());
-          } catch (error) { setToast(error.message); }
-          setSaving(false);
+            } catch (error) { setToast(error.message); }
+            setSaving(false);
+          })();
         },
         onClose: () => { setSaving(false); setToast('Payment was cancelled.'); }
       });

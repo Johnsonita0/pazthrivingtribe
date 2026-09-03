@@ -1519,8 +1519,9 @@ export default function App() {
         currency: 'NGN',
         ref: `BOOK-${Date.now()}`,
         metadata: { custom_fields: [{ display_name: 'Service', variable_name: 'service', value: 'Talk & Thrive booking' }] },
-        callback: async (response) => {
-          try {
+        callback: (response) => {
+          void (async () => {
+            try {
             const completionResponse = await fetch('/api/complete-service-payment', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -1545,14 +1546,15 @@ export default function App() {
             setToastMessage('Payment successful. Your booking request has been submitted.');
             setToastType('success');
             setBookingForm({ name: '', email: '', phone: '', clientType: 'Individual', sessionType: 'Virtual', preferredTime: 'Any time', concern: '' });
-          } catch (error) {
-            console.error('Paid booking completion failed:', error);
-            setBookingSubmitted(false);
-            setToastMessage(error.message || 'Payment completed but booking could not be saved.');
-            setToastType('error');
-          } finally {
-            setBookingSubmitting(false);
-          }
+            } catch (error) {
+              console.error('Paid booking completion failed:', error);
+              setBookingSubmitted(false);
+              setToastMessage(error.message || 'Payment completed but booking could not be saved.');
+              setToastType('error');
+            } finally {
+              setBookingSubmitting(false);
+            }
+          })();
         },
         onClose: () => {
           setBookingSubmitting(false);

@@ -397,6 +397,39 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
     setFormToast({ message: '', type: 'error' });
 
     try {
+      if (paymentReference) {
+        const completionResponse = await fetch('/api/complete-service-payment', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'registration',
+            reference: paymentReference,
+            email: formData.email,
+            details: {
+              registration_type: formData.registrationType,
+              parent_or_guardian_name: formData.contactName,
+              full_name: formData.children[0]?.childName || formData.contactName,
+              phone: formData.phone,
+              home_address: formData.homeAddress,
+              children_count: formData.children.length,
+              source: formData.hearAboutUs || 'Website registration',
+              children_details: formData.children,
+              notes: formData.note || 'No additional notes',
+              track: formData.children[0]?.programType || 'Thriving Teens Academy'
+            }
+          })
+        });
+        const completion = await completionResponse.json().catch(() => ({}));
+        if (!completionResponse.ok) throw new Error(completion.error || 'Payment completed but registration could not be saved.');
+        setLastSubmittedEmail(formData.email);
+        setConfirmationEmailSent(true);
+        setSubmitted(true);
+        setFormData(initialForm);
+        setSelectedChildIndex(0);
+        setCurrentStep(0);
+        return;
+      }
+
       const summary = formData.children.map((child) => ({
         child_name: child.childName,
         dob: child.dateOfBirth,
@@ -541,8 +574,8 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
         currency: 'NGN',
         ref: `REG-${Date.now()}`,
         metadata: { custom_fields: [{ display_name: 'Service', variable_name: 'service', value: 'Teens registration' }] },
-        callback: async (response) => {
-          await persistRegistration(response.reference);
+        callback: (response) => {
+          void persistRegistration(response.reference);
         },
         onClose: () => {
           setSaving(false);
