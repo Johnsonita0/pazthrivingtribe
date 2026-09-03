@@ -176,6 +176,7 @@ export default function App() {
     concern: ''
   });
   const [bookingSubmitted, setBookingSubmitted] = useState(false);
+  const [bookingSubmitting, setBookingSubmitting] = useState(false);
   const [contactForm, setContactForm] = useState({
     name: '',
     email: '',
@@ -185,9 +186,12 @@ export default function App() {
   const [bookings, setBookings] = useState([]);
   const [contactMessages, setContactMessages] = useState([]);
   const [parentFeedback, setParentFeedback] = useState([]);
+  const [contactSubmitting, setContactSubmitting] = useState(false);
 
   const handleContactFormSubmit = (event) => {
     event.preventDefault();
+    if (contactSubmitting) return;
+    setContactSubmitting(true);
     const trimmedMessage = {
       id: `contact-${Date.now()}`,
       name: contactForm.name.trim(),
@@ -200,12 +204,14 @@ export default function App() {
     setContactForm({ name: '', email: '', subject: '', message: '' });
     setToastMessage('Your message has been received and will be reviewed by the team shortly.');
     setToastType('success');
+    window.setTimeout(() => setContactSubmitting(false), 500);
   };
 
   // --- Sliding Hero Banner States (Main Page) ---
   const [currentHomeSlide, setCurrentHomeSlide] = useState(0);
   const [currentPromoSlide, setCurrentPromoSlide] = useState(0);
   const [selectedReview, setSelectedReview] = useState(null);
+  const [testimonialSubmitting, setTestimonialSubmitting] = useState(false);
   const [expandedFaqIndex, setExpandedFaqIndex] = useState(0);
   const [promoSlideAutoPlay, setPromoSlideAutoPlay] = useState(true);
   const [promoSlides, setPromoSlides] = useState([
@@ -803,6 +809,7 @@ export default function App() {
       subtotal: Number(order.subtotal ?? order.total ?? order.amount ?? 0),
       notes: order.notes || '',
       status: order.status || 'pending',
+      paymentMode: order.payment_mode || order.paymentMode || 'live',
       paymentProofPath: order.payment_proof_path || order.paymentProofPath || '',
       paymentProofUrl: order.payment_proof_url || order.paymentProofUrl || '',
       createdAt: order.created_at || order.createdAt || new Date().toISOString(),
@@ -948,6 +955,8 @@ export default function App() {
             preferred_time: item.preferred_time || '',
             session_format: item.session_format || item.format || '',
             notes: item.notes || item.note || '',
+            paymentReference: item.payment_reference || item.paymentReference || '',
+            paymentStatus: item.payment_status || item.paymentStatus || 'pending',
             created_at: item.created_at || ''
           })));
         }
@@ -1266,6 +1275,7 @@ export default function App() {
 
   const handleTestimonialSubmission = async (e) => {
     e.preventDefault();
+    if (testimonialSubmitting) return;
     const name = testimonialSubmission.name.trim();
     const message = testimonialSubmission.message.trim();
 
@@ -1285,6 +1295,7 @@ export default function App() {
       imageType: 'logo'
     };
 
+    setTestimonialSubmitting(true);
     // Add to local state immediately for UI feedback
     setPromoSlides((prev) => [nextSlide, ...prev]);
     setCurrentPromoSlide(0);
@@ -1326,6 +1337,8 @@ export default function App() {
       console.error('Failed saving testimonial to database:', err);
       setToastMessage('Thank you for your submission. Your story will be reviewed and added shortly.');
       setToastType('success');
+    } finally {
+      setTestimonialSubmitting(false);
     }
   };
 
@@ -1475,6 +1488,8 @@ export default function App() {
 
   const handleHeroBookingSubmit = async (event) => {
     event.preventDefault();
+    if (bookingSubmitting) return;
+    setBookingSubmitting(true);
 
     const message = [
       `Client type: ${bookingForm.clientType}`,
@@ -1511,6 +1526,7 @@ export default function App() {
       setToastType('success');
     } finally {
       setBookingForm({ name: '', email: '', phone: '', clientType: 'Individual', sessionType: 'Virtual', preferredTime: 'Any time', concern: '' });
+      setBookingSubmitting(false);
     }
   };
 
@@ -1534,7 +1550,9 @@ export default function App() {
         email: newApplicant.email,
         phone: newApplicant.phone,
         track: newApplicant.track,
-        message: newApplicant.message
+        message: newApplicant.message,
+        payment_reference: newApplicant.paymentReference || null,
+        payment_status: newApplicant.paymentStatus || 'pending'
       }]);//.select();
       if (error) throw error; 
     } catch (err) { 
@@ -1884,7 +1902,7 @@ export default function App() {
         .nav-cta-link.secondary { background: #fff; color: #0f172a; border: 1px solid #dfe7ef; box-shadow: none; }
         .nav-cta-link:hover { transform: translateY(-1px); }
         .nav-navigation-links {
-          display: flex;
+          display: none;
           align-items: center;
           justify-content: flex-end;
           gap: 1rem;
@@ -1919,7 +1937,7 @@ export default function App() {
         .nav-cta-btn:hover span,
         .nav-cta-btn:focus-visible span { max-width: 6rem; opacity: 1; }
         .nav-menu-toggle {
-          display: none;
+          display: block;
           background: none;
           border: none;
           color: var(--text-primary);
@@ -3331,10 +3349,8 @@ export default function App() {
           .public-navbar { padding: 1rem 1.5rem; }
           .hero-section { height: auto; min-height: 72vh; }
           .hero-overlay { padding: 2.2rem 1rem; }
-          .hero-copy-card h1 { font-size: 3.6rem !important; }
-          .hero-copy-card p { font-size: 1.35rem !important; line-height: 1.5; }
-          .hero-overlay h1 { font-size: 3.6rem !important; }
-          .hero-overlay p { font-size: 1.35rem !important; line-height: 1.5; }
+          .hero-copy-card h1, .hero-overlay h1 { font-size: clamp(1.9rem, 8vw, 2.7rem) !important; line-height: 1.08; }
+          .hero-copy-card p, .hero-overlay p { font-size: 0.98rem !important; line-height: 1.45; }
           .hero-scroll-btn { width: 100%; justify-content: center; }
           .banner-slide { gap: 1.25rem; padding: 1.5rem; }
           .slide-graphic { max-height: 320px; }
@@ -3410,9 +3426,15 @@ export default function App() {
         }
 
         @media (max-width: 480px) {
-          .public-navbar { padding: 0.8rem 0.9rem; }
-          .nav-logo-brand-zone { gap: 0.45rem; }
-          .nav-brand-name { font-size: 0.87rem; max-width: 160px; line-height: 1.2; }
+          .public-navbar { min-height: 64px; padding: 0.65rem 0.75rem; gap: 0.45rem; }
+          .nav-logo-brand-zone { gap: 0.4rem; margin-right: 0; }
+          .nav-logo-img { width: 36px; height: 36px; }
+          .nav-brand-name { font-size: 0.82rem; max-width: 128px; line-height: 1.2; letter-spacing: 0; }
+          .nav-right-cluster { gap: 0.3rem; }
+          .nav-shop-link, .nav-cta-link { width: 38px; height: 38px; min-width: 38px; padding: 0; margin-left: 0; display: inline-flex; align-items: center; justify-content: center; gap: 0; border-radius: 10px; font-size: 0; }
+          .nav-shop-link i, .nav-cta-link i { margin: 0; font-size: 0.92rem; }
+          .nav-cta-group { gap: 0.3rem; margin-left: 0; }
+          .nav-menu-toggle { width: 38px; height: 38px; padding: 0; margin-left: 0; display: inline-grid; place-items: center; font-size: 1.2rem; }
           .hero-copy-card h1 { font-size: clamp(2rem, 8vw, 2.6rem); }
           .hero-copy-card p { font-size: 0.95rem; }
           .hero-scroll-btn { min-width: 0; width: 100%; padding: 0.9rem 1.2rem; }
@@ -3520,6 +3542,18 @@ export default function App() {
                 <i className="fa-solid fa-bag-shopping"></i> Shop
               </Link>
             )}
+            {!isAdminRoute && (
+              <div className="nav-cta-group">
+                <Link to="/teens_reg" className="nav-cta-link" onClick={() => setNavOpen(false)}>
+                  <i className="fa-solid fa-user-plus" aria-hidden="true"></i>
+                  <span>Apply</span>
+                </Link>
+                <Link to="/book-session" className="nav-cta-link secondary" onClick={() => setNavOpen(false)}>
+                  <i className="fa-solid fa-calendar-check" aria-hidden="true"></i>
+                  <span>Book</span>
+                </Link>
+              </div>
+            )}
             <button className="nav-menu-toggle" onClick={() => setNavOpen((current) => !current)} aria-label="Toggle navigation menu">
               <i className={navOpen ? 'fa-solid fa-xmark' : 'fa-solid fa-bars'}></i>
             </button>
@@ -3559,18 +3593,6 @@ export default function App() {
               </button>
             )}
 
-            {!isAdminRoute && (
-              <div className="nav-cta-group">
-                <Link to="/teens_reg" className="nav-cta-link" onClick={() => setNavOpen(false)}>
-                  <i className="fa-solid fa-user-plus" aria-hidden="true"></i>
-                  <span>Apply</span>
-                </Link>
-                <Link to="/book-session" className="nav-cta-link secondary" onClick={() => setNavOpen(false)}>
-                  <i className="fa-solid fa-calendar-check" aria-hidden="true"></i>
-                  <span>Book</span>
-                </Link>
-              </div>
-            )}
           </nav>
           </header>
         )}
@@ -3945,7 +3967,7 @@ export default function App() {
                             placeholder="Tell us how our program worked for your family..."
                           />
                         </div>
-                        <button type="submit" className="testimonial-submit-btn">Submit testimonial</button>
+                        <button type="submit" className="testimonial-submit-btn" disabled={testimonialSubmitting}>{testimonialSubmitting ? 'Submitting...' : 'Submit testimonial'}</button>
                         <p className="testimonial-status">{testimonialSubmitStatus}</p>
                       </form>
                     </div>
@@ -3999,13 +4021,14 @@ export default function App() {
              ========================================================================= */}
           <Route path="/teens-kids-academy" element={<TeensKidsMenu paystackPublicKey={paystackPublicKey} teensKidsMonthlyFee={teensKidsMonthlyFee} />} />
           <Route path="/tee" element={<TeensRegistrationPage />} />
-          <Route path="/teens-registration" element={<TeensRegistrationPage />} />
-          <Route path="/teens_reg" element={<TeensRegistrationPage />} />
-          <Route path="/teens-reg" element={<TeensRegistrationPage />} />
-          <Route path="/book-session" element={<BookSessionPage />} />
+          <Route path="/teens-registration" element={<TeensRegistrationPage paystackPublicKey={paystackPublicKey} />} />
+          <Route path="/teens_reg" element={<TeensRegistrationPage paystackPublicKey={paystackPublicKey} />} />
+          <Route path="/teens-reg" element={<TeensRegistrationPage paystackPublicKey={paystackPublicKey} />} />
+          <Route path="/book-session" element={<BookSessionPage paystackPublicKey={paystackPublicKey} />} />
           <Route path="/feedback" element={<FeedbackPage />} />
           <Route path="/store" element={<div className="public-website-container"><StorePage /></div>} />
           <Route path="/shop" element={<div className="public-website-container"><ShopPage onOrderSubmitted={setShopOrders} paystackPublicKey={paystackPublicKey} storeProducts={storeProducts} storeBankAccount={storeBankAccount} /></div>} />
+          <Route path="/shop/:productName" element={<div className="public-website-container"><ShopPage onOrderSubmitted={setShopOrders} paystackPublicKey={paystackPublicKey} storeProducts={storeProducts} storeBankAccount={storeBankAccount} /></div>} />
           <Route path="/payment/callback" element={<PaystackCallbackPage />} />
           <Route path="/care-counseling" element={<CareCounselingPage />} />
           <Route path="/services/family" element={<ComingSoonPage title="Thriving Parents" description="Empowering parents with tools and wisdom" />} />
@@ -4243,7 +4266,7 @@ export default function App() {
                   </div>
                   <div className="contact-info-details">
                     <h4>Email</h4>
-                    <p>support@paztribe.org</p>
+                    <p>pazthrivingtribe@gmail.com</p>
                   </div>
                 </div>
 
@@ -4310,7 +4333,7 @@ export default function App() {
                     style={{ resize: 'vertical' }}
                   />
                 </div>
-                <button type="submit" className="contact-submit-btn">Send Message</button>
+                <button type="submit" className="contact-submit-btn" disabled={contactSubmitting}>{contactSubmitting ? 'Sending...' : 'Send Message'}</button>
               </form>
             </div>
           </div>
@@ -4370,7 +4393,7 @@ export default function App() {
               <h4>Inquiries</h4>
               <div className="footer-interactive-links">
                 <span style={{ fontSize: '0.95rem', color: 'var(--text-muted)' }}><i className="fa-solid fa-location-dot" style={{ marginRight: '5px' }}></i> Lagos Main Campus, Nigeria</span>
-                <span style={{ fontSize: '0.95rem', color: 'var(--text-muted)' }}><i className="fa-solid fa-envelope" style={{ marginRight: '5px' }}></i> support@paztribe.org</span>
+                <span style={{ fontSize: '0.95rem', color: 'var(--text-muted)' }}><i className="fa-solid fa-envelope" style={{ marginRight: '5px' }}></i> pazthrivingtribe@gmail.com</span>
               </div>
             </div>
           </div>
@@ -5367,8 +5390,8 @@ function CareCounselingPage() {
                     </div>
 
                     <div className="talk-thrive-modal-actions">
-                      <button type="submit" className="form-submit-action-btn" style={{ minWidth: '220px' }}>
-                        <i className="fa-solid fa-paper-plane"></i> Send Booking Request
+                      <button type="submit" className="form-submit-action-btn" disabled={bookingSubmitting} style={{ minWidth: '220px' }}>
+                        <i className={`fa-solid ${bookingSubmitting ? 'fa-spinner fa-spin' : 'fa-paper-plane'}`}></i> {bookingSubmitting ? 'Submitting...' : 'Send Booking Request'}
                       </button>
                       <button type="button" onClick={() => setIsBookingModalOpen(false)} className="care-focus-btn" style={{ background: 'transparent' }}>
                         Cancel
@@ -5390,6 +5413,7 @@ function CareCounselingPage() {
 // =========================================================================
 function HomeIntakeForm({ onSubmitApplicant }) {
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [fullName, setFullName] = useState('');
   const [emailAddress, setEmailAddress] = useState('');
   const [phone, setPhone] = useState('');
@@ -5398,15 +5422,15 @@ function HomeIntakeForm({ onSubmitApplicant }) {
 
   const submitForm = async (e) => {
     e.preventDefault();
-    if (onSubmitApplicant) {
-      await onSubmitApplicant({ fullName, email: emailAddress, phone, track, message });
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      if (onSubmitApplicant) await onSubmitApplicant({ fullName, email: emailAddress, phone, track, message });
+      setSubmitted(true);
+      setFullName(''); setEmailAddress(''); setPhone(''); setTrack('family'); setMessage('');
+    } finally {
+      setSubmitting(false);
     }
-    setSubmitted(true);
-    setFullName('');
-    setEmailAddress('');
-    setPhone('');
-    setTrack('family');
-    setMessage('');
   };
 
   if (submitted) {
@@ -5450,8 +5474,8 @@ function HomeIntakeForm({ onSubmitApplicant }) {
         <textarea rows="3" value={message} onChange={(e) => setMessage(e.target.value)} placeholder="What are you hoping to achieve?" className="plain-text-input" style={{ resize: 'vertical' }} />
       </div>
 
-      <button type="submit" className="form-submit-action-btn">
-        <i className="fa-solid fa-user-plus"></i> Submit Secure Registration
+      <button type="submit" className="form-submit-action-btn" disabled={submitting}>
+        <i className={`fa-solid ${submitting ? 'fa-spinner fa-spin' : 'fa-user-plus'}`}></i> {submitting ? 'Submitting...' : 'Submit Secure Registration'}
       </button>
     </form>
   );

@@ -18,6 +18,7 @@ import sendNotificationEmailHandler from './server-handlers/send-notification-em
 import sendRegistrationEmailHandler from './server-handlers/send-registration-email.js';
 import completeShopPaymentHandler from './server-handlers/complete-shop-payment.js';
 import currencyRatesHandler from './server-handlers/currency-rates.js';
+import completeServicePaymentHandler from './server-handlers/complete-service-payment.js';
 
 try {
   process.loadEnvFile?.('.env');
@@ -72,6 +73,12 @@ const server = http.createServer((req, res) => {
       if (pathname === '/api/complete-shop-payment' && req.method === 'POST') {
         req.body = body;
         await completeShopPaymentHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/complete-service-payment' && req.method === 'POST') {
+        req.body = body ? JSON.parse(body) : {};
+        await completeServicePaymentHandler(req, res);
         return;
       }
 

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '../supabaseClient';
 
 const createInitial = () => ({
   registrationType: '',
@@ -15,12 +14,25 @@ const createInitial = () => ({
   note: ''
 });
 
-export default function BookSessionPage() {
+export default function BookSessionPage({ paystackPublicKey = '' }) {
   const [form, setForm] = useState(createInitial());
   const [saving, setSaving] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [toast, setToast] = useState('');
+  const [paystackReady, setPaystackReady] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (window.PaystackPop) {
+      setPaystackReady(true);
+      return undefined;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://js.paystack.co/v1/inline.js';
+    script.onload = () => setPaystackReady(true);
+    document.body.appendChild(script);
+    return () => { script.onload = null; };
+  }, []);
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -43,6 +55,7 @@ export default function BookSessionPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (saving) return;
     const err = validate();
     if (err) return setToast(err);
     setSaving(true);
@@ -60,16 +73,29 @@ export default function BookSessionPage() {
         notes: form.note || ''
       };
 
-      const { error } = await supabase.from('tribe_bookings').insert([payload]);
-      if (error) throw error;
-      setToast('Booking request submitted successfully.');
-      setSubmitted(true);
-      setForm(createInitial());
+      if (!paystackReady || !window.PaystackPop) throw new Error('Payment checkout is still loading. Please try again shortly.');
+      if (!paystackPublicKey || paystackPublicKey.includes('demo_key_update_from_admin')) throw new Error('Paystack is not configured yet.');
+      const paymentHandler = window.PaystackPop.setup({
+        key: paystackPublicKey, email: form.email, amount: 500000, currency: 'NGN', ref: `BOOK-${Date.now()}`,
+        metadata: { custom_fields: [{ display_name: 'Service', variable_name: 'service', value: 'Booking session' }, { display_name: 'Program', variable_name: 'program', value: form.programType }] },
+        callback: async (response) => {
+          try {
+            const completionResponse = await fetch('/api/complete-service-payment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'booking', reference: response.reference, email: form.email, details: payload }) });
+            const completion = await completionResponse.json().catch(() => ({}));
+            if (!completionResponse.ok) throw new Error(completion.error || 'Payment completed but booking could not be saved.');
+            setToast('Payment successful. Booking submitted.');
+            setSubmitted(true);
+            setForm(createInitial());
+          } catch (error) { setToast(error.message); }
+          setSaving(false);
+        },
+        onClose: () => { setSaving(false); setToast('Payment was cancelled.'); }
+      });
+      paymentHandler.openIframe();
     } catch (err) {
       console.error('Booking failed', err);
-      setToast('Booking failed. Please try again later.');
-    } finally {
       setSaving(false);
+      setToast(err.message || 'Booking failed. Please try again later.');
     }
   };
 

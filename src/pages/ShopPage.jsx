@@ -1,4 +1,5 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import { getCountries, getCountryCallingCode, isValidPhoneNumber, parsePhoneNumberFromString } from 'libphonenumber-js';
 import { supabase } from '../supabaseClient';
@@ -408,6 +409,31 @@ const money = (value) => new Intl.NumberFormat('en-NG', {
 
 const productPriceLabel = (product) => product.isFree ? 'Free' : `${currencySymbols[product.currency || 'NGN'] || ''}${Number(product.price || 0).toLocaleString()}`;
 
+const productSlug = (product) => encodeURIComponent(String(product?.title || product?.id || 'product').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
+
+const playCartFlightSound = () => {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    const audioContext = new AudioContextClass();
+    const oscillator = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(520, audioContext.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(860, audioContext.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.08, audioContext.currentTime + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.16);
+    oscillator.connect(gain);
+    gain.connect(audioContext.destination);
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.17);
+    oscillator.addEventListener('ended', () => { void audioContext.close(); }, { once: true });
+  } catch {
+    // Audio is optional and can be unavailable in restricted browsers.
+  }
+};
+
 const normalizeProduct = (product = {}) => ({
   ...product,
   id: product.id || product.product_id,
@@ -439,6 +465,9 @@ const readStoreData = () => {
 };
 
 export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', storeProducts, storeBankAccount }) {
+  const navigate = useNavigate();
+  const { productName } = useParams();
+  const isProductPage = Boolean(productName);
   const [storeData, setStoreData] = useState(readStoreData);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
@@ -479,6 +508,20 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const productNgnPrice = (product) => product.isFree ? 0 : Number(product.price || 0) * (currencyRatesToNgn[product.currency || 'NGN'] || 1);
   const calculatorRate = currencyRatesToNgn[calculatorCurrency] || 1;
   const calculatorAmount = selectedProduct?.isFree ? 0 : selectedProduct ? productNgnPrice(selectedProduct) / calculatorRate : 0;
+
+  useEffect(() => {
+    if (!productName || !storeData.products?.length) return;
+    const requestedSlug = decodeURIComponent(productName).toLowerCase();
+    const product = storeData.products.find((item) => productSlug(item) === requestedSlug || String(item.id).toLowerCase() === requestedSlug);
+    if (product) {
+      const frame = window.requestAnimationFrame(() => {
+        setSelectedProduct(product);
+        setCalculatorCurrency(product.currency || 'NGN');
+      });
+      return () => window.cancelAnimationFrame(frame);
+    }
+    return undefined;
+  }, [productName, storeData.products]);
 
   useEffect(() => {
     let active = true;
@@ -690,6 +733,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   };
 
   const addToCart = (product, event) => {
+    event?.stopPropagation?.();
     if (product.inStock === false || Number(product.stockCount || 0) <= 0) {
       setToast({ message: `${product.title} is currently out of stock.`, type: 'error' });
       setTimeout(() => setToast(null), 3000);
@@ -704,6 +748,8 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
       setPaymentProofFile(null);
       setCheckoutForm({ name: '', email: '', countryCode: 'NG', phoneNumber: '', notes: '' });
     }
+
+    playCartFlightSound();
 
     const originalTarget = event?.currentTarget?.getBoundingClientRect?.();
     const cartTarget = cartButtonRef.current?.getBoundingClientRect?.();
@@ -896,6 +942,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
             notes: order.notes || '',
             status: order.status || 'pending',
             payment_reference: order.paymentReference || order.payment_reference || null,
+            payment_mode: order.paymentMode || order.payment_mode || 'live',
             payment_proof_path: paymentProofPath,
             payment_proof_url: paymentProofUrl || paymentProof || null
           }
@@ -1047,6 +1094,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
       paymentProofUploaded: !!paymentProofFile,
       paymentProofPreview: paymentProof || null,
       status: 'paid',
+      paymentMode: String(paystackPublicKey).startsWith('pk_test_') ? 'test' : 'live',
       createdAt: new Date().toISOString()
     };
 
@@ -1514,6 +1562,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
               }}>
                 {visibleProducts.map((product) => (
                   <div key={product.id} onClick={() => {
+                    navigate(`/shop/${productSlug(product)}`);
                     setSelectedProduct(product);
                     setCalculatorCurrency(product.currency || 'NGN');
                   }} style={{
@@ -1835,22 +1884,22 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
         {selectedProduct && (
           <div
             role="presentation"
-            onClick={() => setSelectedProduct(null)}
-            style={{ position: 'fixed', inset: 0, zIndex: 260, display: 'grid', placeItems: 'start center', padding: isSmallScreen ? '78px 12px 12px' : '88px 20px 16px', background: 'rgba(15, 23, 42, 0.55)', backdropFilter: 'blur(4px)', overflow: 'hidden' }}
+            onClick={() => { setSelectedProduct(null); navigate('/shop'); }}
+            style={isProductPage ? { position: 'relative', zIndex: 1, display: 'block', padding: isSmallScreen ? '24px 12px 48px' : '36px 20px 64px', background: '#f8fafc' } : { position: 'fixed', inset: 0, zIndex: 260, display: 'grid', placeItems: 'start center', padding: isSmallScreen ? '78px 12px 12px' : '88px 20px 16px', background: 'rgba(15, 23, 42, 0.55)', backdropFilter: 'blur(4px)', overflow: 'hidden' }}
           >
             <div
-              role="dialog"
-              aria-modal="true"
+              role={isProductPage ? 'main' : 'dialog'}
+              aria-modal={isProductPage ? undefined : 'true'}
               aria-labelledby="product-details-title"
               onClick={(event) => event.stopPropagation()}
-              style={{ width: 'min(720px, 100%)', maxHeight: 'calc(100vh - 104px)', overflow: 'hidden', background: '#fff', borderRadius: isSmallScreen ? '16px' : '22px', boxShadow: '0 28px 80px rgba(15, 23, 42, 0.3)', padding: isSmallScreen ? '12px' : '18px', boxSizing: 'border-box' }}
+              style={isProductPage ? { width: 'min(980px, 100%)', margin: '0 auto', background: '#fff', borderRadius: isSmallScreen ? '14px' : '20px', boxShadow: '0 16px 44px rgba(15, 23, 42, 0.1)', padding: isSmallScreen ? '16px' : '30px', boxSizing: 'border-box' } : { width: 'min(720px, 100%)', maxHeight: 'calc(100vh - 104px)', overflow: 'hidden', background: '#fff', borderRadius: isSmallScreen ? '16px' : '22px', boxShadow: '0 28px 80px rgba(15, 23, 42, 0.3)', padding: isSmallScreen ? '12px' : '18px', boxSizing: 'border-box' }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', marginBottom: '12px' }}>
                 <div>
                   <div style={{ color: '#f97316', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '6px' }}>{selectedProduct.category || 'Product'}</div>
                   <h2 id="product-details-title" style={{ margin: 0, color: '#111827', fontSize: isSmallScreen ? '1.3rem' : '1.7rem', lineHeight: 1.2 }}>{selectedProduct.title}</h2>
                 </div>
-                <button type="button" onClick={() => setSelectedProduct(null)} aria-label="Close product details" style={{ width: '34px', height: '34px', border: '1px solid #d1d5db', borderRadius: '50%', background: '#fff', color: '#334155', fontSize: '1.2rem', cursor: 'pointer', flexShrink: 0 }}>×</button>
+                <button type="button" onClick={() => { setSelectedProduct(null); navigate('/shop'); }} aria-label={isProductPage ? 'Return to shop' : 'Close product details'} style={{ width: '34px', height: '34px', border: '1px solid #d1d5db', borderRadius: '50%', background: '#fff', color: '#334155', fontSize: '1.2rem', cursor: 'pointer', flexShrink: 0 }}>{isProductPage ? '←' : '×'}</button>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: isSmallScreen ? '1fr' : '140px minmax(0, 1fr)', gap: isSmallScreen ? '8px' : '16px', alignItems: 'start' }}>
@@ -1891,7 +1940,8 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px', flexWrap: 'wrap' }}>
-                <button type="button" onClick={() => setSelectedProduct(null)} style={{ border: '1px solid #cbd5e1', borderRadius: '9px', padding: '11px 18px', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer', flex: isSmallScreen ? '1 1 120px' : '0 0 auto' }}>Close</button>
+                <button type="button" onClick={() => { setSelectedProduct(null); navigate('/shop'); }} style={{ border: '1px solid #cbd5e1', borderRadius: '9px', padding: '11px 18px', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer', flex: isSmallScreen ? '1 1 120px' : '0 0 auto' }}>{isProductPage ? 'Back to main shop' : 'Close'}</button>
+                {isProductPage && <button type="button" onClick={() => { setSelectedProduct(null); navigate('/shop'); }} style={{ border: '1px solid #f97316', borderRadius: '9px', padding: '11px 18px', background: '#fff7ed', color: '#c2410c', fontWeight: 800, cursor: 'pointer', flex: isSmallScreen ? '1 1 120px' : '0 0 auto' }}>Shop more</button>}
                 <button type="button" onClick={(event) => { addToCart(selectedProduct, event); setSelectedProduct(null); }} disabled={selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0} style={{ border: 'none', borderRadius: '9px', padding: '11px 18px', background: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? '#e5e7eb' : '#f97316', color: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? '#64748b' : '#fff', fontWeight: 800, cursor: 'pointer', flex: isSmallScreen ? '1 1 160px' : '0 0 auto' }}>{selectedProduct.isFree ? 'Request product' : 'Add to cart'}</button>
               </div>
             </div>

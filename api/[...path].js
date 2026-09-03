@@ -9,12 +9,14 @@ import resendWebhookHandler from '../server-handlers/resend-webhook.js';
 import sendNotificationEmailHandler from '../server-handlers/send-notification-email.js';
 import sendRegistrationEmailHandler from '../server-handlers/send-registration-email.js';
 import trackVisitorHandler from '../server-handlers/track-visitor.js';
+import completeServicePaymentHandler from '../server-handlers/complete-service-payment.js';
 
 const handlers = {
   '/admin-auth': adminAuthHandler,
   '/admin-health': adminHealthHandler,
   '/admin-update': adminUpdateHandler,
   '/complete-shop-payment': completeShopPaymentHandler,
+  '/complete-service-payment': completeServicePaymentHandler,
   '/currency-rates': currencyRatesHandler,
   '/fetch-meta': fetchMetaHandler,
   '/paystack-webhook': paystackWebhookHandler,

@@ -177,6 +177,7 @@ export default function AdminDashboard(props) {
 
   const [activeDashboardView, setActiveDashboardView] = useState('visitors');
   const [commerceSubTab, setCommerceSubTab] = useState('storefront');
+  const [paymentHistoryTab, setPaymentHistoryTab] = useState('booking');
   const [tableFilters, setTableFilters] = useState({});
   const [selectedRowIds, setSelectedRowIds] = useState([]);
   const [viewingRow, setViewingRow] = useState(null);
@@ -422,6 +423,22 @@ export default function AdminDashboard(props) {
   };
 
   const [editingStoreProductId, setEditingStoreProductId] = useState(null);
+  const [publishedProductLink, setPublishedProductLink] = useState('');
+
+  const getProductLink = (product) => {
+    const slug = encodeURIComponent(String(product?.title || product?.id || 'product').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
+    return `${window.location.origin}/shop/${slug}`;
+  };
+
+  const copyPublishedProductLink = async () => {
+    if (!publishedProductLink) return;
+    try {
+      await navigator.clipboard.writeText(publishedProductLink);
+      showAdminToast('success', 'Link copied', 'The public product link is ready to paste on Facebook or anywhere else.');
+    } catch {
+      showAdminToast('error', 'Copy failed', 'Select the link manually and copy it to your clipboard.');
+    }
+  };
 
   const resetStoreProductForm = () => {
     setStoreProductForm({ title: '', description: '', price: '', currency: 'NGN', isFree: false, category: 'Ebook', fileUrl: '', cover: '/logo/logomain.png', inStock: true, stockCount: '' });
@@ -620,6 +637,7 @@ export default function AdminDashboard(props) {
       }
       setStoreProducts(updatedProducts);
       resetStoreProductForm();
+      setPublishedProductLink(getProductLink({ ...targetProduct, ...productValues }));
       showAdminToast('success', 'Product updated', `${productValues.title} has been updated on the public store.`);
     } else {
       const newProduct = {
@@ -632,6 +650,7 @@ export default function AdminDashboard(props) {
         return;
       }
       setStoreProducts((current = []) => [...(Array.isArray(current) ? current : []), newProduct]);
+      setPublishedProductLink(getProductLink(newProduct));
       showAdminToast('success', 'Product saved', `${newProduct.title} is now available in the digital store.`);
     }
 
@@ -693,6 +712,23 @@ export default function AdminDashboard(props) {
       await persistStoreProductToSupabase({ ...productToDelete, id: productToDelete.id }, 'delete');
     }
     showAdminToast('success', 'Product removed', 'That product has been removed from the storefront and shop pages.');
+  };
+
+  const deleteTestPurchases = async () => {
+    const token = session?.access_token || session?.accessToken || '';
+    if (!token) return showAdminToast('error', 'Authentication required', 'Sign in again before deleting test purchases.');
+    const testCount = shopOrders.filter((order) => order.paymentMode === 'test').length;
+    if (!testCount) return showAdminToast('info', 'No test purchases', 'No purchases marked as Paystack test mode were found. Live purchases were not changed.');
+    if (!window.confirm(`Delete ${testCount} test purchase${testCount === 1 ? '' : 's'}? Live purchases will not be affected.`)) return;
+    try {
+      const response = await fetch('/api/admin-update', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ action: 'delete_test_shop_orders' }) });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Test purchases could not be deleted.');
+      await refreshAdminData();
+      showAdminToast('success', 'Test purchases deleted', `${testCount} test purchase${testCount === 1 ? '' : 's'} removed. Live purchases were preserved.`);
+    } catch (error) {
+      showAdminToast('error', 'Delete failed', error.message);
+    }
   };
 
   const confirmDeleteStoreProduct = (product) => {
@@ -919,7 +955,8 @@ export default function AdminDashboard(props) {
     { id: 'commerce', label: 'Store & Orders', color: '#f59e0b', value: Math.max(shopOrders.length || 0, 0) },
     { id: 'testimonials', label: 'Testimonials', color: '#7c3aed', value: Math.max(promoSlides.length || 0, 0) },
     { id: 'slider', label: 'Published Slider', color: '#0f766e', value: Math.max(promoSlides.length || 0, 0) },
-    { id: 'feedback', label: 'Parent Feedback', color: '#e88767', value: Math.max(parentFeedback.length || 0, 0) }
+    { id: 'feedback', label: 'Parent Feedback', color: '#e88767', value: Math.max(parentFeedback.length || 0, 0) },
+    { id: 'payment-history', label: 'Payment History', color: '#0f766e', value: shopOrders.length + applicants.filter((applicant) => applicant.paymentStatus || applicant.payment_status).length + bookings.filter((booking) => booking.paymentStatus || booking.payment_status).length }
   ];
 
   const dashboardTableColumns = {
@@ -1112,6 +1149,15 @@ export default function AdminDashboard(props) {
   const tableDashboardViews = ['visitors', 'teens', 'bookings', 'messages', 'testimonials', 'slider', 'feedback'];
   const showDashboardTable = tableDashboardViews.includes(activeDashboardView);
   const paymentProofPreview = getPaymentProofPreview(selectedOrder);
+  const paymentHistoryRows = [
+    ...shopOrders.map((order) => ({ ...order, service: 'Store purchase', reference: order.paymentReference || order.payment_reference, customer: order.name, amount: order.total, date: order.createdAt, status: order.status })),
+    ...applicants.filter((applicant) => applicant.paymentStatus || applicant.payment_status).map((applicant) => ({ ...applicant, service: 'Registration', reference: applicant.paymentReference || applicant.payment_reference, customer: applicant.fullName || applicant.parent_or_guardian_name, amount: 5000, date: applicant.submittedAt || applicant.created_at, status: applicant.paymentStatus || applicant.payment_status })),
+    ...bookings.filter((booking) => booking.paymentStatus || booking.payment_status).map((booking) => ({ ...booking, service: 'Booking session', reference: booking.paymentReference || booking.payment_reference, customer: booking.contactName || booking.contact_name, amount: 5000, date: booking.createdAt || booking.created_at, status: booking.paymentStatus || booking.payment_status }))
+  ];
+  const bookingPaymentRows = paymentHistoryRows.filter((payment) => payment.service === 'Booking session');
+  const teenPaymentRows = paymentHistoryRows.filter((payment) => payment.service === 'Registration');
+  const storePaymentRows = paymentHistoryRows.filter((payment) => payment.service === 'Store purchase');
+  const selectedPaymentRows = paymentHistoryTab === 'booking' ? bookingPaymentRows : paymentHistoryTab === 'teens' ? teenPaymentRows : storePaymentRows;
 
   return (
     <div className="admin-dashboard-page" style={{ minHeight: '100vh', background: '#f1f2f4', padding: '26px 20px 32px', fontFamily: 'Inter, Arial, sans-serif' }}>
@@ -1204,12 +1250,11 @@ export default function AdminDashboard(props) {
 
         <div className="admin-dashboard-content" style={{ marginTop: '26px', padding: '0 2px' }}>
           <div className="admin-commerce-section" style={{ marginTop: '18px', border: '1px solid #dfe3e7', borderRadius: '18px', background: '#f5f5f5', padding: '18px 20px 24px' }}>
-            {activeDashboardView === 'commerce' ? (
+            {activeDashboardView === 'commerce' || activeDashboardView === 'payment-history' ? (
               <>
-                <div className="commerce-tab-row" style={{ marginBottom: '22px' }}>
+                {activeDashboardView === 'commerce' && <div className="commerce-tab-row" style={{ marginBottom: '22px' }}>
                   {[
                     { id: 'storefront', label: 'Store' },
-                    { id: 'payments', label: 'Pay' },
                     { id: 'orders', label: 'Orders' }
                   ].map((tab) => (
                     <button
@@ -1234,9 +1279,9 @@ export default function AdminDashboard(props) {
                       {tab.label}
                     </button>
                   ))}
-                </div>
+                </div>}
 
-                {commerceSubTab === 'storefront' && (
+                {activeDashboardView === 'commerce' && commerceSubTab === 'storefront' && (
                   <div className="commerce-panel-shell" style={{ background: '#ffffff', border: '1px solid #dfe7ef', borderRadius: '20px', padding: '22px', boxShadow: '0 12px 28px rgba(15, 23, 42, 0.08)', minWidth: 0, width: '100%', maxWidth: 'none', margin: '0 auto', boxSizing: 'border-box', overflow: 'hidden' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '18px' }}>
                       <div>
@@ -1332,6 +1377,18 @@ export default function AdminDashboard(props) {
                       </div>
                     </form>
 
+                    {publishedProductLink && (
+                      <div style={{ marginTop: '16px', padding: '14px', border: '1px solid #bbf7d0', borderRadius: '12px', background: '#f0fdf4' }}>
+                        <div style={{ marginBottom: '8px', color: '#166534', fontSize: '0.8rem', fontWeight: 800 }}>Public product link</div>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch', flexWrap: 'wrap' }}>
+                          <input value={publishedProductLink} readOnly aria-label="Public product link" onFocus={(event) => event.target.select()} style={{ ...adminFieldStyle, flex: '1 1 280px', minWidth: 0, color: '#166534', background: '#fff' }} />
+                          <button type="button" onClick={copyPublishedProductLink} style={{ border: 'none', borderRadius: '10px', padding: '10px 14px', background: '#166534', color: '#fff', fontWeight: 800, cursor: 'pointer' }}><i className="fa-solid fa-copy" aria-hidden="true" /> Copy link</button>
+                          <a href={publishedProductLink} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', border: '1px solid #86efac', borderRadius: '10px', padding: '10px 14px', background: '#fff', color: '#166534', fontWeight: 800, textDecoration: 'none' }}><i className="fa-solid fa-arrow-up-right-from-square" aria-hidden="true" /> Open</a>
+                        </div>
+                        <div style={{ marginTop: '8px', color: '#166534', fontSize: '0.78rem' }}>Copy this URL to advertise the product on Facebook, WhatsApp, or any other platform.</div>
+                      </div>
+                    )}
+
                     <div style={{ marginTop: '24px' }}>
                       <div style={{ marginBottom: '12px', fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#64748b' }}>Published products</div>
                       {storeProducts.length > 0 ? (
@@ -1392,41 +1449,50 @@ export default function AdminDashboard(props) {
                   </div>
                 )}
 
-                {commerceSubTab === 'payments' && (
+                {activeDashboardView === 'payment-history' && (
                   <div className="commerce-panel-shell" style={{ background: '#ffffff', border: '1px solid #dfe7ef', borderRadius: '20px', padding: '22px', boxShadow: '0 12px 28px rgba(15, 23, 42, 0.08)', minWidth: 0, width: '100%', maxWidth: 'none', margin: '0 auto', boxSizing: 'border-box', overflow: 'hidden' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '18px', flexWrap: 'wrap' }}>
                       <div>
                         <p style={{ margin: 0, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.12em', fontSize: '0.72rem', fontWeight: 800 }}>Payments</p>
                         <h3 style={{ margin: '8px 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#111827' }}>Paystack payment history</h3>
                       </div>
-                      <div style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', borderRadius: '999px', padding: '8px 12px', fontSize: '0.8rem', fontWeight: 800 }}>{shopOrders.filter((order) => order.status === 'paid').length} successful</div>
+                      <div style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', borderRadius: '999px', padding: '8px 12px', fontSize: '0.8rem', fontWeight: 800 }}>{selectedPaymentRows.filter((payment) => payment.status === 'paid').length} successful</div>
+                    </div>
+                    <div className="commerce-tab-row" style={{ marginBottom: '16px' }}>
+                      {[['store', 'Store'], ['booking', 'Booking'], ['teens', 'Teens Reg']].map(([id, label]) => (
+                        <button key={id} type="button" onClick={() => setPaymentHistoryTab(id)} style={{ border: '1px solid #dfe7ef', background: paymentHistoryTab === id ? '#111827' : '#fff', color: paymentHistoryTab === id ? '#fff' : '#334155', borderRadius: '999px', padding: '9px 14px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>{label}</button>
+                      ))}
                     </div>
                     <div style={{ overflowX: 'auto', width: '100%' }}>
                       <table style={{ width: '100%', minWidth: '680px', borderCollapse: 'collapse' }}>
-                        <thead><tr style={{ background: '#f8fafc', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.72rem' }}><th style={{ padding: '12px 14px', textAlign: 'left' }}>Order</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Customer</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Amount</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Paystack reference</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Status</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Date</th></tr></thead>
-                        <tbody>{shopOrders.length > 0 ? shopOrders.map((order) => (
-                          <tr key={order.id || order.orderNumber} onClick={() => setSelectedOrder(order)} style={{ borderBottom: '1px solid #e2e8f0', cursor: 'pointer' }}>
-                            <td style={{ padding: '12px 14px', fontWeight: 700 }}>{order.orderNumber || 'N/A'}</td>
-                            <td style={{ padding: '12px 14px' }}><div style={{ fontWeight: 700 }}>{order.name || 'Customer'}</div><div style={{ color: '#64748b', fontSize: '0.8rem' }}>{order.email || 'No email'}</div></td>
-                            <td style={{ padding: '12px 14px', fontWeight: 700 }}>{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(Number(order.total || 0))}</td>
-                            <td style={{ padding: '12px 14px', color: '#475569', fontFamily: 'monospace', fontSize: '0.78rem' }}>{order.paymentReference || order.payment_reference || 'Pending'}</td>
-                            <td style={{ padding: '12px 14px' }}><span style={{ background: order.status === 'paid' ? '#dcfce7' : '#fff7ed', color: order.status === 'paid' ? '#166534' : '#b45309', borderRadius: '999px', padding: '6px 10px', fontSize: '0.76rem', fontWeight: 700, textTransform: 'capitalize' }}>{order.status || 'pending'}</span></td>
-                            <td style={{ padding: '12px 14px', color: '#475569' }}>{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}</td>
+                        <thead><tr style={{ background: '#f8fafc', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.72rem' }}><th style={{ padding: '12px 14px', textAlign: 'left' }}>Service</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Customer</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Amount</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Paystack reference</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Mode</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Status</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Date</th></tr></thead>
+                        <tbody>{selectedPaymentRows.length > 0 ? selectedPaymentRows.map((payment, index) => (
+                          <tr key={payment.id || `${payment.reference}-${index}`} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                            <td style={{ padding: '12px 14px', fontWeight: 700 }}>{payment.service}</td>
+                            <td style={{ padding: '12px 14px' }}><div style={{ fontWeight: 700 }}>{payment.customer || 'Customer'}</div><div style={{ color: '#64748b', fontSize: '0.8rem' }}>{payment.email || 'No email'}</div></td>
+                            <td style={{ padding: '12px 14px', fontWeight: 700 }}>{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(Number(payment.amount || 0))}</td>
+                            <td style={{ padding: '12px 14px', color: '#475569', fontFamily: 'monospace', fontSize: '0.78rem' }}>{payment.reference || 'Pending'}</td>
+                            <td style={{ padding: '12px 14px' }}><span style={{ background: payment.paymentMode === 'test' ? '#fef3c7' : '#dcfce7', color: payment.paymentMode === 'test' ? '#92400e' : '#166534', borderRadius: '999px', padding: '6px 10px', fontSize: '0.76rem', fontWeight: 700 }}>{payment.paymentMode === 'test' ? 'Test' : 'Live'}</span></td>
+                            <td style={{ padding: '12px 14px' }}><span style={{ background: payment.status === 'paid' ? '#dcfce7' : '#fff7ed', color: payment.status === 'paid' ? '#166534' : '#b45309', borderRadius: '999px', padding: '6px 10px', fontSize: '0.76rem', fontWeight: 700, textTransform: 'capitalize' }}>{payment.status || 'pending'}</span></td>
+                            <td style={{ padding: '12px 14px', color: '#475569' }}>{payment.date ? new Date(payment.date).toLocaleDateString() : 'N/A'}</td>
                           </tr>
-                        )) : <tr><td colSpan="6" style={{ padding: '22px 14px', textAlign: 'center', color: '#64748b' }}>No Paystack payments have been recorded yet.</td></tr>}</tbody>
+                        )) : <tr><td colSpan="7" style={{ padding: '22px 14px', textAlign: 'center', color: '#64748b' }}>No Paystack payments have been recorded yet.</td></tr>}</tbody>
                       </table>
                     </div>
                   </div>
                 )}
 
-                {commerceSubTab === 'orders' && (
+                {activeDashboardView === 'commerce' && commerceSubTab === 'orders' && (
                   <div className="commerce-panel-shell" style={{ background: '#ffffff', border: '1px solid #dfe7ef', borderRadius: '20px', padding: '22px', boxShadow: '0 12px 28px rgba(15, 23, 42, 0.08)', minWidth: 0, width: '100%', maxWidth: 'none', margin: '0 auto', boxSizing: 'border-box', overflow: 'hidden' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '18px', flexWrap: 'wrap' }}>
                       <div>
                         <p style={{ margin: 0, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.12em', fontSize: '0.72rem', fontWeight: 800 }}>Orders</p>
                         <h3 style={{ margin: '8px 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#111827' }}>Recent customer orders</h3>
                       </div>
-                      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '999px', padding: '8px 12px', color: '#334155', fontWeight: 700 }}>{shopOrders.length} total</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '999px', padding: '8px 12px', color: '#334155', fontWeight: 700 }}>{shopOrders.length} total</div>
+                        <button type="button" onClick={deleteTestPurchases} title="Delete test-mode purchases only" style={{ border: '1px solid #fecaca', background: '#fff1f2', color: '#b91c1c', borderRadius: '10px', padding: '9px 12px', fontWeight: 800, cursor: 'pointer' }}><i className="fa-solid fa-vial-circle-check" aria-hidden="true"></i> Delete test purchases</button>
+                      </div>
                     </div>
 
                     <div style={{ overflowX: 'auto', width: '100%' }}>
@@ -1437,6 +1503,7 @@ export default function AdminDashboard(props) {
                             <th style={{ padding: '12px 14px', textAlign: 'left' }}>Customer</th>
                             <th style={{ padding: '12px 14px', textAlign: 'left' }}>Items</th>
                             <th style={{ padding: '12px 14px', textAlign: 'left' }}>Total</th>
+                            <th style={{ padding: '12px 14px', textAlign: 'left' }}>Mode</th>
                             <th style={{ padding: '12px 14px', textAlign: 'left' }}>Status</th>
                             <th style={{ padding: '12px 14px', textAlign: 'left' }}>Email</th>
                             <th style={{ padding: '12px 14px', textAlign: 'left' }}>Date</th>
@@ -1452,6 +1519,7 @@ export default function AdminDashboard(props) {
                               </td>
                               <td style={{ padding: '12px 14px', color: '#334155' }}>{(order.items || []).map((item) => `${item.title} x${item.quantity}`).join(', ') || 'No items'}</td>
                               <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(Number(order.total || 0))}</td>
+                              <td style={{ padding: '12px 14px' }}><span style={{ background: order.paymentMode === 'test' ? '#fef3c7' : '#dcfce7', color: order.paymentMode === 'test' ? '#92400e' : '#166534', borderRadius: '999px', padding: '6px 10px', fontSize: '0.76rem', fontWeight: 700 }}>{order.paymentMode === 'test' ? 'Test' : 'Live'}</span></td>
                               <td style={{ padding: '12px 14px' }}>
                                 <span style={{ background: order.status === 'paid' ? '#dcfce7' : '#fff7ed', color: order.status === 'paid' ? '#166534' : '#b45309', borderRadius: '999px', padding: '6px 10px', fontSize: '0.76rem', fontWeight: 700, textTransform: 'capitalize' }}>{order.status || 'pending'}</span>
                               </td>

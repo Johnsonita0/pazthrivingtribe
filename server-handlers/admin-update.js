@@ -83,11 +83,15 @@ export default async function handler(req, res) {
     }
 
     const { action, table, payload, match } = requestBody || {}
-    if (!action || !table) return jsonResponse(res, 400, { error: 'Missing action or table' })
+    if (!action) return jsonResponse(res, 400, { error: 'Missing action' })
 
     let result
     try {
-      if (action === 'update') {
+      if (action === 'delete_test_shop_orders') {
+        result = await supabase.from('shop_orders').delete().eq('payment_mode', 'test')
+      } else if (!table) {
+        return jsonResponse(res, 400, { error: 'Missing table' })
+      } else if (action === 'update') {
         if (!match) return jsonResponse(res, 400, { error: 'Missing match object for update' })
         result = await supabase.from(table).update(payload).match(match)
       } else if (action === 'insert') {

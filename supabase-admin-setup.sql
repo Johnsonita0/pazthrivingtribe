@@ -123,6 +123,9 @@ create table if not exists store_products (
   updated_at timestamptz default now()
 );
 
+alter table if exists tribe_bookings add column if not exists payment_reference text;
+alter table if exists tribe_bookings add column if not exists payment_status text;
+
 -- Keep existing projects compatible when this setup script is run after the table exists.
 alter table if exists store_products add column if not exists title text;
 alter table if exists store_products add column if not exists description text;
@@ -165,9 +168,12 @@ create table if not exists shop_orders (
   payment_proof_path text,
   payment_proof_url text,
   payment_reference text,
+  payment_mode text default 'live',
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+alter table if exists shop_orders add column if not exists payment_mode text default 'live';
 
 create table if not exists shop_order_items (
   id uuid primary key default gen_random_uuid(),
@@ -657,6 +663,8 @@ create table if not exists tribe_applicants (
 );
 
 alter table if exists tribe_applicants add column if not exists registration_type text;
+alter table if exists tribe_bookings add column if not exists payment_reference text;
+alter table if exists tribe_bookings add column if not exists payment_status text;
 alter table if exists tribe_applicants add column if not exists parent_or_guardian_name text;
 alter table if exists tribe_applicants add column if not exists full_name text;
 alter table if exists tribe_applicants add column if not exists email text;
@@ -726,6 +734,8 @@ create table if not exists tribe_bookings (
   preferred_time text,
   session_format text,
   notes text,
+  payment_reference text,
+  payment_status text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );

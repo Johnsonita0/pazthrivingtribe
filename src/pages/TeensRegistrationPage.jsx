@@ -37,7 +37,7 @@ const baseSteps = {
   review: { id: 'review', label: 'Review', title: 'Review and confirm', description: 'Check the full registration before submitting.' }
 };
 
-export default function TeensRegistrationPage() {
+export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
   const [formData, setFormData] = useState(initialForm);
   const [currentStep, setCurrentStep] = useState(0);
   const [submitted, setSubmitted] = useState(false);
@@ -46,7 +46,20 @@ export default function TeensRegistrationPage() {
   const [lastSubmittedEmail, setLastSubmittedEmail] = useState('');
   const [confirmationEmailSent, setConfirmationEmailSent] = useState(true);
   const [formToast, setFormToast] = useState({ message: '', type: 'error' });
+  const [paystackReady, setPaystackReady] = useState(false);
   const formCardRef = useRef(null);
+
+  useEffect(() => {
+    if (window.PaystackPop) {
+      setPaystackReady(true);
+      return undefined;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://js.paystack.co/v1/inline.js';
+    script.onload = () => setPaystackReady(true);
+    document.body.appendChild(script);
+    return () => { script.onload = null; };
+  }, []);
 
   const currentChild = formData.children[selectedChildIndex] || formData.children[0];
 
@@ -260,8 +273,7 @@ export default function TeensRegistrationPage() {
     setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const persistRegistration = async (paymentReference) => {
     const validationError = validateCurrentStep();
     if (validationError) {
       setFormToast({ message: validationError, type: 'error' });
@@ -295,6 +307,9 @@ export default function TeensRegistrationPage() {
           home_address: formData.homeAddress,
           notes: formData.note || 'No additional notes'
         };
+
+        payload.payment_reference = paymentReference;
+        payload.payment_status = 'paid';
 
         if (withOptionalFields) {
           payload.children_count = formData.children.length;
@@ -336,7 +351,9 @@ export default function TeensRegistrationPage() {
                 programType: formData.children[0]?.programType || 'Thriving Teens Academy',
                 childrenCount: formData.children.length,
                 hearAboutUs: formData.hearAboutUs || 'Website registration',
-                note: formData.note || 'No additional notes'
+                note: formData.note || 'No additional notes',
+                paymentReference,
+                paymentStatus: 'paid'
               })
             });
 
@@ -379,6 +396,57 @@ export default function TeensRegistrationPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  void persistRegistration;
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (saving) return;
+    const validationError = validateCurrentStep();
+    if (validationError) {
+      setFormToast({ message: validationError, type: 'error' });
+      return;
+    }
+    if (!paystackReady || !window.PaystackPop) {
+      setFormToast({ message: 'Payment checkout is still loading. Please try again shortly.', type: 'error' });
+      return;
+    }
+    if (!paystackPublicKey || paystackPublicKey.includes('demo_key_update_from_admin')) {
+      setFormToast({ message: 'Paystack is not configured yet.', type: 'error' });
+      return;
+    }
+    setSaving(true);
+    const paymentHandler = window.PaystackPop.setup({
+      key: paystackPublicKey,
+      email: formData.email,
+      amount: 500000,
+      currency: 'NGN',
+      ref: `REG-${Date.now()}`,
+      metadata: { custom_fields: [{ display_name: 'Service', variable_name: 'service', value: 'Registration' }, { display_name: 'Program', variable_name: 'program', value: formData.children[0]?.programType || 'Thriving Teens Academy' }] },
+      callback: async (response) => {
+        try {
+          const completionResponse = await fetch('/api/complete-service-payment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+            type: 'registration', reference: response.reference, email: formData.email,
+            details: { registration_type: formData.registrationType, parent_or_guardian_name: formData.contactName, full_name: formData.children[0]?.childName || formData.contactName, phone: formData.phone, home_address: formData.homeAddress, children_count: formData.children.length, source: formData.hearAboutUs || 'Website registration', children_details: formData.children, notes: formData.note || 'No additional notes', track: formData.children[0]?.programType || 'Thriving Teens Academy' }
+          }) });
+          const completion = await completionResponse.json().catch(() => ({}));
+          if (!completionResponse.ok) throw new Error(completion.error || 'Payment completed but registration could not be saved.');
+          setLastSubmittedEmail(formData.email);
+          setConfirmationEmailSent(true);
+          setSubmitted(true);
+          setFormData(initialForm);
+          setSelectedChildIndex(0);
+          setCurrentStep(0);
+          setSaving(false);
+        } catch (error) {
+          setFormToast({ message: error.message, type: 'error' });
+          setSaving(false);
+        }
+      },
+      onClose: () => { setSaving(false); setFormToast({ message: 'Payment was cancelled.', type: 'error' }); }
+    });
+    paymentHandler.openIframe();
   };
 
   const renderRegistrantTypeStep = () => (
