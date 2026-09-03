@@ -88,34 +88,22 @@ export function buildPazEmailTemplate({
                 <tr>
                   <td style="padding:22px 20px 26px;background:#0b2a23;color:#edf4f1;text-align:center;">
                     <div style="margin-bottom:12px;">
-                      <a href="https://www.instagram.com/pazthrivingtribe" target="_blank" rel="noopener noreferrer" style="display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.15);border-radius:50%;margin:0 6px;vertical-align:middle;text-decoration:none;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" aria-label="Instagram" style="display:block;margin:9px auto;fill:none;stroke:#ffffff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;">
-                          <rect x="3.5" y="3.5" width="17" height="17" rx="5"></rect>
-                          <circle cx="12" cy="12" r="4"></circle>
-                          <circle cx="17.3" cy="6.7" r="1.2" fill="#ffffff" stroke="none"></circle>
-                        </svg>
-                      </a>
-                      <a href="https://facebook.com/pazthrivingtribe" target="_blank" rel="noopener noreferrer" style="display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.15);border-radius:50%;margin:0 6px;vertical-align:middle;text-decoration:none;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" aria-label="Facebook" style="display:block;margin:9px auto;fill:#ffffff;">
-                          <path d="M13.5 21v-8h2.7l.4-3.2h-3.1V7.2c0-.9.3-1.6 1.6-1.6H16V2.7c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4v2.2H7.5V13h2.3v8h3.7z"></path>
-                        </svg>
-                      </a>
-                      <a href="${whatsappUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.15);border-radius:50%;margin:0 6px;vertical-align:middle;text-decoration:none;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" aria-label="WhatsApp" style="display:block;margin:9px auto;fill:#ffffff;">
-                          <path d="M19.1 4.9A9.4 9.4 0 0 0 12.1 2C6.7 2 2.3 6.4 2.3 11.8c0 1.7.5 3.3 1.3 4.7L2 22l5.6-1.5a9.8 9.8 0 0 0 4.5 1.1h.1c5.4 0 9.8-4.4 9.8-9.8 0-2.6-1-5.1-2.9-7zm-7 14.7h-.1a8.1 8.1 0 0 1-4.1-1.1l-.3-.2-3.3.9 1-3.2-.2-.3A8.1 8.1 0 0 1 3.9 11.8a8.1 8.1 0 1 1 14.1 5.7 8.1 8.1 0 0 1-5.9 2.1zm4.5-6.1c-.2-.1-1.2-.6-1.4-.7-.2-.1-.3-.1-.5.1s-.6.7-.7.8-.3.1-.5 0A6.7 6.7 0 0 1 8.5 12c-.5-.9-.1-.4.1-.8.1-.2.3-.4.5-.6.1-.1.1-.3 0-.4-.1-.1-.5-1.2-.7-1.6-.2-.4-.4-.3-.5-.3h-.4c-.1 0-.3.1-.5.2-.2.2-.7.7-.7 1.8s.7 2.1.8 2.2c.1.1 1.4 2.1 3.4 2.9.5.2.9.3 1.2.4.5.2.9.1 1.3.1.4-.1 1.2-.5 1.4-.9.2-.4.2-.8.1-.9-.1-.1-.2-.2-.4-.3z"></path>
-                        </svg>
-                      </a>
-                      <a href="https://www.linkedin.com/company/pazthrivingtribe" target="_blank" rel="noopener noreferrer" style="display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;background:rgba(255,255,255,0.10);border:1px solid rgba(255,255,255,0.15);border-radius:50%;margin:0 6px;vertical-align:middle;text-decoration:none;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" aria-label="LinkedIn" style="display:block;margin:9px auto;fill:#ffffff;">
-                          <path d="M6.9 8.3A1.7 1.7 0 1 1 6.9 4.9a1.7 1.7 0 0 1 0 3.4zm-1.4 1.3h2.8V20H5.5V9.6zm4.6 0h2.7v1.4h.1c.4-.7 1.3-1.5 2.8-1.5 3 0 3.6 2 3.6 4.6V20h-2.8v-18.6c0-1.4-.1-3.3-2-3.3-2 0-2.3 1.6-2.3 3.2V20h-2.8V9.6z"></path>
-                        </svg>
-                      </a>
+                      <a href="https://www.instagram.com/pazthrivingtribe" target="_blank" rel="noopener noreferrer" aria-label="Instagram" style="display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;background:#344f47;border:1px solid #55746a;border-radius:50%;margin:0 6px;vertical-align:middle;text-decoration:none;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:20px;font-weight:900;">◎</a>
+                      <a href="https://facebook.com/pazthrivingtribe" target="_blank" rel="noopener noreferrer" aria-label="Facebook" style="display:inline-block;width:34px;height:34px;line-height:36px;text-align:center;background:#344f47;border:1px solid #55746a;border-radius:50%;margin:0 6px;vertical-align:middle;text-decoration:none;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:21px;font-weight:900;">f</a>
+                      <a href="${whatsappUrl}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp" style="display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;background:#344f47;border:1px solid #55746a;border-radius:50%;margin:0 6px;vertical-align:middle;text-decoration:none;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:11px;font-weight:900;">WA</a>
+                      <a href="https://www.linkedin.com/company/pazthrivingtribe" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" style="display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;background:#344f47;border:1px solid #55746a;border-radius:50%;margin:0 6px;vertical-align:middle;text-decoration:none;color:#ffffff;font-family:Arial,Helvetica,sans-serif;font-size:14px;font-weight:900;">in</a>
                     </div>
                     <div style="font-size:12px;line-height:1.8;color:#dfeeea;">
                       <div style="font-size:14px;font-weight:800;color:#f7d980;margin-bottom:4px;">PAZ Thriving Tribe</div>
                       <div>${footerNote}</div>
                       <div>Email: <a href="mailto:pazthrivingtribe@gmail.com" style="color:#f7d980;text-decoration:none;">pazthrivingtribe@gmail.com</a> | WhatsApp: <a href="${whatsappUrl}" style="color:#f7d980;text-decoration:none;">${contactPhone}</a></div>
-                      <div>Website: <a href="${websiteUrl}" style="color:#f7d980;text-decoration:none;">${websiteUrl}</a></div>
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:14px auto 0;border-collapse:separate;border-spacing:0;">
+                        <tr>
+                          <td style="background:#f7d980;border-radius:7px;text-align:center;">
+                            <a href="${websiteUrl}" target="_blank" rel="noopener noreferrer" style="display:inline-block;padding:11px 20px;color:#0b2a23;text-decoration:none;font-size:13px;font-weight:900;">Visit the PAZ website</a>
+                          </td>
+                        </tr>
+                      </table>
                     </div>
                   </td>
                 </tr>
