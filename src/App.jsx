@@ -71,8 +71,8 @@ export default function App() {
   const isRegistrationRoute = ['/teens_reg', '/teens-reg'].includes(location.pathname);
   const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/dashboard');
   const isFeedbackRoute = location.pathname === '/feedback';
-  const isStoreRoute = ['/store', '/shop'].includes(location.pathname);
-  const isShopMenuActive = ['/store', '/shop'].includes(location.pathname);
+  const isStoreRoute = ['/store', '/shop'].includes(location.pathname) || location.pathname.startsWith('/shop/');
+  const isShopMenuActive = ['/store', '/shop'].includes(location.pathname) || location.pathname.startsWith('/shop/');
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });

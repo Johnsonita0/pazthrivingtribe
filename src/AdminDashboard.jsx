@@ -440,6 +440,16 @@ export default function AdminDashboard(props) {
     }
   };
 
+  const copyProductLink = async (product) => {
+    const productLink = getProductLink(product);
+    try {
+      await navigator.clipboard.writeText(productLink);
+      showAdminToast('success', 'Link copied', `${product.title} public link is ready to share.`);
+    } catch {
+      showAdminToast('error', 'Copy failed', 'Select the product link from the public link field and copy it manually.');
+    }
+  };
+
   const resetStoreProductForm = () => {
     setStoreProductForm({ title: '', description: '', price: '', currency: 'NGN', isFree: false, category: 'Ebook', fileUrl: '', cover: '/logo/logomain.png', inStock: true, stockCount: '' });
     setProductFileName('');
@@ -1415,6 +1425,7 @@ export default function AdminDashboard(props) {
                                 <div className="commerce-product-actions">
                                   <button type="button" onClick={() => toggleStoreProductAvailability(product.id)} style={{ border: '1px solid #d1d5db', background: '#f8fafc', color: '#1f2937', borderRadius: '10px', padding: '8px 10px', fontWeight: 700, cursor: 'pointer' }}>{isAvailable ? 'Mark sold out' : 'Mark available'}</button>
                                   <button type="button" onClick={() => handleEditStoreProduct(product)} style={{ border: '1px solid #cbd5e1', background: '#fff', color: '#1f2937', borderRadius: '10px', padding: '8px 10px', fontWeight: 700, cursor: 'pointer' }}>Edit</button>
+                                  <button type="button" onClick={() => copyProductLink(product)} title={`Copy public link for ${product.title}`} style={{ border: '1px solid #86efac', background: '#f0fdf4', color: '#166534', borderRadius: '10px', padding: '8px 10px', fontWeight: 800, cursor: 'pointer' }}><i className="fa-solid fa-copy" aria-hidden="true" /> Copy link</button>
                                   <button type="button" onClick={() => confirmDeleteStoreProduct(product)} style={{ border: '1px solid #fecaca', background: '#fff1f2', color: '#b91c1c', borderRadius: '10px', padding: '8px 10px', fontWeight: 700, cursor: 'pointer' }}>Delete</button>
                                 </div>
                               </div>
