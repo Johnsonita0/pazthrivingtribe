@@ -453,6 +453,14 @@ export default function AdminDashboard(props) {
 
       if (!response.ok) {
         console.warn('Store product sync to Supabase failed:', response.statusText);
+        if (operation !== 'delete' && product.id && !String(product.id).startsWith('store-')) {
+          const { error: fallbackError } = await supabase
+            .from('store_products')
+            .update(payload)
+            .eq('id', product.id);
+          if (!fallbackError) return true;
+          console.warn('Direct store product sync fallback failed:', fallbackError.message);
+        }
       }
       return response.ok;
     } catch (error) {
