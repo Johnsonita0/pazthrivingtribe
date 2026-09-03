@@ -4030,7 +4030,7 @@ export default function App() {
           <Route path="/book-session" element={<BookSessionPage />} />
           <Route path="/feedback" element={<FeedbackPage />} />
           <Route path="/store" element={<div className="public-website-container"><StorePage /></div>} />
-          <Route path="/shop" element={<div className="public-website-container"><ShopPage onOrderSubmitted={setShopOrders} paystackPublicKey={paystackPublicKey} /></div>} />
+          <Route path="/shop" element={<div className="public-website-container"><ShopPage onOrderSubmitted={setShopOrders} paystackPublicKey={paystackPublicKey} storeProducts={storeProducts} storeBankAccount={storeBankAccount} /></div>} />
           <Route path="/payment/callback" element={<PaystackCallbackPage />} />
           <Route path="/care-counseling" element={<CareCounselingPage />} />
           <Route path="/services/family" element={<ComingSoonPage title="Thriving Parents" description="Empowering parents with tools and wisdom" />} />

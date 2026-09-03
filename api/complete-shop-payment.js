@@ -18,6 +18,25 @@ function safeFilename(value, fallback) {
   return filename || fallback;
 }
 
+function formatMoney(value) {
+  return new Intl.NumberFormat('en-NG', {
+    style: 'currency',
+    currency: 'NGN',
+    maximumFractionDigits: 0
+  }).format(Number(value || 0));
+}
+
+function getAdminEmails() {
+  return [...new Set([
+    process.env.ADMIN_EMAILS,
+    process.env.VITE_ADMIN_EMAILS,
+    'pazthrivingtribe@gmail.com'
+  ]
+    .flatMap((value) => String(value || '').split(','))
+    .map((value) => value.trim().toLowerCase())
+    .filter((value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)))];
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return sendJson(res, 405, { error: 'Method not allowed' });
 
@@ -75,9 +94,13 @@ export default async function handler(req, res) {
     }
 
     const attachments = [];
+    const missingFiles = [];
     for (const item of normalizedItems) {
       const filePath = String(item.product.file_url || '').trim();
-      if (!filePath) continue;
+      if (!filePath) {
+        missingFiles.push(item.product.title || 'Untitled product');
+        continue;
+      }
 
       let fileResponse;
       let filename = safeFilename(item.product.title, 'product-file');
@@ -88,6 +111,7 @@ export default async function handler(req, res) {
         const { data: fileData, error: fileError } = await supabase.storage.from('product-files').download(filePath);
         if (fileError) {
           console.warn(`Product file unavailable for ${item.product.title}:`, fileError.message);
+          missingFiles.push(item.product.title || 'Untitled product');
           continue;
         }
         const buffer = Buffer.from(await fileData.arrayBuffer());
@@ -98,17 +122,35 @@ export default async function handler(req, res) {
       if (fileResponse?.ok) {
         const buffer = Buffer.from(await fileResponse.arrayBuffer());
         attachments.push({ filename, content: buffer.toString('base64') });
+      } else {
+        missingFiles.push(item.product.title || 'Untitled product');
       }
     }
 
     if (attachments.length !== normalizedItems.length) {
-      return sendJson(res, 503, { error: 'Payment was verified, but one or more product files are not available yet.' });
+      const missingProductNames = [...new Set(missingFiles)].join(', ') || 'one or more selected products';
+      return sendJson(res, 503, {
+        error: `Payment was verified, but downloadable files are missing for: ${missingProductNames}. Upload each product file in the admin Store panel, then retry delivery from the verified order.`
+      });
     }
 
     const orderNumber = String(body.orderNumber || `PAZ-${Date.now().toString().slice(-6)}`);
     const itemSummary = normalizedItems.map(({ product, quantity }) => `• ${product.title} x${quantity}`).join('\n');
     const customerName = String(body.customerName || 'Customer').trim();
     const subject = `Your PAZ products are ready — #${orderNumber}`;
+    const adminRecipients = getAdminEmails();
+    const adminSubject = `Payment received — ${orderNumber}`;
+    const adminHtml = buildPazEmailTemplate({
+      title: adminSubject,
+      eyebrow: 'Payment received',
+      intro: 'Hello PAZ team,',
+      accentText: 'A Paystack payment has been verified successfully.',
+      bodyHtml: `<p><strong>Payment confirmed.</strong> A customer has completed a purchase on the PAZ storefront.</p><p><strong>Order number:</strong> ${orderNumber}</p><p><strong>Customer:</strong> ${customerName}</p><p><strong>Customer email:</strong> ${email}</p><p><strong>Items purchased:</strong><br>${itemSummary.replace(/\n/g, '<br>')}</p><p><strong>Verified amount:</strong> ${formatMoney(transaction.amount / 100)}</p><p>The customer has received the selected product files as email attachments.</p>`,
+      productName: 'PAZ digital products',
+      ctaLabel: 'Open admin dashboard',
+      ctaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/admin`,
+      footerNote: 'Internal payment notification for PAZ Thriving Tribe.'
+    });
     const html = buildPazEmailTemplate({
       title: subject,
       eyebrow: 'Payment confirmed',
@@ -121,13 +163,22 @@ export default async function handler(req, res) {
       footerNote: 'Thank you for choosing PAZ Thriving Tribe.'
     });
 
-    await sendResendEmail({
-      to: email,
-      subject,
-      html,
-      text: `Your payment was successful. Your purchased PAZ files are attached. Order: ${orderNumber}`,
-      attachments
-    });
+    await Promise.all([
+      sendResendEmail({
+        to: email,
+        subject,
+        html,
+        text: `Payment confirmed. Your selected PAZ products are attached to this email. Order: ${orderNumber}`,
+        attachments
+      }),
+      ...adminRecipients.map((recipient) => sendResendEmail({
+        to: recipient,
+        subject: adminSubject,
+        html: adminHtml,
+        text: `Payment received and verified. Order: ${orderNumber}. Customer: ${customerName} (${email}). Items: ${itemSummary}. Amount: ${formatMoney(transaction.amount / 100)}.`,
+        attachments: []
+      }))
+    ]);
 
     return sendJson(res, 200, { success: true, orderNumber, attachmentCount: attachments.length });
   } catch (error) {

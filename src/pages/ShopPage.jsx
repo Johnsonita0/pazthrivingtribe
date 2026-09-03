@@ -423,7 +423,7 @@ const readStoreData = () => {
   }
 };
 
-export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '' }) {
+export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', storeProducts, storeBankAccount }) {
   const [storeData, setStoreData] = useState(readStoreData);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
@@ -457,6 +457,16 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '' }) {
   const [paymentProofSaving, setPaymentProofSaving] = useState(false);
   const [paystackReady, setPaystackReady] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
+
+  useEffect(() => {
+    if (!Array.isArray(storeProducts) || storeProducts.length === 0) return;
+    setStoreData((current) => ({
+      ...current,
+      products: storeProducts,
+      bankAccount: storeBankAccount || current.bankAccount
+    }));
+    setCart((current) => current.filter((item) => storeProducts.some((product) => product.id === item.id)));
+  }, [storeProducts, storeBankAccount]);
 
   useEffect(() => {
     if (window.PaystackPop) {
@@ -637,8 +647,8 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '' }) {
     const endX = cartTarget ? cartTarget.left + cartTarget.width / 2 : window.innerWidth - 52;
     const endY = cartTarget ? cartTarget.top + cartTarget.height / 2 : window.innerHeight / 2;
     const flightId = `cart-flight-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    const animationDuration = 3400;
-    const cartUpdateTime = 2500;
+    const animationDuration = 2000;
+    const cartUpdateTime = 2000;
 
     setCartFlights((current) => [
       ...current,
@@ -718,6 +728,16 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '' }) {
         )
         .filter((item) => item.quantity > 0)
     );
+  };
+
+  const clearCart = () => {
+    setCart([]);
+    setCartOpen(false);
+    setCheckoutStage('details');
+    setSubmittedOrder(null);
+    setPaymentProof(null);
+    setPaymentProofFile(null);
+    setCartReminderVisible(false);
   };
 
   const toggleCartDrawer = () => {
@@ -956,55 +976,63 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '' }) {
     };
 
     setPaymentLoading(true);
-    const paymentHandler = window.PaystackPop.setup({
-      key: paystackPublicKey,
-      email: customerEmail,
-      amount: Math.round(subtotal * 100),
-      currency: 'NGN',
-      ref: orderNumber,
-      metadata: {
-        order_number: orderNumber,
-        custom_fields: [
-          { display_name: 'Customer name', variable_name: 'customer_name', value: newOrder.name },
-          { display_name: 'Order number', variable_name: 'order_number', value: orderNumber }
-        ]
-      },
-      callback: async (response) => {
-        try {
-          const completionResponse = await fetch('/api/complete-shop-payment', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              reference: response.reference,
-              orderNumber,
-              email: customerEmail,
-              customerName: newOrder.name,
-              items: cart.map((item) => ({ id: item.id, quantity: item.quantity }))
-            })
-          });
-          const completionData = await completionResponse.json().catch(() => ({}));
-          if (!completionResponse.ok) throw new Error(completionData?.error || 'Payment completed, but delivery could not be confirmed.');
+    try {
+      const paymentHandler = window.PaystackPop.setup({
+        key: paystackPublicKey,
+        email: customerEmail,
+        amount: Math.round(subtotal * 100),
+        currency: 'NGN',
+        ref: orderNumber,
+        metadata: {
+          order_number: orderNumber,
+          custom_fields: [
+            { display_name: 'Customer name', variable_name: 'customer_name', value: newOrder.name },
+            { display_name: 'Order number', variable_name: 'order_number', value: orderNumber }
+          ]
+        },
+        callback: (response) => {
+          void (async () => {
+          try {
+            const completionResponse = await fetch('/api/complete-shop-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                reference: response.reference,
+                orderNumber,
+                email: customerEmail,
+                customerName: newOrder.name,
+                items: cart.map((item) => ({ id: item.id, quantity: item.quantity }))
+              })
+            });
+            const completionData = await completionResponse.json().catch(() => ({}));
+            if (!completionResponse.ok) throw new Error(completionData?.error || 'Payment completed, but delivery could not be confirmed.');
 
-          const paidOrder = { ...newOrder, paymentReference: response.reference, deliverySent: true };
-          setSubmittedOrder(paidOrder);
-          await persistOrderToSupabase(paidOrder);
-          if (typeof onOrderSubmitted === 'function') onOrderSubmitted((current = []) => [paidOrder, ...current]);
-          setCheckoutStage('success');
-          window.requestAnimationFrame(() => window.setTimeout(triggerSuccessConfetti, 120));
-          setToast({ message: `Payment successful. Your file has been sent to ${customerEmail}.`, type: 'success' });
-          setTimeout(() => setToast(null), 5000);
-          setCheckoutForm({ name: '', email: '', phone: '', notes: '' });
-          setCart([]);
-        } catch (error) {
-          setToast({ message: error.message || 'Payment succeeded but delivery could not be completed.', type: 'error' });
-          setTimeout(() => setToast(null), 5000);
-        } finally {
-          setPaymentLoading(false);
-        }
-      },
-      onClose: () => setPaymentLoading(false)
-    });
-    paymentHandler.openIframe();
+            const paidOrder = { ...newOrder, paymentReference: response.reference, deliverySent: true };
+            setSubmittedOrder(paidOrder);
+            await persistOrderToSupabase(paidOrder);
+            if (typeof onOrderSubmitted === 'function') onOrderSubmitted((current = []) => [paidOrder, ...current]);
+            setCheckoutStage('success');
+            window.requestAnimationFrame(() => window.setTimeout(triggerSuccessConfetti, 120));
+            setToast({ message: `Payment successful. Your file has been sent to ${customerEmail}.`, type: 'success' });
+            setTimeout(() => setToast(null), 5000);
+            setCheckoutForm({ name: '', email: '', phone: '', notes: '' });
+            setCart([]);
+          } catch (error) {
+            setToast({ message: error.message || 'Payment succeeded but delivery could not be completed.', type: 'error' });
+            setTimeout(() => setToast(null), 5000);
+          } finally {
+            setPaymentLoading(false);
+          }
+          })();
+        },
+        onClose: () => setPaymentLoading(false)
+      });
+      paymentHandler.openIframe();
+    } catch (error) {
+      setPaymentLoading(false);
+      setToast({ message: error.message || 'Unable to open Paystack checkout. Please try again.', type: 'error' });
+      setTimeout(() => setToast(null), 5000);
+    }
   };
 
   const StarRating = ({ rating }) => {
@@ -1787,6 +1815,20 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '' }) {
                 </div>
               </div>
 
+              {cart.length > 0 && (
+                <div style={{ padding: '8px 14px', borderBottom: '1px solid #e0e0e0', background: '#fffafa' }}>
+                  <button
+                    type="button"
+                    onClick={clearCart}
+                    title="Clear all cart items"
+                    aria-label="Clear all cart items"
+                    style={{ width: '100%', background: '#fff1f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '9px 12px', cursor: 'pointer', fontSize: '12px', fontWeight: 800, color: '#991b1b' }}
+                  >
+                    <i className="fa-solid fa-trash-can" aria-hidden="true" /> Clear all cart items
+                  </button>
+                </div>
+              )}
+
             <div style={{ flex: 1, overflowY: 'auto', padding: isSmallScreen ? '12px 14px' : '16px' }}>
               {cart.length === 0 ? (
                 <p style={{ color: '#666', textAlign: 'center', marginTop: '40px' }}>Your cart is empty</p>
@@ -1844,22 +1886,30 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '' }) {
                     style={{ padding: '10px 12px', border: '1px solid #d5d9d9', borderRadius: '8px', fontSize: '14px' }}
                   />
 
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', border: '1px solid #cbd5e1', borderRadius: '8px', background: '#f8fafc', color: '#334155', fontSize: '12px' }}>
+                    <i className="fa-solid fa-lock" aria-hidden="true" />
+                    <span>{paystackReady ? 'Secure payment by Paystack' : 'Loading secure Paystack checkout...'}</span>
+                  </div>
+
                   <button
                     type="submit"
+                    disabled={paymentLoading || !paystackReady}
+                    aria-busy={paymentLoading}
                     style={{
-                      background: 'linear-gradient(135deg, #FF9900, #FF8A00)',
+                      background: paymentLoading || !paystackReady ? '#d1d5db' : 'linear-gradient(135deg, #FF9900, #FF8A00)',
                       border: 'none',
                       borderRadius: '10px',
                       padding: '12px 14px',
                       fontWeight: '800',
-                      cursor: 'pointer',
-                      color: '#111',
+                      cursor: paymentLoading || !paystackReady ? 'wait' : 'pointer',
+                      color: paymentLoading || !paystackReady ? '#6b7280' : '#111',
                       fontSize: '14px',
                       marginTop: '6px',
                       boxShadow: '0 10px 18px rgba(255, 153, 0, 0.24)'
                     }}
                   >
-                    Complete Order
+                    <i className={`fa-solid ${paymentLoading || !paystackReady ? 'fa-spinner fa-spin' : 'fa-lock'}`} aria-hidden="true" />
+                    {paymentLoading ? 'Opening secure payment...' : paystackReady ? 'Pay with Paystack' : 'Loading Paystack...'}
                   </button>
                 </form>
               </div>
@@ -2041,7 +2091,11 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '' }) {
               opacity: flight.opacity ?? 1
             }}
           >
-            <i className="fa-solid fa-bag-shopping" aria-hidden="true" />
+            <img
+              src={flight.product?.cover || '/logo/logomain.png'}
+              alt=""
+              style={{ width: '100%', height: '100%', borderRadius: '12px', objectFit: 'cover' }}
+            />
           </div>
         ))}
 

@@ -37,6 +37,7 @@ function AdminTabBar({ selectedTab, onChangeTab }) {
 
 export default function AdminDashboard(props) {
   const emailInputRef = useRef(null);
+  const productEditorRef = useRef(null);
   const [isMobileView, setIsMobileView] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -413,9 +414,9 @@ export default function AdminDashboard(props) {
   };
 
   const persistStoreProductToSupabase = async (product, operation = 'upsert') => {
-    if (!product || typeof product !== 'object') return;
+    if (!product || typeof product !== 'object') return false;
     const token = session?.access_token || session?.accessToken || '';
-    if (!token) return;
+    if (!token) return false;
 
     const payload = {
       id: product.id,
@@ -434,7 +435,7 @@ export default function AdminDashboard(props) {
 
     try {
       const requestBody = {
-        action: operation === 'delete' ? 'delete' : (product.id && typeof product.id === 'string' && product.id.startsWith('store-') ? 'insert' : 'upsert'),
+        action: operation === 'delete' ? 'delete' : (product.id && typeof product.id === 'string' && product.id.startsWith('store-') ? 'insert' : 'update'),
         table: 'store_products',
         payload: [payload],
         match: product.id ? { id: product.id } : undefined
@@ -453,8 +454,10 @@ export default function AdminDashboard(props) {
       if (!response.ok) {
         console.warn('Store product sync to Supabase failed:', response.statusText);
       }
+      return response.ok;
     } catch (error) {
       console.warn('Store product sync error:', error);
+      return false;
     }
   };
 
@@ -507,8 +510,9 @@ export default function AdminDashboard(props) {
       ));
       setStoreProducts(updatedProducts);
       const targetProduct = updatedProducts.find((product) => product.id === editingStoreProductId) || { id: editingStoreProductId, ...productValues };
-      await persistStoreProductToSupabase(targetProduct, 'upsert');
-      showAdminToast('success', 'Product updated', `${productValues.title} has been updated on the public store.`);
+      resetStoreProductForm();
+      const persisted = await persistStoreProductToSupabase(targetProduct, 'upsert');
+      showAdminToast(persisted ? 'success' : 'warning', persisted ? 'Product updated' : 'Product updated locally', persisted ? `${productValues.title} has been updated on the public store.` : 'The editor was cleared, but the server sync could not be completed.');
     } else {
       const newProduct = {
         id: `store-${Date.now()}`,
@@ -524,6 +528,8 @@ export default function AdminDashboard(props) {
 
   const handleEditStoreProduct = (product) => {
     if (!product) return;
+    setActiveDashboardView('commerce');
+    setCommerceSubTab('storefront');
     setEditingStoreProductId(product.id);
     setStoreProductForm({
       title: product.title || '',
@@ -534,6 +540,10 @@ export default function AdminDashboard(props) {
       cover: product.cover || '/logo/logomain.png',
       inStock: product.inStock !== false,
       stockCount: Number(product.stockCount ?? 0) > 0 ? Number(product.stockCount ?? 0) : ''
+    });
+    window.requestAnimationFrame(() => {
+      productEditorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      productEditorRef.current?.querySelector('input')?.focus();
     });
   };
 
@@ -1119,7 +1129,7 @@ export default function AdminDashboard(props) {
                       </div>
                       <div style={{ background: '#fff7ed', color: '#b45309', borderRadius: '999px', padding: '8px 12px', fontSize: '0.8rem', fontWeight: 700 }}>{storeProducts.length} live products</div>
                     </div>
-                    <form onSubmit={handleStoreProductSubmit} style={{ display: 'grid', gap: '12px' }}>
+                    <form ref={productEditorRef} onSubmit={handleStoreProductSubmit} style={{ display: 'grid', gap: '12px', scrollMarginTop: '24px' }}>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
                         <input value={storeProductForm.title} onChange={(event) => setStoreProductForm((current) => ({ ...current, title: event.target.value }))} placeholder="Ebook title" style={adminFieldStyle} />
                         <input value={storeProductForm.category} onChange={(event) => setStoreProductForm((current) => ({ ...current, category: event.target.value }))} placeholder="Category" style={adminFieldStyle} />

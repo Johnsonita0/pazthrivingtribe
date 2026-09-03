@@ -218,7 +218,8 @@ export default function ThriverRegistrationModal({
           { display_name: 'Selected Track', variable_name: 'selected_track', value: formData.track }
         ]
       },
-      callback: async (response) => {
+      callback: (response) => {
+        void (async () => {
         const registrationData = {
           ...formData,
           developmentGoals: selectedGoals.join(', '),
@@ -234,6 +235,7 @@ export default function ThriverRegistrationModal({
           setStatusMessage('');
           onClose();
         }, 1200);
+        })();
       },
       onClose: () => {
         setStatusMessage('Payment was cancelled. You can try again anytime.');
