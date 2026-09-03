@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
+import CustomDropdown from '../components/CustomDropdown';
 import '../css/teens-registration.css';
 
 const createChild = () => ({
@@ -36,6 +37,37 @@ const baseSteps = {
   program: { id: 'program', label: 'Program Match', title: 'Program preferences', description: 'Choose the session and focus area for the selected child.' },
   review: { id: 'review', label: 'Review', title: 'Review and confirm', description: 'Check the full registration before submitting.' }
 };
+
+function DateOfBirthPicker({ value, onChange }) {
+  const [year = '', month = '', day = ''] = value ? value.split('-') : [];
+  const years = Array.from({ length: 30 }, (_, index) => String(new Date().getFullYear() - index));
+  const months = Array.from({ length: 12 }, (_, index) => String(index + 1).padStart(2, '0'));
+  const days = Array.from({ length: 31 }, (_, index) => String(index + 1).padStart(2, '0'));
+  const update = (part, nextValue) => {
+    const next = { year, month, day, [part]: nextValue };
+    onChange(next.year && next.month && next.day ? `${next.year}-${next.month}-${next.day}` : '');
+  };
+
+  const Option = ({ ariaLabel, currentValue, options, placeholder, part }) => {
+    const [open, setOpen] = useState(false);
+    const [query, setQuery] = useState('');
+    const visibleOptions = options.filter((option) => option.toLowerCase().includes(query.toLowerCase()));
+    return <div className="teens-registration-dob-option">
+      <button type="button" aria-label={ariaLabel} aria-expanded={open} onClick={() => setOpen((current) => !current)}>{currentValue || placeholder}<span aria-hidden="true">⌄</span></button>
+      {open && <div className="teens-registration-dob-menu">
+        <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${placeholder.toLowerCase()}...`} aria-label={`Search ${placeholder.toLowerCase()}`} />
+        {visibleOptions.map((option) => <button type="button" key={option} onClick={() => { update(part, option); setOpen(false); setQuery(''); }}>{option}</button>)}
+        {visibleOptions.length === 0 && <span>No matches found.</span>}
+      </div>}
+    </div>;
+  };
+
+  return <div className="teens-registration-dob-grid">
+    <Option ariaLabel="Birth year" currentValue={year} options={years} placeholder="Year" part="year" />
+    <Option ariaLabel="Birth month" currentValue={month} options={months} placeholder="Month" part="month" />
+    <Option ariaLabel="Birth day" currentValue={day} options={days} placeholder="Day" part="day" />
+  </div>;
+}
 
 export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
   const [formData, setFormData] = useState(initialForm);
@@ -552,33 +584,12 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
 
         <label className="teens-registration-field">
           <span>Date of birth</span>
-          <input
-            type="date"
-            value={currentChild.dateOfBirth}
-            onChange={(event) => handleChildChange(selectedChildIndex, 'dateOfBirth', event.target.value)}
-          />
+          <DateOfBirthPicker value={currentChild.dateOfBirth} onChange={(value) => handleChildChange(selectedChildIndex, 'dateOfBirth', value)} />
         </label>
 
         <label className="teens-registration-field">
           <span>Gender</span>
-          <select
-            value={currentChild.gender}
-            onChange={(event) => handleChildChange(selectedChildIndex, 'gender', event.target.value)}
-          >
-            <option value="">Select gender</option>
-            <option value="Female">Female</option>
-            <option value="Male">Male</option>
-          </select>
-        </label>
-
-        <label className="teens-registration-field">
-          <span>School Name</span>
-          <input
-            type="text"
-            value={currentChild.schoolName}
-            onChange={(event) => handleChildChange(selectedChildIndex, 'schoolName', event.target.value)}
-            placeholder="Current school"
-          />
+          <CustomDropdown value={currentChild.gender} onChange={(value) => handleChildChange(selectedChildIndex, 'gender', value)} ariaLabel="Gender" placeholder="Select gender" options={[{ value: '', label: 'Select gender' }, { value: 'Male', label: 'Male' }, { value: 'Female', label: 'Female' }]} />
         </label>
 
         <label className="teens-registration-field">
@@ -640,46 +651,17 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
       <div className="teens-registration-form-grid">
         <label className="teens-registration-field">
           <span>{formData.registrationType === 'self' ? 'Program Type for you' : `Program Type for ${currentChild.childName || `Child ${selectedChildIndex + 1}`}`}</span>
-          <select
-            value={currentChild.programType}
-            onChange={(event) => handleChildChange(selectedChildIndex, 'programType', event.target.value)}
-          >
-            <option value="">Select program type</option>
-            <option value="Thriving Kids">Thriving Pre-Teens (Ages 8-12)</option>
-            <option value="Thriving Teens">Thriving Teens (Ages 13-19)</option>
-          </select>
+          <CustomDropdown value={currentChild.programType} onChange={(value) => handleChildChange(selectedChildIndex, 'programType', value)} ariaLabel="Program type" placeholder="Select program type" options={[{ value: '', label: 'Select program type' }, { value: 'Thriving Kids', label: 'Thriving Pre-Teens (Ages 8-12)' }, { value: 'Thriving Teens', label: 'Thriving Teens (Ages 13-19)' }]} />
         </label>
 
         <label className="teens-registration-field">
           <span>Preferred Session</span>
-          <select
-            value={currentChild.preferredSession}
-            onChange={(event) => handleChildChange(selectedChildIndex, 'preferredSession', event.target.value)}
-          >
-            <option value="">Select session</option>
-            <option value="Saturday 3:00 PM - 5:00 PM">Saturday 3:00 PM - 5:00 PM</option>
-            <option value="One-on-One Coaching">One-on-One Coaching</option>
-            <option value="Flexible / To Be Discussed">Flexible / To Be Discussed</option>
-          </select>
+          <CustomDropdown value={currentChild.preferredSession} onChange={(value) => handleChildChange(selectedChildIndex, 'preferredSession', value)} ariaLabel="Preferred session" placeholder="Select session" options={[{ value: '', label: 'Select session' }, { value: 'Saturday 3:00 PM - 5:00 PM', label: 'Saturday 3:00 PM - 5:00 PM' }, { value: 'One-on-One Coaching', label: 'One-on-One Coaching' }, { value: 'Flexible / To Be Discussed', label: 'Flexible / To Be Discussed' }]} />
         </label>
 
         <label className="teens-registration-field">
           <span>Primary Area of Interest</span>
-          <select
-            value={currentChild.focusArea}
-            onChange={(event) => handleChildChange(selectedChildIndex, 'focusArea', event.target.value)}
-          >
-            <option value="">Select area of interest</option>
-            <option value="Confidence Building">Confidence Building</option>
-            <option value="Leadership Development">Leadership Development</option>
-            <option value="Communication Mastery">Communication Mastery</option>
-            <option value="Character Formation">Character Formation</option>
-            <option value="Financial Literacy">Financial Literacy</option>
-            <option value="Faith and Values">Faith and Values</option>
-            <option value="Creative Expression">Creative Expression</option>
-            <option value="Academic Excellence Support">Academic Excellence Support</option>
-            <option value="One-on-One Coaching">One-on-One Coaching</option>
-          </select>
+          <CustomDropdown value={currentChild.focusArea} onChange={(value) => handleChildChange(selectedChildIndex, 'focusArea', value)} ariaLabel="Primary area of interest" placeholder="Select area of interest" options={['Confidence Building', 'Leadership Development', 'Communication Mastery', 'Character Formation', 'Financial Literacy', 'Faith and Values', 'Creative Expression', 'Academic Excellence Support', 'One-on-One Coaching'].map((option) => ({ value: option, label: option }))} />
         </label>
 
         <label className="teens-registration-field">

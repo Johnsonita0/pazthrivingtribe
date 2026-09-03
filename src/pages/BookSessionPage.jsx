@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import CustomDropdown from '../components/CustomDropdown';
 
 const createInitial = () => ({
   registrationType: '',
@@ -179,10 +180,7 @@ export default function BookSessionPage({ paystackPublicKey = '' }) {
 
             <label className="teens-registration-field">
               <span>Which program / service are you booking?</span>
-              <select name="programType" value={form.programType} onChange={handleChange} required>
-                <option value="">Select a program or service</option>
-                {programs.map((p) => <option key={p} value={p}>{p}</option>)}
-              </select>
+              <CustomDropdown value={form.programType} onChange={(value) => setForm((current) => ({ ...current, programType: value }))} ariaLabel="Program or service" placeholder="Select a program or service" options={[{ value: '', label: 'Select a program or service' }, ...programs.map((p) => ({ value: p, label: p }))]} />
             </label>
 
             <label className="teens-registration-field">
@@ -197,10 +195,7 @@ export default function BookSessionPage({ paystackPublicKey = '' }) {
 
             <label className="teens-registration-field">
               <span>Session Format</span>
-              <select name="sessionFormat" value={form.sessionFormat} onChange={handleChange}>
-                <option>In-person</option>
-                <option>Online (Zoom)</option>
-              </select>
+              <CustomDropdown value={form.sessionFormat} onChange={(value) => setForm((current) => ({ ...current, sessionFormat: value }))} ariaLabel="Session format" options={[{ value: 'In-person', label: 'In-person' }, { value: 'Online (Zoom)', label: 'Online (Zoom)' }]} />
             </label>
 
             <label className="teens-registration-field full-width">

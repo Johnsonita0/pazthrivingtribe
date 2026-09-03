@@ -461,6 +461,28 @@ const isNewProduct = (product) => {
   return Number.isFinite(createdAt) && Date.now() - createdAt >= 0 && Date.now() - createdAt <= 7 * 24 * 60 * 60 * 1000;
 };
 
+function SearchableOptionPicker({ value, options, onChange, label }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const filteredOptions = options.filter((option) => option.toLowerCase().includes(query.trim().toLowerCase()));
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button type="button" aria-label={label} aria-expanded={open} onClick={() => setOpen((current) => !current)} style={{ width: '100%', minHeight: '43px', padding: '10px 12px', border: '1px solid #f3b562', borderRadius: '8px', background: '#fff', color: '#334155', fontWeight: 800, textAlign: 'left', cursor: 'pointer' }}>
+        {value} <span style={{ float: 'right' }}>⌄</span>
+      </button>
+      {open && (
+        <div style={{ position: 'absolute', zIndex: 20, top: 'calc(100% + 6px)', left: 0, right: 0, maxHeight: '260px', overflow: 'auto', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '10px', background: '#fff', boxShadow: '0 14px 30px rgba(15, 23, 42, 0.16)' }}>
+          <input autoFocus value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${label.toLowerCase()}...`} style={{ width: '100%', boxSizing: 'border-box', padding: '9px 10px', border: '1px solid #cbd5e1', borderRadius: '7px', marginBottom: '6px' }} />
+          {filteredOptions.length > 0 ? filteredOptions.map((option) => (
+            <button key={option} type="button" onClick={() => { onChange(option); setOpen(false); setQuery(''); }} style={{ display: 'block', width: '100%', padding: '9px 10px', border: 0, borderRadius: '6px', background: option === value ? '#fff7ed' : '#fff', color: '#334155', textAlign: 'left', fontWeight: option === value ? 800 : 600, cursor: 'pointer' }}>{option}</button>
+          )) : <div style={{ padding: '10px', color: '#64748b', fontSize: '0.8rem' }}>No matches found.</div>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const readStoreData = () => {
   try {
     const storedBank = JSON.parse(localStorage.getItem('paz_store_bank_account') || 'null');
@@ -1962,9 +1984,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                     <div style={{ color: '#9a3412', fontWeight: 800, marginBottom: '10px' }}>Currency calculator</div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 112px', gap: '8px', alignItems: 'center' }}>
                       <div style={{ padding: '11px 12px', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#fff', color: '#111827', fontWeight: 800 }}>{currencySymbols[calculatorCurrency] || calculatorCurrency}{calculatorAmount.toLocaleString(undefined, { maximumFractionDigits: 2 })}</div>
-                      <select value={calculatorCurrency} onChange={(event) => setCalculatorCurrency(event.target.value)} aria-label="Calculator currency" style={{ padding: '10px 8px', border: '1px solid #f3b562', borderRadius: '8px', background: '#fff', color: '#334155', fontWeight: 800 }}>
-                        {Object.keys(currencyRatesToNgn).map((currency) => <option key={currency} value={currency}>{currency}</option>)}
-                      </select>
+                      <SearchableOptionPicker value={calculatorCurrency} options={Object.keys(currencyRatesToNgn)} onChange={setCalculatorCurrency} label="Calculator currency" />
                     </div>
                     <div style={{ marginTop: '8px', color: '#64748b', fontSize: '0.76rem' }}>Approximate equivalent based on current currency conversion.</div>
                   </div>}
