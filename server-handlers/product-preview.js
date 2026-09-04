@@ -44,6 +44,8 @@ const redirectToProduct = (res, location) => {
 
 const isSocialCrawler = (userAgent = '') => /facebookexternalhit|facebot|whatsapp|twitterbot|linkedinbot|pinterest|slackbot|discordbot|telegrambot/i.test(userAgent);
 
+const isInAppBrowser = (userAgent = '') => /fb_iab|fbav|fban|messenger|instagram/i.test(userAgent);
+
 export default async function handler(req, res) {
   const requestedSlug = slugify(req.query?.slug || '');
   let product = null;
@@ -61,7 +63,8 @@ export default async function handler(req, res) {
   const cover = coverUrl(product?.cover || product?.cover_url || product?.cover_image || product?.image || product?.image_url || product?.imageUrl);
   const browserUrl = `https://pazthrivingtribe.org/shop/${encodeURIComponent(requestedSlug)}`;
 
-  if (!isSocialCrawler(req.headers?.['user-agent'] || req.headers?.['User-Agent'] || '')) {
+  const userAgent = req.headers?.['user-agent'] || req.headers?.['User-Agent'] || '';
+  if (isInAppBrowser(userAgent) || !isSocialCrawler(userAgent)) {
     return redirectToProduct(res, browserUrl);
   }
 
