@@ -261,7 +261,7 @@ export default function StorePage() {
           z-index: 1;
           max-width: 1360px;
           margin: 0 auto;
-          padding: 24px 24px 0;
+          padding: 0 24px 0;
         }
         .store-hero-slider {
           position: relative;
@@ -296,8 +296,8 @@ export default function StorePage() {
           display: grid;
           grid-template-columns: minmax(0, 1.2fr) minmax(260px, 420px);
           gap: 2rem;
-          align-items: end;
-          padding: clamp(2rem, 5vw, 4.5rem);
+          align-items: center;
+          padding: 2rem clamp(2rem, 5vw, 4rem);
         }
         .store-hero-copy {
           max-width: 680px;
@@ -340,6 +340,10 @@ export default function StorePage() {
           color: rgba(240, 244, 250, 0.9);
           font-size: 1.08rem;
           line-height: 1.7;
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 1;
+          overflow: hidden;
         }
         .store-hero-actions {
           display: flex;
@@ -384,7 +388,7 @@ export default function StorePage() {
           transform: translateY(-1px);
         }
         .store-hero-panel {
-          align-self: end;
+          align-self: center;
           justify-self: end;
           width: min(100%, 390px);
           background: rgba(255,255,255,0.12);
@@ -447,12 +451,20 @@ export default function StorePage() {
           font-size: clamp(1.5rem, 2vw, 2.1rem);
           line-height: 1.08;
           font-weight: 900;
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 2;
+          overflow: hidden;
         }
         .store-hero-product-description {
           margin: 0;
           color: #4b5563;
           line-height: 1.5;
           font-size: 0.9rem;
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 1;
+          overflow: hidden;
         }
         .store-hero-product-meta {
           display: flex;
@@ -542,7 +554,7 @@ export default function StorePage() {
         @media (max-width: 920px) {
           .store-hero-inner {
             grid-template-columns: 1fr;
-            align-items: end;
+            align-items: center;
           }
           .store-hero-panel {
             justify-self: stretch;
@@ -608,7 +620,7 @@ export default function StorePage() {
       <div style={{
         background: 'linear-gradient(135deg, #0f2d2a 0%, #163f3b 32%, #1f766a 100%)',
         minHeight: '100vh',
-        padding: '20px 0 32px',
+        padding: '0 0 32px',
         position: 'relative',
         overflowX: 'hidden'
       }}>

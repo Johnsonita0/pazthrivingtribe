@@ -1738,6 +1738,30 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                       }}>
                         {productPriceLabel(product)}
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          navigate(`/shop/${productSlug(product)}`);
+                          setSelectedProduct(product);
+                          setCalculatorCurrency(product.currency || 'NGN');
+                        }}
+                        style={{
+                          width: '100%',
+                          marginBottom: '8px',
+                          border: '1px solid #166534',
+                          borderRadius: '8px',
+                          padding: isVerySmallScreen ? '7px 6px' : '8px 10px',
+                          background: '#fff',
+                          color: '#166534',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          fontSize: isVerySmallScreen ? '10px' : isSmallScreen ? '11px' : '12px'
+                        }}
+                      >
+                        Explore
+                      </button>
                     </div>
 
                     {/* Add to Cart Button - Fixed at Bottom */}
@@ -1969,7 +1993,10 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                   </div>
                 </div>
                 <div>
-                  <p style={{ margin: '0 0 10px', color: '#475569', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{selectedProduct.description || 'No description provided yet.'}</p>
+                  <details style={{ margin: '0 0 10px', color: '#475569' }}>
+                    <summary style={{ cursor: 'pointer', color: '#166534', fontWeight: 800, fontSize: '0.86rem' }}>View description</summary>
+                    <p style={{ margin: '8px 0 0', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{selectedProduct.description || 'No description provided yet.'}</p>
+                  </details>
                   <div style={{ display: 'flex', gap: '10px', alignItems: 'baseline', flexWrap: 'wrap', marginBottom: '10px' }}>
                     <strong style={{ color: selectedProduct.isFree ? '#15803d' : '#b12704', fontSize: '1.35rem' }}>{productPriceLabel(selectedProduct)}</strong>
                     <span style={{ color: '#64748b', fontSize: '0.82rem' }}>{selectedProduct.isFree ? 'Free email delivery' : 'Digital product'}</span>
