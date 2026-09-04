@@ -1698,10 +1698,11 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
             ) : (
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: isSmallScreen ? 'repeat(2, minmax(0, 1fr))' : 'repeat(auto-fit, minmax(240px, 1fr))',
+                gridTemplateColumns: isSmallScreen ? 'repeat(2, minmax(0, 1fr))' : 'repeat(auto-fill, minmax(240px, 280px))',
                 gap: isSmallScreen ? (isVerySmallScreen ? '8px' : '12px') : '16px',
                 alignItems: 'stretch',
                 justifyItems: 'stretch',
+                justifyContent: 'start',
                 width: '100%',
                 maxWidth: '100%',
                 minWidth: 0
