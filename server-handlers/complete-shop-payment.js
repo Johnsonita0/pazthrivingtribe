@@ -18,29 +18,12 @@ function safeFilename(value, fallback) {
   return filename || fallback;
 }
 
-function formatMoney(value) {
+function formatMoney(value, currency = 'NGN') {
   return new Intl.NumberFormat('en-NG', {
     style: 'currency',
-    currency: 'NGN',
+    currency,
     maximumFractionDigits: 0
   }).format(Number(value || 0));
-}
-
-const fallbackCurrencyRatesToNgn = { NGN: 1, USD: 1500, GBP: 1900, EUR: 1650, GHS: 95, KES: 11, ZAR: 85 };
-
-async function getCurrencyRatesToNgn() {
-  try {
-    const response = await fetch('https://open.er-api.com/v6/latest/NGN');
-    const payload = await response.json();
-    if (!response.ok || payload?.result !== 'success' || !payload?.rates) throw new Error('Exchange-rate provider unavailable');
-    return Object.entries(payload.rates).reduce((rates, [currency, ngnPerCurrency]) => {
-      const numericRate = Number(ngnPerCurrency);
-      if (Number.isFinite(numericRate) && numericRate > 0) rates[currency] = 1 / numericRate;
-      return rates;
-    }, { NGN: 1 });
-  } catch (error) {
-    return fallbackCurrencyRatesToNgn;
-  }
 }
 
 function getAdminEmails() {
@@ -119,8 +102,18 @@ export default async function handler(req, res) {
       return sendJson(res, 400, { error: 'This free delivery request includes a paid product.' });
     }
 
-    const currencyRatesToNgn = await getCurrencyRatesToNgn();
-    const expectedAmount = normalizedItems.reduce((sum, item) => sum + Number(item.product.price || 0) * (currencyRatesToNgn[item.product.currency || 'NGN'] || 1) * item.quantity, 0);
+    const paidCurrencies = [...new Set(normalizedItems
+      .filter((item) => !item.product.is_free)
+      .map((item) => String(item.product.currency || 'NGN').toUpperCase()))];
+    if (paidCurrencies.length > 1) {
+      return sendJson(res, 400, { error: 'Products with different currencies must be purchased separately.' });
+    }
+
+    const orderCurrency = paidCurrencies[0] || 'NGN';
+    const expectedAmount = normalizedItems.reduce((sum, item) => sum + Number(item.product.price || 0) * item.quantity, 0);
+    if (!isFreeOrder && String(transaction.currency || 'NGN').toUpperCase() !== orderCurrency) {
+      return sendJson(res, 402, { error: `This payment must be completed in ${orderCurrency}.` });
+    }
     if (!isFreeOrder && Number(transaction.amount) !== Math.round(expectedAmount * 100)) {
       return sendJson(res, 402, { error: 'The payment amount does not match this order.' });
     }
@@ -182,7 +175,7 @@ export default async function handler(req, res) {
       eyebrow: 'Payment received',
       intro: 'Hello PAZ team,',
       accentText: isFreeOrder ? 'A free product request has been completed.' : 'A Paystack payment has been verified successfully.',
-      bodyHtml: `<p><strong>${isFreeOrder ? 'Free product request completed.' : 'Payment confirmed.'}</strong> A customer has completed a ${isFreeOrder ? 'free product request' : 'purchase'} on the PAZ storefront.</p><p><strong>Order number:</strong> ${orderNumber}</p><p><strong>Customer:</strong> ${customerName}</p><p><strong>Customer email:</strong> ${email}</p><p><strong>Items:</strong><br>${itemSummary.replace(/\n/g, '<br>')}</p>${isFreeOrder ? '' : `<p><strong>Verified amount:</strong> ${formatMoney(transaction.amount / 100)}</p>`}<p>The customer has received the selected product files as email attachments.</p>`,
+      bodyHtml: `<p><strong>${isFreeOrder ? 'Free product request completed.' : 'Payment confirmed.'}</strong> A customer has completed a ${isFreeOrder ? 'free product request' : 'purchase'} on the PAZ storefront.</p><p><strong>Order number:</strong> ${orderNumber}</p><p><strong>Customer:</strong> ${customerName}</p><p><strong>Customer email:</strong> ${email}</p><p><strong>Items:</strong><br>${itemSummary.replace(/\n/g, '<br>')}</p>${isFreeOrder ? '' : `<p><strong>Verified amount:</strong> ${formatMoney(transaction.amount / 100, orderCurrency)}</p>`}<p>The customer has received the selected product files as email attachments.</p>`,
       productName: 'PAZ digital products',
       ctaLabel: 'Open admin dashboard',
       ctaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/admin`,
@@ -215,7 +208,7 @@ export default async function handler(req, res) {
         to: recipient,
         subject: adminSubject,
         html: adminHtml,
-        text: `${isFreeOrder ? 'Free product request received' : 'Payment received and verified'}. Order: ${orderNumber}. Customer: ${customerName} (${email}). Items: ${itemSummary}.${isFreeOrder ? '' : ` Amount: ${formatMoney(transaction.amount / 100)}.`}`,
+        text: `${isFreeOrder ? 'Free product request received' : 'Payment received and verified'}. Order: ${orderNumber}. Customer: ${customerName} (${email}). Items: ${itemSummary}.${isFreeOrder ? '' : ` Amount: ${formatMoney(transaction.amount / 100, orderCurrency)}.`}`,
         attachments: []
       }))
     ]);

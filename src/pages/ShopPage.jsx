@@ -401,9 +401,9 @@ const defaultProducts = [
   }
 ];
 
-const money = (value) => new Intl.NumberFormat('en-NG', {
+const money = (value, currency = 'NGN') => new Intl.NumberFormat(undefined, {
   style: 'currency',
-  currency: 'NGN',
+  currency,
   maximumFractionDigits: 0
 }).format(Number(value || 0));
 
@@ -443,7 +443,7 @@ const normalizeProduct = (product = {}) => ({
   title: product.title || product.name || 'Untitled product',
   description: product.description || '',
   price: Number(product.price ?? product.amount ?? 0),
-  currency: product.currency || 'NGN',
+  currency: String(product.currency || 'NGN').toUpperCase(),
   isFree: Boolean(product.is_free ?? product.isFree ?? false),
   category: product.category || 'Ebook',
   cover: product.cover || product.cover_url || product.cover_image || product.image || product.image_url || product.imageUrl || '/logo/logomain.png',
@@ -524,6 +524,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const [sortBy, setSortBy] = useState('relevant');
   const [cartOpen, setCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [calculatorCurrency, setCalculatorCurrency] = useState('NGN');
   const [currencyRatesToNgn, setCurrencyRatesToNgn] = useState(fallbackCurrencyRatesToNgn);
   const [cartFlights, setCartFlights] = useState([]);
@@ -563,6 +564,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     if (product) {
       const frame = window.requestAnimationFrame(() => {
         setSelectedProduct(product);
+        setDescriptionExpanded(false);
         setCalculatorCurrency(product.currency || 'NGN');
       });
       return () => window.cancelAnimationFrame(frame);
@@ -787,6 +789,14 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
       return;
     }
 
+    const productCurrency = product.currency || 'NGN';
+    const existingPaidCurrency = cart.find((item) => !item.isFree)?.currency;
+    if (existingPaidCurrency && productCurrency !== existingPaidCurrency && !product.isFree) {
+      setToast({ message: `Your cart uses ${existingPaidCurrency}. Complete that order before adding a ${productCurrency} product.`, type: 'error' });
+      setTimeout(() => setToast(null), 3500);
+      return;
+    }
+
     if (submittedOrder || checkoutStage === 'success') {
       setCart([]);
       setSubmittedOrder(null);
@@ -879,15 +889,23 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
 
   const checkoutProduct = (product) => {
     if (product.inStock === false || Number(product.stockCount || 0) <= 0) return;
+    const existingPaidCurrency = cart.find((item) => !item.isFree)?.currency;
+    if (existingPaidCurrency && !product.isFree && existingPaidCurrency !== (product.currency || 'NGN')) {
+      setToast({ message: `Your cart uses ${existingPaidCurrency}. Complete that order before adding a ${product.currency || 'NGN'} product.`, type: 'error' });
+      setTimeout(() => setToast(null), 3500);
+      return;
+    }
     setCart((current) => {
       const existing = current.find((item) => item.id === product.id);
       return existing
         ? current.map((item) => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item)
         : [...current, { ...product, quantity: 1 }];
     });
-    setSelectedProduct(null);
     setCartOpen(true);
-    navigate('/shop');
+    if (!isProductPage) {
+      setSelectedProduct(null);
+      navigate('/shop');
+    }
   };
 
   const updateQty = (productId, delta) => {
@@ -921,8 +939,9 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     });
   };
 
+  const cartCurrency = cart.find((item) => !item.isFree)?.currency || 'NGN';
   const subtotal = useMemo(
-    () => cart.reduce((sum, item) => sum + productNgnPrice(item) * Number(item.quantity || 0), 0),
+    () => cart.reduce((sum, item) => sum + (item.isFree ? 0 : Number(item.price || 0)) * Number(item.quantity || 0), 0),
     [cart]
   );
   const cartIsFree = cart.length > 0 && cart.every((item) => item.isFree);
@@ -958,7 +977,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
       const itemRows = (order.items || []).map((item) => ({
         product_id: item.id || item.product_id || item.productId || '',
         title: item.title || 'Product',
-        price: productNgnPrice(item),
+        price: Number(item.price || 0),
         quantity: Number(item.quantity || 1)
       }));
 
@@ -1147,6 +1166,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
       email: customerEmail,
       phone: internationalPhone,
       total: subtotal,
+      currency: cartCurrency,
       items: cart,
       notes: checkoutForm.notes || '',
       bankAccount: storeData.bankAccount,
@@ -1191,7 +1211,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
         key: paystackPublicKey,
         email: customerEmail,
         amount: Math.round(subtotal * 100),
-        currency: 'NGN',
+        currency: cartCurrency,
         ref: orderNumber,
         metadata: {
           order_number: orderNumber,
@@ -1210,6 +1230,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                 reference: response.reference,
                 orderNumber,
                 email: customerEmail,
+                currency: cartCurrency,
                 customerName: newOrder.name,
                 items: cart.map((item) => ({ id: item.id, quantity: item.quantity }))
               })
@@ -1604,11 +1625,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                 minWidth: 0
               }}>
                 {visibleProducts.map((product) => (
-                  <div key={product.id} onClick={() => {
-                    navigate(`/shop/${productSlug(product)}`);
-                    setSelectedProduct(product);
-                    setCalculatorCurrency(product.currency || 'NGN');
-                  }} style={{
+                  <div key={product.id} onClick={() => navigate(`/shop/${productSlug(product)}`)} style={{
                     background: '#fff',
                     border: '1px solid #ddd',
                     borderRadius: '12px',
@@ -1739,29 +1756,6 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                         {productPriceLabel(product)}
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          navigate(`/shop/${productSlug(product)}`);
-                          setSelectedProduct(product);
-                          setCalculatorCurrency(product.currency || 'NGN');
-                        }}
-                        style={{
-                          width: '100%',
-                          marginBottom: '8px',
-                          border: '1px solid #166534',
-                          borderRadius: '8px',
-                          padding: isVerySmallScreen ? '7px 6px' : '8px 10px',
-                          background: '#fff',
-                          color: '#166534',
-                          fontWeight: 800,
-                          cursor: 'pointer',
-                          fontSize: isVerySmallScreen ? '10px' : isSmallScreen ? '11px' : '12px'
-                        }}
-                      >
-                        Explore
-                      </button>
                     </div>
 
                     {/* Add to Cart Button - Fixed at Bottom */}
@@ -1962,7 +1956,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
           </main>
         )}
 
-        {selectedProduct && (
+        {selectedProduct && isProductPage && (
           <div
             role="presentation"
             onClick={() => { setSelectedProduct(null); navigate('/shop'); }}
@@ -1993,10 +1987,28 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                   </div>
                 </div>
                 <div>
-                  <details style={{ margin: '0 0 10px', color: '#475569' }}>
-                    <summary style={{ cursor: 'pointer', color: '#166534', fontWeight: 800, fontSize: '0.86rem' }}>View description</summary>
-                    <p style={{ margin: '8px 0 0', lineHeight: 1.55, whiteSpace: 'pre-wrap' }}>{selectedProduct.description || 'No description provided yet.'}</p>
-                  </details>
+                  <div style={{ margin: '0 0 10px', color: '#475569' }}>
+                    <p style={{
+                      margin: '0 0 5px',
+                      lineHeight: 1.55,
+                      whiteSpace: 'pre-wrap',
+                      display: descriptionExpanded ? 'block' : '-webkit-box',
+                      WebkitLineClamp: descriptionExpanded ? 'unset' : 5,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden'
+                    }}>
+                      {selectedProduct.description || 'No description provided yet.'}
+                    </p>
+                    {selectedProduct.description && (
+                      <button
+                        type="button"
+                        onClick={() => setDescriptionExpanded((current) => !current)}
+                        style={{ border: 'none', padding: 0, background: 'none', color: '#166534', fontWeight: 800, fontSize: '0.86rem', cursor: 'pointer' }}
+                      >
+                        {descriptionExpanded ? 'Read less' : 'Read more'}
+                      </button>
+                    )}
+                  </div>
                   <div style={{ display: 'flex', gap: '10px', alignItems: 'baseline', flexWrap: 'wrap', marginBottom: '10px' }}>
                     <strong style={{ color: selectedProduct.isFree ? '#15803d' : '#b12704', fontSize: '1.35rem' }}>{productPriceLabel(selectedProduct)}</strong>
                     <span style={{ color: '#64748b', fontSize: '0.82rem' }}>{selectedProduct.isFree ? 'Free email delivery' : 'Digital product'}</span>
@@ -2048,12 +2060,12 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
             <div data-cart-modal="true" style={{
               position: 'fixed',
               right: isSmallScreen ? 0 : 0,
-              top: isSmallScreen ? 'auto' : 0,
+              top: isSmallScreen ? 'auto' : '80px',
               bottom: isSmallScreen ? 0 : 0,
               left: isSmallScreen ? 0 : 'auto',
               width: isSmallScreen ? '100%' : '360px',
               maxWidth: isSmallScreen ? '100vw' : '360px',
-              height: isSmallScreen ? '84vh' : '100vh',
+              height: isSmallScreen ? '84vh' : 'calc(100vh - 80px)',
               background: '#fff',
               boxShadow: isSmallScreen ? '0 -10px 24px rgba(15, 23, 42, 0.15)' : '-2px 0 8px rgba(0,0,0,0.1)',
               zIndex: 200,
@@ -2124,13 +2136,25 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
               </div>
 
               {cart.length > 0 && (
-                <div style={{ padding: '8px 14px', borderBottom: '1px solid #e0e0e0', background: '#fffafa' }}>
+                <div style={{ display: 'flex', gap: '8px', padding: '8px 14px', borderBottom: '1px solid #e0e0e0', background: '#fffafa' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCartOpen(false);
+                      setSelectedProduct(null);
+                      navigate('/shop');
+                    }}
+                    title="Shop more products"
+                    style={{ flex: 1, background: '#fff7ed', border: '1px solid #fdba74', borderRadius: '8px', padding: '9px 10px', cursor: 'pointer', fontSize: '12px', fontWeight: 800, color: '#c2410c' }}
+                  >
+                    Shop more
+                  </button>
                   <button
                     type="button"
                     onClick={clearCart}
                     title="Clear all cart items"
                     aria-label="Clear all cart items"
-                    style={{ width: '100%', background: '#fff1f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '9px 12px', cursor: 'pointer', fontSize: '12px', fontWeight: 800, color: '#991b1b' }}
+                    style={{ flex: 1, background: '#fff1f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '9px 10px', cursor: 'pointer', fontSize: '12px', fontWeight: 800, color: '#991b1b' }}
                   >
                     <i className="fa-solid fa-trash-can" aria-hidden="true" /> Clear all cart items
                   </button>
@@ -2149,7 +2173,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                         <div style={{ flex: 1 }}>
                           <h4 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: 'bold' }}>{item.title}</h4>
                           <div style={{ color: '#666', fontSize: '12px' }}>Qty: {item.quantity}</div>
-                          <div style={{ fontWeight: 'bold', color: '#111' }}>{item.isFree ? 'Free' : money(productNgnPrice(item) * item.quantity)}</div>
+                          <div style={{ fontWeight: 'bold', color: '#111' }}>{item.isFree ? 'Free' : money(Number(item.price || 0) * item.quantity, item.currency || cartCurrency)}</div>
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
@@ -2166,7 +2190,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
               <div style={{ borderTop: '1px solid #e0e0e0', padding: isSmallScreen ? '12px 14px 16px' : '16px', overflowY: 'auto', maxHeight: '60vh' }}>
                 <div style={{ marginBottom: '14px', display: 'flex', justifyContent: 'space-between', fontSize: isSmallScreen ? '15px' : '16px', fontWeight: 'bold' }}>
                   <span>Subtotal:</span>
-                  <span>{money(subtotal)}</span>
+                  <span>{money(subtotal, cartCurrency)}</span>
                 </div>
 
                 <form onSubmit={handleCheckout} style={{ display: 'grid', gap: '10px' }}>
@@ -2249,12 +2273,12 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                   {submittedOrder.items.map((item) => (
                     <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', paddingBottom: '6px', marginBottom: '6px', borderBottom: '1px solid #d1fae5', fontSize: '12px' }}>
                       <span>{item.title} x {item.quantity}</span>
-                      <span style={{ fontWeight: '600' }}>{item.isFree ? 'Free' : money(productNgnPrice(item) * item.quantity)}</span>
+                      <span style={{ fontWeight: '600' }}>{item.isFree ? 'Free' : money(Number(item.price || 0) * item.quantity, item.currency || submittedOrder.currency || 'NGN')}</span>
                     </div>
                   ))}
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '700', marginTop: '8px', color: '#065f46' }}>
                     <span>Total:</span>
-                    <span>{money(submittedOrder.total)}</span>
+                    <span>{money(submittedOrder.total, submittedOrder.currency || 'NGN')}</span>
                   </div>
                 </div>
 
@@ -2473,12 +2497,12 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                 {submittedOrder.items.map((item) => (
                   <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e0e0e0', paddingBottom: '4px' }}>
                     <span>{item.title} x {item.quantity}</span>
-                    <span style={{ fontWeight: '600' }}>{item.isFree ? 'Free' : money(productNgnPrice(item) * item.quantity)}</span>
+                      <span style={{ fontWeight: '600' }}>{item.isFree ? 'Free' : money(Number(item.price || 0) * item.quantity, item.currency || submittedOrder.currency || 'NGN')}</span>
                   </div>
                 ))}
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '700', marginTop: '8px', paddingTop: '8px', borderTop: '2px solid #6ee7b7' }}>
                   <span>Total Amount:</span>
-                  <span>{money(submittedOrder.total)}</span>
+                    <span>{money(submittedOrder.total, submittedOrder.currency || 'NGN')}</span>
                 </div>
               </div>
             </div>
