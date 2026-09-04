@@ -1,6 +1,6 @@
 {
   "rewrites": [
-    { "source": "/shop/:productName", "destination": "/api/product-preview?slug=:productName" },
+    { "source": "/shop/:productName*", "destination": "/api/product-preview/:productName*" },
     { "source": "/((?!api(?:/|$)|webhook$).*)", "destination": "/index.html" }
   ]
 }
