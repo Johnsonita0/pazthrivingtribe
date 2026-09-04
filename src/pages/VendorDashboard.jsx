@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 
+const vendorDraftKey = "paz-vendor-registration-draft";
 const currencies = ["NGN", "USD", "GBP", "EUR", "GHS", "KES", "ZAR"];
 const banks = [
   ["Access Bank", "044"], ["Citibank Nigeria", "023"], ["Ecobank Nigeria", "050"], ["FCMB", "214"], ["Fidelity Bank", "070"], ["First Bank of Nigeria", "011"], ["Globus Bank", "103"], ["Guaranty Trust Bank", "058"], ["Heritage Bank", "030"], ["Jaiz Bank", "301"], ["Keystone Bank", "082"], ["Kuda Bank", "090267"], ["Moniepoint", "50515"], ["Opay", "999992"], ["PalmPay", "999991"], ["Polaris Bank", "076"], ["Premium Trust Bank", "105"], ["Providus Bank", "101"], ["Stanbic IBTC Bank", "221"], ["Standard Chartered Bank Nigeria", "068"], ["Sterling Bank", "232"], ["SunTrust Bank", "100"], ["Taj Bank", "302"], ["UBA", "033"], ["Union Bank of Nigeria", "032"], ["Unity Bank", "215"], ["Wema Bank", "035"], ["Zenith Bank", "057"], ["Other / International bank", ""],
@@ -60,6 +61,26 @@ export default function VendorDashboard() {
   const [notice, setNotice] = useState(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    try {
+      const savedDraft = JSON.parse(window.sessionStorage.getItem(vendorDraftKey) || "null");
+      if (!savedDraft) return;
+      setAuthForm((current) => ({ ...current, email: savedDraft.email || current.email }));
+      setProfileForm((current) => ({ ...current, ...savedDraft.profile, logoFile: null, idDocument: null }));
+    } catch (error) {
+      window.sessionStorage.removeItem(vendorDraftKey);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("confirmed") === "1") {
+      setNotice({
+        type: "success",
+        text: "Your PAZ vendor email is confirmed. Sign in below to finish submitting your vendor profile.",
+      });
+    }
+  }, []);
 
   const loadData = async (user) => {
     const [
@@ -226,20 +247,54 @@ export default function VendorDashboard() {
     }
     setSaving(true);
     try {
+      if (authMode === "sign-up") {
+        window.sessionStorage.setItem(vendorDraftKey, JSON.stringify({
+          email: authForm.email,
+          profile: {
+            companyName: profileForm.companyName,
+            logoUrl: profileForm.logoUrl,
+            idType: profileForm.idType,
+            payoutName: profileForm.payoutName,
+            payoutAccount: profileForm.payoutAccount,
+            payoutBank: profileForm.payoutBank,
+            payoutBankCode: profileForm.payoutBankCode,
+            verifiedAccountName: profileForm.verifiedAccountName,
+            payoutCurrency: profileForm.payoutCurrency,
+          },
+        }));
+      }
       const result =
         authMode === "sign-in"
           ? await supabase.auth.signInWithPassword(authForm)
-          : await supabase.auth.signUp({ email: authForm.email, password: authForm.password });
+          : await supabase.auth.signUp({
+              email: authForm.email,
+              password: authForm.password,
+              options: { emailRedirectTo: `${window.location.origin}/vendor?confirmed=1` },
+            });
       if (result.error) throw result.error;
       if (result.data?.session) {
-        if (authMode === "sign-up") await persistVendorProfile(result.data.session.user, profileForm);
+        if (authMode === "sign-up") {
+          await persistVendorProfile(result.data.session.user, profileForm);
+          window.sessionStorage.removeItem(vendorDraftKey);
+        } else {
+          const { data: existingProfile, error: profileError } = await supabase
+            .from("vendor_profiles")
+            .select("id")
+            .eq("id", result.data.session.user.id)
+            .maybeSingle();
+          if (profileError) throw profileError;
+          if (!existingProfile && profileForm.idDocument && profileForm.verifiedAccountName) {
+            await persistVendorProfile(result.data.session.user, profileForm);
+            window.sessionStorage.removeItem(vendorDraftKey);
+          }
+        }
         setSession(result.data.session);
         await loadData(result.data.session.user);
       } else {
         setAuthMode("sign-in");
         setNotice({
           type: "success",
-          text: "Account created. Confirm your email, then sign in to submit your vendor details.",
+          text: "PAZ vendor account started. Check your email for the PAZ confirmation link, then return here, sign in, and upload your identity document to submit your vendor profile.",
         });
       }
     } catch (error) {

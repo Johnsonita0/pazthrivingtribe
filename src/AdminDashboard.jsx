@@ -331,8 +331,15 @@ export default function AdminDashboard(props) {
       body: JSON.stringify({ action: 'select', table: 'vendor_profiles', columns: 'id,company_name,logo_url,contact_email,id_type,id_document_path,status,payout_account_name,payout_account_number,payout_bank_name,payout_currency,rejection_reason,created_at,approved_at' })
     }).then(async (response) => {
       const payload = await response.json().catch(() => ({}));
-      if (active && response.ok) setVendorProfiles(Array.isArray(payload.data) ? payload.data : []);
-    }).catch(() => {});
+      if (!active) return;
+      if (response.ok) {
+        setVendorProfiles(Array.isArray(payload.data) ? payload.data : []);
+      } else {
+        showAdminToast('error', 'Vendor list unavailable', payload.error || 'The vendor records could not be loaded.');
+      }
+    }).catch((error) => {
+      if (active) showAdminToast('error', 'Vendor list unavailable', error.message || 'The vendor records could not be loaded.');
+    });
     return () => { active = false; };
   }, [activeDashboardView, mode, session]);
 
