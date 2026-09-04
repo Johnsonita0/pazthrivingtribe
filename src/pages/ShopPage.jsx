@@ -1678,7 +1678,9 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
               <div>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
                   Sort by:
-                  <SearchableOptionPicker value={sortBy} options={['relevant', 'price-low', 'price-high', 'rating', 'newest']} onChange={setSortBy} label="Sort products" />
+                  <div style={{ width: isSmallScreen ? '150px' : '180px', flexShrink: 0 }}>
+                    <SearchableOptionPicker value={sortBy} options={['relevant', 'price-low', 'price-high', 'rating', 'newest']} onChange={setSortBy} label="Sort products" />
+                  </div>
                 </label>
               </div>
             </div>

@@ -21,6 +21,7 @@ import currencyRatesHandler from './server-handlers/currency-rates.js';
 import completeServicePaymentHandler from './server-handlers/complete-service-payment.js';
 import vendorSupportHandler from './server-handlers/vendor-support.js';
 import customerSupportHandler from './server-handlers/customer-support.js';
+import resolveBankAccountHandler from './server-handlers/resolve-bank-account.js';
 
 try {
   process.loadEnvFile?.('.env');
@@ -93,6 +94,12 @@ const server = http.createServer((req, res) => {
       if (pathname === '/api/customer-support' && req.method === 'POST') {
         req.body = body ? JSON.parse(body) : {};
         await customerSupportHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/resolve-bank-account' && req.method === 'POST') {
+        req.body = body;
+        await resolveBankAccountHandler(req, res);
         return;
       }
 

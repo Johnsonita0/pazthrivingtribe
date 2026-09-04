@@ -13,6 +13,7 @@ import completeServicePaymentHandler from '../server-handlers/complete-service-p
 import productPreviewHandler from '../server-handlers/product-preview.js';
 import vendorSupportHandler from '../server-handlers/vendor-support.js';
 import customerSupportHandler from '../server-handlers/customer-support.js';
+import resolveBankAccountHandler from '../server-handlers/resolve-bank-account.js';
 
 const handlers = {
   '/admin-auth': adminAuthHandler,
@@ -23,6 +24,7 @@ const handlers = {
   '/product-preview': productPreviewHandler,
   '/vendor-support': vendorSupportHandler,
   '/customer-support': customerSupportHandler,
+  '/resolve-bank-account': resolveBankAccountHandler,
   '/currency-rates': currencyRatesHandler,
   '/fetch-meta': fetchMetaHandler,
   '/paystack-webhook': paystackWebhookHandler,

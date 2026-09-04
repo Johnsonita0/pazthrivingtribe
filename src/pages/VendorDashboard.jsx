@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 
 const currencies = ["NGN", "USD", "GBP", "EUR", "GHS", "KES", "ZAR"];
+const banks = [
+  ["Access Bank", "044"], ["Citibank Nigeria", "023"], ["Ecobank Nigeria", "050"], ["FCMB", "214"], ["Fidelity Bank", "070"], ["First Bank of Nigeria", "011"], ["Globus Bank", "103"], ["Guaranty Trust Bank", "058"], ["Heritage Bank", "030"], ["Jaiz Bank", "301"], ["Keystone Bank", "082"], ["Kuda Bank", "090267"], ["Moniepoint", "50515"], ["Opay", "999992"], ["PalmPay", "999991"], ["Polaris Bank", "076"], ["Premium Trust Bank", "105"], ["Providus Bank", "101"], ["Stanbic IBTC Bank", "221"], ["Standard Chartered Bank Nigeria", "068"], ["Sterling Bank", "232"], ["SunTrust Bank", "100"], ["Taj Bank", "302"], ["UBA", "033"], ["Union Bank of Nigeria", "032"], ["Unity Bank", "215"], ["Wema Bank", "035"], ["Zenith Bank", "057"], ["Other / International bank", ""],
+];
 const fieldStyle = {
   width: "100%",
   boxSizing: "border-box",
@@ -31,11 +34,14 @@ export default function VendorDashboard() {
   const [profileForm, setProfileForm] = useState({
     companyName: "",
     logoUrl: "",
+    logoFile: null,
     idType: "National ID",
     idDocument: null,
     payoutName: "",
     payoutAccount: "",
     payoutBank: "",
+    payoutBankCode: "",
+    verifiedAccountName: "",
     payoutCurrency: "NGN",
   });
   const [productForm, setProductForm] = useState({
@@ -92,10 +98,13 @@ export default function VendorDashboard() {
         ...current,
         companyName: vendor.company_name || "",
         logoUrl: vendor.logo_url || "",
+        logoFile: null,
         idType: vendor.id_type || "National ID",
         payoutName: vendor.payout_account_name || "",
         payoutAccount: vendor.payout_account_number || "",
         payoutBank: vendor.payout_bank_name || "",
+        payoutBankCode: banks.find(([name]) => name === vendor.payout_bank_name)?.[1] || "",
+        verifiedAccountName: vendor.payout_account_name || "",
         payoutCurrency: vendor.payout_currency || "NGN",
       }));
     setLoading(false);
@@ -139,75 +148,125 @@ export default function VendorDashboard() {
     return () => window.clearInterval(timer);
   }, [session]);
 
-  const authenticate = async (event) => {
-    event.preventDefault();
-    setSaving(true);
-    const result =
-      authMode === "sign-in"
-        ? await supabase.auth.signInWithPassword(authForm)
-        : await supabase.auth.signUp(authForm);
-    if (result.error) setNotice({ type: "error", text: result.error.message });
-    else if (result.data?.session) {
-      setSession(result.data.session);
-      await loadData(result.data.session.user);
-    } else {
-      setAuthMode("sign-in");
-      setNotice({
-        type: "success",
-        text: "Account created. Confirm your email, then sign in.",
-      });
+  const persistVendorProfile = async (user, values, existingProfile = null) => {
+    let documentPath = existingProfile?.id_document_path || "";
+    let logoUrl = values.logoUrl.trim();
+    if (values.logoFile) {
+      const safeLogoName = values.logoFile.name.replace(/[^a-z0-9._-]/gi, "-");
+      const logoPath = `vendors/logos/${user.id}/${Date.now()}-${safeLogoName}`;
+      const { data: logoData, error: logoError } = await supabase.storage
+        .from("prof-upload")
+        .upload(logoPath, values.logoFile, {
+          upsert: true,
+          contentType: values.logoFile.type || "image/*",
+        });
+      if (logoError) throw logoError;
+      const { data: publicLogo } = supabase.storage
+        .from("prof-upload")
+        .getPublicUrl(logoData?.path || logoPath);
+      logoUrl = publicLogo?.publicUrl || logoData?.path || logoPath;
     }
-    setSaving(false);
-  };
-
-  const saveProfile = async (event) => {
-    event.preventDefault();
-    setSaving(true);
-    let documentPath = profile?.id_document_path || "";
-    if (profileForm.idDocument) {
-      const safeName = profileForm.idDocument.name.replace(
-        /[^a-z0-9._-]/gi,
-        "-",
-      );
-      documentPath = `vendors/${session.user.id}/${Date.now()}-${safeName}`;
+    if (values.idDocument) {
+      const safeName = values.idDocument.name.replace(/[^a-z0-9._-]/gi, "-");
+      documentPath = `vendors/${user.id}/${Date.now()}-${safeName}`;
       const { error } = await supabase.storage
         .from("vendor-verification")
-        .upload(documentPath, profileForm.idDocument, {
+        .upload(documentPath, values.idDocument, {
           upsert: true,
-          contentType:
-            profileForm.idDocument.type || "application/octet-stream",
+          contentType: values.idDocument.type || "application/octet-stream",
         });
-      if (error) {
-        setNotice({ type: "error", text: error.message });
-        setSaving(false);
-        return;
-      }
+      if (error) throw error;
     }
     const { data, error } = await supabase
       .from("vendor_profiles")
       .upsert({
-        id: session.user.id,
-        company_name: profileForm.companyName.trim(),
-        logo_url: profileForm.logoUrl.trim(),
-        contact_email: session.user.email,
-        id_type: profileForm.idType,
+        id: user.id,
+        company_name: values.companyName.trim(),
+        logo_url: logoUrl,
+        contact_email: user.email,
+        id_type: values.idType,
         id_document_path: documentPath,
-        payout_account_name: profileForm.payoutName.trim(),
-        payout_account_number: profileForm.payoutAccount.trim(),
-        payout_bank_name: profileForm.payoutBank.trim(),
-        payout_currency: profileForm.payoutCurrency,
-        status: profile?.status || "pending",
+        payout_account_name: values.payoutName.trim(),
+        payout_account_number: values.payoutAccount.trim(),
+        payout_bank_name: values.payoutBank.trim(),
+        payout_currency: values.payoutCurrency,
+        status: existingProfile?.status || "pending",
       })
       .select()
       .single();
-    setSaving(false);
-    if (error) setNotice({ type: "error", text: error.message });
-    else {
+    if (error) throw error;
+    return data;
+  };
+
+  const verifyBankAccount = async () => {
+    if (!/^\d{10}$/.test(profileForm.payoutAccount) || !profileForm.payoutBankCode) {
+      setNotice({ type: "error", text: "Select a supported bank and enter a 10-digit account number before verifying." });
+      return;
+    }
+    setSaving(true);
+    try {
+      const response = await fetch("/api/resolve-bank-account", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accountNumber: profileForm.payoutAccount, bankCode: profileForm.payoutBankCode }) });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "The bank could not verify this account.");
+      setProfileForm((current) => ({ ...current, payoutName: payload.accountName, verifiedAccountName: payload.accountName }));
+      setNotice({ type: "success", text: `Account verified: ${payload.accountName}` });
+    } catch (error) {
+      setProfileForm((current) => ({ ...current, verifiedAccountName: "" }));
+      setNotice({ type: "error", text: error.message });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const authenticate = async (event) => {
+    event.preventDefault();
+    if (authMode === "sign-up" && (!profileForm.idDocument || !profileForm.verifiedAccountName)) {
+      setNotice({ type: "error", text: !profileForm.idDocument ? "Drag in your identity document before creating your vendor account." : "Verify the payout account name before creating your vendor account." });
+      return;
+    }
+    setSaving(true);
+    try {
+      const result =
+        authMode === "sign-in"
+          ? await supabase.auth.signInWithPassword(authForm)
+          : await supabase.auth.signUp({ email: authForm.email, password: authForm.password });
+      if (result.error) throw result.error;
+      if (result.data?.session) {
+        if (authMode === "sign-up") await persistVendorProfile(result.data.session.user, profileForm);
+        setSession(result.data.session);
+        await loadData(result.data.session.user);
+      } else {
+        setAuthMode("sign-in");
+        setNotice({
+          type: "success",
+          text: "Account created. Confirm your email, then sign in to submit your vendor details.",
+        });
+      }
+    } catch (error) {
+      setNotice({ type: "error", text: error.message || "Your vendor account could not be created." });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveProfile = async (event) => {
+    event.preventDefault();
+    if (!profileForm.companyName.trim() || !profileForm.payoutName.trim() || !profileForm.payoutAccount.trim() || !profileForm.payoutBank.trim() || (!profile?.id_document_path && !profileForm.idDocument) || !profileForm.verifiedAccountName) {
+      setNotice({ type: "error", text: !profile?.id_document_path && !profileForm.idDocument ? "Drag in your identity document before saving your vendor profile." : "Business name, bank, account number, and a successfully verified account name are required for vendor verification." });
+      return;
+    }
+    setSaving(true);
+    try {
+      const data = await persistVendorProfile(session.user, profileForm, profile);
       setProfile(data);
       setNotice({
         type: "success",
         text: "Verification details sent to the main admin.",
       });
+    } catch (error) {
+      setNotice({ type: "error", text: error.message });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -398,6 +457,38 @@ export default function VendorDashboard() {
               }
               style={fieldStyle}
             />
+            {authMode === "sign-up" && (
+              <>
+                <input required placeholder="Business or brand name" value={profileForm.companyName} onChange={(event) => setProfileForm({ ...profileForm, companyName: event.target.value })} style={fieldStyle} />
+                <label onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }} onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file?.type.startsWith("image/")) setProfileForm({ ...profileForm, logoFile: file }); }} style={{ display: "grid", gap: "6px", padding: "16px", border: "1px dashed #86efac", borderRadius: "10px", background: "#f0fdf4", color: "#166534", textAlign: "center", cursor: "copy" }}>
+                  <strong>Drag business logo here</strong>
+                  <span style={{ fontSize: ".78rem" }}>{profileForm.logoFile?.name || "PNG, JPG, or WebP"}</span>
+                  <input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => setProfileForm({ ...profileForm, logoFile: event.target.files?.[0] || null })} style={{ display: "none" }} />
+                </label>
+                <select required value={profileForm.idType} onChange={(event) => setProfileForm({ ...profileForm, idType: event.target.value })} style={fieldStyle}>
+                  <option value="">Select identity document type</option>
+                  <option>National ID</option>
+                  <option>Passport</option>
+                  <option>Driver's licence</option>
+                  <option>Business registration</option>
+                </select>
+                <label onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }} onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file?.type.startsWith("image/") || file?.type === "application/pdf") setProfileForm({ ...profileForm, idDocument: file }); }} style={{ display: "grid", gap: "6px", padding: "16px", border: "1px dashed #93c5fd", borderRadius: "10px", background: "#eff6ff", color: "#1d4ed8", textAlign: "center", cursor: "copy" }}>
+                  <strong>Drag identity document here</strong>
+                  <span style={{ fontSize: ".78rem" }}>{profileForm.idDocument?.name || "ID image or PDF"}</span>
+                  <input type="file" accept="image/*,.pdf" onChange={(event) => setProfileForm({ ...profileForm, idDocument: event.target.files?.[0] || null })} style={{ display: "none" }} />
+                </label>
+                <input required placeholder="Account holder name (must match vendor)" value={profileForm.payoutName} readOnly={Boolean(profileForm.verifiedAccountName)} onChange={(event) => setProfileForm({ ...profileForm, payoutName: event.target.value })} style={{ ...fieldStyle, background: profileForm.verifiedAccountName ? "#ecfdf5" : "#fff" }} />
+                <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: "8px" }}><input required inputMode="numeric" placeholder="Payout account number" value={profileForm.payoutAccount} onChange={(event) => setProfileForm({ ...profileForm, payoutAccount: event.target.value.replace(/\D/g, ""), verifiedAccountName: "" })} style={fieldStyle} /><button type="button" onClick={verifyBankAccount} disabled={saving} style={{ border: 0, borderRadius: "9px", padding: "0 12px", background: "#0f766e", color: "#fff", fontWeight: 800, cursor: saving ? "wait" : "pointer" }}>Verify</button></div>
+                <select required value={profileForm.payoutBankCode} onChange={(event) => { const selected = banks.find(([, code]) => code === event.target.value); setProfileForm({ ...profileForm, payoutBankCode: event.target.value, payoutBank: selected?.[0] || "", verifiedAccountName: "" }); }} style={fieldStyle}>
+                  <option value="">Select bank</option>
+                  {banks.map(([name, code]) => <option key={name} value={code}>{name}</option>)}
+                </select>
+                <p style={{ margin: "-4px 0 0", color: "#64748b", fontSize: ".78rem", lineHeight: 1.4 }}>Use the legal account-holder name connected to this vendor account. The admin will verify the account details before approval.</p>
+                <select required value={profileForm.payoutCurrency} onChange={(event) => setProfileForm({ ...profileForm, payoutCurrency: event.target.value })} style={fieldStyle}>
+                  {currencies.map((currency) => <option key={currency}>{currency}</option>)}
+                </select>
+              </>
+            )}
             <button
               disabled={saving}
               style={{
@@ -586,14 +677,11 @@ export default function VendorDashboard() {
               }
               style={fieldStyle}
             />
-            <input
-              placeholder="Company logo URL"
-              value={profileForm.logoUrl}
-              onChange={(event) =>
-                setProfileForm({ ...profileForm, logoUrl: event.target.value })
-              }
-              style={fieldStyle}
-            />
+            <label onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }} onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file?.type.startsWith("image/")) setProfileForm({ ...profileForm, logoFile: file }); }} style={{ display: "grid", gap: "6px", padding: "16px", border: "1px dashed #86efac", borderRadius: "10px", background: "#f0fdf4", color: "#166534", textAlign: "center", cursor: "copy" }}>
+              <strong>Drag business logo here</strong>
+              <span style={{ fontSize: ".78rem" }}>{profileForm.logoFile?.name || (profileForm.logoUrl ? "Existing logo will be kept" : "PNG, JPG, or WebP")}</span>
+              <input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => setProfileForm({ ...profileForm, logoFile: event.target.files?.[0] || null })} style={{ display: "none" }} />
+            </label>
             <select
               value={profileForm.idType}
               onChange={(event) =>
@@ -606,51 +694,48 @@ export default function VendorDashboard() {
               <option>Driver's licence</option>
               <option>Business registration</option>
             </select>
-            <input
-              type="file"
-              accept="image/*,.pdf"
-              required={!profile?.id_document_path}
-              onChange={(event) =>
-                setProfileForm({
-                  ...profileForm,
-                  idDocument: event.target.files?.[0] || null,
-                })
-              }
-              style={fieldStyle}
-            />
+            <label onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }} onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file?.type.startsWith("image/") || file?.type === "application/pdf") setProfileForm({ ...profileForm, idDocument: file }); }} style={{ display: "grid", gap: "6px", padding: "16px", border: "1px dashed #93c5fd", borderRadius: "10px", background: "#eff6ff", color: "#1d4ed8", textAlign: "center", cursor: "copy" }}>
+              <strong>Drag identity document here</strong>
+              <span style={{ fontSize: ".78rem" }}>{profileForm.idDocument?.name || (profile?.id_document_path ? "Existing document will be kept" : "ID image or PDF")}</span>
+              <input type="file" accept="image/*,.pdf" onChange={(event) => setProfileForm({ ...profileForm, idDocument: event.target.files?.[0] || null })} style={{ display: "none" }} />
+            </label>
             <input
               placeholder="Payout account name"
+              required
               value={profileForm.payoutName}
+              readOnly={Boolean(profileForm.verifiedAccountName)}
               onChange={(event) =>
                 setProfileForm({
                   ...profileForm,
                   payoutName: event.target.value,
                 })
               }
-              style={fieldStyle}
+              style={{ ...fieldStyle, background: profileForm.verifiedAccountName ? "#ecfdf5" : "#fff" }}
             />
             <input
               placeholder="Payout account number"
+              required
+              inputMode="numeric"
               value={profileForm.payoutAccount}
               onChange={(event) =>
                 setProfileForm({
                   ...profileForm,
-                  payoutAccount: event.target.value,
+                  payoutAccount: event.target.value.replace(/\D/g, ""),
+                  verifiedAccountName: "",
                 })
               }
               style={fieldStyle}
             />
-            <input
-              placeholder="Bank name"
-              value={profileForm.payoutBank}
-              onChange={(event) =>
-                setProfileForm({
-                  ...profileForm,
-                  payoutBank: event.target.value,
-                })
-              }
+            <button type="button" onClick={verifyBankAccount} disabled={saving} style={{ border: 0, borderRadius: "9px", padding: "11px 12px", background: "#0f766e", color: "#fff", fontWeight: 800, cursor: saving ? "wait" : "pointer" }}>Verify account name</button>
+            <select
+              required
+              value={profileForm.payoutBankCode}
+              onChange={(event) => { const selected = banks.find(([, code]) => code === event.target.value); setProfileForm({ ...profileForm, payoutBankCode: event.target.value, payoutBank: selected?.[0] || "", verifiedAccountName: "" }); }}
               style={fieldStyle}
-            />
+            >
+              <option value="">Select bank</option>
+              {banks.map(([name, code]) => <option key={name} value={code}>{name}</option>)}
+            </select>
             <select
               value={profileForm.payoutCurrency}
               onChange={(event) =>
