@@ -189,6 +189,11 @@ export default function AdminDashboard(props) {
   const [testimonialConfirmation, setTestimonialConfirmation] = useState(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
   const [productDeleteTarget, setProductDeleteTarget] = useState(null);
+  const [vendorProfiles, setVendorProfiles] = useState([]);
+  const [selectedVendor, setSelectedVendor] = useState(null);
+  const [adminAdForm, setAdminAdForm] = useState({ eyebrow: 'PAZ Marketplace', headline: '', productUrl: '' });
+  const [adminAds, setAdminAds] = useState([]);
+  const [supportMessages, setSupportMessages] = useState([]);
   const paymentReference = new URLSearchParams(location.search).get('reference') || '';
 
   useEffect(() => {
@@ -315,6 +320,118 @@ export default function AdminDashboard(props) {
       .catch((error) => console.error('Parent feedback refresh failed:', error));
     return () => { active = false; };
   }, [activeDashboardView, mode, setParentFeedback]);
+
+  useEffect(() => {
+    if (mode !== 'dashboard' || activeDashboardView !== 'vendors') return undefined;
+    let active = true;
+    const token = session?.access_token || session?.accessToken || '';
+    fetch('/api/admin-update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: 'select', table: 'vendor_profiles', columns: 'id,company_name,logo_url,contact_email,id_type,id_document_path,status,payout_account_name,payout_account_number,payout_bank_name,payout_currency,rejection_reason,created_at,approved_at' })
+    }).then(async (response) => {
+      const payload = await response.json().catch(() => ({}));
+      if (active && response.ok) setVendorProfiles(Array.isArray(payload.data) ? payload.data : []);
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [activeDashboardView, mode, session]);
+
+  useEffect(() => {
+    if (mode !== 'dashboard' || activeDashboardView !== 'commerce' || commerceSubTab !== 'ads') return undefined;
+    let active = true;
+    const token = session?.access_token || session?.accessToken || '';
+    fetch('/api/admin-update', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ action: 'select', table: 'promotional_ads', columns: 'id,eyebrow,headline,product_url,action_label,posted_by,posted_by_email,vendor_id,vendor_name,status,is_platform_ad,created_at,updated_at' }) })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (active && response.ok) setAdminAds(Array.isArray(payload.data) ? payload.data : []);
+      }).catch(() => {});
+    return () => { active = false; };
+  }, [activeDashboardView, commerceSubTab, mode, session]);
+
+  useEffect(() => {
+    if (mode !== 'dashboard' || activeDashboardView !== 'support') return undefined;
+    let active = true;
+    const token = session?.access_token || session?.accessToken || '';
+    const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+    Promise.all(['vendor_support_messages', 'customer_support_messages'].map((table) => fetch('/api/admin-update', { method: 'POST', headers, body: JSON.stringify({ action: 'select', table, columns: '*' }) }).then((response) => response.json().then((payload) => response.ok ? payload.data || [] : []))))
+      .then(([vendorMessages, customerMessages]) => { if (active) setSupportMessages([...vendorMessages.map((item) => ({ ...item, source: 'Vendor' })), ...customerMessages.map((item) => ({ ...item, source: 'Customer' }))].sort((left, right) => new Date(right.created_at) - new Date(left.created_at))); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [activeDashboardView, mode, session]);
+
+  const updateVendorStatus = async (vendor, status) => {
+    const token = session?.access_token || session?.accessToken || '';
+    const response = await fetch('/api/admin-update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: 'update', table: 'vendor_profiles', match: { id: vendor.id }, payload: { status, approved_at: status === 'approved' ? new Date().toISOString() : null, approved_by: status === 'approved' ? session?.user?.id || null : null } })
+    });
+    if (!response.ok) {
+      showAdminToast('error', 'Vendor update failed', 'The vendor status could not be changed.');
+      return;
+    }
+    setVendorProfiles((current) => current.map((item) => item.id === vendor.id ? { ...item, status } : item));
+    showAdminToast('success', 'Vendor updated', `${vendor.company_name || 'Vendor'} is now ${status}.`);
+  };
+
+  const viewVendorDetails = async (vendor) => {
+    setSelectedVendor({ ...vendor, loading: true });
+    const token = session?.access_token || session?.accessToken || '';
+    const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+    const [productsResponse, salesResponse] = await Promise.all([
+      fetch('/api/admin-update', { method: 'POST', headers, body: JSON.stringify({ action: 'select', table: 'store_products', match: { vendor_id: vendor.id }, columns: 'id,title,price,currency,created_at' }) }),
+      fetch('/api/admin-update', { method: 'POST', headers, body: JSON.stringify({ action: 'select', table: 'vendor_sales', match: { vendor_id: vendor.id }, columns: 'id,order_number,product_title,quantity,vendor_amount,currency,payout_status,created_at' }) })
+    ]);
+    const productsPayload = await productsResponse.json().catch(() => ({}));
+    const salesPayload = await salesResponse.json().catch(() => ({}));
+    setSelectedVendor({ ...vendor, products: productsResponse.ok ? productsPayload.data || [] : [], sales: salesResponse.ok ? salesPayload.data || [] : [], loading: false });
+  };
+
+  const publishAdminAd = async (event) => {
+    event.preventDefault();
+    if (!adminAdForm.headline.trim() || !adminAdForm.productUrl.trim()) return;
+    const token = session?.access_token || session?.accessToken || '';
+    const response = await fetch('/api/admin-update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: 'insert', table: 'promotional_ads', payload: [{ eyebrow: adminAdForm.eyebrow.trim(), headline: adminAdForm.headline.trim(), product_url: adminAdForm.productUrl.trim(), action_label: 'View product', posted_by: session?.user?.id || null, posted_by_email: session?.user?.email || null, status: 'published' }] })
+    });
+    if (!response.ok) {
+      const errorPayload = await response.json().catch(() => ({}));
+      showAdminToast('error', 'Ad publishing failed', errorPayload.error || 'The promotional ad could not be published.');
+      return;
+    }
+    const adsResponse = await fetch('/api/admin-update', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ action: 'select', table: 'promotional_ads', columns: 'id,eyebrow,headline,product_url,action_label,posted_by,posted_by_email,vendor_id,vendor_name,status,is_platform_ad,created_at,updated_at' }) });
+    const adsPayload = await adsResponse.json().catch(() => ({}));
+    if (adsResponse.ok && Array.isArray(adsPayload.data)) setAdminAds(adsPayload.data);
+    setAdminAdForm({ eyebrow: 'PAZ Marketplace', headline: '', productUrl: '' });
+    showAdminToast('success', 'Ad published', 'The promotional ad is now rotating on the shop.');
+  };
+
+  const updateAdStatus = async (ad, status) => {
+    const token = session?.access_token || session?.accessToken || '';
+    const response = await fetch('/api/admin-update', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ action: 'update', table: 'promotional_ads', match: { id: ad.id }, payload: { status } }) });
+    if (!response.ok) {
+      showAdminToast('error', 'Ad update failed', 'The promotional ad status could not be changed.');
+      return;
+    }
+    setAdminAds((current) => current.map((item) => item.id === ad.id ? { ...item, status } : item));
+    showAdminToast('success', 'Ad status updated', `The ad is now ${status}.`);
+  };
+
+  const deleteAd = async (ad) => {
+    if (!ad?.id || ad.is_platform_ad) return showAdminToast('info', 'Platform ad protected', 'This PAZ vendor invitation ad cannot be deleted.');
+    if (!window.confirm(`Delete the ad "${ad.headline || 'Untitled ad'}" permanently?`)) return;
+    const token = session?.access_token || session?.accessToken || '';
+    const response = await fetch('/api/admin-update', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ action: 'delete', table: 'promotional_ads', match: { id: ad.id } }) });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      showAdminToast('error', 'Ad deletion failed', payload.error || 'The promotional ad could not be deleted.');
+      return;
+    }
+    setAdminAds((current) => current.filter((item) => item.id !== ad.id));
+    showAdminToast('success', 'Ad deleted', 'The promotional ad was permanently removed.');
+  };
 
   const toggleSelectRow = (id) => {
     setSelectedRowIds((prev) => {
@@ -979,6 +1096,8 @@ export default function AdminDashboard(props) {
     { id: 'testimonials', label: 'Testimonials', color: '#7c3aed', value: Math.max(promoSlides.length || 0, 0) },
     { id: 'slider', label: 'Published Slider', color: '#0f766e', value: Math.max(promoSlides.length || 0, 0) },
     { id: 'feedback', label: 'Parent Feedback', color: '#e88767', value: Math.max(parentFeedback.length || 0, 0) },
+    { id: 'vendors', label: 'Vendors', color: '#0f766e', value: vendorProfiles.filter((vendor) => vendor.status === 'pending').length },
+    { id: 'support', label: 'Support Chat', color: '#2563eb', value: supportMessages.filter((message) => message.status === 'open').length },
     { id: 'payment-history', label: 'Payment History', color: '#0f766e', value: shopOrders.length + applicants.filter((applicant) => applicant.paymentStatus || applicant.payment_status).length + bookings.filter((booking) => booking.paymentStatus || booking.payment_status).length }
   ];
 
@@ -1281,6 +1400,7 @@ export default function AdminDashboard(props) {
                 {activeDashboardView === 'commerce' && <div className="commerce-tab-row" style={{ marginBottom: '22px' }}>
                   {[
                     { id: 'storefront', label: 'Store' },
+                    { id: 'ads', label: 'Ads' },
                     { id: 'orders', label: 'Orders' }
                   ].map((tab) => (
                     <button
@@ -1306,6 +1426,16 @@ export default function AdminDashboard(props) {
                     </button>
                   ))}
                 </div>}
+
+                {activeDashboardView === 'commerce' && commerceSubTab === 'ads' && (
+                  <div className="commerce-panel-shell" style={{ background: '#ffffff', border: '1px solid #dfe7ef', borderRadius: '20px', padding: '22px', boxShadow: '0 12px 28px rgba(15, 23, 42, 0.08)', minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
+                    <p style={{ margin: 0, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '.12em', fontSize: '.72rem', fontWeight: 800 }}>Promotional board</p>
+                    <h3 style={{ margin: '8px 0 18px', fontSize: '1.5rem', color: '#111827' }}>Manage shop ads</h3>
+                    <form onSubmit={publishAdminAd} style={{ padding: '16px', background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: '14px' }}><div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 2fr auto', gap: '8px', alignItems: 'center' }}><input value={adminAdForm.eyebrow} onChange={(event) => setAdminAdForm({ ...adminAdForm, eyebrow: event.target.value })} placeholder="Ad label" style={adminFieldStyle} /><input required value={adminAdForm.headline} onChange={(event) => setAdminAdForm({ ...adminAdForm, headline: event.target.value })} placeholder="Ad headline" style={adminFieldStyle} /><input required value={adminAdForm.productUrl} onChange={(event) => setAdminAdForm({ ...adminAdForm, productUrl: event.target.value })} placeholder="Product link, e.g. /shop/book-name" style={adminFieldStyle} /><button type="submit" style={{ border: 0, borderRadius: '9px', padding: '11px 14px', background: '#0f766e', color: '#fff', fontWeight: 800, cursor: 'pointer' }}>Publish</button></div></form>
+                    <p style={{ margin: '14px 0', color: '#64748b', fontSize: '.84rem' }}>Ads from the main admin and approved vendors rotate above the shop search bar. Each ad should point to a product page.</p>
+                    <div style={{ display: 'grid', gap: '10px', marginTop: '16px' }}>{adminAds.length ? adminAds.map((ad) => <div key={ad.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', padding: '12px', border: '1px solid #e2e8f0', borderRadius: '10px' }}><div style={{ minWidth: 0, flex: '1 1 320px' }}><strong>{ad.headline}</strong>{ad.is_platform_ad && <span style={{ marginLeft: '8px', color: '#166534', fontSize: '.72rem', fontWeight: 800 }}>PAZ PLATFORM AD</span>}<div style={{ color: '#475569', fontSize: '.8rem', marginTop: '4px' }}>Published by: {ad.vendor_name || 'Main admin'} · Created by: {ad.posted_by_email || ad.posted_by || 'Unknown'} · {ad.status}</div><div style={{ color: '#64748b', fontSize: '.8rem', overflowWrap: 'anywhere' }}>{ad.product_url} · {ad.created_at ? new Date(ad.created_at).toLocaleString() : 'Date unavailable'}</div></div><div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>{ad.vendor_id && ad.status === 'pending' && <><button type="button" onClick={() => updateAdStatus(ad, 'approved')} style={{ border: 0, borderRadius: '8px', padding: '8px 10px', background: '#166534', color: '#fff', fontWeight: 800 }}>Approve</button><button type="button" onClick={() => updateAdStatus(ad, 'rejected')} style={{ border: 0, borderRadius: '8px', padding: '8px 10px', background: '#b91c1c', color: '#fff', fontWeight: 800 }}>Reject</button></>}{ad.status === 'unpublish_requested' && <button type="button" onClick={() => updateAdStatus(ad, 'archived')} style={{ border: '1px solid #f59e0b', borderRadius: '8px', padding: '8px 10px', background: '#fffbeb', color: '#92400e', fontWeight: 800 }}>Approve unpublish</button>}{['published', 'approved'].includes(ad.status) && <button type="button" onClick={() => updateAdStatus(ad, 'archived')} style={{ border: '1px solid #f59e0b', borderRadius: '8px', padding: '8px 10px', background: '#fffbeb', color: '#92400e', fontWeight: 800 }}>Unpublish</button>}{['archived', 'publish_requested'].includes(ad.status) && <button type="button" onClick={() => updateAdStatus(ad, 'published')} style={{ border: '1px solid #166534', borderRadius: '8px', padding: '8px 10px', background: '#f0fdf4', color: '#166534', fontWeight: 800 }}>{ad.status === 'publish_requested' ? 'Approve publish' : 'Publish'}</button>}{!ad.is_platform_ad && <button type="button" onClick={() => deleteAd(ad)} style={{ border: 0, borderRadius: '8px', padding: '8px 10px', background: '#b91c1c', color: '#fff', fontWeight: 800 }}>Delete</button>}</div></div>) : <p style={{ color: '#64748b' }}>No promotional ads have been submitted.</p>}</div>
+                  </div>
+                )}
 
                 {activeDashboardView === 'commerce' && commerceSubTab === 'storefront' && (
                   <div className="commerce-panel-shell" style={{ background: '#ffffff', border: '1px solid #dfe7ef', borderRadius: '20px', padding: '22px', boxShadow: '0 12px 28px rgba(15, 23, 42, 0.08)', minWidth: 0, width: '100%', maxWidth: 'none', margin: '0 auto', boxSizing: 'border-box', overflow: 'hidden' }}>
@@ -1558,6 +1688,17 @@ export default function AdminDashboard(props) {
                   </div>
                 )}
               </>
+            ) : activeDashboardView === 'support' ? (
+              <div className="commerce-panel-shell" style={{ background: '#fff', border: '1px solid #dbeafe', borderRadius: '20px', padding: '22px', boxSizing: 'border-box' }}><p style={{ margin: 0, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '.12em', fontSize: '.72rem', fontWeight: 800 }}>Customer care</p><h3 style={{ margin: '8px 0 18px', fontSize: '1.5rem' }}>Support chat inbox</h3><div style={{ display: 'grid', gap: '10px' }}>{supportMessages.length ? supportMessages.map((message) => <article key={`${message.source}-${message.id}`} style={{ padding: '14px', border: '1px solid #e2e8f0', borderRadius: '12px', background: message.status === 'open' ? '#eff6ff' : '#f8fafc' }}><div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}><strong>{message.source} · {message.sender_name || message.sender_email || 'Vendor'}</strong><span style={{ color: '#64748b', fontSize: '.78rem' }}>{message.status} · {message.created_at ? new Date(message.created_at).toLocaleString() : ''}</span></div><div style={{ marginTop: '8px', color: '#334155', whiteSpace: 'pre-wrap' }}>{message.message}</div><div style={{ marginTop: '8px', color: '#64748b', fontSize: '.82rem' }}>{message.sender_email}</div></article>) : <p style={{ color: '#64748b' }}>No support messages have been received.</p>}</div></div>
+            ) : activeDashboardView === 'vendors' ? (
+              <div className="commerce-panel-shell" style={{ background: '#fff', border: '1px solid #dfe7ef', borderRadius: '20px', padding: '22px', boxSizing: 'border-box' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '18px' }}>
+                  <div><p style={{ margin: 0, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '.12em', fontSize: '.72rem', fontWeight: 800 }}>Trust and safety</p><h3 style={{ margin: '8px 0 0', fontSize: '1.5rem' }}>Vendor monitor</h3></div>
+                  <span style={{ background: '#f0fdfa', color: '#0f766e', borderRadius: '999px', padding: '8px 12px', fontWeight: 800 }}>{vendorProfiles.length} accounts</span>
+                </div>
+                <div style={{ display: 'grid', gap: '12px' }}>{vendorProfiles.length ? vendorProfiles.map((vendor) => <article key={vendor.id} style={{ display: 'grid', gridTemplateColumns: '56px minmax(0,1fr) auto', gap: '14px', alignItems: 'center', padding: '14px', border: '1px solid #e2e8f0', borderRadius: '14px' }}><img src={vendor.logo_url || '/logo/logomain.png'} alt="" style={{ width: '56px', height: '56px', borderRadius: '12px', objectFit: 'cover' }} /><div><strong style={{ color: '#0f172a' }}>{vendor.company_name}</strong><div style={{ color: '#64748b', fontSize: '.84rem' }}>{vendor.contact_email} · {vendor.id_type}</div><div style={{ color: '#475569', fontSize: '.82rem' }}>Payout: {vendor.payout_bank_name || 'Not provided'} · {vendor.payout_account_number || 'Not provided'}</div></div><div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}><button type="button" onClick={() => viewVendorDetails(vendor)} style={{ border: '1px solid #cbd5e1', background: '#fff', borderRadius: '8px', padding: '8px 10px', fontWeight: 700 }}>View details</button>{vendor.status === 'pending' && <><button type="button" onClick={() => updateVendorStatus(vendor, 'approved')} style={{ border: 0, background: '#166534', color: '#fff', borderRadius: '8px', padding: '8px 10px', fontWeight: 800 }}>Approve</button><button type="button" onClick={() => updateVendorStatus(vendor, 'rejected')} style={{ border: 0, background: '#b91c1c', color: '#fff', borderRadius: '8px', padding: '8px 10px', fontWeight: 800 }}>Reject</button></>}</div></article>) : <p style={{ color: '#64748b' }}>No vendor accounts have been submitted.</p>}</div>
+                {selectedVendor && <div style={{ marginTop: '18px', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}><h4 style={{ margin: '0 0 10px' }}>{selectedVendor.company_name} details</h4><p style={{ margin: '5px 0', color: '#475569' }}>Status: <strong>{selectedVendor.status}</strong></p><p style={{ margin: '5px 0', color: '#475569' }}>Verification document: <strong>{selectedVendor.id_document_path || 'Not supplied'}</strong></p><p style={{ margin: '5px 0', color: '#475569' }}>Payout: <strong>{selectedVendor.payout_account_name || 'Not supplied'} · {selectedVendor.payout_bank_name || 'Not supplied'} · {selectedVendor.payout_account_number || 'Not supplied'}</strong></p>{selectedVendor.loading ? <p>Loading products and sales...</p> : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '12px', marginTop: '14px' }}><div><strong>Uploaded products ({selectedVendor.products?.length || 0})</strong>{(selectedVendor.products || []).map((product) => <div key={product.id} style={{ marginTop: '6px', color: '#475569' }}>{product.title} · {product.currency} {product.price}</div>)}</div><div><strong>Sales ({selectedVendor.sales?.length || 0})</strong>{(selectedVendor.sales || []).map((sale) => <div key={sale.id} style={{ marginTop: '6px', color: '#475569' }}>{sale.product_title} x{sale.quantity} · {sale.currency} {sale.vendor_amount} · {sale.payout_status}</div>)}</div></div>}</div>}
+              </div>
             ) : (
               <>
                 <h2 style={{ margin: 0, fontSize: '2rem', fontWeight: 800, color: '#1a1a1a' }}>{activeDashboardLabel}</h2>

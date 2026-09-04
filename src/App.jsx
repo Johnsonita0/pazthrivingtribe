@@ -12,6 +12,9 @@ import BookSessionPage from './pages/BookSessionPage';
 import FeedbackPage from './pages/FeedbackPage';
 import StorePage from './pages/StorePage';
 import ShopPage from './pages/ShopPage';
+import VendorDashboard from './pages/VendorDashboard';
+import VendorSupportChat from './pages/VendorSupportChat';
+import CustomerSupportChat from './components/CustomerSupportChat';
 import PaystackCallbackPage from './pages/PaystackCallbackPage';
 import CustomDropdown from './components/CustomDropdown';
 
@@ -71,6 +74,7 @@ export default function App() {
   const location = useLocation();
   const isRegistrationRoute = ['/teens_reg', '/teens-reg'].includes(location.pathname);
   const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/dashboard');
+  const isVendorRoute = location.pathname === '/vendor';
   const isFeedbackRoute = location.pathname === '/feedback';
   const isStoreRoute = ['/store', '/shop'].includes(location.pathname) || location.pathname.startsWith('/shop/');
   const isShopMenuActive = ['/store', '/shop'].includes(location.pathname) || location.pathname.startsWith('/shop/');
@@ -3554,7 +3558,7 @@ export default function App() {
         </button>
 
         {/* FLOATING WHATSAPP ACTION */}
-        {!isAdminRoute && (
+        {!isAdminRoute && !isVendorRoute && (
           <div className="floating-action-shell">
             <div className={`floating-action-tip ${showWhatsappTip ? 'visible' : ''}`}>
               {whatsappTips[whatsappTipIndex]}
@@ -3572,7 +3576,7 @@ export default function App() {
         )}
 
         {/* STICKY HEADER NAVIGATION BAR (shared across site and admin pages on mobile) */}
-        {!initialLoading && (
+        {!initialLoading && !isVendorRoute && (
           <header className="public-navbar">
           <Link to="/" className="nav-logo-brand-zone" onClick={() => { setNavOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
             <img src="/logo/logomain.png" alt="Paz Thriving Tribe logo" className="nav-logo-img" />
@@ -4071,6 +4075,7 @@ export default function App() {
           <Route path="/store" element={<div className="public-website-container"><StorePage /></div>} />
           <Route path="/shop" element={<div className="public-website-container"><ShopPage onOrderSubmitted={setShopOrders} paystackPublicKey={paystackPublicKey} storeProducts={storeProducts} storeBankAccount={storeBankAccount} /></div>} />
           <Route path="/shop/:productName" element={<div className="public-website-container"><ShopPage onOrderSubmitted={setShopOrders} paystackPublicKey={paystackPublicKey} storeProducts={storeProducts} storeBankAccount={storeBankAccount} /></div>} />
+          <Route path="/vendor" element={<><VendorDashboard /><VendorSupportChat /></>} />
           <Route path="/payment/callback" element={<PaystackCallbackPage />} />
           <Route path="/care-counseling" element={<CareCounselingPage />} />
           <Route path="/services/family" element={<ComingSoonPage title="Thriving Parents" description="Empowering parents with tools and wisdom" />} />
@@ -4280,8 +4285,10 @@ export default function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
 
+        {!isAdminRoute && !isVendorRoute && <CustomerSupportChat />}
+
         {/* Contact Us Section */}
-        {!isRegistrationRoute && !isAdminRoute && !isFeedbackRoute && !isStoreRoute && (
+        {!isRegistrationRoute && !isAdminRoute && !isVendorRoute && !isFeedbackRoute && !isStoreRoute && (
           <section id="contact" className="contact-us-section">
             <div className="contact-container-wrapper">
             <div className="contact-header-block">

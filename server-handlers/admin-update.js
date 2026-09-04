@@ -82,7 +82,7 @@ export default async function handler(req, res) {
       }
     }
 
-    const { action, table, payload, match } = requestBody || {}
+    const { action, table, payload, match, columns = '*' } = requestBody || {}
     if (!action) return jsonResponse(res, 400, { error: 'Missing action' })
 
     let result
@@ -96,8 +96,19 @@ export default async function handler(req, res) {
         result = await supabase.from(table).update(payload).match(match)
       } else if (action === 'insert') {
         result = await supabase.from(table).insert(payload)
+      } else if (action === 'select') {
+        let query = supabase.from(table).select(columns)
+        if (match && typeof match === 'object') {
+          Object.entries(match).forEach(([key, value]) => { query = query.eq(key, value) })
+        }
+        result = await query
       } else if (action === 'delete') {
         if (!match) return jsonResponse(res, 400, { error: 'Missing match object for delete' })
+        if (table === 'promotional_ads' && match.id) {
+          const { data: adToDelete, error: adLookupError } = await supabase.from('promotional_ads').select('is_platform_ad').eq('id', match.id).maybeSingle()
+          if (adLookupError) return jsonResponse(res, 500, { error: `Could not verify promotional ad protection: ${adLookupError.message || adLookupError}` })
+          if (adToDelete?.is_platform_ad) return jsonResponse(res, 403, { error: 'Platform promotional ads cannot be deleted' })
+        }
         result = await supabase.from(table).delete().match(match)
       } else {
         return jsonResponse(res, 400, { error: 'Unknown action' })

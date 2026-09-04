@@ -19,6 +19,11 @@ const phoneCountries = getCountries().map((code) => ({
 }));
 const fallbackCurrencyRatesToNgn = { NGN: 1, USD: 1500, GBP: 1900, EUR: 1650, GHS: 95, KES: 11, ZAR: 85 };
 const currencySymbols = { NGN: '₦', USD: '$', GBP: '£', EUR: '€', GHS: 'GH₵', KES: 'KSh', ZAR: 'R' };
+const promotionalSlides = [
+  { eyebrow: 'PAZ Marketplace', title: 'Publish your books and earn from every sale.', action: 'Register as a vendor', url: '/vendor' },
+  { eyebrow: 'Reach more readers', title: 'Put your guides, ebooks, and workbooks in front of a growing community.', action: 'Join as a vendor', url: '/vendor' },
+  { eyebrow: 'Verified vendor network', title: 'Build trust with a professional storefront and secure product delivery.', action: 'Become a vendor', url: '/vendor' }
+];
 
 const defaultProducts = [
   {
@@ -411,6 +416,31 @@ const productPriceLabel = (product) => product.isFree ? 'Free' : `${currencySymb
 
 const productSlug = (product) => encodeURIComponent(String(product?.title || product?.id || 'product').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
 
+const promotionalProductUrl = (value) => {
+  const rawValue = String(value || '').trim();
+  if (!rawValue) return '/shop';
+  try {
+    const parsedUrl = new URL(rawValue, window.location.origin);
+    if (parsedUrl.pathname === '/shop' || parsedUrl.pathname.startsWith('/shop/')) {
+      return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
+    }
+    if (/^https?:/i.test(rawValue)) return rawValue;
+  } catch {
+  }
+  if (rawValue.startsWith('/')) return rawValue;
+  return `/shop/${encodeURIComponent(rawValue.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''))}`;
+};
+
+const promotionalProductKey = (value) => {
+  try {
+    const parsedUrl = new URL(String(value || ''), window.location.origin);
+    const pathProduct = parsedUrl.pathname.startsWith('/shop/') ? parsedUrl.pathname.slice('/shop/'.length) : '';
+    return decodeURIComponent(parsedUrl.searchParams.get('product') || pathProduct).trim().toLowerCase();
+  } catch {
+    return '';
+  }
+};
+
 let cartAudioContext;
 
 const playCartFlightSound = async () => {
@@ -452,6 +482,8 @@ const normalizeProduct = (product = {}) => ({
   stockCount: Number(product.stock_count ?? product.stockCount ?? 0),
   rating: Number(product.rating ?? 0),
   reviews: Number(product.reviews ?? 0),
+  vendorId: product.vendor_id || product.vendorId || null,
+  vendorName: product.vendor_name || product.vendorName || '',
   prime: Boolean(product.prime ?? false),
   createdAt: product.created_at || product.createdAt || null
 });
@@ -525,6 +557,8 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const [cartOpen, setCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const [activePromotionalSlide, setActivePromotionalSlide] = useState(0);
+  const [promotionalAds, setPromotionalAds] = useState([]);
   const [calculatorCurrency, setCalculatorCurrency] = useState('NGN');
   const [currencyRatesToNgn, setCurrencyRatesToNgn] = useState(fallbackCurrencyRatesToNgn);
   const [cartFlights, setCartFlights] = useState([]);
@@ -556,6 +590,43 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const productNgnPrice = (product) => product.isFree ? 0 : Number(product.price || 0) * (currencyRatesToNgn[product.currency || 'NGN'] || 1);
   const calculatorRate = currencyRatesToNgn[calculatorCurrency] || 1;
   const calculatorAmount = selectedProduct?.isFree ? 0 : selectedProduct ? productNgnPrice(selectedProduct) / calculatorRate : 0;
+  const activePromotionalItems = promotionalAds.length ? promotionalAds : promotionalSlides;
+  const activePromotionalIndex = activePromotionalSlide % activePromotionalItems.length;
+  const activePromotionalItem = activePromotionalItems[activePromotionalIndex];
+  const activePromotionalProduct = promotionalAds.length
+    ? storeData.products.map(normalizeProduct).find((product) => {
+      const productKey = promotionalProductKey(activePromotionalItem?.url);
+      return productSlug(product).toLowerCase() === productKey || String(product.id || '').trim().toLowerCase() === productKey;
+    })
+    : null;
+  const activePromotionalCover = activePromotionalProduct ? productCoverUrl(activePromotionalProduct) : '';
+
+  useEffect(() => {
+    let active = true;
+    supabase.from('promotional_ads').select('id,eyebrow,headline,product_url,action_label,vendor_name,is_platform_ad').in('status', ['approved', 'published']).order('created_at', { ascending: false }).limit(12)
+      .then(({ data }) => {
+        if (active && Array.isArray(data) && data.length) {
+          const loadedAds = data.map((ad) => ({ eyebrow: ad.vendor_name ? `Vendor: ${ad.vendor_name}` : (ad.eyebrow || 'PAZ Marketplace'), title: ad.headline, action: ad.action_label || 'View product', url: promotionalProductUrl(ad.product_url), isPlatformAd: Boolean(ad.is_platform_ad) }));
+          const platformAds = loadedAds.filter((ad) => ad.isPlatformAd);
+          const productAds = loadedAds.filter((ad) => !ad.isPlatformAd);
+          const orderedAds = [];
+          const cycleLength = Math.max(platformAds.length, productAds.length);
+          for (let index = 0; index < cycleLength; index += 1) {
+            if (platformAds[index]) orderedAds.push(platformAds[index]);
+            if (productAds[index]) orderedAds.push(productAds[index]);
+          }
+          setPromotionalAds(orderedAds);
+        }
+      }).catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setActivePromotionalSlide((current) => (current + 1) % (promotionalAds.length || promotionalSlides.length));
+    }, 9000);
+    return () => window.clearInterval(timer);
+  }, [promotionalAds.length]);
 
   useEffect(() => {
     if (!resolvedProductName || !storeData.products?.length) return;
@@ -1284,6 +1355,17 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
 
   return (
     <div style={{ minHeight: '100vh', background: '#ffffff', color: '#1b1b1b', fontFamily: "'Amazon Ember', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
+      <div style={{ minHeight: '110px', backgroundColor: '#166534', backgroundImage: activePromotionalCover ? `linear-gradient(90deg, rgba(15, 118, 110, 0.9), rgba(22, 101, 52, 0.68) 52%, rgba(15, 23, 42, 0.82)), url("${activePromotionalCover}")` : 'linear-gradient(90deg, #0f766e, #166534 52%, #0f172a)', backgroundSize: 'cover', backgroundPosition: 'center', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 14px', boxSizing: 'border-box' }}>
+        <div style={{ width: 'min(1400px, 100%)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+          <div key={activePromotionalIndex} style={{ minWidth: 0, animation: 'fadeIn 0.35s ease-out' }}>
+            <span style={{ display: 'block', fontSize: '9px', fontWeight: 900, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#bbf7d0' }}>{activePromotionalItem.eyebrow}</span>
+            <strong style={{ display: 'block', marginTop: '2px', fontSize: isSmallScreen ? '11px' : '13px', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{activePromotionalItem.title}</strong>
+          </div>
+          <button type="button" onClick={() => navigate(activePromotionalItem.url)} style={{ flexShrink: 0, border: '1px solid #bbf7d0', borderRadius: '7px', padding: '7px 11px', background: '#f0fdf4', color: '#166534', fontSize: '11px', fontWeight: 900, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            {activePromotionalItem.action}
+          </button>
+        </div>
+      </div>
       {/* Amazon-style Header */}
       <header style={{
         background: 'linear-gradient(to bottom, #131921, #1f2937)',
@@ -1367,9 +1449,9 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
               padding: '16px',
               position: 'fixed',
               left: '14px',
-              top: '220px',
+              top: '330px',
               width: '220px',
-              height: 'calc(100vh - 240px)',
+              height: 'calc(100vh - 350px)',
               overflowY: 'auto',
               zIndex: 50
             }}>
@@ -1717,6 +1799,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                       }}>
                         {product.title}
                       </h3>
+                      {product.vendorName && <div style={{ marginBottom: '6px', color: '#64748b', fontSize: '10px' }}>By {product.vendorName}</div>}
 
                       {/* Rating - Compact */}
                       <div style={{ marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '3px' }}>
@@ -2013,6 +2096,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                     <strong style={{ color: selectedProduct.isFree ? '#15803d' : '#b12704', fontSize: '1.35rem' }}>{productPriceLabel(selectedProduct)}</strong>
                     <span style={{ color: '#64748b', fontSize: '0.82rem' }}>{selectedProduct.isFree ? 'Free email delivery' : 'Digital product'}</span>
                   </div>
+                  {selectedProduct.vendorName && <div style={{ marginBottom: '10px', color: '#475569', fontSize: '0.82rem' }}>Published by <strong>{selectedProduct.vendorName}</strong></div>}
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '10px', color: '#64748b', fontSize: '0.8rem' }}>
                     <span>{'★'.repeat(Math.round(selectedProduct.rating || 0)) || 'No rating'}{selectedProduct.reviews ? ` (${selectedProduct.reviews} reviews)` : ''}</span>
                     <span>{selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? 'Out of stock' : `${selectedProduct.stockCount} available`}</span>

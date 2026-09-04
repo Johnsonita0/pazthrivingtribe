@@ -11,6 +11,8 @@ import sendRegistrationEmailHandler from '../server-handlers/send-registration-e
 import trackVisitorHandler from '../server-handlers/track-visitor.js';
 import completeServicePaymentHandler from '../server-handlers/complete-service-payment.js';
 import productPreviewHandler from '../server-handlers/product-preview.js';
+import vendorSupportHandler from '../server-handlers/vendor-support.js';
+import customerSupportHandler from '../server-handlers/customer-support.js';
 
 const handlers = {
   '/admin-auth': adminAuthHandler,
@@ -19,6 +21,8 @@ const handlers = {
   '/complete-shop-payment': completeShopPaymentHandler,
   '/complete-service-payment': completeServicePaymentHandler,
   '/product-preview': productPreviewHandler,
+  '/vendor-support': vendorSupportHandler,
+  '/customer-support': customerSupportHandler,
   '/currency-rates': currencyRatesHandler,
   '/fetch-meta': fetchMetaHandler,
   '/paystack-webhook': paystackWebhookHandler,

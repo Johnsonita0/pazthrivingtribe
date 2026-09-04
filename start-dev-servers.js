@@ -29,7 +29,7 @@ const apiServer = spawn('node', [path.join(__dirname, 'api-dev-server.js')], {
 // Wait a moment for API server to start, then start Vite
 setTimeout(() => {
   console.log('\n▶ Starting Vite Development Server (port 5173)...\n');
-  const viteServer = spawn('npm', ['run', 'dev'], {
+  const viteServer = spawn('npm', ['run', 'dev:frontend'], {
     stdio: 'inherit',
     shell: true,
     cwd: __dirname

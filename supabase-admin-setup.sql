@@ -185,6 +185,189 @@ create table if not exists shop_order_items (
   created_at timestamptz default now()
 );
 
+-- Vendor marketplace foundation. Vendors remain pending until a main admin approves
+-- their identity document and payout details.
+create table if not exists vendor_profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  company_name text not null,
+  logo_url text,
+  contact_email text,
+  id_type text not null,
+  id_document_path text not null,
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected', 'suspended')),
+  payout_account_name text,
+  payout_account_number text,
+  payout_bank_name text,
+  payout_currency text default 'NGN',
+  rejection_reason text,
+  approved_at timestamptz,
+  approved_by uuid references auth.users(id),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+alter table if exists store_products add column if not exists vendor_id uuid references vendor_profiles(id) on delete set null;
+alter table if exists store_products add column if not exists vendor_name text;
+
+create table if not exists vendor_sales (
+  id uuid primary key default gen_random_uuid(),
+  vendor_id uuid not null references vendor_profiles(id) on delete cascade,
+  order_number text not null,
+  product_id text,
+  product_title text,
+  quantity integer not null default 1,
+  gross_amount numeric(12,2) not null default 0,
+  vendor_amount numeric(12,2) not null default 0,
+  currency text not null default 'NGN',
+  payout_status text not null default 'pending' check (payout_status in ('pending', 'approved', 'paid', 'held')),
+  payout_reference text,
+  paid_at timestamptz,
+  created_at timestamptz default now()
+);
+
+create table if not exists product_ratings (
+  id uuid primary key default gen_random_uuid(),
+  product_id text not null,
+  reviewer_name text not null,
+  reviewer_email text,
+  rating integer not null check (rating between 1 and 5),
+  comment text,
+  created_at timestamptz default now()
+);
+
+create table if not exists vendor_ratings (
+  id uuid primary key default gen_random_uuid(),
+  vendor_id uuid not null references vendor_profiles(id) on delete cascade,
+  reviewer_name text not null,
+  reviewer_email text,
+  rating integer not null check (rating between 1 and 5),
+  comment text,
+  created_at timestamptz default now()
+);
+
+create table if not exists vendor_support_messages (
+  id uuid primary key default gen_random_uuid(),
+  vendor_id uuid references vendor_profiles(id) on delete set null,
+  sender_email text,
+  message text not null,
+  status text not null default 'open' check (status in ('open', 'in_progress', 'closed')),
+  admin_reply text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists customer_support_messages (
+  id uuid primary key default gen_random_uuid(),
+  sender_name text not null,
+  sender_email text not null,
+  message text not null,
+  status text not null default 'open' check (status in ('open', 'in_progress', 'closed')),
+  admin_reply text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create table if not exists promotional_ads (
+  id uuid primary key default gen_random_uuid(),
+  headline text not null,
+  eyebrow text,
+  product_url text,
+  action_label text default 'View product',
+  posted_by uuid references auth.users(id) on delete set null,
+  posted_by_email text,
+  vendor_id uuid references vendor_profiles(id) on delete set null,
+  vendor_name text,
+  is_platform_ad boolean not null default false,
+  status text not null default 'published' check (status in ('draft', 'published', 'archived')),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+alter table if exists promotional_ads add column if not exists vendor_name text;
+alter table if exists promotional_ads add column if not exists posted_by_email text;
+alter table if exists promotional_ads add column if not exists is_platform_ad boolean not null default false;
+alter table if exists promotional_ads drop constraint if exists promotional_ads_status_check;
+alter table if exists promotional_ads add constraint promotional_ads_status_check check (status in ('draft', 'pending', 'approved', 'published', 'publish_requested', 'unpublish_requested', 'rejected', 'archived'));
+
+insert into public.promotional_ads (eyebrow, headline, product_url, action_label, posted_by_email, is_platform_ad, status)
+select 'PAZ Marketplace', 'Your work belongs in the PAZ Marketplace', '/vendor', 'Become a vendor', 'PAZ Thriving Tribe', true, 'published'
+where not exists (select 1 from public.promotional_ads where is_platform_ad = true and headline = 'Your work belongs in the PAZ Marketplace');
+
+insert into public.promotional_ads (eyebrow, headline, product_url, action_label, posted_by_email, is_platform_ad, status)
+select 'Creator opportunity', 'Turn your knowledge into a growing storefront', '/vendor', 'Become a vendor', 'PAZ Thriving Tribe', true, 'published'
+where not exists (select 1 from public.promotional_ads where is_platform_ad = true and headline = 'Turn your knowledge into a growing storefront');
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('vendor-verification', 'vendor-verification', false, 10485760, ARRAY['image/png','image/jpeg','image/jpg','image/webp','application/pdf'])
+on conflict (id) do update set public = false, file_size_limit = 10485760, allowed_mime_types = excluded.allowed_mime_types;
+
+alter table if exists vendor_profiles enable row level security;
+alter table if exists vendor_sales enable row level security;
+alter table if exists product_ratings enable row level security;
+alter table if exists vendor_ratings enable row level security;
+alter table if exists vendor_support_messages enable row level security;
+alter table if exists customer_support_messages enable row level security;
+alter table if exists promotional_ads enable row level security;
+drop policy if exists "public read published ads" on public.promotional_ads;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'vendor_profiles' AND policyname = 'vendors manage own profile') THEN
+    EXECUTE 'CREATE POLICY "vendors manage own profile" ON public.vendor_profiles FOR ALL TO authenticated USING (id = auth.uid()) WITH CHECK (id = auth.uid())';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'vendor_profiles' AND policyname = 'public read approved vendors') THEN
+    EXECUTE 'CREATE POLICY "public read approved vendors" ON public.vendor_profiles FOR SELECT USING (status = ''approved'')';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'vendor_sales' AND policyname = 'vendors read own sales') THEN
+    EXECUTE 'CREATE POLICY "vendors read own sales" ON public.vendor_sales FOR SELECT TO authenticated USING (vendor_id = auth.uid())';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'product_ratings' AND policyname = 'public read product ratings') THEN
+    EXECUTE 'CREATE POLICY "public read product ratings" ON public.product_ratings FOR SELECT USING (true)';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'product_ratings' AND policyname = 'public submit product ratings') THEN
+    EXECUTE 'CREATE POLICY "public submit product ratings" ON public.product_ratings FOR INSERT WITH CHECK (rating between 1 and 5)';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'vendor_ratings' AND policyname = 'public read vendor ratings') THEN
+    EXECUTE 'CREATE POLICY "public read vendor ratings" ON public.vendor_ratings FOR SELECT USING (true)';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'vendor_ratings' AND policyname = 'public submit vendor ratings') THEN
+    EXECUTE 'CREATE POLICY "public submit vendor ratings" ON public.vendor_ratings FOR INSERT WITH CHECK (rating between 1 and 5)';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'vendor_support_messages' AND policyname = 'vendors read own support messages') THEN
+    EXECUTE 'CREATE POLICY "vendors read own support messages" ON public.vendor_support_messages FOR SELECT TO authenticated USING (vendor_id = auth.uid())';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'promotional_ads' AND policyname = 'public read published ads') THEN
+    EXECUTE 'CREATE POLICY "public read published ads" ON public.promotional_ads FOR SELECT USING (status in (''approved'', ''published''))';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'promotional_ads' AND policyname = 'approved vendors submit ads') THEN
+    EXECUTE 'CREATE POLICY "approved vendors submit ads" ON public.promotional_ads FOR INSERT TO authenticated WITH CHECK (vendor_id = auth.uid() AND posted_by = auth.uid() AND EXISTS (SELECT 1 FROM public.vendor_profiles WHERE id = auth.uid() AND status = ''approved''))';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'promotional_ads' AND policyname = 'vendors read own ads') THEN
+    EXECUTE 'CREATE POLICY "vendors read own ads" ON public.promotional_ads FOR SELECT TO authenticated USING (vendor_id = auth.uid())';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'promotional_ads' AND policyname = 'vendors request ad unpublish') THEN
+    EXECUTE 'CREATE POLICY "vendors request ad unpublish" ON public.promotional_ads FOR UPDATE TO authenticated USING (vendor_id = auth.uid() AND status in (''approved'', ''published'')) WITH CHECK (vendor_id = auth.uid() AND status = ''unpublish_requested'')';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'promotional_ads' AND policyname = 'vendors request ad publish') THEN
+    EXECUTE 'CREATE POLICY "vendors request ad publish" ON public.promotional_ads FOR UPDATE TO authenticated USING (vendor_id = auth.uid() AND status = ''archived'') WITH CHECK (vendor_id = auth.uid() AND status = ''publish_requested'')';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'public' AND tablename = 'promotional_ads' AND policyname = 'admins manage promotional ads') THEN
+    EXECUTE 'CREATE POLICY "admins manage promotional ads" ON public.promotional_ads FOR ALL TO authenticated USING (EXISTS (SELECT 1 FROM public.site_admins WHERE uid = auth.uid()::text OR lower(email) = lower(auth.jwt() ->> ''email''))) WITH CHECK (EXISTS (SELECT 1 FROM public.site_admins WHERE uid = auth.uid()::text OR lower(email) = lower(auth.jwt() ->> ''email'')))';
+  END IF;
+END
+$$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'vendors upload own verification documents') THEN
+    EXECUTE 'CREATE POLICY "vendors upload own verification documents" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = ''vendor-verification'' AND (storage.foldername(name))[1] = ''vendors'' AND (storage.foldername(name))[2] = auth.uid()::text)';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'vendors read own verification documents') THEN
+    EXECUTE 'CREATE POLICY "vendors read own verification documents" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = ''vendor-verification'' AND (storage.foldername(name))[1] = ''vendors'' AND (storage.foldername(name))[2] = auth.uid()::text)';
+  END IF;
+END
+$$;
+
 alter table if exists store_products enable row level security;
 alter table if exists store_bank_accounts enable row level security;
 alter table if exists shop_orders enable row level security;
@@ -284,6 +467,20 @@ BEGIN
   END IF;
 END
 $$;
+
+-- Replace the legacy open product-insert policy with an approved-vendor policy.
+DROP POLICY IF EXISTS "allow public insert store products" ON public.store_products;
+DROP POLICY IF EXISTS "approved vendors insert own products" ON public.store_products;
+CREATE POLICY "approved vendors insert own products" ON public.store_products
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    vendor_id = auth.uid()
+    AND EXISTS (
+      SELECT 1 FROM public.vendor_profiles
+      WHERE vendor_profiles.id = auth.uid()
+        AND vendor_profiles.status = 'approved'
+    )
+  );
 
 create index if not exists idx_store_products_category on store_products(category);
 create index if not exists idx_shop_orders_order_number on shop_orders(order_number);

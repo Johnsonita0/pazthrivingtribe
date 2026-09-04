@@ -10,9 +10,9 @@ let supabase
 if (isValidSupabaseUrl(supabaseUrl)) {
   supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
-      persistSession: false,
+      persistSession: true,
       detectSessionInUrl: false,
-      autoRefreshToken: false
+      autoRefreshToken: true
     }
   })
 } else {

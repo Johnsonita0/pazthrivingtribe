@@ -118,6 +118,29 @@ export default async function handler(req, res) {
       return sendJson(res, 402, { error: 'The payment amount does not match this order.' });
     }
 
+    if (!isFreeOrder) {
+      const vendorSales = normalizedItems
+        .filter((item) => item.product.vendor_id)
+        .map((item) => {
+          const grossAmount = Number(item.product.price || 0) * item.quantity;
+          return {
+            vendor_id: item.product.vendor_id,
+            order_number: orderNumber,
+            product_id: item.product.id,
+            product_title: item.product.title,
+            quantity: item.quantity,
+            gross_amount: grossAmount,
+            vendor_amount: grossAmount,
+            currency: orderCurrency,
+            payout_status: 'pending'
+          };
+        });
+      if (vendorSales.length) {
+        const { error: vendorSalesError } = await supabase.from('vendor_sales').insert(vendorSales);
+        if (vendorSalesError) console.warn('Vendor sale ledger update failed:', vendorSalesError.message);
+      }
+    }
+
     const attachments = [];
     const missingFiles = [];
     for (const item of normalizedItems) {
