@@ -76,8 +76,8 @@ export default function App() {
   const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/dashboard');
   const isVendorRoute = location.pathname === '/vendor';
   const isFeedbackRoute = location.pathname === '/feedback';
-  const isStoreRoute = ['/store', '/shop'].includes(location.pathname) || location.pathname.startsWith('/shop/');
-  const isShopMenuActive = ['/store', '/shop'].includes(location.pathname) || location.pathname.startsWith('/shop/');
+  const isStoreRoute = ['/store', '/shop'].includes(location.pathname) || location.pathname.startsWith('/store/') || location.pathname.startsWith('/shop/');
+  const isShopMenuActive = isStoreRoute;
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -3558,7 +3558,7 @@ export default function App() {
         </button>
 
         {/* FLOATING WHATSAPP ACTION */}
-        {!isAdminRoute && !isVendorRoute && (
+        {!isAdminRoute && !isVendorRoute && !isStoreRoute && (
           <div className="floating-action-shell">
             <div className={`floating-action-tip ${showWhatsappTip ? 'visible' : ''}`}>
               {whatsappTips[whatsappTipIndex]}
