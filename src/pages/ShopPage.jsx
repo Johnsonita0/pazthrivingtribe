@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import { getCountries, getCountryCallingCode, isValidPhoneNumber, parsePhoneNumberFromString } from 'libphonenumber-js';
 import { supabase } from '../supabaseClient';
@@ -511,7 +511,10 @@ const readStoreData = () => {
 export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', storeProducts, storeBankAccount }) {
   const navigate = useNavigate();
   const { productName } = useParams();
-  const isProductPage = Boolean(productName);
+  const [searchParams] = useSearchParams();
+  const sharedProductSlug = searchParams.get('product');
+  const resolvedProductName = productName || sharedProductSlug;
+  const isProductPage = Boolean(resolvedProductName);
   const [storeData, setStoreData] = useState(readStoreData);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
@@ -554,8 +557,8 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const calculatorAmount = selectedProduct?.isFree ? 0 : selectedProduct ? productNgnPrice(selectedProduct) / calculatorRate : 0;
 
   useEffect(() => {
-    if (!productName || !storeData.products?.length) return;
-    const requestedSlug = decodeURIComponent(productName).trim().toLowerCase();
+    if (!resolvedProductName || !storeData.products?.length) return;
+    const requestedSlug = decodeURIComponent(resolvedProductName).trim().toLowerCase();
     const product = storeData.products.map(normalizeProduct).find((item) => productSlug(item).toLowerCase() === requestedSlug || String(item.id).trim().toLowerCase() === requestedSlug);
     if (product) {
       const frame = window.requestAnimationFrame(() => {
@@ -565,7 +568,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
       return () => window.cancelAnimationFrame(frame);
     }
     return undefined;
-  }, [productName, storeData.products]);
+  }, [resolvedProductName, storeData.products]);
 
   useEffect(() => {
     let active = true;

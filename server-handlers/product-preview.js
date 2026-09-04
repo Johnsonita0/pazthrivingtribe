@@ -61,12 +61,13 @@ export default async function handler(req, res) {
   const title = product?.title || 'Paz Thriving Tribe';
   const description = product?.description || 'Digital resources from Paz Thriving Tribe.';
   const cover = coverUrl(product?.cover || product?.cover_url || product?.cover_image || product?.image || product?.image_url || product?.imageUrl);
-  const browserUrl = `https://pazthrivingtribe.org/shop/${encodeURIComponent(requestedSlug)}`;
+  const browserUrl = `https://pazthrivingtribe.org/shop?product=${encodeURIComponent(requestedSlug)}`;
+  const canonicalUrl = `https://pazthrivingtribe.org/shop/${encodeURIComponent(requestedSlug)}`;
 
   const userAgent = req.headers?.['user-agent'] || req.headers?.['User-Agent'] || '';
   if (isInAppBrowser(userAgent) || !isSocialCrawler(userAgent)) {
     return redirectToProduct(res, browserUrl);
   }
 
-  sendHtml(res, `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><meta name="description" content="${escapeHtml(description)}"><meta property="og:type" content="product"><meta property="og:title" content="${escapeHtml(title)}"><meta property="og:description" content="${escapeHtml(description)}"><meta property="og:image" content="${escapeHtml(cover)}"><meta property="og:url" content="${escapeHtml(browserUrl)}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escapeHtml(title)}"><meta name="twitter:description" content="${escapeHtml(description)}"><meta name="twitter:image" content="${escapeHtml(cover)}"><meta http-equiv="refresh" content="0;url=${escapeHtml(browserUrl)}"></head><body><p>Opening ${escapeHtml(title)}...</p><p><a href="${escapeHtml(browserUrl)}">Continue to product</a></p></body></html>`);
+  sendHtml(res, `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><meta name="description" content="${escapeHtml(description)}"><meta property="og:type" content="product"><meta property="og:title" content="${escapeHtml(title)}"><meta property="og:description" content="${escapeHtml(description)}"><meta property="og:image" content="${escapeHtml(cover)}"><meta property="og:url" content="${escapeHtml(canonicalUrl)}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escapeHtml(title)}"><meta name="twitter:description" content="${escapeHtml(description)}"><meta name="twitter:image" content="${escapeHtml(cover)}"><meta http-equiv="refresh" content="0;url=${escapeHtml(browserUrl)}"></head><body><p>Opening ${escapeHtml(title)}...</p><p><a href="${escapeHtml(browserUrl)}">Continue to product</a></p></body></html>`);
 }
