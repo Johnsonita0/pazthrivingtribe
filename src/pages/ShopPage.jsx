@@ -556,6 +556,9 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const [sortBy, setSortBy] = useState('relevant');
   const [cartOpen, setCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [productReviews, setProductReviews] = useState([]);
+  const [ratingForm, setRatingForm] = useState({ reviewerName: '', reviewerEmail: '', rating: 0, comment: '' });
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
   const [activePromotionalSlide, setActivePromotionalSlide] = useState(0);
   const [promotionalAds, setPromotionalAds] = useState([]);
@@ -642,6 +645,57 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     }
     return undefined;
   }, [resolvedProductName, storeData.products]);
+
+  useEffect(() => {
+    if (!selectedProduct?.id) return undefined;
+    let active = true;
+    setProductReviews([]);
+    supabase.from('product_ratings').select('id,reviewer_name,reviewer_email,rating,comment,created_at').eq('product_id', String(selectedProduct.id)).order('created_at', { ascending: false }).limit(100)
+      .then(({ data, error }) => {
+        if (!active || error || !Array.isArray(data)) return;
+        setProductReviews(data);
+        if (data.length > 0) {
+          const average = data.reduce((total, review) => total + Number(review.rating || 0), 0) / data.length;
+          setSelectedProduct((current) => current?.id === selectedProduct.id ? { ...current, rating: average, reviews: data.length } : current);
+        }
+      })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [selectedProduct?.id]);
+
+  const submitProductRating = async (event) => {
+    event.preventDefault();
+    if (!selectedProduct?.id || !ratingForm.reviewerName.trim() || !ratingForm.rating) {
+      setToast({ message: 'Choose a star rating and enter your name first.', type: 'error' });
+      window.setTimeout(() => setToast(null), 3000);
+      return;
+    }
+    setRatingSubmitting(true);
+    const { data, error } = await supabase.from('product_ratings').insert({
+      product_id: String(selectedProduct.id),
+      reviewer_name: ratingForm.reviewerName.trim(),
+      reviewer_email: ratingForm.reviewerEmail.trim() || null,
+      rating: Number(ratingForm.rating),
+      comment: ratingForm.comment.trim() || null,
+    }).select('id,reviewer_name,reviewer_email,rating,comment,created_at').single();
+    setRatingSubmitting(false);
+    if (error) {
+      setToast({ message: error.message || 'Your rating could not be saved.', type: 'error' });
+      window.setTimeout(() => setToast(null), 3500);
+      return;
+    }
+    const updatedReviews = [data, ...productReviews];
+    const average = updatedReviews.reduce((total, review) => total + Number(review.rating || 0), 0) / updatedReviews.length;
+    setProductReviews(updatedReviews);
+    setSelectedProduct((current) => ({ ...current, rating: average, reviews: updatedReviews.length }));
+    setStoreData((current) => ({
+      ...current,
+      products: current.products.map((product) => product.id === selectedProduct.id ? { ...product, rating: average, reviews: updatedReviews.length } : product),
+    }));
+    setRatingForm({ reviewerName: '', reviewerEmail: '', rating: 0, comment: '' });
+    setToast({ message: 'Thank you. Your product rating has been added.', type: 'success' });
+    window.setTimeout(() => setToast(null), 3000);
+  };
 
   useEffect(() => {
     let active = true;
@@ -2117,6 +2171,24 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                     <strong style={{ display: 'block', marginBottom: '5px' }}>How delivery works</strong>
                     {selectedProduct.isFree ? 'Enter your details and request the free product. We will email the file directly to you.' : 'After payment is confirmed, we email the file as an attachment to the address you provide.'} Open the email, download the attachment, and use your device PDF or ZIP app to open it.
                   </div>
+                  <section style={{ marginTop: '16px', padding: '14px', border: '1px solid #dbe7df', borderRadius: '12px', background: '#fbfdfb' }} aria-labelledby="product-rating-title">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'baseline', flexWrap: 'wrap' }}>
+                      <strong id="product-rating-title" style={{ color: '#166534' }}>Rate this product</strong>
+                      <span style={{ color: '#64748b', fontSize: '0.78rem' }}>{productReviews.length} review{productReviews.length === 1 ? '' : 's'}</span>
+                    </div>
+                    <form onSubmit={submitProductRating} style={{ display: 'grid', gap: '8px', marginTop: '10px' }}>
+                      <div role="radiogroup" aria-label="Product rating" style={{ display: 'flex', gap: '2px' }}>
+                        {[1, 2, 3, 4, 5].map((value) => (
+                          <button key={value} type="button" role="radio" aria-label={`${value} star${value === 1 ? '' : 's'}`} aria-checked={ratingForm.rating === value} onClick={() => setRatingForm((current) => ({ ...current, rating: value }))} style={{ border: 0, background: 'transparent', color: value <= ratingForm.rating ? '#f59e0b' : '#cbd5e1', fontSize: '1.55rem', lineHeight: 1, padding: '2px', cursor: 'pointer' }}>★</button>
+                        ))}
+                      </div>
+                      <input required placeholder="Your name" value={ratingForm.reviewerName} onChange={(event) => setRatingForm((current) => ({ ...current, reviewerName: event.target.value }))} style={{ padding: '9px 10px', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                      <input type="email" placeholder="Email (optional)" value={ratingForm.reviewerEmail} onChange={(event) => setRatingForm((current) => ({ ...current, reviewerEmail: event.target.value }))} style={{ padding: '9px 10px', border: '1px solid #cbd5e1', borderRadius: '8px' }} />
+                      <textarea placeholder="Share a short review (optional)" value={ratingForm.comment} onChange={(event) => setRatingForm((current) => ({ ...current, comment: event.target.value }))} rows="3" style={{ padding: '9px 10px', border: '1px solid #cbd5e1', borderRadius: '8px', resize: 'vertical', font: 'inherit' }} />
+                      <button type="submit" disabled={ratingSubmitting} style={{ justifySelf: 'start', border: 0, borderRadius: '8px', padding: '10px 14px', background: ratingSubmitting ? '#cbd5e1' : '#166534', color: ratingSubmitting ? '#475569' : '#fff', fontWeight: 800, cursor: ratingSubmitting ? 'wait' : 'pointer' }}>{ratingSubmitting ? 'Saving rating...' : 'Submit rating'}</button>
+                    </form>
+                    {productReviews.length > 0 && <div style={{ display: 'grid', gap: '8px', marginTop: '14px' }}>{productReviews.slice(0, 5).map((review) => <article key={review.id} style={{ paddingTop: '8px', borderTop: '1px solid #e2e8f0', fontSize: '0.8rem' }}><div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}><strong>{review.reviewer_name}</strong><span style={{ color: '#f59e0b' }}>{'★'.repeat(Number(review.rating || 0))}</span></div>{review.comment && <p style={{ margin: '4px 0 0', color: '#475569', lineHeight: 1.45 }}>{review.comment}</p>}</article>)}</div>}
+                  </section>
                 </div>
               </div>
 

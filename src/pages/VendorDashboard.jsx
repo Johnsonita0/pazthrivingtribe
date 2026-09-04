@@ -21,6 +21,7 @@ const money = (value, currency = "NGN") =>
     currency,
     maximumFractionDigits: 2,
   }).format(Number(value || 0));
+const appUrl = String(import.meta.env.VITE_APP_URL || window.location.origin).replace(/\/$/, "");
 
 export default function VendorDashboard() {
   const navigate = useNavigate();
@@ -269,7 +270,7 @@ export default function VendorDashboard() {
           : await supabase.auth.signUp({
               email: authForm.email,
               password: authForm.password,
-              options: { emailRedirectTo: `${window.location.origin}/vendor?confirmed=1` },
+              options: { emailRedirectTo: `${appUrl}/vendor?confirmed=1` },
             });
       if (result.error) throw result.error;
       if (result.data?.session) {

@@ -34,3 +34,7 @@ Return links:
 - `https://pazthrivingtribe.org/vendor?confirmed=1`
 
 The vendor confirmation button returns the user to the PAZ vendor page, where the registration details are restored and the vendor can complete identity verification.
+
+Sender identity:
+
+Set the sender name to `PAZ Thriving Tribe` and the sender address to `notifications@pazthrivingtribe.org` in the email provider settings for the PAZ project. The domain `pazthrivingtribe.org` must have its SPF and DKIM records verified before the sender address can be used reliably.
