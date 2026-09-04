@@ -31,7 +31,8 @@ const coverUrl = (cover) => {
 const sendHtml = (res, html) => {
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=600');
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.setHeader('Vary', 'User-Agent');
   res.end(html);
 };
 
