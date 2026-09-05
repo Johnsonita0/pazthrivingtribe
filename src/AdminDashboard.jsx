@@ -81,6 +81,7 @@ export default function AdminDashboard(props) {
   const emailInputRef = useRef(null);
   const productEditorRef = useRef(null);
   const [isMobileView, setIsMobileView] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [approvedVendorSales, setApprovedVendorSales] = useState({});
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -1863,7 +1864,7 @@ export default function AdminDashboard(props) {
                   🔒
                 </span>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -1879,6 +1880,14 @@ export default function AdminDashboard(props) {
                     fontFamily: "inherit",
                   }}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((current) => !current)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  style={{ border: 0, background: "transparent", padding: "6px", fontSize: "1.1rem" }}
+                >
+                  {showPassword ? "🙈" : "👁"}
+                </button>
               </div>
             </div>
 

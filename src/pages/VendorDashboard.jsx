@@ -74,6 +74,9 @@ export default function VendorDashboard() {
   const [passwordResetMode, setPasswordResetMode] = useState(() =>
     new URLSearchParams(window.location.search).get("reset") === "1",
   );
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -559,8 +562,14 @@ export default function VendorDashboard() {
           <h1>Reset vendor password</h1>
           <p style={{ color: "#64748b" }}>Choose a new password for your PAZ vendor account.</p>
           <div style={{ display: "grid", gap: "12px" }}>
-            <input required minLength="8" type="password" placeholder="New password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} style={fieldStyle} />
-            <input required minLength="8" type="password" placeholder="Confirm new password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} style={fieldStyle} />
+            <div style={{ position: "relative" }}>
+              <input required minLength="8" type={showNewPassword ? "text" : "password"} placeholder="New password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} style={{ ...fieldStyle, paddingRight: "46px" }} />
+              <button type="button" onClick={() => setShowNewPassword((current) => !current)} aria-label={showNewPassword ? "Hide new password" : "Show new password"} style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", border: 0, background: "transparent", padding: "6px", fontSize: "1.05rem" }}>{showNewPassword ? "🙈" : "👁"}</button>
+            </div>
+            <div style={{ position: "relative" }}>
+              <input required minLength="8" type={showConfirmPassword ? "text" : "password"} placeholder="Confirm new password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} style={{ ...fieldStyle, paddingRight: "46px" }} />
+              <button type="button" onClick={() => setShowConfirmPassword((current) => !current)} aria-label={showConfirmPassword ? "Hide confirmed password" : "Show confirmed password"} style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", border: 0, background: "transparent", padding: "6px", fontSize: "1.05rem" }}>{showConfirmPassword ? "🙈" : "👁"}</button>
+            </div>
             <button disabled={saving} style={{ padding: "12px", background: "#166534", color: "#fff", border: 0, borderRadius: "9px", fontWeight: 800 }}>{saving ? "Updating..." : "Update password"}</button>
           </div>
           {notice && <p style={{ color: notice.type === "error" ? "#b91c1c" : "#166534" }}>{notice.text}</p>}
@@ -603,17 +612,20 @@ export default function VendorDashboard() {
               }
               style={fieldStyle}
             />
-            {authMode !== "reset" && <input
-              required
-              minLength="8"
-              type="password"
-              placeholder="Password"
-              value={authForm.password}
-              onChange={(event) =>
-                setAuthForm({ ...authForm, password: event.target.value })
-              }
-              style={fieldStyle}
-            />}
+            {authMode !== "reset" && <div style={{ position: "relative" }}>
+              <input
+                required
+                minLength="8"
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                value={authForm.password}
+                onChange={(event) =>
+                  setAuthForm({ ...authForm, password: event.target.value })
+                }
+                style={{ ...fieldStyle, paddingRight: "46px" }}
+              />
+              <button type="button" onClick={() => setShowPassword((current) => !current)} aria-label={showPassword ? "Hide password" : "Show password"} style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", border: 0, background: "transparent", padding: "6px", fontSize: "1.05rem" }}>{showPassword ? "🙈" : "👁"}</button>
+            </div>}
             {authMode === "sign-up" && (
               <>
                 <input required placeholder="Business or brand name" value={profileForm.companyName} onChange={(event) => setProfileForm({ ...profileForm, companyName: event.target.value })} style={fieldStyle} />
