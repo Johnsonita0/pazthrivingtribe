@@ -1592,6 +1592,22 @@ export default function AdminDashboard(props) {
     }
   };
 
+  const updateStoreProductReviewStatus = async (product, status) => {
+    const token = session?.access_token || session?.accessToken || "";
+    const response = await fetch("/api/admin-update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: "update", table: "store_products", match: { id: product.id }, payload: { status, updated_at: new Date().toISOString() } }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      showAdminToast("error", "Product review failed", payload.error || "The product review status could not be saved.");
+      return;
+    }
+    setStoreProducts((current) => current.map((item) => item.id === product.id ? { ...item, status } : item));
+    showAdminToast("success", "Product review updated", `${product.title} is now ${status}.`);
+  };
+
   const handleDeleteStoreProduct = async (productId) => {
     if (!productId) return;
     const productToDelete = (
@@ -3557,6 +3573,7 @@ export default function AdminDashboard(props) {
                                           ? "Available"
                                           : "Out of stock"}
                                       </span>
+                                      <span style={{ background: product.status === "approved" ? "#dcfce7" : product.status === "rejected" ? "#fee2e2" : "#fef3c7", color: product.status === "approved" ? "#166534" : product.status === "rejected" ? "#b91c1c" : "#92400e", borderRadius: "999px", padding: "4px 8px", fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase" }}>{product.status === "approved" ? "Admin approved" : product.status === "rejected" ? "Rejected" : "Needs review"}</span>
                                     </div>
                                     <div
                                       className="commerce-product-title"
@@ -3619,6 +3636,20 @@ export default function AdminDashboard(props) {
                                     </div>
                                   </div>
                                   <div className="commerce-product-actions">
+                                    <button
+                                      type="button"
+                                      onClick={() => updateStoreProductReviewStatus(product, product.status === "approved" ? "rejected" : "approved")}
+                                      style={{
+                                        border: "1px solid #0f766e",
+                                        background: "#ecfdf5",
+                                        color: "#0f766e",
+                                        borderRadius: "10px",
+                                        padding: "8px 10px",
+                                        fontWeight: 700,
+                                      }}
+                                    >
+                                      {product.status === "approved" ? "Reject" : "Approve"}
+                                    </button>
                                     <button
                                       type="button"
                                       onClick={() =>

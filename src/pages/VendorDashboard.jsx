@@ -15,6 +15,13 @@ const fieldStyle = {
   borderRadius: "9px",
   font: "inherit",
 };
+const productFieldStyle = {
+  ...fieldStyle,
+  padding: "8px 10px",
+  minHeight: "32px",
+  fontSize: ".78rem",
+  borderRadius: "8px",
+};
 const money = (value, currency = "NGN") =>
   new Intl.NumberFormat(undefined, {
     style: "currency",
@@ -63,7 +70,16 @@ export default function VendorDashboard() {
     currency: "NGN",
     category: "Ebook",
     fileUrl: "",
+    cover: "/logo/logomain.png",
+    isFree: false,
+    stockCount: "1",
+    inStock: true,
   });
+  const [productFile, setProductFile] = useState(null);
+  const [productFilePreviewUrl, setProductFilePreviewUrl] = useState("");
+  const [coverFile, setCoverFile] = useState(null);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState("");
+  const [editingProductId, setEditingProductId] = useState(null);
   const [adForm, setAdForm] = useState({
     eyebrow: "Vendor spotlight",
     headline: "",
@@ -74,6 +90,8 @@ export default function VendorDashboard() {
   const [loading, setLoading] = useState(true);
   const [documentPreviewUrl, setDocumentPreviewUrl] = useState("");
   const [documentPreviewOpen, setDocumentPreviewOpen] = useState(false);
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState("");
+  const [idDocumentPreviewUrl, setIdDocumentPreviewUrl] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [passwordResetMode, setPasswordResetMode] = useState(() =>
     new URLSearchParams(window.location.search).get("reset") === "1",
@@ -94,6 +112,35 @@ export default function VendorDashboard() {
       window.sessionStorage.removeItem(vendorDraftKey);
     }
   }, []);
+
+  useEffect(() => {
+    const logoUrl = profileForm.logoFile ? URL.createObjectURL(profileForm.logoFile) : "";
+    const idUrl = profileForm.idDocument && profileForm.idDocument.type.startsWith("image/")
+      ? URL.createObjectURL(profileForm.idDocument)
+      : "";
+    setLogoPreviewUrl(logoUrl);
+    setIdDocumentPreviewUrl(idUrl);
+    return () => {
+      if (logoUrl) URL.revokeObjectURL(logoUrl);
+      if (idUrl) URL.revokeObjectURL(idUrl);
+    };
+  }, [profileForm.logoFile, profileForm.idDocument]);
+
+  useEffect(() => {
+    const previewUrl = productFile ? URL.createObjectURL(productFile) : "";
+    setProductFilePreviewUrl(previewUrl);
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [productFile]);
+
+  useEffect(() => {
+    const previewUrl = coverFile ? URL.createObjectURL(coverFile) : "";
+    setCoverPreviewUrl(previewUrl);
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [coverFile]);
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("confirmed") === "1") {
@@ -448,6 +495,7 @@ export default function VendorDashboard() {
   const uploadProduct = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    setProductFile(file);
     const path = `vendors/${session.user.id}/${Date.now()}-${file.name.replace(/[^a-z0-9._-]/gi, "-")}`;
     const { data, error } = await supabase.storage
       .from("product-files")
@@ -463,6 +511,77 @@ export default function VendorDashboard() {
       }));
   };
 
+  const uploadCover = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setCoverFile(file);
+    const path = `vendors/${session.user.id}/covers/${Date.now()}-${file.name.replace(/[^a-z0-9._-]/gi, "-")}`;
+    const { data, error } = await supabase.storage.from("prof-upload").upload(path, file, { upsert: true, contentType: file.type || "image/*" });
+    if (error) {
+      setNotice({ type: "error", text: error.message });
+      return;
+    }
+    const { data: publicData } = supabase.storage.from("prof-upload").getPublicUrl(data?.path || path);
+    setProductForm((current) => ({ ...current, cover: publicData?.publicUrl || data?.path || path }));
+  };
+
+  const toggleProductStock = async (product) => {
+    setSaving(true);
+    const nextInStock = product.in_stock === false;
+    const { data, error } = await supabase
+      .from("store_products")
+      .update({ in_stock: nextInStock, stock_count: nextInStock ? Math.max(Number(product.stock_count || 1), 1) : 0, updated_at: new Date().toISOString() })
+      .eq("id", product.id)
+      .eq("vendor_id", session.user.id)
+      .select()
+      .single();
+    setSaving(false);
+    if (error) {
+      setNotice({ type: "error", text: error.message });
+      return;
+    }
+    setProducts((current) => current.map((item) => item.id === product.id ? data : item));
+    setNotice({ type: "success", text: nextInStock ? "Product marked as available." : "Product marked as sold out." });
+  };
+
+  const deleteProduct = async (product) => {
+    if (!window.confirm(`Remove ${product.title} from your product list?`)) return;
+    setSaving(true);
+    const { error } = await supabase.from("store_products").delete().eq("id", product.id).eq("vendor_id", session.user.id);
+    setSaving(false);
+    if (error) {
+      setNotice({ type: "error", text: error.message });
+      return;
+    }
+    setProducts((current) => current.filter((item) => item.id !== product.id));
+    setNotice({ type: "success", text: "Product removed from your product list." });
+  };
+
+  const editProduct = (product) => {
+    setEditingProductId(product.id);
+    setProductForm({ title: product.title || "", description: product.description || "", price: product.price || "", currency: product.currency || "NGN", category: product.category || "Ebook", fileUrl: product.file_url || "", cover: product.cover || "/logo/logomain.png", isFree: Boolean(product.is_free), stockCount: String(product.stock_count ?? 1), inStock: product.in_stock !== false });
+    setProductFile(null);
+    setCoverFile(null);
+    window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+  };
+
+  const copyProductLink = async (product) => {
+    const slug = encodeURIComponent(
+      String(product?.title || product?.id || "product")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, ""),
+    );
+    const productLink = `${window.location.origin}/shop/${slug}`;
+    try {
+      await navigator.clipboard.writeText(productLink);
+      setNotice({ type: "success", text: "Product link copied and ready to share." });
+    } catch {
+      setNotice({ type: "error", text: "Copy failed. Select the product link manually from the shop." });
+    }
+  };
+
   const publishProduct = async (event) => {
     event.preventDefault();
     if (profile?.status !== "approved") {
@@ -473,26 +592,30 @@ export default function VendorDashboard() {
       return;
     }
     setSaving(true);
-    const { data, error } = await supabase
-      .from("store_products")
-      .insert({
+    const productPayload = {
         title: productForm.title.trim(),
         description: productForm.description.trim(),
         price: Number(productForm.price || 0),
         currency: productForm.currency,
         category: productForm.category,
         file_url: productForm.fileUrl,
+        cover: productForm.cover || "/logo/logomain.png",
+        is_free: Boolean(productForm.isFree),
         vendor_id: session.user.id,
         vendor_name: profile.company_name,
-        in_stock: true,
-        stock_count: 1,
-      })
-      .select()
-      .single();
+        status: editingProductId ? products.find((item) => item.id === editingProductId)?.status || "pending" : "pending",
+        in_stock: productForm.inStock !== false,
+        stock_count: Math.max(Number(productForm.stockCount || 0), 0),
+        updated_at: new Date().toISOString(),
+      };
+    const query = editingProductId
+      ? supabase.from("store_products").update(productPayload).eq("id", editingProductId).eq("vendor_id", session.user.id)
+      : supabase.from("store_products").insert(productPayload);
+    const { data, error } = await query.select().single();
     setSaving(false);
     if (error) setNotice({ type: "error", text: error.message });
     else {
-      setProducts((current) => [data, ...current]);
+      setProducts((current) => editingProductId ? current.map((item) => item.id === editingProductId ? data : item) : [data, ...current]);
       setProductForm({
         title: "",
         description: "",
@@ -500,8 +623,15 @@ export default function VendorDashboard() {
         currency: "NGN",
         category: "Ebook",
         fileUrl: "",
+        cover: "/logo/logomain.png",
+        isFree: false,
+        stockCount: "1",
+        inStock: true,
       });
-      setNotice({ type: "success", text: "Product published to the shop." });
+      setNotice({ type: "success", text: editingProductId ? "Product updated." : "Product published to the shop." });
+      setEditingProductId(null);
+      setProductFile(null);
+      setCoverFile(null);
     }
   };
 
@@ -584,6 +714,13 @@ export default function VendorDashboard() {
     setAds((current) => current.map((item) => (item.id === ad.id ? data : item)));
     setNotice({ type: "success", text: "Publish request sent to the main admin." });
   };
+
+  const logoDisplayUrl = logoPreviewUrl || profileForm.logoUrl || "";
+  const identityImageDisplayUrl = idDocumentPreviewUrl || (
+    /\.(jpe?g|png|webp)$/i.test(profile?.id_document_path || "")
+      ? documentPreviewUrl
+      : ""
+  );
 
   if (passwordResetMode)
     return (
@@ -853,6 +990,8 @@ export default function VendorDashboard() {
             background: "#fff",
             padding: "20px",
             borderRadius: "16px",
+            border: "1px solid #dbe7df",
+            boxShadow: "0 12px 30px rgba(15, 23, 42, .06)",
           }}
         >
           <div>
@@ -872,16 +1011,17 @@ export default function VendorDashboard() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
-              gap: "10px",
+              gridTemplateColumns: "1fr",
+              gap: "12px",
             }}
           >
             <input required placeholder="Business name (locked)" value={profileForm.companyName} readOnly style={{ ...fieldStyle, background: "#f1f5f9", color: "#475569" }} />
             <input required type="email" placeholder="Email (locked)" value={profile?.contact_email || session.user.email || ""} readOnly style={{ ...fieldStyle, background: "#f1f5f9", color: "#475569" }} />
             <input placeholder="Phone number" value={profileForm.phone} onChange={(event) => setProfileForm({ ...profileForm, phone: event.target.value })} style={fieldStyle} />
-            <label onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }} onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file?.type.startsWith("image/")) setProfileForm({ ...profileForm, logoFile: file }); }} style={{ display: "grid", gap: "6px", padding: "16px", border: "1px dashed #86efac", borderRadius: "10px", background: "#f0fdf4", color: "#166534", textAlign: "center", cursor: "copy" }}>
-              <strong>Drag business logo here</strong>
-              <span style={{ fontSize: ".78rem" }}>{profileForm.logoFile?.name || (profileForm.logoUrl ? "Existing logo will be kept" : "PNG, JPG, or WebP")}</span>
+            <label onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }} onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file?.type.startsWith("image/")) setProfileForm({ ...profileForm, logoFile: file }); }} style={{ display: "grid", gap: "7px", alignContent: "center", minHeight: "142px", padding: "12px", border: "1px dashed #86efac", borderRadius: "10px", background: "#f0fdf4", color: "#166534", textAlign: "center", cursor: "copy" }}>
+              {logoDisplayUrl ? <img src={logoDisplayUrl} alt="Business logo thumbnail" style={{ width: "64px", height: "64px", objectFit: "cover", borderRadius: "12px", justifySelf: "center", border: "1px solid #bbf7d0" }} /> : <strong>Drag business logo here</strong>}
+              <strong style={{ fontSize: ".82rem", wordBreak: "break-word" }}>{profileForm.logoFile?.name || (profileForm.logoUrl ? "Current logo" : "Drag or choose a logo")}</strong>
+              <span style={{ fontSize: ".72rem", color: "#4d7c5c" }}>{profileForm.logoFile ? `${Math.ceil(profileForm.logoFile.size / 1024)} KB · ready to upload` : profileForm.logoUrl ? "Stored logo preview" : "PNG, JPG, or WebP"}</span>
               <input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => setProfileForm({ ...profileForm, logoFile: event.target.files?.[0] || null })} style={{ display: "none" }} />
             </label>
             <select
@@ -896,9 +1036,10 @@ export default function VendorDashboard() {
               <option>Driver's licence</option>
               <option>Business registration</option>
             </select>
-            <label onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }} onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file?.type.startsWith("image/") || file?.type === "application/pdf") setProfileForm({ ...profileForm, idDocument: file }); }} style={{ display: "grid", gap: "6px", padding: "16px", border: "1px dashed #93c5fd", borderRadius: "10px", background: "#eff6ff", color: "#1d4ed8", textAlign: "center", cursor: "copy" }}>
-              <strong>Drag identity document here</strong>
-              <span style={{ fontSize: ".78rem" }}>{profileForm.idDocument?.name || (profile?.id_document_path ? "Existing document will be kept" : "ID image or PDF")}</span>
+            <label onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }} onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file?.type.startsWith("image/") || file?.type === "application/pdf") setProfileForm({ ...profileForm, idDocument: file }); }} style={{ display: "grid", gap: "7px", alignContent: "center", minHeight: "142px", padding: "12px", border: "1px dashed #93c5fd", borderRadius: "10px", background: "#eff6ff", color: "#1d4ed8", textAlign: "center", cursor: "copy" }}>
+              {identityImageDisplayUrl ? <img src={identityImageDisplayUrl} alt="Identity document thumbnail" style={{ width: "64px", height: "64px", objectFit: "cover", borderRadius: "10px", justifySelf: "center", border: "1px solid #bfdbfe" }} /> : <span style={{ fontSize: "2rem" }} aria-hidden="true">📄</span>}
+              <strong style={{ fontSize: ".82rem", wordBreak: "break-word" }}>{profileForm.idDocument?.name || (profile?.id_document_path ? profile.id_document_path.split("/").pop() : "Drag or choose ID")}</strong>
+              <span style={{ fontSize: ".72rem", color: "#416db1" }}>{profileForm.idDocument ? `${Math.ceil(profileForm.idDocument.size / 1024)} KB · ready to upload` : profile?.id_document_path ? "Stored document · preview available" : "Image or PDF"}</span>
               <input type="file" accept="image/*,.pdf" onChange={(event) => setProfileForm({ ...profileForm, idDocument: event.target.files?.[0] || null })} style={{ display: "none" }} />
             </label>
             <input
@@ -928,7 +1069,7 @@ export default function VendorDashboard() {
               }
               style={fieldStyle}
             />
-            <button type="button" onClick={verifyBankAccount} disabled={saving} style={{ border: 0, borderRadius: "9px", padding: "11px 12px", background: "#0f766e", color: "#fff", fontWeight: 800, cursor: saving ? "wait" : "pointer" }}>Verify account name</button>
+            <button type="button" onClick={verifyBankAccount} disabled={saving} style={{ width: "100%", border: 0, borderRadius: "9px", padding: "11px 12px", background: "#0f766e", color: "#fff", fontWeight: 800, cursor: saving ? "wait" : "pointer" }}>Verify account name</button>
             <select
               required
               value={profileForm.payoutBankCode}
@@ -977,6 +1118,7 @@ export default function VendorDashboard() {
             Save verification details
           </button>
         </form>}
+        {!settingsOpen && <>
         <div style={{ display: "flex", gap: "8px", marginTop: "22px" }}>
           <button
             type="button"
@@ -1016,13 +1158,15 @@ export default function VendorDashboard() {
               background: "#fff",
               padding: "20px",
               borderRadius: "16px",
+              border: "1px solid #dfe7ef",
+              boxShadow: "0 12px 28px rgba(15, 23, 42, .06)",
             }}
           >
-            <h2>My products</h2>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "18px" }}><div><p style={{ margin: 0, color: "#f59e0b", textTransform: "uppercase", letterSpacing: ".12em", fontSize: ".7rem", fontWeight: 800 }}>Storefront</p><h2 style={{ margin: "6px 0 0", color: "#111827", fontSize: "1.35rem" }}>Product manager</h2></div><span style={{ background: "#fff7ed", color: "#b45309", border: "1px solid #fed7aa", borderRadius: "999px", padding: "7px 11px", fontSize: ".74rem", fontWeight: 800 }}>{products.length} products</span></div>
             {profile?.status === "approved" ? (
               <form
                 onSubmit={publishProduct}
-                style={{ display: "grid", gap: "10px" }}
+                style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "12px" }}
               >
                 <input
                   required
@@ -1034,7 +1178,7 @@ export default function VendorDashboard() {
                       title: event.target.value,
                     })
                   }
-                  style={fieldStyle}
+                  style={{ ...productFieldStyle, gridColumn: "1", gridRow: "1" }}
                 />
                 <textarea
                   required
@@ -1046,23 +1190,28 @@ export default function VendorDashboard() {
                       description: event.target.value,
                     })
                   }
-                  style={{ ...fieldStyle, minHeight: "90px" }}
+                  style={{ ...productFieldStyle, minHeight: "58px", gridColumn: "1 / -1", gridRow: "2", resize: "vertical" }}
                 />
-                <input
-                  required
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="Price"
-                  value={productForm.price}
-                  onChange={(event) =>
-                    setProductForm({
-                      ...productForm,
-                      price: event.target.value,
-                    })
-                  }
-                  style={fieldStyle}
-                />
+                <div style={{ display: "flex", alignItems: "center", gap: "7px", gridColumn: "1", gridRow: "3" }}>
+                  <span aria-hidden="true" style={{ display: "grid", placeItems: "center", minWidth: "24px", height: "32px", color: "#475569", fontWeight: 800, fontSize: ".78rem" }}>₦</span>
+                  <input
+                    required
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.01"
+                    placeholder="Enter amount"
+                    aria-label="Product price amount"
+                    value={productForm.price}
+                    onChange={(event) =>
+                      setProductForm({
+                        ...productForm,
+                        price: event.target.value.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1"),
+                      })
+                    }
+                    style={{ ...productFieldStyle, width: "100%" }}
+                  />
+                </div>
                 <select
                   value={productForm.currency}
                   onChange={(event) =>
@@ -1071,14 +1220,13 @@ export default function VendorDashboard() {
                       currency: event.target.value,
                     })
                   }
-                  style={fieldStyle}
+                  style={{ ...productFieldStyle, gridColumn: "2", gridRow: "3" }}
                 >
                   {currencies.map((currency) => (
                     <option key={currency}>{currency}</option>
                   ))}
                 </select>
-                <input
-                  placeholder="Category"
+                <select
                   value={productForm.category}
                   onChange={(event) =>
                     setProductForm({
@@ -1086,28 +1234,57 @@ export default function VendorDashboard() {
                       category: event.target.value,
                     })
                   }
-                  style={fieldStyle}
-                />
-                <input
-                  type="file"
-                  accept=".pdf,.zip"
-                  required
-                  onChange={uploadProduct}
-                  style={fieldStyle}
-                />
+                  style={{ ...productFieldStyle, gridColumn: "2", gridRow: "1" }}
+                >
+                  {["Ebook", "Planner", "Guide", "Workbook", "Journal", "Course", "Audio", "Bundle"].map((category) => <option key={category}>{category}</option>)}
+                </select>
+                <label style={{ display: "flex", alignItems: "center", gap: "7px", color: "#334155", fontWeight: 700, fontSize: ".7rem", gridColumn: "1 / -1", gridRow: "4" }}>
+                  <input type="checkbox" checked={productForm.isFree} onChange={(event) => setProductForm({ ...productForm, isFree: event.target.checked, price: event.target.checked ? "0" : productForm.price })} />
+                  Free product (email delivery without Paystack)
+                </label>
+                <select value={productForm.inStock ? "available" : "out-of-stock"} onChange={(event) => setProductForm({ ...productForm, inStock: event.target.value === "available" })} aria-label="Stock status" style={{ ...productFieldStyle, gridColumn: "1", gridRow: "5" }}>
+                  <option value="available">Available</option>
+                  <option value="out-of-stock">Out of stock</option>
+                </select>
+                <div style={{ display: "grid", gap: "8px", gridColumn: "2", gridRow: "5" }}>
+                  <input type="number" min="0" value={productForm.stockCount} onChange={(event) => setProductForm({ ...productForm, stockCount: event.target.value })} placeholder="Stock count" style={productFieldStyle} />
+                </div>
+                <label style={{ display: "grid", gap: "4px", color: "#475569", fontSize: ".68rem", fontWeight: 700, gridColumn: "1", gridRow: "6" }}>
+                  Cover image
+                  <span onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }} onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file) uploadCover({ target: { files: [file] } }); }} style={{ display: "grid", placeItems: "center", gap: "4px", minHeight: "38px", padding: "6px 8px", border: "1px dashed #cbd5e1", borderRadius: "9px", background: "#f8fafc", color: "#475569", cursor: "copy", textAlign: "center", fontSize: ".72rem" }}>
+                    {coverPreviewUrl || (productForm.cover && productForm.cover !== "/logo/logomain.png") ? <img src={coverPreviewUrl || productForm.cover} alt="Product cover preview" style={{ width: "42px", height: "42px", objectFit: "cover", borderRadius: "7px" }} /> : null}
+                    <strong>{coverFile?.name || (productForm.cover && productForm.cover !== "/logo/logomain.png" ? "Current cover image" : "Drag image here or click to choose")}</strong>
+                    <input type="file" accept="image/*" onChange={uploadCover} style={{ display: "none" }} />
+                  </span>
+                </label>
+                <label
+                  aria-label="Product file"
+                  onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }}
+                  onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file) { setProductFile(file); uploadProduct({ target: { files: [file] } }); } }}
+                  style={{ display: "grid", gap: "4px", alignContent: "center", minHeight: "38px", marginTop: "16px", padding: "6px 8px", border: "1px dashed #cbd5e1", borderRadius: "9px", background: "#f8fafc", color: "#475569", textAlign: "center", cursor: "copy", gridColumn: "2", gridRow: "3", fontSize: ".72rem" }}
+                >
+                  {productFilePreviewUrl && productFile?.type.startsWith("image/") ? <img src={productFilePreviewUrl} alt="Product file thumbnail" style={{ width: "42px", height: "42px", objectFit: "cover", borderRadius: "7px", justifySelf: "center" }} /> : null}
+                  <strong>{productFile?.name || (productForm.fileUrl ? productForm.fileUrl.split("/").pop() : "Drag PDF or ZIP here, or click to choose")}</strong>
+                  <span style={{ fontSize: ".66rem", color: "#64748b" }}>{productFile ? `${Math.ceil(productFile.size / 1024)} KB · ready to upload` : productForm.fileUrl ? "Existing product file" : ""}</span>
+                  <input type="file" accept=".pdf,.zip" required={!editingProductId && !productForm.fileUrl} onChange={uploadProduct} style={{ display: "none" }} />
+                </label>
                 <button
                   disabled={saving}
                   style={{
                     padding: "11px",
                     border: 0,
                     borderRadius: "9px",
-                    background: "#166534",
+                    background: "linear-gradient(135deg, #f59e0b, #ef4444)",
                     color: "#fff",
                     fontWeight: 800,
+                    gridColumn: "2",
+                    gridRow: "6",
+                    boxShadow: "0 8px 16px rgba(245, 158, 11, .2)",
                   }}
                 >
-                  Publish product
+                  {editingProductId ? "Save product changes" : "Publish product"}
                 </button>
+                {editingProductId && <button type="button" onClick={() => { setEditingProductId(null); setProductFile(null); setCoverFile(null); setProductForm({ title: "", description: "", price: "", currency: "NGN", category: "Ebook", fileUrl: "", cover: "/logo/logomain.png", isFree: false, stockCount: "1", inStock: true }); }} style={{ padding: "11px", border: "1px solid #cbd5e1", borderRadius: "9px", background: "#fff", color: "#334155", fontWeight: 800 }}>Cancel edit</button>}
               </form>
             ) : (
               <p
@@ -1121,21 +1298,30 @@ export default function VendorDashboard() {
                 Your account must be approved before you can publish products.
               </p>
             )}
-            <div style={{ marginTop: "20px" }}>
-              {products.map((product) => (
+            <div style={{ marginTop: "24px" }}>
+              <div style={{ marginBottom: "12px", fontSize: ".8rem", fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: "#64748b" }}>Published products</div>
+              {products.length ? products.map((product) => (
                 <div
                   key={product.id}
                   style={{
-                    padding: "10px 0",
+                    display: "grid",
+                    gap: "8px",
+                    padding: "14px 0",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "12px",
+                    paddingLeft: "12px",
+                    paddingRight: "12px",
+                    marginBottom: "10px",
                     borderBottom: "1px solid #e2e8f0",
                   }}
                 >
-                  <strong>{product.title}</strong>{" "}
-                  <span style={{ color: "#64748b" }}>
-                    {product.currency} {product.price}
-                  </span>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start", flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}><img src={product.cover || "/logo/logomain.png"} alt="" style={{ width: "58px", height: "58px", objectFit: "cover", borderRadius: "9px", border: "1px solid #e2e8f0" }} /><div><strong>{product.title}</strong><div style={{ color: "#64748b", fontSize: ".82rem", marginTop: "3px" }}>{product.is_free ? "Free" : `${product.currency} ${product.price}`} · {product.category || "Product"}</div><div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}><span style={{ color: product.in_stock === false ? "#b91c1c" : "#166534", fontSize: ".8rem", fontWeight: 800 }}>{product.in_stock === false ? "Sold out" : `Available · ${product.stock_count ?? 0} in stock`}</span><span style={{ color: product.status === "approved" ? "#166534" : product.status === "rejected" ? "#b91c1c" : "#b45309", fontSize: ".8rem", fontWeight: 800 }}>· {product.status === "approved" ? "Admin approved" : product.status === "rejected" ? "Rejected by admin" : "Awaiting admin review"}</span></div></div></div>
+                    <div style={{ display: "flex", gap: "7px", flexWrap: "wrap" }}><button type="button" disabled={saving} onClick={() => toggleProductStock(product)} style={{ border: "1px solid #cbd5e1", borderRadius: "8px", padding: "8px 10px", background: "#f8fafc", color: "#334155", fontWeight: 800 }}>{product.in_stock === false ? "Mark available" : "Mark sold out"}</button><button type="button" onClick={() => editProduct(product)} style={{ border: "1px solid #cbd5e1", borderRadius: "8px", padding: "8px 10px", background: "#fff", color: "#334155", fontWeight: 800 }}>Edit</button><button type="button" onClick={() => copyProductLink(product)} style={{ border: "1px solid #86efac", borderRadius: "8px", padding: "8px 10px", background: "#f0fdf4", color: "#166534", fontWeight: 800 }}>Copy link</button><button type="button" disabled={saving} onClick={() => deleteProduct(product)} style={{ border: "1px solid #fecaca", borderRadius: "8px", padding: "8px 10px", background: "#fef2f2", color: "#b91c1c", fontWeight: 800 }}>Delete</button></div>
+                  </div>
+                  {product.file_url && <div style={{ color: "#64748b", fontSize: ".78rem", overflowWrap: "anywhere" }}>File: {product.file_url.split("/").pop()}</div>}
                 </div>
-              ))}
+              )) : <p style={{ color: "#64748b" }}>No products posted yet.</p>}
             </div>
           </section>
         ) : (
@@ -1238,6 +1424,7 @@ export default function VendorDashboard() {
             </div>
           </section>
         )}
+        </>}
       </div>
     </main>
   );

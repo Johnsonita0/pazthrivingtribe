@@ -119,6 +119,7 @@ create table if not exists store_products (
   in_stock boolean default true,
   stock_count integer default 0,
   prime boolean default false,
+  status text not null default 'approved' check (status in ('pending', 'approved', 'rejected')),
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -140,6 +141,7 @@ alter table if exists store_products add column if not exists reviews integer de
 alter table if exists store_products add column if not exists in_stock boolean default true;
 alter table if exists store_products add column if not exists stock_count integer default 0;
 alter table if exists store_products add column if not exists prime boolean default false;
+alter table if exists store_products add column if not exists status text not null default 'approved';
 alter table if exists store_products add column if not exists created_at timestamptz default now();
 alter table if exists store_products add column if not exists updated_at timestamptz default now();
 
