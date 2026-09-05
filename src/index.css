@@ -19,3 +19,8 @@ html, body, #root {
 * {
   box-sizing: border-box;
 }
+
+a,
+button {
+  cursor: pointer !important;
+}

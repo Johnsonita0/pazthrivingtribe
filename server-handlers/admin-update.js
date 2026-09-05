@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { sendResendEmail } from './lib/resend.js'
 
 // Serverless admin endpoint for secure updates using the Supabase service role key.
 // Requires these environment variables to be set in your deployment:
@@ -22,6 +23,13 @@ const jsonResponse = (res, status, body) => {
   res.setHeader('Content-Type', 'application/json')
   res.end(JSON.stringify(body))
 }
+
+const escapeHtml = (value) => String(value || '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;')
 
 export default async function handler(req, res) {
   const { supabaseUrl, serviceRoleKey, adminEmails, adminUserIds } = getEnv()
@@ -94,6 +102,81 @@ export default async function handler(req, res) {
         const signedUrlResult = await supabase.storage.from(bucket).createSignedUrl(path, Math.min(Number(expiresIn) || 3600, 3600))
         if (signedUrlResult.error) return jsonResponse(res, 404, { error: `Vendor document preview unavailable: ${signedUrlResult.error.message || signedUrlResult.error}` })
         return jsonResponse(res, 200, { data: signedUrlResult.data, signedUrl: signedUrlResult.data?.signedUrl || signedUrlResult.data?.signedURL || null })
+      } else if (action === 'reply_support') {
+        if (!['customer_support_messages', 'vendor_support_messages'].includes(table)) {
+          return jsonResponse(res, 400, { error: 'Invalid support message table' })
+        }
+        if (!match?.id || !String(payload?.admin_reply || '').trim()) {
+          return jsonResponse(res, 400, { error: 'A support message ID and reply are required' })
+        }
+
+        const reply = String(payload.admin_reply).trim()
+        const { data: supportMessage, error: supportLookupError } = await supabase
+          .from(table)
+          .select('id,sender_email,sender_name,message')
+          .eq('id', match.id)
+          .maybeSingle()
+        if (supportLookupError) throw supportLookupError
+        if (!supportMessage) return jsonResponse(res, 404, { error: 'Support message not found' })
+
+        const recipient = String(supportMessage.sender_email || '').trim().toLowerCase()
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
+          return jsonResponse(res, 400, { error: 'This support message has no valid client email address' })
+        }
+
+        const clientName = String(supportMessage.sender_name || 'there').trim() || 'there'
+        const originalMessage = String(supportMessage.message || '').trim()
+        await sendResendEmail({
+          to: recipient,
+          subject: 'Reply from PAZ customer care',
+          html: `<p>Hi ${escapeHtml(clientName)},</p><p>Our customer care team replied to your message:</p><blockquote>${escapeHtml(reply).replace(/\n/g, '<br>')}</blockquote><p><strong>Your original message:</strong><br>${escapeHtml(originalMessage).replace(/\n/g, '<br>')}</p><p>PAZ Thriving Tribe customer care</p>`,
+          text: `Hi ${clientName},\n\nOur customer care team replied to your message:\n\n${reply}\n\nYour original message:\n${originalMessage}\n\nPAZ Thriving Tribe customer care`,
+          from: process.env.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.org'
+        })
+
+        result = await supabase
+          .from(table)
+          .update({ admin_reply: reply, status: 'closed', updated_at: new Date().toISOString() })
+          .match(match)
+      } else if (action === 'send_vendor_password_reset') {
+        if (!match?.id) return jsonResponse(res, 400, { error: 'A vendor ID is required' })
+
+        const { data: vendor, error: vendorLookupError } = await supabase
+          .from('vendor_profiles')
+          .select('id,contact_email,company_name')
+          .eq('id', match.id)
+          .maybeSingle()
+        if (vendorLookupError) throw vendorLookupError
+
+        const recipient = String(vendor?.contact_email || '').trim().toLowerCase()
+        if (!vendor) return jsonResponse(res, 404, { error: 'Vendor profile not found' })
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
+          return jsonResponse(res, 400, { error: 'This vendor has no valid contact email address' })
+        }
+
+        const configuredAppUrl = String(process.env.VITE_APP_URL || '').trim().replace(/\/$/, '')
+        const requestOrigin = String(req.headers.origin || '').trim().replace(/\/$/, '')
+        const isLocalOrigin = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(requestOrigin)
+        const appUrl = isLocalOrigin ? requestOrigin : configuredAppUrl || 'https://pazthrivingtribe.org'
+        const { data: linkData, error: linkError } = await supabase.auth.admin.generateLink({
+          type: 'recovery',
+          email: recipient,
+          options: { redirectTo: `${appUrl}/vendor?reset=1` },
+        })
+        if (linkError) throw linkError
+        const recoveryLink = linkData?.properties?.action_link
+        if (!recoveryLink) throw new Error('Supabase did not return a password recovery link.')
+
+        const vendorName = String(vendor.company_name || 'there').trim() || 'there'
+        await sendResendEmail({
+          to: recipient,
+          subject: 'Reset your PAZ vendor password',
+          html: `<p>Hi ${escapeHtml(vendorName)},</p><p>An administrator requested a password reset for your PAZ vendor account.</p><p><a href="${escapeHtml(recoveryLink)}" style="display:inline-block;background:#166534;color:#ffffff;text-decoration:none;border-radius:8px;padding:12px 18px;font-weight:700">Reset vendor password</a></p><p>If the button does not work, copy and paste this link into your browser:</p><p>${escapeHtml(recoveryLink)}</p><p>If you did not request this, you can ignore this email.</p><p>PAZ Thriving Tribe</p>`,
+          text: `Hi ${vendorName},\n\nAn administrator requested a password reset for your PAZ vendor account.\n\nReset your password here:\n${recoveryLink}\n\nIf you did not request this, you can ignore this email.\n\nPAZ Thriving Tribe`,
+          from: process.env.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.org',
+        })
+
+        return jsonResponse(res, 200, { ok: true, email: recipient, companyName: vendor.company_name || '' })
       } else if (!table) {
         return jsonResponse(res, 400, { error: 'Missing table' })
       } else if (action === 'update') {

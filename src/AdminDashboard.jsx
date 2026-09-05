@@ -227,6 +227,7 @@ export default function AdminDashboard(props) {
   const [vendorTab, setVendorTab] = useState("profiles");
   const [vendorEditForm, setVendorEditForm] = useState(null);
   const [vendorSaving, setVendorSaving] = useState(false);
+  const [vendorPasswordResetting, setVendorPasswordResetting] = useState(null);
   const [vendorEditing, setVendorEditing] = useState(false);
   const [vendorDocumentPreviewOpen, setVendorDocumentPreviewOpen] =
     useState(false);
@@ -508,7 +509,7 @@ export default function AdminDashboard(props) {
     const response = await fetch("/api/admin-update", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ action: "update", table: message.sourceTable, match: { id: message.id }, payload: { admin_reply: reply, status: "closed", updated_at: new Date().toISOString() } }),
+      body: JSON.stringify({ action: "reply_support", table: message.sourceTable, match: { id: message.id }, payload: { admin_reply: reply } }),
     });
     const payload = await response.json().catch(() => ({}));
     setSupportReplySaving(null);
@@ -518,7 +519,7 @@ export default function AdminDashboard(props) {
     }
     setSupportMessages((current) => current.map((item) => item.id === message.id && item.sourceTable === message.sourceTable ? { ...item, admin_reply: reply, status: "closed", updated_at: new Date().toISOString() } : item));
     setSupportReplyDrafts((current) => ({ ...current, [message.id]: "" }));
-    showAdminToast("success", "Reply saved", "Your reply was saved to the support conversation.");
+    showAdminToast("success", "Reply sent", "Your reply was emailed to the client and saved to the support conversation.");
   };
 
   useEffect(() => {
@@ -657,6 +658,26 @@ export default function AdminDashboard(props) {
       "Vendor updated",
       `${vendor.company_name || "Vendor"} is now ${status}.`,
     );
+  };
+
+  const sendVendorPasswordReset = async (vendor) => {
+    if (!vendor?.id || !vendor.contact_email) return;
+    setVendorPasswordResetting(vendor.id);
+    try {
+      const token = session?.access_token || session?.accessToken || "";
+      const response = await fetch("/api/admin-update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: "send_vendor_password_reset", match: { id: vendor.id } }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "The password reset email could not be sent.");
+      showAdminToast("success", "Reset email sent", `A password reset link was sent to ${payload.email || vendor.contact_email}.`);
+    } catch (error) {
+      showAdminToast("error", "Reset email failed", error.message || "The password reset email could not be sent.");
+    } finally {
+      setVendorPasswordResetting(null);
+    }
   };
 
   const viewVendorDetails = async (vendor) => {
@@ -5523,6 +5544,22 @@ export default function AdminDashboard(props) {
                               !selectedVendor.loading
                                 ? "Hide profile"
                                 : "View profile"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => sendVendorPasswordReset(vendor)}
+                              disabled={vendorPasswordResetting === vendor.id || !vendor.contact_email}
+                              style={{
+                                border: "1px solid #f97316",
+                                background: "#fff7ed",
+                                color: "#c2410c",
+                                borderRadius: "8px",
+                                padding: "8px 10px",
+                                fontWeight: 800,
+                                cursor: vendorPasswordResetting === vendor.id ? "wait" : "pointer",
+                              }}
+                            >
+                              {vendorPasswordResetting === vendor.id ? "Sending..." : "Reset password"}
                             </button>
                             {vendor.status === "pending" && (
                               <>

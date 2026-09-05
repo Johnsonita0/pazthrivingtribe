@@ -11,7 +11,7 @@ if (isValidSupabaseUrl(supabaseUrl)) {
   supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       persistSession: true,
-      detectSessionInUrl: false,
+      detectSessionInUrl: true,
       autoRefreshToken: true
     }
   })
@@ -37,6 +37,8 @@ if (isValidSupabaseUrl(supabaseUrl)) {
       getSession: async () => ({ data: { session: null } }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
       signInWithPassword: async () => ({ data: { session: null, user: null }, error: null }),
+      resetPasswordForEmail: async () => ({ data: {}, error: null }),
+      updateUser: async () => ({ data: { user: null }, error: null }),
       signIn: async () => ({ data: null, error: null }),
       signOut: async () => ({ error: null }),
       getUser: async () => ({ data: { user: null }, error: null })

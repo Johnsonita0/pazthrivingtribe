@@ -22,6 +22,13 @@ const money = (value, currency = "NGN") =>
     maximumFractionDigits: 2,
   }).format(Number(value || 0));
 const appUrl = String(import.meta.env.VITE_APP_URL || window.location.origin).replace(/\/$/, "");
+const withTimeout = (promise, message, timeoutMs = 15000) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      window.setTimeout(() => reject(new Error(message)), timeoutMs),
+    ),
+  ]);
 
 export default function VendorDashboard() {
   const navigate = useNavigate();
@@ -64,6 +71,11 @@ export default function VendorDashboard() {
   const [loading, setLoading] = useState(true);
   const [documentPreviewUrl, setDocumentPreviewUrl] = useState("");
   const [documentPreviewOpen, setDocumentPreviewOpen] = useState(false);
+  const [passwordResetMode, setPasswordResetMode] = useState(() =>
+    new URLSearchParams(window.location.search).get("reset") === "1",
+  );
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
     try {
@@ -252,6 +264,25 @@ export default function VendorDashboard() {
 
   const authenticate = async (event) => {
     event.preventDefault();
+    if (authMode === "reset") {
+      setSaving(true);
+      try {
+        const { error } = await withTimeout(
+          supabase.auth.resetPasswordForEmail(authForm.email, {
+            redirectTo: `${appUrl}/vendor?reset=1`,
+          }),
+          "The reset request is taking too long. Check your connection and try again.",
+        );
+        if (error) throw error;
+        setNotice({ type: "success", text: "If that email belongs to a vendor account, a reset link has been sent." });
+        setAuthMode("sign-in");
+      } catch (error) {
+        setNotice({ type: "error", text: error.message || "The password reset email could not be sent." });
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
     if (authMode === "sign-up" && (!profileForm.idDocument || !profileForm.verifiedAccountName)) {
       setNotice({ type: "error", text: !profileForm.idDocument ? "Drag in your identity document before creating your vendor account." : "Verify the payout account name before creating your vendor account." });
       return;
@@ -276,16 +307,26 @@ export default function VendorDashboard() {
       }
       const result =
         authMode === "sign-in"
-          ? await supabase.auth.signInWithPassword(authForm)
-          : await supabase.auth.signUp({
-              email: authForm.email,
-              password: authForm.password,
-              options: { emailRedirectTo: `${appUrl}/vendor?confirmed=1` },
-            });
+          ? await withTimeout(
+              supabase.auth.signInWithPassword(authForm),
+              "Sign-in is taking too long. Check your connection and try again.",
+            )
+          : await withTimeout(
+              supabase.auth.signUp({
+                email: authForm.email,
+                password: authForm.password,
+                options: { emailRedirectTo: `${appUrl}/vendor?confirmed=1` },
+              }),
+              "Account creation is taking too long. Check your connection and try again.",
+            );
       if (result.error) throw result.error;
       if (result.data?.session) {
+        setSession(result.data.session);
         if (authMode === "sign-up") {
-          await persistVendorProfile(result.data.session.user, profileForm);
+          await withTimeout(
+            persistVendorProfile(result.data.session.user, profileForm),
+            "Your account was created, but loading the vendor profile took too long. Refresh and try again.",
+          );
           window.sessionStorage.removeItem(vendorDraftKey);
         } else {
           const { data: existingProfile, error: profileError } = await supabase
@@ -295,12 +336,17 @@ export default function VendorDashboard() {
             .maybeSingle();
           if (profileError) throw profileError;
           if (!existingProfile && profileForm.idDocument && profileForm.verifiedAccountName) {
-            await persistVendorProfile(result.data.session.user, profileForm);
+            await withTimeout(
+              persistVendorProfile(result.data.session.user, profileForm),
+              "Your account was opened, but saving the vendor profile took too long. Refresh and try again.",
+            );
             window.sessionStorage.removeItem(vendorDraftKey);
           }
         }
-        setSession(result.data.session);
-        await loadData(result.data.session.user);
+        await withTimeout(
+          loadData(result.data.session.user),
+          "You signed in, but loading the vendor workspace took too long. Refresh and try again.",
+        );
       } else {
         setAuthMode("sign-in");
         setNotice({
@@ -310,6 +356,36 @@ export default function VendorDashboard() {
       }
     } catch (error) {
       setNotice({ type: "error", text: error.message || "Your vendor account could not be created." });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updatePassword = async (event) => {
+    event.preventDefault();
+    if (newPassword.length < 8) {
+      setNotice({ type: "error", text: "Use a password with at least 8 characters." });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setNotice({ type: "error", text: "The passwords do not match." });
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error } = await withTimeout(
+        supabase.auth.updateUser({ password: newPassword }),
+        "Password update is taking too long. Check your connection and try again.",
+      );
+      if (error) throw error;
+      await supabase.auth.signOut();
+      setPasswordResetMode(false);
+      setNewPassword("");
+      setConfirmPassword("");
+      setNotice({ type: "success", text: "Password updated. Sign in with your new password." });
+      navigate("/vendor", { replace: true });
+    } catch (error) {
+      setNotice({ type: "error", text: error.message || "Your password could not be updated." });
     } finally {
       setSaving(false);
     }
@@ -476,6 +552,23 @@ export default function VendorDashboard() {
     setNotice({ type: "success", text: "Publish request sent to the main admin." });
   };
 
+  if (passwordResetMode)
+    return (
+      <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: "24px", background: "#f1f5f3" }}>
+        <form onSubmit={updatePassword} style={{ width: "min(460px,100%)", background: "#fff", padding: "28px", borderRadius: "18px" }}>
+          <h1>Reset vendor password</h1>
+          <p style={{ color: "#64748b" }}>Choose a new password for your PAZ vendor account.</p>
+          <div style={{ display: "grid", gap: "12px" }}>
+            <input required minLength="8" type="password" placeholder="New password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} style={fieldStyle} />
+            <input required minLength="8" type="password" placeholder="Confirm new password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} style={fieldStyle} />
+            <button disabled={saving} style={{ padding: "12px", background: "#166534", color: "#fff", border: 0, borderRadius: "9px", fontWeight: 800 }}>{saving ? "Updating..." : "Update password"}</button>
+          </div>
+          {notice && <p style={{ color: notice.type === "error" ? "#b91c1c" : "#166534" }}>{notice.text}</p>}
+          <button type="button" onClick={() => { setPasswordResetMode(false); navigate("/vendor", { replace: true }); }} style={{ marginTop: "12px", border: 0, background: "none", color: "#166534", fontWeight: 700 }}>Return to sign in</button>
+        </form>
+      </main>
+    );
+
   if (!session)
     return (
       <main
@@ -497,9 +590,7 @@ export default function VendorDashboard() {
           }}
         >
           <h1>
-            {authMode === "sign-in"
-              ? "Vendor sign in"
-              : "Create vendor account"}
+            {authMode === "sign-in" ? "Vendor sign in" : authMode === "reset" ? "Reset vendor password" : "Create vendor account"}
           </h1>
           <div style={{ display: "grid", gap: "12px" }}>
             <input
@@ -512,7 +603,7 @@ export default function VendorDashboard() {
               }
               style={fieldStyle}
             />
-            <input
+            {authMode !== "reset" && <input
               required
               minLength="8"
               type="password"
@@ -522,7 +613,7 @@ export default function VendorDashboard() {
                 setAuthForm({ ...authForm, password: event.target.value })
               }
               style={fieldStyle}
-            />
+            />}
             {authMode === "sign-up" && (
               <>
                 <input required placeholder="Business or brand name" value={profileForm.companyName} onChange={(event) => setProfileForm({ ...profileForm, companyName: event.target.value })} style={fieldStyle} />
@@ -566,18 +657,23 @@ export default function VendorDashboard() {
                 fontWeight: 800,
               }}
             >
-              {saving
-                ? "Please wait..."
-                : authMode === "sign-in"
-                  ? "Sign in"
-                  : "Create account"}
+              {saving ? "Please wait..." : authMode === "sign-in" ? "Sign in" : authMode === "reset" ? "Send reset link" : "Create account"}
             </button>
           </div>
           {notice && <p>{notice.text}</p>}
+          {authMode === "sign-in" && (
+            <button
+              type="button"
+              onClick={() => { setAuthMode("reset"); setNotice(null); }}
+              style={{ marginTop: "12px", border: 0, background: "none", color: "#c2410c", fontWeight: 700 }}
+            >
+              Forgot password?
+            </button>
+          )}
           <button
             type="button"
             onClick={() =>
-              setAuthMode(authMode === "sign-in" ? "sign-up" : "sign-in")
+              setAuthMode(authMode === "sign-up" ? "sign-in" : "sign-in")
             }
             style={{
               marginTop: "12px",
@@ -587,9 +683,7 @@ export default function VendorDashboard() {
               fontWeight: 700,
             }}
           >
-            {authMode === "sign-in"
-              ? "Create a vendor account"
-              : "Return to sign in"}
+            {authMode === "sign-in" ? "Create a vendor account" : "Return to sign in"}
           </button>
         </form>
       </main>
