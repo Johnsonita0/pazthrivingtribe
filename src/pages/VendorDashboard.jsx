@@ -1018,7 +1018,7 @@ export default function VendorDashboard() {
               borderRadius: "16px",
             }}
           >
-            <h2>Product manager</h2>
+            <h2>My products</h2>
             {profile?.status === "approved" ? (
               <form
                 onSubmit={publishProduct}
