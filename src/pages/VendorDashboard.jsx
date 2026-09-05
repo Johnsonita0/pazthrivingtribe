@@ -42,6 +42,7 @@ export default function VendorDashboard() {
   const [authForm, setAuthForm] = useState({ email: "", password: "" });
   const [profileForm, setProfileForm] = useState({
     companyName: "",
+    phone: "",
     logoUrl: "",
     logoFile: null,
     idType: "National ID",
@@ -52,6 +53,8 @@ export default function VendorDashboard() {
     payoutBankCode: "",
     verifiedAccountName: "",
     payoutCurrency: "NGN",
+    payoutAccounts: [],
+    selectedPayoutAccountId: "",
   });
   const [productForm, setProductForm] = useState({
     title: "",
@@ -71,6 +74,7 @@ export default function VendorDashboard() {
   const [loading, setLoading] = useState(true);
   const [documentPreviewUrl, setDocumentPreviewUrl] = useState("");
   const [documentPreviewOpen, setDocumentPreviewOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [passwordResetMode, setPasswordResetMode] = useState(() =>
     new URLSearchParams(window.location.search).get("reset") === "1",
   );
@@ -144,6 +148,7 @@ export default function VendorDashboard() {
       setProfileForm((current) => ({
         ...current,
         companyName: vendor.company_name || "",
+        phone: vendor.phone || "",
         logoUrl: vendor.logo_url || "",
         logoFile: null,
         idType: vendor.id_type || "National ID",
@@ -153,6 +158,12 @@ export default function VendorDashboard() {
         payoutBankCode: banks.find(([name]) => name === vendor.payout_bank_name)?.[1] || "",
         verifiedAccountName: vendor.payout_account_name || "",
         payoutCurrency: vendor.payout_currency || "NGN",
+        payoutAccounts: Array.isArray(vendor.payout_accounts) && vendor.payout_accounts.length
+          ? vendor.payout_accounts
+          : vendor.payout_account_number
+            ? [{ id: "legacy-primary", accountName: vendor.payout_account_name || "", accountNumber: vendor.payout_account_number || "", bankName: vendor.payout_bank_name || "", currency: vendor.payout_currency || "NGN", verified: true }]
+            : [],
+        selectedPayoutAccountId: vendor.selected_payout_account_id || (vendor.payout_account_number ? "legacy-primary" : ""),
       }));
     setLoading(false);
   };
@@ -229,6 +240,7 @@ export default function VendorDashboard() {
       .upsert({
         id: user.id,
         company_name: values.companyName.trim(),
+        phone: values.phone.trim(),
         logo_url: logoUrl,
         contact_email: user.email,
         id_type: values.idType,
@@ -237,6 +249,8 @@ export default function VendorDashboard() {
         payout_account_number: values.payoutAccount.trim(),
         payout_bank_name: values.payoutBank.trim(),
         payout_currency: values.payoutCurrency,
+        payout_accounts: values.payoutAccounts || [],
+        selected_payout_account_id: values.selectedPayoutAccountId || null,
         status: existingProfile?.status || "pending",
       })
       .select()
@@ -402,8 +416,24 @@ export default function VendorDashboard() {
     }
     setSaving(true);
     try {
-      const data = await persistVendorProfile(session.user, profileForm, profile);
+      const accountId = profileForm.selectedPayoutAccountId || "legacy-primary";
+      const currentAccount = {
+        id: accountId,
+        accountName: profileForm.payoutName.trim(),
+        accountNumber: profileForm.payoutAccount.trim(),
+        bankName: profileForm.payoutBank.trim(),
+        currency: profileForm.payoutCurrency,
+        verified: Boolean(profileForm.verifiedAccountName),
+      };
+      const existingAccounts = Array.isArray(profileForm.payoutAccounts) ? profileForm.payoutAccounts : [];
+      const accountIndex = existingAccounts.findIndex((account) => account.id === accountId);
+      const payoutAccounts = [...existingAccounts];
+      if (accountIndex >= 0) payoutAccounts[accountIndex] = currentAccount;
+      else payoutAccounts.push(currentAccount);
+      const values = { ...profileForm, payoutAccounts, selectedPayoutAccountId: accountId };
+      const data = await persistVendorProfile(session.user, values, profile);
       setProfile(data);
+      setProfileForm(values);
       setNotice({
         type: "success",
         text: "Verification details sent to the main admin.",
@@ -741,24 +771,20 @@ export default function VendorDashboard() {
                 : "Pending admin verification"}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={async () => {
-              await supabase.auth.signOut();
-              setSession(null);
-              navigate("/vendor");
-            }}
-            style={{
-              height: "40px",
-              padding: "0 14px",
-              border: "1px solid #cbd5e1",
-              borderRadius: "9px",
-              background: "#fff",
-              fontWeight: 700,
-            }}
-          >
-            Sign out
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <button type="button" onClick={() => setSettingsOpen((current) => !current)} aria-label="Open vendor settings" title="Vendor settings" style={{ width: "40px", height: "40px", border: "1px solid #cbd5e1", borderRadius: "9px", background: settingsOpen ? "#166534" : "#fff", color: settingsOpen ? "#fff" : "#0f172a", fontSize: "1.15rem" }}>⚙</button>
+            <button
+              type="button"
+              onClick={async () => {
+                await supabase.auth.signOut();
+                setSession(null);
+                navigate("/vendor");
+              }}
+              style={{ height: "40px", padding: "0 14px", border: "1px solid #cbd5e1", borderRadius: "9px", background: "#fff", fontWeight: 700 }}
+            >
+              Sign out
+            </button>
+          </div>
         </header>
         {notice && (
           <div
@@ -818,7 +844,7 @@ export default function VendorDashboard() {
             </div>
           ))}
         </section>
-        <form
+        {settingsOpen && <form
           onSubmit={saveProfile}
           style={{
             marginTop: "22px",
@@ -829,7 +855,11 @@ export default function VendorDashboard() {
             borderRadius: "16px",
           }}
         >
-          <h2>Verification and payout account</h2>
+          <div>
+            <p style={{ margin: 0, color: "#15803d", fontSize: ".72rem", fontWeight: 800, letterSpacing: ".12em" }}>VENDOR SETTINGS</p>
+            <h2 style={{ marginBottom: "6px" }}>Profile, verification and payout</h2>
+            <p style={{ margin: 0, color: "#64748b", fontSize: ".85rem" }}>Business identity and login email are locked. Update your phone and choose the account to use for payouts below.</p>
+          </div>
           {profile?.id_document_path && (
             <section style={{ padding: "14px", border: "1px solid #dbe7df", borderRadius: "12px", background: "#f8fffb" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
@@ -846,18 +876,9 @@ export default function VendorDashboard() {
               gap: "10px",
             }}
           >
-            <input
-              required
-              placeholder="Company name"
-              value={profileForm.companyName}
-              onChange={(event) =>
-                setProfileForm({
-                  ...profileForm,
-                  companyName: event.target.value,
-                })
-              }
-              style={fieldStyle}
-            />
+            <input required placeholder="Business name (locked)" value={profileForm.companyName} readOnly style={{ ...fieldStyle, background: "#f1f5f9", color: "#475569" }} />
+            <input required type="email" placeholder="Email (locked)" value={profile?.contact_email || session.user.email || ""} readOnly style={{ ...fieldStyle, background: "#f1f5f9", color: "#475569" }} />
+            <input placeholder="Phone number" value={profileForm.phone} onChange={(event) => setProfileForm({ ...profileForm, phone: event.target.value })} style={fieldStyle} />
             <label onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }} onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file?.type.startsWith("image/")) setProfileForm({ ...profileForm, logoFile: file }); }} style={{ display: "grid", gap: "6px", padding: "16px", border: "1px dashed #86efac", borderRadius: "10px", background: "#f0fdf4", color: "#166534", textAlign: "center", cursor: "copy" }}>
               <strong>Drag business logo here</strong>
               <span style={{ fontSize: ".78rem" }}>{profileForm.logoFile?.name || (profileForm.logoUrl ? "Existing logo will be kept" : "PNG, JPG, or WebP")}</span>
@@ -932,6 +953,15 @@ export default function VendorDashboard() {
               ))}
             </select>
           </div>
+          <section style={{ display: "grid", gap: "8px", padding: "14px", border: "1px solid #dbe7df", borderRadius: "12px", background: "#f8fffb" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+              <div><strong>Payout accounts</strong><p style={{ margin: "4px 0 0", color: "#64748b", fontSize: ".8rem" }}>Select the account PAZ should use for your payouts.</p></div>
+              <button type="button" onClick={() => setProfileForm({ ...profileForm, selectedPayoutAccountId: `new-${Date.now()}`, payoutName: "", payoutAccount: "", payoutBank: "", payoutBankCode: "", payoutCurrency: "NGN", verifiedAccountName: "" })} style={{ border: "1px solid #0f766e", borderRadius: "8px", background: "#fff", color: "#0f766e", padding: "8px 10px", fontWeight: 800 }}>Add another account</button>
+            </div>
+            {(profileForm.payoutAccounts || []).map((account) => (
+              <button key={account.id} type="button" onClick={() => setProfileForm({ ...profileForm, selectedPayoutAccountId: account.id, payoutName: account.accountName || "", payoutAccount: account.accountNumber || "", payoutBank: account.bankName || "", payoutBankCode: banks.find(([name]) => name === account.bankName)?.[1] || "", payoutCurrency: account.currency || "NGN", verifiedAccountName: account.verified ? account.accountName || "verified" : "" })} style={{ display: "flex", justifyContent: "space-between", gap: "10px", textAlign: "left", padding: "10px 12px", border: "1px solid", borderColor: profileForm.selectedPayoutAccountId === account.id ? "#0f766e" : "#cbd5e1", borderRadius: "9px", background: profileForm.selectedPayoutAccountId === account.id ? "#ecfdf5" : "#fff", color: "#334155" }}><span><strong>{account.accountName || "Account holder"}</strong><br /><small>{account.bankName || "Bank"} · {account.accountNumber || "Account number"} · {account.currency || "NGN"}</small></span><span>{profileForm.selectedPayoutAccountId === account.id ? "Selected for payout" : "Use this account"}</span></button>
+            ))}
+          </section>
           <button
             disabled={saving}
             style={{
@@ -946,7 +976,7 @@ export default function VendorDashboard() {
           >
             Save verification details
           </button>
-        </form>
+        </form>}
         <div style={{ display: "flex", gap: "8px", marginTop: "22px" }}>
           <button
             type="button"

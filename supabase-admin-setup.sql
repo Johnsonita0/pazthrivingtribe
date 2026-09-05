@@ -206,6 +206,10 @@ create table if not exists vendor_profiles (
   updated_at timestamptz default now()
 );
 
+alter table if exists vendor_profiles add column if not exists phone text;
+alter table if exists vendor_profiles add column if not exists payout_accounts jsonb not null default '[]'::jsonb;
+alter table if exists vendor_profiles add column if not exists selected_payout_account_id text;
+
 alter table if exists store_products add column if not exists vendor_id uuid references vendor_profiles(id) on delete set null;
 alter table if exists store_products add column if not exists vendor_name text;
 
