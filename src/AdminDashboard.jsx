@@ -1,31 +1,62 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { Link, Navigate, useLocation } from 'react-router-dom';
-import { supabase } from './supabaseClient';
-import CustomDropdown from './components/CustomDropdown';
+import React, { useEffect, useRef, useState, useMemo } from "react";
+import { Link, Navigate, useLocation } from "react-router-dom";
+import { supabase } from "./supabaseClient";
+import CustomDropdown from "./components/CustomDropdown";
 
-const formatName = (value) => typeof value === 'string' ? value.replace(/\b\w/g, (letter) => letter.toUpperCase()) : value;
+const formatName = (value) =>
+  typeof value === "string"
+    ? value.replace(/\b\w/g, (letter) => letter.toUpperCase())
+    : value;
 const getStoredFileName = (value) => {
-  if (!value || typeof value !== 'string') return '';
-  const cleanValue = value.split('?')[0].replace(/\\/g, '/');
-  return decodeURIComponent(cleanValue.slice(cleanValue.lastIndexOf('/') + 1));
+  if (!value || typeof value !== "string") return "";
+  const cleanValue = value.split("?")[0].replace(/\\/g, "/");
+  return decodeURIComponent(cleanValue.slice(cleanValue.lastIndexOf("/") + 1));
 };
 const formatReferenceId = (value) => {
-  const compactId = String(value || '').replace(/[^a-z0-9]/gi, '').slice(0, 8).toUpperCase();
-  return compactId ? `PT-${compactId}` : 'N/A';
+  const compactId = String(value || "")
+    .replace(/[^a-z0-9]/gi, "")
+    .slice(0, 8)
+    .toUpperCase();
+  return compactId ? `PT-${compactId}` : "N/A";
 };
-const productCurrencies = ['NGN', 'USD', 'GBP', 'EUR', 'GHS', 'KES', 'ZAR'];
-const currencySymbols = { NGN: '₦', USD: '$', GBP: '£', EUR: '€', GHS: 'GH₵', KES: 'KSh', ZAR: 'R' };
-const currencyRatesToNgn = { NGN: 1, USD: 1500, GBP: 1900, EUR: 1650, GHS: 95, KES: 11, ZAR: 85 };
-const productCategories = ['Ebook', 'Planner', 'Guide', 'Workbook', 'Journal', 'Course', 'Audio', 'Bundle'];
+const productCurrencies = ["NGN", "USD", "GBP", "EUR", "GHS", "KES", "ZAR"];
+const currencySymbols = {
+  NGN: "₦",
+  USD: "$",
+  GBP: "£",
+  EUR: "€",
+  GHS: "GH₵",
+  KES: "KSh",
+  ZAR: "R",
+};
+const currencyRatesToNgn = {
+  NGN: 1,
+  USD: 1500,
+  GBP: 1900,
+  EUR: 1650,
+  GHS: 95,
+  KES: 11,
+  ZAR: 85,
+};
+const productCategories = [
+  "Ebook",
+  "Planner",
+  "Guide",
+  "Workbook",
+  "Journal",
+  "Course",
+  "Audio",
+  "Bundle",
+];
 
 function AdminTabBar({ selectedTab, onChangeTab }) {
   const adminTabs = [
-    { id: 'content', label: 'Page Content' },
-    { id: 'social', label: 'Social Preview' },
-    { id: 'programs', label: 'Programs' },
-    { id: 'clients', label: 'Client Activity Log' },
-    { id: 'applicants', label: 'Applicants' },
-    { id: 'payments', label: 'Payment Settings' }
+    { id: "content", label: "Page Content" },
+    { id: "social", label: "Social Preview" },
+    { id: "programs", label: "Programs" },
+    { id: "clients", label: "Client Activity Log" },
+    { id: "applicants", label: "Applicants" },
+    { id: "payments", label: "Payment Settings" },
   ];
 
   return (
@@ -35,7 +66,7 @@ function AdminTabBar({ selectedTab, onChangeTab }) {
           <button
             key={tab.id}
             onClick={() => onChangeTab(tab.id)}
-            className={`dashboard-tab-button ${selectedTab === tab.id ? 'active' : ''}`}
+            className={`dashboard-tab-button ${selectedTab === tab.id ? "active" : ""}`}
           >
             {tab.label}
           </button>
@@ -50,6 +81,7 @@ export default function AdminDashboard(props) {
   const emailInputRef = useRef(null);
   const productEditorRef = useRef(null);
   const [isMobileView, setIsMobileView] = useState(false);
+  const [approvedVendorSales, setApprovedVendorSales] = useState({});
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -60,12 +92,12 @@ export default function AdminDashboard(props) {
     };
 
     updateViewport();
-    window.addEventListener('resize', updateViewport);
-    return () => window.removeEventListener('resize', updateViewport);
+    window.addEventListener("resize", updateViewport);
+    return () => window.removeEventListener("resize", updateViewport);
   }, []);
 
   const {
-    mode = 'login',
+    mode = "login",
     session,
     loading = false,
     authError,
@@ -156,31 +188,31 @@ export default function AdminDashboard(props) {
     storeBankAccount = {},
     setStoreBankAccount,
     shopOrders = [],
-    setShopOrders
+    setShopOrders,
   } = props;
 
   const [storeProductForm, setStoreProductForm] = useState({
-    title: '',
-    description: '',
-    price: '',
-    currency: 'NGN',
+    title: "",
+    description: "",
+    price: "",
+    currency: "NGN",
     isFree: false,
-    category: 'Ebook',
-    fileUrl: '',
-    cover: '/logo/logomain.png',
+    category: "Ebook",
+    fileUrl: "",
+    cover: "/logo/logomain.png",
     inStock: true,
-    stockCount: ''
+    stockCount: "",
   });
   const [productFileUploading, setProductFileUploading] = useState(false);
   const [coverFileUploading, setCoverFileUploading] = useState(false);
-  const [productFileName, setProductFileName] = useState('');
-  const [coverFileName, setCoverFileName] = useState('');
+  const [productFileName, setProductFileName] = useState("");
+  const [coverFileName, setCoverFileName] = useState("");
   const [productFileDragActive, setProductFileDragActive] = useState(false);
   const [coverFileDragActive, setCoverFileDragActive] = useState(false);
 
-  const [activeDashboardView, setActiveDashboardView] = useState('visitors');
-  const [commerceSubTab, setCommerceSubTab] = useState('storefront');
-  const [paymentHistoryTab, setPaymentHistoryTab] = useState('booking');
+  const [activeDashboardView, setActiveDashboardView] = useState("visitors");
+  const [commerceSubTab, setCommerceSubTab] = useState("storefront");
+  const [paymentHistoryTab, setPaymentHistoryTab] = useState("booking");
   const [tableFilters, setTableFilters] = useState({});
   const [selectedRowIds, setSelectedRowIds] = useState([]);
   const [viewingRow, setViewingRow] = useState(null);
@@ -191,17 +223,34 @@ export default function AdminDashboard(props) {
   const [productDeleteTarget, setProductDeleteTarget] = useState(null);
   const [vendorProfiles, setVendorProfiles] = useState([]);
   const [selectedVendor, setSelectedVendor] = useState(null);
-  const [adminAdForm, setAdminAdForm] = useState({ eyebrow: 'PAZ Marketplace', headline: '', productUrl: '' });
+  const [vendorSearch, setVendorSearch] = useState("");
+  const [vendorTab, setVendorTab] = useState("profiles");
+  const [vendorEditForm, setVendorEditForm] = useState(null);
+  const [vendorSaving, setVendorSaving] = useState(false);
+  const [vendorEditing, setVendorEditing] = useState(false);
+  const [vendorDocumentPreviewOpen, setVendorDocumentPreviewOpen] =
+    useState(false);
+  const [adminAdForm, setAdminAdForm] = useState({
+    eyebrow: "PAZ Marketplace",
+    headline: "",
+    productUrl: "",
+  });
   const [adminAds, setAdminAds] = useState([]);
   const [supportMessages, setSupportMessages] = useState([]);
-  const paymentReference = new URLSearchParams(location.search).get('reference') || '';
+  const [supportReplyDrafts, setSupportReplyDrafts] = useState({});
+  const [supportReplySaving, setSupportReplySaving] = useState(null);
+  const paymentReference =
+    new URLSearchParams(location.search).get("reference") || "";
 
   useEffect(() => {
-    if (mode !== 'dashboard' || !paymentReference) return;
-    setActiveDashboardView('payment-history');
-    if (paymentReference.toUpperCase().startsWith('BOOK-')) setPaymentHistoryTab('booking');
-    if (paymentReference.toUpperCase().startsWith('REG-')) setPaymentHistoryTab('teens');
-    if (paymentReference.toUpperCase().startsWith('PAZ-')) setPaymentHistoryTab('store');
+    if (mode !== "dashboard" || !paymentReference) return;
+    setActiveDashboardView("payment-history");
+    if (paymentReference.toUpperCase().startsWith("BOOK-"))
+      setPaymentHistoryTab("booking");
+    if (paymentReference.toUpperCase().startsWith("REG-"))
+      setPaymentHistoryTab("teens");
+    if (paymentReference.toUpperCase().startsWith("PAZ-"))
+      setPaymentHistoryTab("store");
   }, [location.search, mode, paymentReference]);
 
   useEffect(() => {
@@ -210,68 +259,133 @@ export default function AdminDashboard(props) {
 
   const openTestimonialConfirmation = () => {
     if (!viewingRow) return;
-    const testimonialText = viewingRow.Testimonial || viewingRow.testimonial || viewingRow.text || '';
+    const testimonialText =
+      viewingRow.Testimonial || viewingRow.testimonial || viewingRow.text || "";
     if (!testimonialText.trim()) {
-      showAdminToast('error', 'No testimonial found', 'This record does not contain a testimonial to publish.');
+      showAdminToast(
+        "error",
+        "No testimonial found",
+        "This record does not contain a testimonial to publish.",
+      );
       return;
     }
     setTestimonialConfirmation({
-      title: viewingRow.Parent || viewingRow['Parent name'] || viewingRow.Name || viewingRow.author || 'Anonymous',
+      title:
+        viewingRow.Parent ||
+        viewingRow["Parent name"] ||
+        viewingRow.Name ||
+        viewingRow.author ||
+        "Anonymous",
       text: testimonialText,
-      origin: viewingRow.Origin || viewingRow.origin || (activeDashboardView === 'feedback' ? 'Parent Feedback' : 'Community')
+      origin:
+        viewingRow.Origin ||
+        viewingRow.origin ||
+        (activeDashboardView === "feedback" ? "Parent Feedback" : "Community"),
     });
   };
 
   const postTestimonialToSlider = async () => {
-    if (!viewingRow || !['testimonials', 'feedback'].includes(activeDashboardView)) return;
-    
+    if (
+      !viewingRow ||
+      !["testimonials", "feedback"].includes(activeDashboardView)
+    )
+      return;
+
     setPostingToSlider(true);
     try {
-      const testimonialText = viewingRow.Testimonial || viewingRow.testimonial || viewingRow.text || '';
+      const testimonialText =
+        viewingRow.Testimonial ||
+        viewingRow.testimonial ||
+        viewingRow.text ||
+        "";
       if (!testimonialText.trim()) {
-        showAdminToast('error', 'No testimonial found', 'This record does not contain a testimonial to publish.');
+        showAdminToast(
+          "error",
+          "No testimonial found",
+          "This record does not contain a testimonial to publish.",
+        );
         return;
       }
       const newSlide = {
         id: viewingRow.id || `testimonial-${Date.now()}`,
-        title: viewingRow.Parent || viewingRow['Parent name'] || viewingRow.Name || viewingRow.author || 'Anonymous',
+        title:
+          viewingRow.Parent ||
+          viewingRow["Parent name"] ||
+          viewingRow.Name ||
+          viewingRow.author ||
+          "Anonymous",
         text: testimonialText,
-        origin: viewingRow.Origin || viewingRow.origin || 'Community',
-        image: '/logo/logomain.png',
-        imageType: 'logo'
+        origin: viewingRow.Origin || viewingRow.origin || "Community",
+        image: "/logo/logomain.png",
+        imageType: "logo",
       };
 
-      const token = session?.access_token || session?.accessToken || '';
-      const response = await fetch('/api/admin-update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      const token = session?.access_token || session?.accessToken || "";
+      const response = await fetch("/api/admin-update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({
-          action: 'insert',
-          table: 'tribe_testimonials',
-          payload: [{ author: newSlide.title, origin: activeDashboardView === 'feedback' ? 'Parent Feedback' : newSlide.origin, text: newSlide.text, image_type: 'logo' }]
-        })
+          action: "insert",
+          table: "tribe_testimonials",
+          payload: [
+            {
+              author: newSlide.title,
+              origin:
+                activeDashboardView === "feedback"
+                  ? "Parent Feedback"
+                  : newSlide.origin,
+              text: newSlide.text,
+              image_type: "logo",
+            },
+          ],
+        }),
       });
       if (!response.ok) {
-        if (response.status !== 404 && response.status !== 502 && response.status !== 503) throw new Error('The testimonial could not be saved to the home slider.');
-        const { error: directInsertError } = await supabase.from('tribe_testimonials').insert([{
-          author: newSlide.title,
-          origin: activeDashboardView === 'feedback' ? 'Parent Feedback' : newSlide.origin,
-          text: newSlide.text,
-          image_type: 'logo'
-        }]);
+        if (
+          response.status !== 404 &&
+          response.status !== 502 &&
+          response.status !== 503
+        )
+          throw new Error(
+            "The testimonial could not be saved to the home slider.",
+          );
+        const { error: directInsertError } = await supabase
+          .from("tribe_testimonials")
+          .insert([
+            {
+              author: newSlide.title,
+              origin:
+                activeDashboardView === "feedback"
+                  ? "Parent Feedback"
+                  : newSlide.origin,
+              text: newSlide.text,
+              image_type: "logo",
+            },
+          ]);
         if (directInsertError) throw directInsertError;
       }
-      
-      if (typeof setPromoSlides === 'function') {
+
+      if (typeof setPromoSlides === "function") {
         setPromoSlides((prev) => [newSlide, ...prev]);
       }
-      
-      showAdminToast('success', 'Posted to slider', `Testimonial from ${newSlide.title} is now live on the main carousel.`);
+
+      showAdminToast(
+        "success",
+        "Posted to slider",
+        `Testimonial from ${newSlide.title} is now live on the main carousel.`,
+      );
       setTestimonialConfirmation(null);
       setViewingRow(null);
     } catch (err) {
-      console.error('Failed to post testimonial:', err);
-      showAdminToast('error', 'Post failed', 'Could not add testimonial to slider. Please try again.');
+      console.error("Failed to post testimonial:", err);
+      showAdminToast(
+        "error",
+        "Post failed",
+        "Could not add testimonial to slider. Please try again.",
+      );
     } finally {
       setPostingToSlider(false);
     }
@@ -294,10 +408,18 @@ export default function AdminDashboard(props) {
       order.payment_proof_path,
       order.paymentProofDataUrl,
       order.paymentProofDataUri,
-      order.payment_proof_path ? `https://nidlwriwkfegffjckwog.supabase.co/storage/v1/object/public/prof-upload/${order.payment_proof_path}` : null,
-      order.payment_proof_path ? `/storage/v1/object/public/prof-upload/${order.payment_proof_path}` : null
+      order.payment_proof_path
+        ? `https://nidlwriwkfegffjckwog.supabase.co/storage/v1/object/public/prof-upload/${order.payment_proof_path}`
+        : null,
+      order.payment_proof_path
+        ? `/storage/v1/object/public/prof-upload/${order.payment_proof_path}`
+        : null,
     ];
-    return candidates.find((value) => typeof value === 'string' && value.trim().length > 0) || null;
+    return (
+      candidates.find(
+        (value) => typeof value === "string" && value.trim().length > 0,
+      ) || null
+    );
   };
 
   const showAdminToast = (type, title, message, actions = []) => {
@@ -311,133 +433,526 @@ export default function AdminDashboard(props) {
   }, [adminToast]);
 
   useEffect(() => {
-    if (mode !== 'dashboard' || activeDashboardView !== 'feedback' || typeof setParentFeedback !== 'function') return undefined;
+    if (
+      mode !== "dashboard" ||
+      activeDashboardView !== "feedback" ||
+      typeof setParentFeedback !== "function"
+    )
+      return undefined;
     let active = true;
-    supabase.from('tribe_parent_feedback').select('*').order('created_at', { ascending: false }).limit(200)
+    supabase
+      .from("tribe_parent_feedback")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(200)
       .then(({ data, error }) => {
         if (active && !error && Array.isArray(data)) setParentFeedback(data);
       })
-      .catch((error) => console.error('Parent feedback refresh failed:', error));
-    return () => { active = false; };
+      .catch((error) =>
+        console.error("Parent feedback refresh failed:", error),
+      );
+    return () => {
+      active = false;
+    };
   }, [activeDashboardView, mode, setParentFeedback]);
 
   useEffect(() => {
-    if (mode !== 'dashboard' || activeDashboardView !== 'vendors') return undefined;
+    if (mode !== "dashboard" || activeDashboardView !== "vendors")
+      return undefined;
     let active = true;
-    const token = session?.access_token || session?.accessToken || '';
-    fetch('/api/admin-update', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ action: 'select', table: 'vendor_profiles', columns: 'id,company_name,logo_url,contact_email,id_type,id_document_path,status,payout_account_name,payout_account_number,payout_bank_name,payout_currency,rejection_reason,created_at,approved_at' })
-    }).then(async (response) => {
-      const payload = await response.json().catch(() => ({}));
-      if (!active) return;
-      if (response.ok) {
-        setVendorProfiles(Array.isArray(payload.data) ? payload.data : []);
-      } else {
-        showAdminToast('error', 'Vendor list unavailable', payload.error || 'The vendor records could not be loaded.');
-      }
-    }).catch((error) => {
-      if (active) showAdminToast('error', 'Vendor list unavailable', error.message || 'The vendor records could not be loaded.');
-    });
-    return () => { active = false; };
-  }, [activeDashboardView, mode, session]);
-
-  useEffect(() => {
-    if (mode !== 'dashboard' || activeDashboardView !== 'commerce' || commerceSubTab !== 'ads') return undefined;
-    let active = true;
-    const token = session?.access_token || session?.accessToken || '';
-    fetch('/api/admin-update', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ action: 'select', table: 'promotional_ads', columns: 'id,eyebrow,headline,product_url,action_label,posted_by,posted_by_email,vendor_id,vendor_name,status,is_platform_ad,created_at,updated_at' }) })
+    const token = session?.access_token || session?.accessToken || "";
+    fetch("/api/admin-update", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        action: "select",
+        table: "vendor_profiles",
+        columns:
+          "id,company_name,logo_url,contact_email,id_type,id_document_path,status,payout_account_name,payout_account_number,payout_bank_name,payout_currency,rejection_reason,created_at,approved_at",
+      }),
+    })
       .then(async (response) => {
         const payload = await response.json().catch(() => ({}));
-        if (active && response.ok) setAdminAds(Array.isArray(payload.data) ? payload.data : []);
-      }).catch(() => {});
+        if (!active) return;
+        if (response.ok) {
+          setVendorProfiles(Array.isArray(payload.data) ? payload.data : []);
+        } else {
+          showAdminToast(
+            "error",
+            "Vendor list unavailable",
+            payload.error || "The vendor records could not be loaded.",
+          );
+        }
+      })
+      .catch((error) => {
+        if (active)
+          showAdminToast(
+            "error",
+            "Vendor list unavailable",
+            error.message || "The vendor records could not be loaded.",
+          );
+      });
+    return () => {
+      active = false;
+    };
+  }, [activeDashboardView, mode, session]);
+
+  const replyToSupportMessage = async (message) => {
+    const reply = String(supportReplyDrafts[message.id] || "").trim();
+    if (!reply || !message.id || !message.sourceTable) return;
+    setSupportReplySaving(message.id);
+    const token = session?.access_token || session?.accessToken || "";
+    const response = await fetch("/api/admin-update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: "update", table: message.sourceTable, match: { id: message.id }, payload: { admin_reply: reply, status: "closed", updated_at: new Date().toISOString() } }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    setSupportReplySaving(null);
+    if (!response.ok) {
+      showAdminToast("error", "Reply failed", payload.error || "The support reply could not be saved.");
+      return;
+    }
+    setSupportMessages((current) => current.map((item) => item.id === message.id && item.sourceTable === message.sourceTable ? { ...item, admin_reply: reply, status: "closed", updated_at: new Date().toISOString() } : item));
+    setSupportReplyDrafts((current) => ({ ...current, [message.id]: "" }));
+    showAdminToast("success", "Reply saved", "Your reply was saved to the support conversation.");
+  };
+
+  useEffect(() => {
+    if (mode !== "dashboard" || activeDashboardView !== "vendors" || vendorTab !== "approved") return undefined;
+    const approvedVendors = vendorProfiles.filter((vendor) => vendor.status === "approved");
+    if (!approvedVendors.length) {
+      setApprovedVendorSales({});
+      return undefined;
+    }
+    let active = true;
+    const token = session?.access_token || session?.accessToken || "";
+    const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+    Promise.all(approvedVendors.map(async (vendor) => {
+      const response = await fetch("/api/admin-update", { method: "POST", headers, body: JSON.stringify({ action: "select", table: "vendor_sales", match: { vendor_id: vendor.id }, columns: "id,order_number,product_title,quantity,vendor_amount,currency,payout_status,created_at" }) });
+      const payload = await response.json().catch(() => ({}));
+      return [vendor.id, response.ok && Array.isArray(payload.data) ? payload.data : []];
+    })).then((entries) => {
+      if (active) setApprovedVendorSales(Object.fromEntries(entries));
+    }).catch(() => {
+      if (active) setApprovedVendorSales({});
+    });
     return () => { active = false; };
+  }, [activeDashboardView, mode, session, vendorProfiles, vendorTab]);
+
+  useEffect(() => {
+    if (
+      mode !== "dashboard" ||
+      activeDashboardView !== "commerce" ||
+      commerceSubTab !== "ads"
+    )
+      return undefined;
+    let active = true;
+    const token = session?.access_token || session?.accessToken || "";
+    fetch("/api/admin-update", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        action: "select",
+        table: "promotional_ads",
+        columns:
+          "id,eyebrow,headline,product_url,action_label,posted_by,posted_by_email,vendor_id,vendor_name,status,is_platform_ad,created_at,updated_at",
+      }),
+    })
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (active && response.ok)
+          setAdminAds(Array.isArray(payload.data) ? payload.data : []);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
   }, [activeDashboardView, commerceSubTab, mode, session]);
 
   useEffect(() => {
-    if (mode !== 'dashboard' || activeDashboardView !== 'support') return undefined;
+    if (mode !== "dashboard" || activeDashboardView !== "support")
+      return undefined;
     let active = true;
-    const token = session?.access_token || session?.accessToken || '';
-    const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
-    Promise.all(['vendor_support_messages', 'customer_support_messages'].map((table) => fetch('/api/admin-update', { method: 'POST', headers, body: JSON.stringify({ action: 'select', table, columns: '*' }) }).then((response) => response.json().then((payload) => response.ok ? payload.data || [] : []))))
-      .then(([vendorMessages, customerMessages]) => { if (active) setSupportMessages([...vendorMessages.map((item) => ({ ...item, source: 'Vendor' })), ...customerMessages.map((item) => ({ ...item, source: 'Customer' }))].sort((left, right) => new Date(right.created_at) - new Date(left.created_at))); })
+    const token = session?.access_token || session?.accessToken || "";
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    };
+    Promise.all(
+      ["vendor_support_messages", "customer_support_messages"].map((table) =>
+        fetch("/api/admin-update", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({ action: "select", table, columns: "*" }),
+        }).then((response) =>
+          response
+            .json()
+            .then((payload) => (response.ok ? payload.data || [] : [])),
+        ),
+      ),
+    )
+      .then(([vendorMessages, customerMessages]) => {
+        if (active)
+          setSupportMessages(
+            [
+              ...vendorMessages.map((item) => ({ ...item, source: "Vendor", sourceTable: "vendor_support_messages" })),
+              ...customerMessages.map((item) => ({
+                ...item,
+                source: "Customer",
+                sourceTable: "customer_support_messages",
+              })),
+            ].sort(
+              (left, right) =>
+                new Date(right.created_at) - new Date(left.created_at),
+            ),
+          );
+      })
       .catch(() => {});
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [activeDashboardView, mode, session]);
 
   const updateVendorStatus = async (vendor, status) => {
-    const token = session?.access_token || session?.accessToken || '';
-    const response = await fetch('/api/admin-update', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ action: 'update', table: 'vendor_profiles', match: { id: vendor.id }, payload: { status, approved_at: status === 'approved' ? new Date().toISOString() : null, approved_by: status === 'approved' ? session?.user?.id || null : null } })
+    const token = session?.access_token || session?.accessToken || "";
+    const response = await fetch("/api/admin-update", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        action: "update",
+        table: "vendor_profiles",
+        match: { id: vendor.id },
+        payload: {
+          status,
+          approved_at: status === "approved" ? new Date().toISOString() : null,
+          approved_by: status === "approved" ? session?.user?.id || null : null,
+        },
+      }),
     });
     if (!response.ok) {
-      showAdminToast('error', 'Vendor update failed', 'The vendor status could not be changed.');
+      showAdminToast(
+        "error",
+        "Vendor update failed",
+        "The vendor status could not be changed.",
+      );
       return;
     }
-    setVendorProfiles((current) => current.map((item) => item.id === vendor.id ? { ...item, status } : item));
-    showAdminToast('success', 'Vendor updated', `${vendor.company_name || 'Vendor'} is now ${status}.`);
+    setVendorProfiles((current) =>
+      current.map((item) =>
+        item.id === vendor.id ? { ...item, status } : item,
+      ),
+    );
+    showAdminToast(
+      "success",
+      "Vendor updated",
+      `${vendor.company_name || "Vendor"} is now ${status}.`,
+    );
   };
 
   const viewVendorDetails = async (vendor) => {
+    if (selectedVendor?.id === vendor.id && !selectedVendor.loading) {
+      setSelectedVendor(null);
+      return;
+    }
     setSelectedVendor({ ...vendor, loading: true });
-    const token = session?.access_token || session?.accessToken || '';
-    const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
-    const [productsResponse, salesResponse] = await Promise.all([
-      fetch('/api/admin-update', { method: 'POST', headers, body: JSON.stringify({ action: 'select', table: 'store_products', match: { vendor_id: vendor.id }, columns: 'id,title,price,currency,created_at' }) }),
-      fetch('/api/admin-update', { method: 'POST', headers, body: JSON.stringify({ action: 'select', table: 'vendor_sales', match: { vendor_id: vendor.id }, columns: 'id,order_number,product_title,quantity,vendor_amount,currency,payout_status,created_at' }) })
-    ]);
+    setVendorEditForm({ ...vendor });
+    setVendorEditing(false);
+    setVendorDocumentPreviewOpen(false);
+    const token = session?.access_token || session?.accessToken || "";
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    };
+    const [productsResponse, salesResponse] =
+      await Promise.all([
+        fetch("/api/admin-update", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            action: "select",
+            table: "store_products",
+            match: { vendor_id: vendor.id },
+            columns: "id,title,price,currency,created_at",
+          }),
+        }),
+        fetch("/api/admin-update", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            action: "select",
+            table: "vendor_sales",
+            match: { vendor_id: vendor.id },
+            columns:
+              "id,order_number,product_title,quantity,vendor_amount,currency,payout_status,created_at",
+          }),
+        }),
+      ]);
     const productsPayload = await productsResponse.json().catch(() => ({}));
     const salesPayload = await salesResponse.json().catch(() => ({}));
-    setSelectedVendor({ ...vendor, products: productsResponse.ok ? productsPayload.data || [] : [], sales: salesResponse.ok ? salesPayload.data || [] : [], loading: false });
+    let documentPreviewUrl = null;
+    let directDocumentError = null;
+    if (vendor.id_document_path) {
+      const { data: directDocumentUrl, error } = await supabase.storage
+        .from("vendor-verification")
+        .createSignedUrl(vendor.id_document_path, 3600);
+      documentPreviewUrl = directDocumentUrl?.signedUrl || null;
+      directDocumentError = error;
+    }
+    if (!documentPreviewUrl && vendor.id_document_path) {
+      const previewResponse = await fetch("/api/admin-update", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          action: "signed_url",
+          bucket: "vendor-verification",
+          path: vendor.id_document_path,
+          expiresIn: 3600,
+        }),
+      });
+      const previewPayload = await previewResponse.json().catch(() => ({}));
+      documentPreviewUrl = previewResponse.ok
+        ? previewPayload.signedUrl || previewPayload.data?.signedUrl || previewPayload.data?.signedURL || null
+        : null;
+      if (!documentPreviewUrl && directDocumentError && previewPayload.error) {
+        showAdminToast("error", "Document preview unavailable", directDocumentError.message);
+      }
+    }
+    setSelectedVendor({
+      ...vendor,
+      documentPreviewUrl,
+      products: productsResponse.ok ? productsPayload.data || [] : [],
+      sales: salesResponse.ok ? salesPayload.data || [] : [],
+      loading: false,
+    });
   };
+
+  const saveVendorProfile = async () => {
+    if (!vendorEditForm?.id) return;
+    setVendorSaving(true);
+    const token = session?.access_token || session?.accessToken || "";
+    const response = await fetch("/api/admin-update", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        action: "update",
+        table: "vendor_profiles",
+        match: { id: vendorEditForm.id },
+        payload: {
+          company_name: vendorEditForm.company_name?.trim(),
+          contact_email: vendorEditForm.contact_email?.trim(),
+          id_type: vendorEditForm.id_type,
+          payout_account_name: vendorEditForm.payout_account_name?.trim(),
+          payout_account_number: vendorEditForm.payout_account_number?.trim(),
+          payout_bank_name: vendorEditForm.payout_bank_name?.trim(),
+          payout_currency: vendorEditForm.payout_currency,
+          status: vendorEditForm.status,
+          rejection_reason: vendorEditForm.rejection_reason?.trim() || null,
+        },
+      }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    setVendorSaving(false);
+    if (!response.ok) {
+      showAdminToast(
+        "error",
+        "Vendor profile update failed",
+        payload.error || "The vendor profile could not be saved.",
+      );
+      return;
+    }
+    setVendorProfiles((current) =>
+      current.map((item) =>
+        item.id === vendorEditForm.id ? { ...item, ...vendorEditForm } : item,
+      ),
+    );
+    setSelectedVendor((current) =>
+      current?.id === vendorEditForm.id
+        ? { ...current, ...vendorEditForm }
+        : current,
+    );
+    showAdminToast(
+      "success",
+      "Vendor profile saved",
+      `${vendorEditForm.company_name || "Vendor"} profile details were updated.`,
+    );
+  };
+
+  const vendorTabs = [
+    { id: "profiles", label: "Vendor profiles", statuses: null },
+    { id: "pending", label: "Pending review", statuses: ["pending"] },
+    { id: "approved", label: "Approved", statuses: ["approved"] },
+    { id: "rejected", label: "Rejected", statuses: ["rejected", "suspended"] },
+  ];
+
+  const activeVendorTab =
+    vendorTabs.find((tab) => tab.id === vendorTab) || vendorTabs[0];
+  const visibleVendorProfiles = vendorProfiles.filter((vendor) => {
+    const query = vendorSearch.trim().toLowerCase();
+    const matchesTab =
+      !activeVendorTab.statuses ||
+      activeVendorTab.statuses.includes(vendor.status);
+    const matchesSearch =
+      !query ||
+      [
+        vendor.company_name,
+        vendor.contact_email,
+        vendor.payout_bank_name,
+        vendor.payout_account_name,
+        vendor.status,
+      ].some((value) =>
+        String(value || "")
+          .toLowerCase()
+          .includes(query),
+      );
+    return matchesTab && matchesSearch;
+  });
 
   const publishAdminAd = async (event) => {
     event.preventDefault();
     if (!adminAdForm.headline.trim() || !adminAdForm.productUrl.trim()) return;
-    const token = session?.access_token || session?.accessToken || '';
-    const response = await fetch('/api/admin-update', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ action: 'insert', table: 'promotional_ads', payload: [{ eyebrow: adminAdForm.eyebrow.trim(), headline: adminAdForm.headline.trim(), product_url: adminAdForm.productUrl.trim(), action_label: 'View product', posted_by: session?.user?.id || null, posted_by_email: session?.user?.email || null, status: 'published' }] })
+    const token = session?.access_token || session?.accessToken || "";
+    const response = await fetch("/api/admin-update", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        action: "insert",
+        table: "promotional_ads",
+        payload: [
+          {
+            eyebrow: adminAdForm.eyebrow.trim(),
+            headline: adminAdForm.headline.trim(),
+            product_url: adminAdForm.productUrl.trim(),
+            action_label: "View product",
+            posted_by: session?.user?.id || null,
+            posted_by_email: session?.user?.email || null,
+            status: "published",
+          },
+        ],
+      }),
     });
     if (!response.ok) {
       const errorPayload = await response.json().catch(() => ({}));
-      showAdminToast('error', 'Ad publishing failed', errorPayload.error || 'The promotional ad could not be published.');
+      showAdminToast(
+        "error",
+        "Ad publishing failed",
+        errorPayload.error || "The promotional ad could not be published.",
+      );
       return;
     }
-    const adsResponse = await fetch('/api/admin-update', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ action: 'select', table: 'promotional_ads', columns: 'id,eyebrow,headline,product_url,action_label,posted_by,posted_by_email,vendor_id,vendor_name,status,is_platform_ad,created_at,updated_at' }) });
+    const adsResponse = await fetch("/api/admin-update", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        action: "select",
+        table: "promotional_ads",
+        columns:
+          "id,eyebrow,headline,product_url,action_label,posted_by,posted_by_email,vendor_id,vendor_name,status,is_platform_ad,created_at,updated_at",
+      }),
+    });
     const adsPayload = await adsResponse.json().catch(() => ({}));
-    if (adsResponse.ok && Array.isArray(adsPayload.data)) setAdminAds(adsPayload.data);
-    setAdminAdForm({ eyebrow: 'PAZ Marketplace', headline: '', productUrl: '' });
-    showAdminToast('success', 'Ad published', 'The promotional ad is now rotating on the shop.');
+    if (adsResponse.ok && Array.isArray(adsPayload.data))
+      setAdminAds(adsPayload.data);
+    setAdminAdForm({
+      eyebrow: "PAZ Marketplace",
+      headline: "",
+      productUrl: "",
+    });
+    showAdminToast(
+      "success",
+      "Ad published",
+      "The promotional ad is now rotating on the shop.",
+    );
   };
 
   const updateAdStatus = async (ad, status) => {
-    const token = session?.access_token || session?.accessToken || '';
-    const response = await fetch('/api/admin-update', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ action: 'update', table: 'promotional_ads', match: { id: ad.id }, payload: { status } }) });
+    const token = session?.access_token || session?.accessToken || "";
+    const response = await fetch("/api/admin-update", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        action: "update",
+        table: "promotional_ads",
+        match: { id: ad.id },
+        payload: { status },
+      }),
+    });
     if (!response.ok) {
-      showAdminToast('error', 'Ad update failed', 'The promotional ad status could not be changed.');
+      showAdminToast(
+        "error",
+        "Ad update failed",
+        "The promotional ad status could not be changed.",
+      );
       return;
     }
-    setAdminAds((current) => current.map((item) => item.id === ad.id ? { ...item, status } : item));
-    showAdminToast('success', 'Ad status updated', `The ad is now ${status}.`);
+    setAdminAds((current) =>
+      current.map((item) => (item.id === ad.id ? { ...item, status } : item)),
+    );
+    showAdminToast("success", "Ad status updated", `The ad is now ${status}.`);
   };
 
   const deleteAd = async (ad) => {
-    if (!ad?.id || ad.is_platform_ad) return showAdminToast('info', 'Platform ad protected', 'This PAZ vendor invitation ad cannot be deleted.');
-    if (!window.confirm(`Delete the ad "${ad.headline || 'Untitled ad'}" permanently?`)) return;
-    const token = session?.access_token || session?.accessToken || '';
-    const response = await fetch('/api/admin-update', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ action: 'delete', table: 'promotional_ads', match: { id: ad.id } }) });
+    if (!ad?.id || ad.is_platform_ad)
+      return showAdminToast(
+        "info",
+        "Platform ad protected",
+        "This PAZ vendor invitation ad cannot be deleted.",
+      );
+    if (
+      !window.confirm(
+        `Delete the ad "${ad.headline || "Untitled ad"}" permanently?`,
+      )
+    )
+      return;
+    const token = session?.access_token || session?.accessToken || "";
+    const response = await fetch("/api/admin-update", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        action: "delete",
+        table: "promotional_ads",
+        match: { id: ad.id },
+      }),
+    });
     if (!response.ok) {
       const payload = await response.json().catch(() => ({}));
-      showAdminToast('error', 'Ad deletion failed', payload.error || 'The promotional ad could not be deleted.');
+      showAdminToast(
+        "error",
+        "Ad deletion failed",
+        payload.error || "The promotional ad could not be deleted.",
+      );
       return;
     }
     setAdminAds((current) => current.filter((item) => item.id !== ad.id));
-    showAdminToast('success', 'Ad deleted', 'The promotional ad was permanently removed.');
+    showAdminToast(
+      "success",
+      "Ad deleted",
+      "The promotional ad was permanently removed.",
+    );
   };
 
   const toggleSelectRow = (id) => {
@@ -450,64 +965,86 @@ export default function AdminDashboard(props) {
   const clearSelection = () => setSelectedRowIds([]);
 
   const tableMap = {
-    visitors: 'tribe_activity',
-    teens: 'tribe_applicants',
-    messages: 'tribe_contact_messages',
-    bookings: 'tribe_bookings',
-    testimonials: 'tribe_testimonials',
-    slider: 'tribe_testimonials',
-    feedback: 'tribe_parent_feedback'
+    visitors: "tribe_activity",
+    teens: "tribe_applicants",
+    messages: "tribe_contact_messages",
+    bookings: "tribe_bookings",
+    testimonials: "tribe_testimonials",
+    slider: "tribe_testimonials",
+    feedback: "tribe_parent_feedback",
   };
 
   const uniqueVisitorCount = new Set(
     clientActivityLog
       .map((entry) => entry.ip_address || entry.session_id)
-      .filter(Boolean)
+      .filter(Boolean),
   ).size;
 
   const extractDbId = (rowId) => {
     if (!rowId) return rowId;
-    const parts = rowId.split('-');
+    const parts = rowId.split("-");
     // Child rows use the database id plus a numeric child index.
-    if (parts.length > 1 && /^\d+$/.test(parts[parts.length - 1])) return parts.slice(0, -1).join('-');
-    if (parts.length > 2) return parts.slice(0, 5).join('-');
-    if (parts.length === 2 && parts[0] && parts[0].includes('-')) return parts[0];
+    if (parts.length > 1 && /^\d+$/.test(parts[parts.length - 1]))
+      return parts.slice(0, -1).join("-");
+    if (parts.length > 2) return parts.slice(0, 5).join("-");
+    if (parts.length === 2 && parts[0] && parts[0].includes("-"))
+      return parts[0];
     return rowId;
   };
 
   const deleteRows = async (idsToDelete) => {
     if (!idsToDelete || idsToDelete.length === 0) return;
-    const table = tableMap[activeDashboardView] || (activeDashboardView === 'visitors' ? 'tribe_activity' : null);
+    const table =
+      tableMap[activeDashboardView] ||
+      (activeDashboardView === "visitors" ? "tribe_activity" : null);
     if (!table) {
-      showAdminToast('error', 'Delete not available', 'This table does not support row deletions from the current dashboard view.');
+      showAdminToast(
+        "error",
+        "Delete not available",
+        "This table does not support row deletions from the current dashboard view.",
+      );
       return;
     }
-    const token = session?.access_token || session?.accessToken || '';
+    const token = session?.access_token || session?.accessToken || "";
     if (!token) {
-      showAdminToast('error', 'Authentication required', 'Your admin session expired. Please sign in again to delete records.');
+      showAdminToast(
+        "error",
+        "Authentication required",
+        "Your admin session expired. Please sign in again to delete records.",
+      );
       return;
     }
 
     try {
       for (const rid of idsToDelete) {
         const dbId = extractDbId(rid);
-        const body = { action: 'delete', table, match: { id: dbId } };
-        const resp = await fetch('/api/admin-update', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify(body)
+        const body = { action: "delete", table, match: { id: dbId } };
+        const resp = await fetch("/api/admin-update", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(body),
         });
         if (!resp.ok) {
-          let errMsg = 'Delete failed';
+          let errMsg = "Delete failed";
           try {
             const json = await resp.json();
             errMsg = json?.error || errMsg;
           } catch (parseErr) {
             errMsg = `${resp.status} ${resp.statusText}`;
           }
-          console.error('Delete failed', errMsg);
-          if (resp.status === 502 || resp.status === 503 || resp.status === 404) {
-            const { error: directDeleteError } = await supabase.from(table).delete().eq('id', dbId);
+          console.error("Delete failed", errMsg);
+          if (
+            resp.status === 502 ||
+            resp.status === 503 ||
+            resp.status === 404
+          ) {
+            const { error: directDeleteError } = await supabase
+              .from(table)
+              .delete()
+              .eq("id", dbId);
             if (!directDeleteError) continue;
             throw new Error(directDeleteError.message || errMsg);
           }
@@ -517,27 +1054,41 @@ export default function AdminDashboard(props) {
           await resp.json();
         } catch (parseErr) {
           // Some endpoints return empty 200 responses; that's okay
-          console.warn('Could not parse response JSON, but delete succeeded');
+          console.warn("Could not parse response JSON, but delete succeeded");
         }
       }
       clearSelection();
-      if (typeof refreshAdminData === 'function') refreshAdminData();
+      if (typeof refreshAdminData === "function") refreshAdminData();
       return true;
     } catch (err) {
-      console.error('Bulk delete error', err);
-      showAdminToast('error', 'Delete failed', `${err?.message || 'One or more rows could not be deleted.'} Please check the database permissions if the problem continues.`);
+      console.error("Bulk delete error", err);
+      showAdminToast(
+        "error",
+        "Delete failed",
+        `${err?.message || "One or more rows could not be deleted."} Please check the database permissions if the problem continues.`,
+      );
       return false;
     }
   };
 
   const deleteSelected = () => {
     if (!selectedRowIds || selectedRowIds.length === 0) return;
-    setDeleteConfirmation({ ids: selectedRowIds, message: ['testimonials', 'slider'].includes(activeDashboardView) ? `This will remove ${selectedRowIds.length} selected testimonial(s) from the public slider.` : `This will permanently remove ${selectedRowIds.length} selected record(s).` });
+    setDeleteConfirmation({
+      ids: selectedRowIds,
+      message: ["testimonials", "slider"].includes(activeDashboardView)
+        ? `This will remove ${selectedRowIds.length} selected testimonial(s) from the public slider.`
+        : `This will permanently remove ${selectedRowIds.length} selected record(s).`,
+    });
   };
 
   const deleteRow = (rowId) => {
     if (!rowId) return;
-    setDeleteConfirmation({ ids: [rowId], message: ['testimonials', 'slider'].includes(activeDashboardView) ? 'This testimonial will be removed from the public slider.' : 'This record will be permanently removed from the system.' });
+    setDeleteConfirmation({
+      ids: [rowId],
+      message: ["testimonials", "slider"].includes(activeDashboardView)
+        ? "This testimonial will be removed from the public slider."
+        : "This record will be permanently removed from the system.",
+    });
   };
 
   const confirmDelete = async () => {
@@ -545,24 +1096,44 @@ export default function AdminDashboard(props) {
     const idsToDelete = deleteConfirmation.ids;
     setDeleteConfirmation(null);
     const ok = await deleteRows(idsToDelete);
-    if (ok) showAdminToast('success', 'Rows deleted', `${idsToDelete.length} record(s) were removed successfully.`);
+    if (ok)
+      showAdminToast(
+        "success",
+        "Rows deleted",
+        `${idsToDelete.length} record(s) were removed successfully.`,
+      );
   };
 
   const viewRow = (row) => {
     if (!row) return;
-    const rowData = row.details || (Array.isArray(row.columns) ? row.columns.reduce((acc, value, index) => {
-      const key = dashboardTableColumns[activeDashboardView]?.[index] || `column_${index + 1}`;
-      acc[key] = value;
-      return acc;
-    }, { id: row.id }) : row);
+    const rowData =
+      row.details ||
+      (Array.isArray(row.columns)
+        ? row.columns.reduce(
+            (acc, value, index) => {
+              const key =
+                dashboardTableColumns[activeDashboardView]?.[index] ||
+                `column_${index + 1}`;
+              acc[key] = value;
+              return acc;
+            },
+            { id: row.id },
+          )
+        : row);
     setViewingRow(rowData);
   };
 
   const [editingStoreProductId, setEditingStoreProductId] = useState(null);
-  const [publishedProductLink, setPublishedProductLink] = useState('');
+  const [publishedProductLink, setPublishedProductLink] = useState("");
 
   const getProductLink = (product) => {
-    const slug = encodeURIComponent(String(product?.title || product?.id || 'product').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
+    const slug = encodeURIComponent(
+      String(product?.title || product?.id || "product")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, ""),
+    );
     return `${window.location.origin}/shop/${slug}`;
   };
 
@@ -570,9 +1141,17 @@ export default function AdminDashboard(props) {
     if (!publishedProductLink) return;
     try {
       await navigator.clipboard.writeText(publishedProductLink);
-      showAdminToast('success', 'Link copied', 'The public product link is ready to paste on Facebook or anywhere else.');
+      showAdminToast(
+        "success",
+        "Link copied",
+        "The public product link is ready to paste on Facebook or anywhere else.",
+      );
     } catch {
-      showAdminToast('error', 'Copy failed', 'Select the link manually and copy it to your clipboard.');
+      showAdminToast(
+        "error",
+        "Copy failed",
+        "Select the link manually and copy it to your clipboard.",
+      );
     }
   };
 
@@ -580,148 +1159,230 @@ export default function AdminDashboard(props) {
     const productLink = getProductLink(product);
     try {
       await navigator.clipboard.writeText(productLink);
-      showAdminToast('success', 'Link copied', `${product.title} public link is ready to share.`);
+      showAdminToast(
+        "success",
+        "Link copied",
+        `${product.title} public link is ready to share.`,
+      );
     } catch {
-      showAdminToast('error', 'Copy failed', 'Select the product link from the public link field and copy it manually.');
+      showAdminToast(
+        "error",
+        "Copy failed",
+        "Select the product link from the public link field and copy it manually.",
+      );
     }
   };
 
   const resetStoreProductForm = () => {
-    setStoreProductForm({ title: '', description: '', price: '', currency: 'NGN', isFree: false, category: 'Ebook', fileUrl: '', cover: '/logo/logomain.png', inStock: true, stockCount: '' });
-    setProductFileName('');
-    setCoverFileName('');
+    setStoreProductForm({
+      title: "",
+      description: "",
+      price: "",
+      currency: "NGN",
+      isFree: false,
+      category: "Ebook",
+      fileUrl: "",
+      cover: "/logo/logomain.png",
+      inStock: true,
+      stockCount: "",
+    });
+    setProductFileName("");
+    setCoverFileName("");
     setEditingStoreProductId(null);
   };
 
-  const persistStoreProductToSupabase = async (product, operation = 'upsert') => {
-    if (!product || typeof product !== 'object') return false;
-    const token = session?.access_token || session?.accessToken || '';
+  const persistStoreProductToSupabase = async (
+    product,
+    operation = "upsert",
+  ) => {
+    if (!product || typeof product !== "object") return false;
+    const token = session?.access_token || session?.accessToken || "";
     if (!token) return false;
 
     const payload = {
       id: product.id,
       title: product.title,
-      description: product.description || '',
+      description: product.description || "",
       price: Number(product.price || 0),
-      currency: product.currency || 'NGN',
+      currency: product.currency || "NGN",
       is_free: Boolean(product.isFree),
-      category: product.category || 'Ebook',
-      file_url: product.fileUrl || '',
-      cover: product.cover || '/logo/logomain.png',
+      category: product.category || "Ebook",
+      file_url: product.fileUrl || "",
+      cover: product.cover || "/logo/logomain.png",
       in_stock: product.inStock !== false,
       stock_count: Number(product.stockCount || 0),
       rating: Number(product.rating || 0),
       reviews: Number(product.reviews || 0),
-      prime: Boolean(product.prime || false)
+      prime: Boolean(product.prime || false),
     };
 
     try {
-      if (operation === 'insert') {
-        const { error: directInsertError } = await supabase.from('store_products').insert(payload);
+      if (operation === "insert") {
+        const { error: directInsertError } = await supabase
+          .from("store_products")
+          .insert(payload);
         if (!directInsertError) return true;
-        console.warn('Direct store product insert failed, trying admin API:', directInsertError.message);
-      } else if (operation === 'upsert') {
-        const { error: directUpdateError } = await supabase.from('store_products').update(payload).eq('id', product.id);
+        console.warn(
+          "Direct store product insert failed, trying admin API:",
+          directInsertError.message,
+        );
+      } else if (operation === "upsert") {
+        const { error: directUpdateError } = await supabase
+          .from("store_products")
+          .update(payload)
+          .eq("id", product.id);
         if (!directUpdateError) return true;
-        console.warn('Direct store product update failed, trying admin API:', directUpdateError.message);
+        console.warn(
+          "Direct store product update failed, trying admin API:",
+          directUpdateError.message,
+        );
       }
 
       const requestBody = {
-        action: operation === 'delete' ? 'delete' : operation === 'insert' ? 'insert' : 'update',
-        table: 'store_products',
+        action:
+          operation === "delete"
+            ? "delete"
+            : operation === "insert"
+              ? "insert"
+              : "update",
+        table: "store_products",
         payload: [payload],
-        match: product.id ? { id: product.id } : undefined
+        match: product.id ? { id: product.id } : undefined,
       };
 
-      if (operation === 'delete') {
-        requestBody.action = 'delete';
+      if (operation === "delete") {
+        requestBody.action = "delete";
       }
 
-      const response = await fetch('/api/admin-update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(requestBody)
+      const response = await fetch("/api/admin-update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
-        console.warn('Store product sync to Supabase failed:', response.statusText);
-        if (operation === 'insert') {
+        console.warn(
+          "Store product sync to Supabase failed:",
+          response.statusText,
+        );
+        if (operation === "insert") {
           const { error: fallbackError } = await supabase
-            .from('store_products')
+            .from("store_products")
             .insert(payload);
           if (!fallbackError) return true;
-          console.warn('Direct store product insert fallback failed:', fallbackError.message);
-        } else if (operation !== 'delete' && product.id) {
+          console.warn(
+            "Direct store product insert fallback failed:",
+            fallbackError.message,
+          );
+        } else if (operation !== "delete" && product.id) {
           const { error: fallbackError } = await supabase
-            .from('store_products')
+            .from("store_products")
             .update(payload)
-            .eq('id', product.id);
+            .eq("id", product.id);
           if (!fallbackError) return true;
-          console.warn('Direct store product sync fallback failed:', fallbackError.message);
+          console.warn(
+            "Direct store product sync fallback failed:",
+            fallbackError.message,
+          );
         }
       }
       return response.ok;
     } catch (error) {
-      console.warn('Store product sync error:', error);
+      console.warn("Store product sync error:", error);
       return false;
     }
   };
 
   const handleProductFileUpload = async (fileOrEvent) => {
-    const file = fileOrEvent?.target ? fileOrEvent.target.files?.[0] : fileOrEvent;
+    const file = fileOrEvent?.target
+      ? fileOrEvent.target.files?.[0]
+      : fileOrEvent;
     if (!file) return;
 
     try {
       setProductFileUploading(true);
-      const safeName = file.name.replace(/[^a-z0-9._-]/gi, '-');
+      const safeName = file.name.replace(/[^a-z0-9._-]/gi, "-");
       const filePath = `products/${Date.now()}-${safeName}`;
-      const { data, error } = await supabase.storage.from('product-files').upload(filePath, file, {
-        upsert: false,
-        contentType: file.type || 'application/octet-stream'
-      });
+      const { data, error } = await supabase.storage
+        .from("product-files")
+        .upload(filePath, file, {
+          upsert: false,
+          contentType: file.type || "application/octet-stream",
+        });
       if (error) throw error;
-      setStoreProductForm((current) => ({ ...current, fileUrl: data?.path || filePath }));
+      setStoreProductForm((current) => ({
+        ...current,
+        fileUrl: data?.path || filePath,
+      }));
       setProductFileName(file.name);
-      showAdminToast('success', 'Product file uploaded', 'The private product file is ready to save with this product.');
+      showAdminToast(
+        "success",
+        "Product file uploaded",
+        "The private product file is ready to save with this product.",
+      );
     } catch (error) {
-      console.warn('Product file upload failed:', error);
-      showAdminToast('error', 'File upload failed', error.message || 'The product file could not be uploaded.');
+      console.warn("Product file upload failed:", error);
+      showAdminToast(
+        "error",
+        "File upload failed",
+        error.message || "The product file could not be uploaded.",
+      );
     } finally {
       setProductFileUploading(false);
-      if (fileOrEvent?.target) fileOrEvent.target.value = '';
+      if (fileOrEvent?.target) fileOrEvent.target.value = "";
     }
   };
 
   const handleCoverFileUpload = async (fileOrEvent) => {
-    const file = fileOrEvent?.target ? fileOrEvent.target.files?.[0] : fileOrEvent;
+    const file = fileOrEvent?.target
+      ? fileOrEvent.target.files?.[0]
+      : fileOrEvent;
     if (!file) return;
 
     try {
       setCoverFileUploading(true);
-      const safeName = file.name.replace(/[^a-z0-9._-]/gi, '-');
+      const safeName = file.name.replace(/[^a-z0-9._-]/gi, "-");
       const filePath = `products/covers/${Date.now()}-${safeName}`;
-      const { data, error } = await supabase.storage.from('prof-upload').upload(filePath, file, {
-        upsert: false,
-        contentType: file.type || 'application/octet-stream'
-      });
+      const { data, error } = await supabase.storage
+        .from("prof-upload")
+        .upload(filePath, file, {
+          upsert: false,
+          contentType: file.type || "application/octet-stream",
+        });
       if (error) throw error;
 
-      const { data: publicUrlData } = supabase.storage.from('prof-upload').getPublicUrl(data?.path || filePath);
-      setStoreProductForm((current) => ({ ...current, cover: publicUrlData?.publicUrl || data?.path || filePath }));
+      const { data: publicUrlData } = supabase.storage
+        .from("prof-upload")
+        .getPublicUrl(data?.path || filePath);
+      setStoreProductForm((current) => ({
+        ...current,
+        cover: publicUrlData?.publicUrl || data?.path || filePath,
+      }));
       setCoverFileName(file.name);
-      showAdminToast('success', 'Cover image uploaded', 'The cover image is ready to save with this product.');
+      showAdminToast(
+        "success",
+        "Cover image uploaded",
+        "The cover image is ready to save with this product.",
+      );
     } catch (error) {
-      console.warn('Cover image upload failed:', error);
-      showAdminToast('error', 'Cover upload failed', error.message || 'The cover image could not be uploaded.');
+      console.warn("Cover image upload failed:", error);
+      showAdminToast(
+        "error",
+        "Cover upload failed",
+        error.message || "The cover image could not be uploaded.",
+      );
     } finally {
       setCoverFileUploading(false);
-      if (fileOrEvent?.target) fileOrEvent.target.value = '';
+      if (fileOrEvent?.target) fileOrEvent.target.value = "";
     }
   };
 
   const handleFileDragOver = (event, setDragActive) => {
     event.preventDefault();
-    event.dataTransfer.dropEffect = 'copy';
+    event.dataTransfer.dropEffect = "copy";
     setDragActive(true);
   };
 
@@ -733,24 +1394,39 @@ export default function AdminDashboard(props) {
   const handleProductFileDrop = (event) => {
     event.preventDefault();
     setProductFileDragActive(false);
-    if (!productFileUploading) handleProductFileUpload(event.dataTransfer.files?.[0]);
+    if (!productFileUploading)
+      handleProductFileUpload(event.dataTransfer.files?.[0]);
   };
 
   const handleCoverFileDrop = (event) => {
     event.preventDefault();
     setCoverFileDragActive(false);
-    if (!coverFileUploading) handleCoverFileUpload(event.dataTransfer.files?.[0]);
+    if (!coverFileUploading)
+      handleCoverFileUpload(event.dataTransfer.files?.[0]);
   };
 
   const handleStoreProductSubmit = async (event) => {
     event.preventDefault();
-    if (!storeProductForm.title || !storeProductForm.description || (!storeProductForm.isFree && !storeProductForm.price)) return;
+    if (
+      !storeProductForm.title ||
+      !storeProductForm.description ||
+      (!storeProductForm.isFree && !storeProductForm.price)
+    )
+      return;
     if (productFileUploading || coverFileUploading) {
-      showAdminToast('warning', 'Uploads still in progress', 'Wait for the selected files to finish uploading before saving the product.');
+      showAdminToast(
+        "warning",
+        "Uploads still in progress",
+        "Wait for the selected files to finish uploading before saving the product.",
+      );
       return;
     }
     if (!editingStoreProductId && !storeProductForm.fileUrl.trim()) {
-      showAdminToast('warning', 'Product file required', 'Choose a PDF or ZIP file so it can be uploaded to Supabase Storage before publishing.');
+      showAdminToast(
+        "warning",
+        "Product file required",
+        "Choose a PDF or ZIP file so it can be uploaded to Supabase Storage before publishing.",
+      );
       return;
     }
 
@@ -760,45 +1436,80 @@ export default function AdminDashboard(props) {
       title: storeProductForm.title.trim(),
       description: storeProductForm.description.trim(),
       price: Number(storeProductForm.price) || 0,
-      currency: storeProductForm.currency || 'NGN',
+      currency: storeProductForm.currency || "NGN",
       isFree: Boolean(storeProductForm.isFree),
-      category: storeProductForm.category || 'Ebook',
-      fileUrl: storeProductForm.fileUrl.trim() || '',
-      cover: storeProductForm.cover.trim() || '/logo/logomain.png',
+      category: storeProductForm.category || "Ebook",
+      fileUrl: storeProductForm.fileUrl.trim() || "",
+      cover: storeProductForm.cover.trim() || "/logo/logomain.png",
       inStock: normalizedInStock,
-      stockCount: normalizedInStock ? (Number.isFinite(parsedStockCount) && parsedStockCount >= 0 ? parsedStockCount : 1) : 0
+      stockCount: normalizedInStock
+        ? Number.isFinite(parsedStockCount) && parsedStockCount >= 0
+          ? parsedStockCount
+          : 1
+        : 0,
     };
 
     if (editingStoreProductId) {
-      const updatedProducts = (Array.isArray(storeProducts) ? storeProducts : []).map((product) => (
+      const updatedProducts = (
+        Array.isArray(storeProducts) ? storeProducts : []
+      ).map((product) =>
         product.id === editingStoreProductId
           ? { ...product, ...productValues }
-          : product
-      ));
-      const targetProduct = updatedProducts.find((product) => product.id === editingStoreProductId) || { id: editingStoreProductId, ...productValues };
-      const persisted = await persistStoreProductToSupabase(targetProduct, 'upsert');
+          : product,
+      );
+      const targetProduct = updatedProducts.find(
+        (product) => product.id === editingStoreProductId,
+      ) || { id: editingStoreProductId, ...productValues };
+      const persisted = await persistStoreProductToSupabase(
+        targetProduct,
+        "upsert",
+      );
       if (!persisted) {
-        showAdminToast('error', 'Product was not updated', 'Supabase could not save this product. Your changes are still in the editor.');
+        showAdminToast(
+          "error",
+          "Product was not updated",
+          "Supabase could not save this product. Your changes are still in the editor.",
+        );
         return;
       }
       setStoreProducts(updatedProducts);
       resetStoreProductForm();
-      setPublishedProductLink(getProductLink({ ...targetProduct, ...productValues }));
-      showAdminToast('success', 'Product updated', `${productValues.title} has been updated on the public store.`);
+      setPublishedProductLink(
+        getProductLink({ ...targetProduct, ...productValues }),
+      );
+      showAdminToast(
+        "success",
+        "Product updated",
+        `${productValues.title} has been updated on the public store.`,
+      );
     } else {
       const newProduct = {
         id: crypto.randomUUID(),
         createdAt: new Date().toISOString(),
-        ...productValues
+        ...productValues,
       };
-      const persisted = await persistStoreProductToSupabase(newProduct, 'insert');
+      const persisted = await persistStoreProductToSupabase(
+        newProduct,
+        "insert",
+      );
       if (!persisted) {
-        showAdminToast('error', 'Product was not saved', 'Supabase could not save this product. Your entries are still in the editor.');
+        showAdminToast(
+          "error",
+          "Product was not saved",
+          "Supabase could not save this product. Your entries are still in the editor.",
+        );
         return;
       }
-      setStoreProducts((current = []) => [...(Array.isArray(current) ? current : []), newProduct]);
+      setStoreProducts((current = []) => [
+        ...(Array.isArray(current) ? current : []),
+        newProduct,
+      ]);
       setPublishedProductLink(getProductLink(newProduct));
-      showAdminToast('success', 'Product saved', `${newProduct.title} is now available in the digital store.`);
+      showAdminToast(
+        "success",
+        "Product saved",
+        `${newProduct.title} is now available in the digital store.`,
+      );
     }
 
     resetStoreProductForm();
@@ -806,75 +1517,129 @@ export default function AdminDashboard(props) {
 
   const handleEditStoreProduct = (product) => {
     if (!product) return;
-    setActiveDashboardView('commerce');
-    setCommerceSubTab('storefront');
+    setActiveDashboardView("commerce");
+    setCommerceSubTab("storefront");
     setEditingStoreProductId(product.id);
     setStoreProductForm({
-      title: product.title || '',
-      description: product.description || '',
-      price: product.price ?? '',
-      currency: product.currency || 'NGN',
+      title: product.title || "",
+      description: product.description || "",
+      price: product.price ?? "",
+      currency: product.currency || "NGN",
       isFree: Boolean(product.isFree),
-      category: product.category || 'Ebook',
-      fileUrl: product.fileUrl || '',
-      cover: product.cover || '/logo/logomain.png',
+      category: product.category || "Ebook",
+      fileUrl: product.fileUrl || "",
+      cover: product.cover || "/logo/logomain.png",
       inStock: product.inStock !== false,
-      stockCount: Number(product.stockCount ?? 0) > 0 ? Number(product.stockCount ?? 0) : ''
+      stockCount:
+        Number(product.stockCount ?? 0) > 0
+          ? Number(product.stockCount ?? 0)
+          : "",
     });
     setProductFileName(getStoredFileName(product.fileUrl));
     setCoverFileName(getStoredFileName(product.cover));
     window.requestAnimationFrame(() => {
-      productEditorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      productEditorRef.current?.querySelector('input')?.focus();
+      productEditorRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      productEditorRef.current?.querySelector("input")?.focus();
     });
   };
 
   const toggleStoreProductAvailability = async (productId) => {
-    const nextProducts = (Array.isArray(storeProducts) ? storeProducts : []).map((product) => {
+    const nextProducts = (
+      Array.isArray(storeProducts) ? storeProducts : []
+    ).map((product) => {
       if (product.id !== productId) return product;
       const nextInStock = product.inStock === false;
       return {
         ...product,
         inStock: nextInStock,
-        stockCount: nextInStock ? Math.max(Number(product.stockCount || 0), 1) : 0
+        stockCount: nextInStock
+          ? Math.max(Number(product.stockCount || 0), 1)
+          : 0,
       };
     });
     setStoreProducts(nextProducts);
 
-    const targetProduct = nextProducts.find((product) => product.id === productId);
+    const targetProduct = nextProducts.find(
+      (product) => product.id === productId,
+    );
     if (targetProduct) {
-      await persistStoreProductToSupabase(targetProduct, 'upsert');
+      await persistStoreProductToSupabase(targetProduct, "upsert");
     }
   };
 
   const handleDeleteStoreProduct = async (productId) => {
     if (!productId) return;
-    const productToDelete = (Array.isArray(storeProducts) ? storeProducts : []).find((product) => product.id === productId);
-    setStoreProducts((current = []) => (Array.isArray(current) ? current : []).filter((product) => product.id !== productId));
+    const productToDelete = (
+      Array.isArray(storeProducts) ? storeProducts : []
+    ).find((product) => product.id === productId);
+    setStoreProducts((current = []) =>
+      (Array.isArray(current) ? current : []).filter(
+        (product) => product.id !== productId,
+      ),
+    );
     if (editingStoreProductId === productId) {
       resetStoreProductForm();
     }
 
     if (productToDelete) {
-      await persistStoreProductToSupabase({ ...productToDelete, id: productToDelete.id }, 'delete');
+      await persistStoreProductToSupabase(
+        { ...productToDelete, id: productToDelete.id },
+        "delete",
+      );
     }
-    showAdminToast('success', 'Product removed', 'That product has been removed from the storefront and shop pages.');
+    showAdminToast(
+      "success",
+      "Product removed",
+      "That product has been removed from the storefront and shop pages.",
+    );
   };
 
   const deleteTestPurchases = async () => {
-    const token = session?.access_token || session?.accessToken || '';
-    if (!token) return showAdminToast('error', 'Authentication required', 'Sign in again before deleting test purchases.');
-    const testCount = shopOrders.filter((order) => order.paymentMode === 'test').length;
-    if (!testCount) return showAdminToast('info', 'No test purchases', 'No purchases marked as Paystack test mode were found. Live purchases were not changed.');
-    if (!window.confirm(`Delete ${testCount} test purchase${testCount === 1 ? '' : 's'}? Live purchases will not be affected.`)) return;
+    const token = session?.access_token || session?.accessToken || "";
+    if (!token)
+      return showAdminToast(
+        "error",
+        "Authentication required",
+        "Sign in again before deleting test purchases.",
+      );
+    const testCount = shopOrders.filter(
+      (order) => order.paymentMode === "test",
+    ).length;
+    if (!testCount)
+      return showAdminToast(
+        "info",
+        "No test purchases",
+        "No purchases marked as Paystack test mode were found. Live purchases were not changed.",
+      );
+    if (
+      !window.confirm(
+        `Delete ${testCount} test purchase${testCount === 1 ? "" : "s"}? Live purchases will not be affected.`,
+      )
+    )
+      return;
     try {
-      const response = await fetch('/api/admin-update', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ action: 'delete_test_shop_orders' }) });
+      const response = await fetch("/api/admin-update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action: "delete_test_shop_orders" }),
+      });
       const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error || 'Test purchases could not be deleted.');
+      if (!response.ok)
+        throw new Error(result.error || "Test purchases could not be deleted.");
       await refreshAdminData();
-      showAdminToast('success', 'Test purchases deleted', `${testCount} test purchase${testCount === 1 ? '' : 's'} removed. Live purchases were preserved.`);
+      showAdminToast(
+        "success",
+        "Test purchases deleted",
+        `${testCount} test purchase${testCount === 1 ? "" : "s"} removed. Live purchases were preserved.`,
+      );
     } catch (error) {
-      showAdminToast('error', 'Delete failed', error.message);
+      showAdminToast("error", "Delete failed", error.message);
     }
   };
 
@@ -888,103 +1653,141 @@ export default function AdminDashboard(props) {
   };
 
   const adminFieldStyle = {
-    width: '100%',
-    maxWidth: '100%',
+    width: "100%",
+    maxWidth: "100%",
     minWidth: 0,
-    boxSizing: 'border-box',
-    display: 'block',
-    border: '1px solid #d1d5db',
-    borderRadius: '10px',
-    padding: '11px 12px',
-    fontSize: '0.95rem',
-    fontFamily: 'inherit',
-    background: '#f9fafb'
+    boxSizing: "border-box",
+    display: "block",
+    border: "1px solid #d1d5db",
+    borderRadius: "10px",
+    padding: "11px 12px",
+    fontSize: "0.95rem",
+    fontFamily: "inherit",
+    background: "#f9fafb",
   };
 
-  if (mode === 'login' && session) {
+  if (mode === "login" && session) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  if (mode === 'dashboard' && !session) {
+  if (mode === "dashboard" && !session) {
     return <Navigate to="/admin" replace />;
   }
 
-  if (mode === 'login' && !session) {
+  if (mode === "login" && !session) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#f4f4f4',
-        padding: '32px 16px',
-        fontFamily: 'Inter, Arial, sans-serif'
-      }}>
-        <div style={{
-          width: '100%',
-          maxWidth: '520px',
-          background: '#f0f2f3',
-          border: '1px solid #d8dfe5',
-          borderRadius: '22px',
-          padding: '30px 28px 22px',
-          boxShadow: '0 18px 38px rgba(0,0,0,0.08)'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
-            <div style={{
-              width: '82px',
-              height: '82px',
-              borderRadius: '22px',
-              background: '#fff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 10px 22px rgba(0,0,0,0.08)'
-            }}>
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "#f4f4f4",
+          padding: "32px 16px",
+          fontFamily: "Inter, Arial, sans-serif",
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            maxWidth: "520px",
+            background: "#f0f2f3",
+            border: "1px solid #d8dfe5",
+            borderRadius: "22px",
+            padding: "30px 28px 22px",
+            boxShadow: "0 18px 38px rgba(0,0,0,0.08)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              marginBottom: "12px",
+            }}
+          >
+            <div
+              style={{
+                width: "82px",
+                height: "82px",
+                borderRadius: "22px",
+                background: "#fff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: "0 10px 22px rgba(0,0,0,0.08)",
+              }}
+            >
               <img
                 src="/logo/logomain.png"
                 alt="Paz Thriving Tribe logo"
-                style={{ width: '56px', height: '56px', objectFit: 'contain' }}
+                style={{ width: "56px", height: "56px", objectFit: "contain" }}
               />
             </div>
           </div>
 
-          <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-            <div style={{
-              margin: '0 0 8px',
-              fontSize: '0.82rem',
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: '#3d3d3d',
-              fontWeight: 700
-            }}>
+          <div style={{ textAlign: "center", marginBottom: "20px" }}>
+            <div
+              style={{
+                margin: "0 0 8px",
+                fontSize: "0.82rem",
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: "#3d3d3d",
+                fontWeight: 700,
+              }}
+            >
               Your Webapp Admin Portal
             </div>
-            <h1 style={{
-              margin: 0,
-              fontSize: 'clamp(2.2rem, 3vw, 3.2rem)',
-              lineHeight: 1.05,
-              color: '#111111',
-              fontWeight: 800
-            }}>
+            <h1
+              style={{
+                margin: 0,
+                fontSize: "clamp(2.2rem, 3vw, 3.2rem)",
+                lineHeight: 1.05,
+                color: "#111111",
+                fontWeight: 800,
+              }}
+            >
               Admin Login
             </h1>
           </div>
 
-          <form onSubmit={handleSignIn} autoComplete="on" style={{ display: 'grid', gap: '18px' }}>
+          <form
+            onSubmit={handleSignIn}
+            autoComplete="on"
+            style={{ display: "grid", gap: "18px" }}
+          >
             <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '1.05rem', fontWeight: 700, color: '#1f1f1f' }}>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "8px",
+                  fontSize: "1.05rem",
+                  fontWeight: 700,
+                  color: "#1f1f1f",
+                }}
+              >
                 Email
               </label>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                background: '#dde8f1',
-                border: '1px solid #c7d4e0',
-                borderRadius: '14px',
-                padding: '0 16px',
-                minHeight: '62px'
-              }}>
-                <span style={{ fontSize: '1.1rem', color: '#556778', marginRight: '12px' }}>✉</span>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  background: "#dde8f1",
+                  border: "1px solid #c7d4e0",
+                  borderRadius: "14px",
+                  padding: "0 16px",
+                  minHeight: "62px",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "1.1rem",
+                    color: "#556778",
+                    marginRight: "12px",
+                  }}
+                >
+                  ✉
+                </span>
                 <input
                   ref={emailInputRef}
                   type="email"
@@ -994,32 +1797,50 @@ export default function AdminDashboard(props) {
                   placeholder="admin@paztribe.org"
                   required
                   style={{
-                    width: '100%',
-                    border: 'none',
-                    background: 'transparent',
-                    outline: 'none',
-                    fontSize: '1.05rem',
-                    color: '#1d1d1d',
-                    fontFamily: 'inherit'
+                    width: "100%",
+                    border: "none",
+                    background: "transparent",
+                    outline: "none",
+                    fontSize: "1.05rem",
+                    color: "#1d1d1d",
+                    fontFamily: "inherit",
                   }}
                 />
               </div>
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '8px', fontSize: '1.05rem', fontWeight: 700, color: '#1f1f1f' }}>
+              <label
+                style={{
+                  display: "block",
+                  marginBottom: "8px",
+                  fontSize: "1.05rem",
+                  fontWeight: 700,
+                  color: "#1f1f1f",
+                }}
+              >
                 Password
               </label>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                background: '#dde8f1',
-                border: '1px solid #c7d4e0',
-                borderRadius: '14px',
-                padding: '0 16px',
-                minHeight: '62px'
-              }}>
-                <span style={{ fontSize: '1.1rem', color: '#556778', marginRight: '12px' }}>🔒</span>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  background: "#dde8f1",
+                  border: "1px solid #c7d4e0",
+                  borderRadius: "14px",
+                  padding: "0 16px",
+                  minHeight: "62px",
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: "1.1rem",
+                    color: "#556778",
+                    marginRight: "12px",
+                  }}
+                >
+                  🔒
+                </span>
                 <input
                   type="password"
                   autoComplete="current-password"
@@ -1028,28 +1849,30 @@ export default function AdminDashboard(props) {
                   placeholder="••••••••"
                   required
                   style={{
-                    width: '100%',
-                    border: 'none',
-                    background: 'transparent',
-                    outline: 'none',
-                    fontSize: '1.05rem',
-                    color: '#1d1d1d',
-                    fontFamily: 'inherit'
+                    width: "100%",
+                    border: "none",
+                    background: "transparent",
+                    outline: "none",
+                    fontSize: "1.05rem",
+                    color: "#1d1d1d",
+                    fontFamily: "inherit",
                   }}
                 />
               </div>
             </div>
 
             {authError && (
-              <div style={{
-                color: '#b42318',
-                background: '#fee4e2',
-                border: '1px solid #fecdca',
-                borderRadius: '10px',
-                padding: '10px 12px',
-                fontSize: '0.9rem',
-                lineHeight: 1.4
-              }}>
+              <div
+                style={{
+                  color: "#b42318",
+                  background: "#fee4e2",
+                  border: "1px solid #fecdca",
+                  borderRadius: "10px",
+                  padding: "10px 12px",
+                  fontSize: "0.9rem",
+                  lineHeight: 1.4,
+                }}
+              >
                 {authError}
               </div>
             )}
@@ -1058,129 +1881,250 @@ export default function AdminDashboard(props) {
               type="submit"
               disabled={loading}
               style={{
-                border: 'none',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                color: '#fff',
-                background: 'linear-gradient(135deg, #ec4a8c, #d91f75)',
-                borderRadius: '14px',
-                minHeight: '64px',
-                fontSize: '2rem',
+                border: "none",
+                cursor: loading ? "not-allowed" : "pointer",
+                color: "#fff",
+                background: "linear-gradient(135deg, #ec4a8c, #d91f75)",
+                borderRadius: "14px",
+                minHeight: "64px",
+                fontSize: "2rem",
                 fontWeight: 800,
-                boxShadow: '0 14px 24px rgba(217, 31, 117, 0.28)',
-                opacity: loading ? 0.8 : 1
+                boxShadow: "0 14px 24px rgba(217, 31, 117, 0.28)",
+                opacity: loading ? 0.8 : 1,
               }}
             >
-              {loading ? 'Signing in...' : 'Sign in'}
+              {loading ? "Signing in..." : "Sign in"}
             </button>
           </form>
 
-          <div style={{
-            marginTop: '22px',
-            background: '#ececec',
-            border: '1px solid #d6d6d6',
-            borderRadius: '14px',
-            padding: '22px 18px',
-            textAlign: 'center',
-            color: '#575757',
-            fontSize: '1.15rem',
-            lineHeight: 1.5,
-            fontWeight: 500
-          }}>
+          <div
+            style={{
+              marginTop: "22px",
+              background: "#ececec",
+              border: "1px solid #d6d6d6",
+              borderRadius: "14px",
+              padding: "22px 18px",
+              textAlign: "center",
+              color: "#575757",
+              fontSize: "1.15rem",
+              lineHeight: 1.5,
+              fontWeight: 500,
+            }}
+          >
             Enter your administrator credentials to access the dashboard.
           </div>
-
         </div>
       </div>
     );
   }
 
   const dashboardViews = [
-    { id: 'visitors', label: 'Visitors', color: '#2e7af0', value: uniqueVisitorCount },
-    { id: 'teens', label: 'Teens Reg', color: '#f39a2b', value: Math.max(applicants.length || 0, 0) },
-    { id: 'bookings', label: 'Bookings', color: '#16a34a', value: Math.max(bookings.length || 0, 0) },
-    { id: 'messages', label: 'Messages', color: '#22a564', value: Math.max(contactMessages.length || 0, 0) },
-    { id: 'commerce', label: 'Store & Orders', color: '#f59e0b', value: Math.max(shopOrders.length || 0, 0) },
-    { id: 'testimonials', label: 'Testimonials', color: '#7c3aed', value: Math.max(promoSlides.length || 0, 0) },
-    { id: 'slider', label: 'Published Slider', color: '#0f766e', value: Math.max(promoSlides.length || 0, 0) },
-    { id: 'feedback', label: 'Parent Feedback', color: '#e88767', value: Math.max(parentFeedback.length || 0, 0) },
-    { id: 'vendors', label: 'Vendors', color: '#0f766e', value: vendorProfiles.filter((vendor) => vendor.status === 'pending').length },
-    { id: 'support', label: 'Support Chat', color: '#2563eb', value: supportMessages.filter((message) => message.status === 'open').length },
-    { id: 'payment-history', label: 'Payment History', color: '#0f766e', value: shopOrders.length + applicants.filter((applicant) => applicant.paymentStatus || applicant.payment_status).length + bookings.filter((booking) => booking.paymentStatus || booking.payment_status).length }
+    {
+      id: "visitors",
+      label: "Visitors",
+      color: "#2e7af0",
+      value: uniqueVisitorCount,
+    },
+    {
+      id: "teens",
+      label: "Teens Reg",
+      color: "#f39a2b",
+      value: Math.max(applicants.length || 0, 0),
+    },
+    {
+      id: "bookings",
+      label: "Bookings",
+      color: "#16a34a",
+      value: Math.max(bookings.length || 0, 0),
+    },
+    {
+      id: "messages",
+      label: "Messages",
+      color: "#22a564",
+      value: Math.max(contactMessages.length || 0, 0),
+    },
+    {
+      id: "commerce",
+      label: "Store & Orders",
+      color: "#f59e0b",
+      value: Math.max(shopOrders.length || 0, 0),
+    },
+    {
+      id: "testimonials",
+      label: "Testimonials",
+      color: "#7c3aed",
+      value: Math.max(promoSlides.length || 0, 0),
+    },
+    {
+      id: "slider",
+      label: "Published Slider",
+      color: "#0f766e",
+      value: Math.max(promoSlides.length || 0, 0),
+    },
+    {
+      id: "feedback",
+      label: "Parent Feedback",
+      color: "#e88767",
+      value: Math.max(parentFeedback.length || 0, 0),
+    },
+    {
+      id: "vendors",
+      label: "Vendors",
+      color: "#0f766e",
+      value: vendorProfiles.filter((vendor) => vendor.status === "pending")
+        .length,
+    },
+    {
+      id: "support",
+      label: "Support Chat",
+      color: "#2563eb",
+      value: supportMessages.filter((message) => message.status === "open")
+        .length,
+    },
+    {
+      id: "payment-history",
+      label: "Payment History",
+      color: "#0f766e",
+      value:
+        shopOrders.length +
+        applicants.filter(
+          (applicant) => applicant.paymentStatus || applicant.payment_status,
+        ).length +
+        bookings.filter(
+          (booking) => booking.paymentStatus || booking.payment_status,
+        ).length,
+    },
   ];
 
   const dashboardTableColumns = {
-    visitors: ['Page', 'IP address', 'Device', 'Location', 'Visited at'],
-    teens: ['Name', 'Email', 'Phone', 'Program', 'Parent', 'School', 'Session', 'Focus', 'Submitted'],
-    messages: ['Name', 'Email', 'Subject', 'Message'],
-    bookings: ['Name', 'Email', 'Phone', 'Program', 'Date', 'Time', 'Format', 'Notes'],
-    testimonials: ['Name', 'Origin', 'Testimonial', 'Source'],
-    slider: ['Name', 'Origin', 'Testimonial', 'Source'],
-    feedback: ['Parent', 'Child', 'Duration', 'Impact', 'Satisfaction', 'Recommendation', 'Submitted']
+    visitors: ["Page", "IP address", "Device", "Location", "Visited at"],
+    teens: [
+      "Name",
+      "Email",
+      "Phone",
+      "Program",
+      "Parent",
+      "School",
+      "Session",
+      "Focus",
+      "Submitted",
+    ],
+    messages: ["Name", "Email", "Subject", "Message"],
+    bookings: [
+      "Name",
+      "Email",
+      "Phone",
+      "Program",
+      "Date",
+      "Time",
+      "Format",
+      "Notes",
+    ],
+    testimonials: ["Name", "Origin", "Testimonial", "Source"],
+    slider: ["Name", "Origin", "Testimonial", "Source"],
+    feedback: [
+      "Parent",
+      "Child",
+      "Duration",
+      "Impact",
+      "Satisfaction",
+      "Recommendation",
+      "Submitted",
+    ],
   };
 
   const dashboardFilterDefinitions = {
-    visitors: [{ key: 'Page', label: 'Page', index: 0 }],
-    teens: [{ key: 'Program', label: 'Program', index: 3 }, { key: 'Parent', label: 'Parent', index: 4 }],
-    messages: [{ key: 'Subject', label: 'Subject', index: 2 }],
-    bookings: [{ key: 'Program', label: 'Program', index: 3 }, { key: 'Format', label: 'Format', index: 6 }],
-    testimonials: [{ key: 'Origin', label: 'Origin', index: 1 }, { key: 'Source', label: 'Source', index: 3 }],
-    slider: [{ key: 'Origin', label: 'Origin', index: 1 }, { key: 'Source', label: 'Source', index: 3 }],
+    visitors: [{ key: "Page", label: "Page", index: 0 }],
+    teens: [
+      { key: "Program", label: "Program", index: 3 },
+      { key: "Parent", label: "Parent", index: 4 },
+    ],
+    messages: [{ key: "Subject", label: "Subject", index: 2 }],
+    bookings: [
+      { key: "Program", label: "Program", index: 3 },
+      { key: "Format", label: "Format", index: 6 },
+    ],
+    testimonials: [
+      { key: "Origin", label: "Origin", index: 1 },
+      { key: "Source", label: "Source", index: 3 },
+    ],
+    slider: [
+      { key: "Origin", label: "Origin", index: 1 },
+      { key: "Source", label: "Source", index: 3 },
+    ],
     feedback: [
-      { key: 'Duration', label: 'Duration', index: 2 },
-      { key: 'Impact', label: 'Impact', index: 3 },
-      { key: 'Satisfaction', label: 'Satisfaction', index: 4 },
-      { key: 'Recommendation', label: 'Recommendation', index: 5 }
-    ]
+      { key: "Duration", label: "Duration", index: 2 },
+      { key: "Impact", label: "Impact", index: 3 },
+      { key: "Satisfaction", label: "Satisfaction", index: 4 },
+      { key: "Recommendation", label: "Recommendation", index: 5 },
+    ],
   };
-  
+
   const formatVisitorPage = (path) => {
-    if (path === '/') return 'Home';
-    if (path === '/feedback') return 'Feedback page';
+    if (path === "/") return "Home";
+    if (path === "/feedback") return "Feedback page";
     return path;
   };
 
   const dashboardTableData = {
     visitors: clientActivityLog.slice(0, 10).map((entry) => ({
-      id: entry.id || `${entry.session_id || 'activity'}-${entry.created_at || Date.now()}`,
+      id:
+        entry.id ||
+        `${entry.session_id || "activity"}-${entry.created_at || Date.now()}`,
       columns: [
-        formatVisitorPage(entry.path || entry.pathname || '/'),
-        entry.ip_address || 'Unavailable',
-        entry.device_type || 'Unknown',
-        entry.location || 'Unknown',
-        new Date(entry.created_at || entry.createdAt || Date.now()).toLocaleString()
-      ]
+        formatVisitorPage(entry.path || entry.pathname || "/"),
+        entry.ip_address || "Unavailable",
+        entry.device_type || "Unknown",
+        entry.location || "Unknown",
+        new Date(
+          entry.created_at || entry.createdAt || Date.now(),
+        ).toLocaleString(),
+      ],
     })),
     teens: (() => {
       const rows = [];
       applicants.slice(0, 50).forEach((applicant) => {
         const baseParent = {
-          email: applicant.email || 'No email',
-          phone: applicant.phone || 'No phone',
-          parentName: applicant.parentName || applicant.parent_or_guardian_name || 'N/A',
-          submittedAt: applicant.submittedAt || applicant.created_at || null
+          email: applicant.email || "No email",
+          phone: applicant.phone || "No phone",
+          parentName:
+            applicant.parentName || applicant.parent_or_guardian_name || "N/A",
+          submittedAt: applicant.submittedAt || applicant.created_at || null,
         };
 
         if (applicant.childrenDetails) {
           try {
-            const children = typeof applicant.childrenDetails === 'string' ? JSON.parse(applicant.childrenDetails) : applicant.childrenDetails;
+            const children =
+              typeof applicant.childrenDetails === "string"
+                ? JSON.parse(applicant.childrenDetails)
+                : applicant.childrenDetails;
             if (Array.isArray(children) && children.length > 0) {
-            children.forEach((child, idx) => {
-              rows.push({
-                id: `${applicant.id || 'app'}-${idx}`,
-                columns: [
-                  child.child_name || child.childName || child.name || 'Unnamed child',
-                  baseParent.email,
-                  baseParent.phone,
-                  // always prefer per-child program; no fallback to top-level 'track'
-                  child.program_type || child.programType || 'N/A',
-                  baseParent.parentName,
-                  child.school || child.schoolName || 'N/A',
-                  child.preferred_session || child.preferredSession || 'N/A',
-                  child.focus_area || child.focusArea || child.development_goals || applicant.message || 'N/A',
-                  baseParent.submittedAt ? new Date(baseParent.submittedAt).toLocaleString() : 'N/A'
-                ]
+              children.forEach((child, idx) => {
+                rows.push({
+                  id: `${applicant.id || "app"}-${idx}`,
+                  columns: [
+                    child.child_name ||
+                      child.childName ||
+                      child.name ||
+                      "Unnamed child",
+                    baseParent.email,
+                    baseParent.phone,
+                    // always prefer per-child program; no fallback to top-level 'track'
+                    child.program_type || child.programType || "N/A",
+                    baseParent.parentName,
+                    child.school || child.schoolName || "N/A",
+                    child.preferred_session || child.preferredSession || "N/A",
+                    child.focus_area ||
+                      child.focusArea ||
+                      child.development_goals ||
+                      applicant.message ||
+                      "N/A",
+                    baseParent.submittedAt
+                      ? new Date(baseParent.submittedAt).toLocaleString()
+                      : "N/A",
+                  ],
+                });
               });
-            });
               return;
             }
           } catch (err) {
@@ -1190,135 +2134,268 @@ export default function AdminDashboard(props) {
 
         // fallback: single row per applicant
         rows.push({
-          id: applicant.id || `${applicant.email || 'survey'}-${applicant.submittedAt || Date.now()}`,
+          id:
+            applicant.id ||
+            `${applicant.email || "survey"}-${applicant.submittedAt || Date.now()}`,
           columns: [
-            applicant.fullName || 'Unnamed applicant',
-            applicant.email || 'No email',
-            applicant.phone || 'No phone',
-            applicant.track || 'General',
-            applicant.parentName || 'N/A',
-            applicant.schoolName || 'N/A',
-            applicant.preferredSession || 'N/A',
-            applicant.developmentGoals || applicant.message || 'N/A',
-            applicant.submittedAt ? new Date(applicant.submittedAt).toLocaleString() : 'N/A'
-          ]
+            applicant.fullName || "Unnamed applicant",
+            applicant.email || "No email",
+            applicant.phone || "No phone",
+            applicant.track || "General",
+            applicant.parentName || "N/A",
+            applicant.schoolName || "N/A",
+            applicant.preferredSession || "N/A",
+            applicant.developmentGoals || applicant.message || "N/A",
+            applicant.submittedAt
+              ? new Date(applicant.submittedAt).toLocaleString()
+              : "N/A",
+          ],
         });
       });
 
       return rows;
     })(),
     messages: contactMessages.slice(0, 10).map((message) => ({
-      id: message.id || `${message.email || 'message'}-${message.createdAt || Date.now()}`,
+      id:
+        message.id ||
+        `${message.email || "message"}-${message.createdAt || Date.now()}`,
       columns: [
-        message.name || 'Unknown sender',
-        message.email || 'No email',
-        message.subject || 'Message',
-        message.message || 'No message provided'
-      ]
+        message.name || "Unknown sender",
+        message.email || "No email",
+        message.subject || "Message",
+        message.message || "No message provided",
+      ],
     })),
     bookings: (bookings || []).slice(0, 50).map((b) => ({
-      id: b.id || `${b.email || 'booking'}-${b.created_at || Date.now()}`,
+      id: b.id || `${b.email || "booking"}-${b.created_at || Date.now()}`,
       columns: [
-        b.contact_name || b.contactName || 'No name',
-        b.email || 'No email',
-        b.phone || 'No phone',
-        b.program_type || b.programType || 'N/A',
-        b.preferred_date ? new Date(b.preferred_date).toLocaleDateString() : 'N/A',
-        b.preferred_time || 'N/A',
-        b.session_format || b.sessionFormat || 'N/A',
-        b.notes || b.note || 'N/A'
-      ]
+        b.contact_name || b.contactName || "No name",
+        b.email || "No email",
+        b.phone || "No phone",
+        b.program_type || b.programType || "N/A",
+        b.preferred_date
+          ? new Date(b.preferred_date).toLocaleDateString()
+          : "N/A",
+        b.preferred_time || "N/A",
+        b.session_format || b.sessionFormat || "N/A",
+        b.notes || b.note || "N/A",
+      ],
     })),
     testimonials: promoSlides.slice(0, 10).map((testimonial) => ({
-      id: testimonial.id || `${testimonial.title || 'testimonial'}-${testimonial.createdAt || Date.now()}`,
+      id:
+        testimonial.id ||
+        `${testimonial.title || "testimonial"}-${testimonial.createdAt || Date.now()}`,
       columns: [
-        testimonial.title || 'Anonymous',
-        testimonial.origin || 'Parent',
-        testimonial.text || 'No testimonial added',
-        testimonial.imageType || 'Website'
-      ]
+        testimonial.title || "Anonymous",
+        testimonial.origin || "Parent",
+        testimonial.text || "No testimonial added",
+        testimonial.imageType || "Website",
+      ],
     })),
     slider: promoSlides.slice(0, 10).map((testimonial) => ({
-      id: testimonial.id || `${testimonial.title || 'testimonial'}-${testimonial.createdAt || Date.now()}`,
+      id:
+        testimonial.id ||
+        `${testimonial.title || "testimonial"}-${testimonial.createdAt || Date.now()}`,
       columns: [
-        testimonial.title || 'Anonymous',
-        testimonial.origin || 'Parent',
-        testimonial.text || 'No testimonial added',
-        testimonial.imageType || 'Website'
-      ]
+        testimonial.title || "Anonymous",
+        testimonial.origin || "Parent",
+        testimonial.text || "No testimonial added",
+        testimonial.imageType || "Website",
+      ],
     })),
     feedback: (parentFeedback || []).slice(0, 50).map((response) => ({
-      id: response.id || `${response.parent_name || 'feedback'}-${response.created_at || Date.now()}`,
+      id:
+        response.id ||
+        `${response.parent_name || "feedback"}-${response.created_at || Date.now()}`,
       details: {
-        'Parent name': formatName(response.parent_name || 'No parent name'),
-        'Child name': formatName(response.child_name || 'No child name'),
-        'Mentoring duration': response.mentoring_duration || 'N/A',
-        'Positive changes': response.positive_changes || [],
-        'Other change': response.other_change || 'N/A',
-        'Significant change': response.significant_change || 'N/A',
-        'Impact rating': response.impact_rating || 'N/A',
-        'Support areas': response.support_areas || [],
-        'Other support': response.other_support || 'N/A',
-        'Future focus': response.future_focus || 'N/A',
-        'Satisfaction': response.satisfaction || 'N/A',
-        'Coach relationship': response.coach_relationship || 'N/A',
-        'Child comments': response.child_comments || 'N/A',
-        'Development notes': response.development_notes || 'N/A',
-        'Improvement suggestions': response.improvement_suggestions || 'N/A',
-        'Recommendation': response.recommendation || 'N/A',
-        'Testimonial': response.testimonial || 'N/A',
-        'Submitted at': response.created_at ? new Date(response.created_at).toLocaleString() : 'N/A'
+        "Parent name": formatName(response.parent_name || "No parent name"),
+        "Child name": formatName(response.child_name || "No child name"),
+        "Mentoring duration": response.mentoring_duration || "N/A",
+        "Positive changes": response.positive_changes || [],
+        "Other change": response.other_change || "N/A",
+        "Significant change": response.significant_change || "N/A",
+        "Impact rating": response.impact_rating || "N/A",
+        "Support areas": response.support_areas || [],
+        "Other support": response.other_support || "N/A",
+        "Future focus": response.future_focus || "N/A",
+        Satisfaction: response.satisfaction || "N/A",
+        "Coach relationship": response.coach_relationship || "N/A",
+        "Child comments": response.child_comments || "N/A",
+        "Development notes": response.development_notes || "N/A",
+        "Improvement suggestions": response.improvement_suggestions || "N/A",
+        Recommendation: response.recommendation || "N/A",
+        Testimonial: response.testimonial || "N/A",
+        "Submitted at": response.created_at
+          ? new Date(response.created_at).toLocaleString()
+          : "N/A",
       },
       columns: [
-        formatName(response.parent_name || 'No parent name'),
-        formatName(response.child_name || 'No child name'),
-        response.mentoring_duration || 'N/A',
-        response.impact_rating || 'N/A',
-        response.satisfaction || 'N/A',
-        response.recommendation || 'N/A',
-        response.created_at ? new Date(response.created_at).toLocaleString() : 'N/A'
-      ]
-    }))
+        formatName(response.parent_name || "No parent name"),
+        formatName(response.child_name || "No child name"),
+        response.mentoring_duration || "N/A",
+        response.impact_rating || "N/A",
+        response.satisfaction || "N/A",
+        response.recommendation || "N/A",
+        response.created_at
+          ? new Date(response.created_at).toLocaleString()
+          : "N/A",
+      ],
+    })),
   };
 
-  const activeFilterDefinitions = dashboardFilterDefinitions[activeDashboardView] || [];
+  const activeFilterDefinitions =
+    dashboardFilterDefinitions[activeDashboardView] || [];
   const activeFilters = tableFilters[activeDashboardView] || {};
   const activeTableRows = dashboardTableData[activeDashboardView] || [];
-  const filteredDashboardRows = activeTableRows.filter((row) => activeFilterDefinitions.every((filter) => {
-    const selectedValue = activeFilters[filter.key];
-    if (!selectedValue) return true;
-    return String(row.columns[filter.index] ?? '').toLowerCase() === selectedValue.toLowerCase();
-  }));
+  const filteredDashboardRows = activeTableRows.filter((row) =>
+    activeFilterDefinitions.every((filter) => {
+      const selectedValue = activeFilters[filter.key];
+      if (!selectedValue) return true;
+      return (
+        String(row.columns[filter.index] ?? "").toLowerCase() ===
+        selectedValue.toLowerCase()
+      );
+    }),
+  );
   const filterOptions = activeFilterDefinitions.map((filter) => ({
     ...filter,
-    options: Array.from(new Set(activeTableRows.map((row) => String(row.columns[filter.index] ?? '').trim()).filter(Boolean))).sort()
+    options: Array.from(
+      new Set(
+        activeTableRows
+          .map((row) => String(row.columns[filter.index] ?? "").trim())
+          .filter(Boolean),
+      ),
+    ).sort(),
   }));
 
-  const activeDashboardLabel = dashboardViews.find((view) => view.id === activeDashboardView)?.label || 'Visitors';
-  const tableDashboardViews = ['visitors', 'teens', 'bookings', 'messages', 'testimonials', 'slider', 'feedback'];
+  const activeDashboardLabel =
+    dashboardViews.find((view) => view.id === activeDashboardView)?.label ||
+    "Visitors";
+  const tableDashboardViews = [
+    "visitors",
+    "teens",
+    "bookings",
+    "messages",
+    "testimonials",
+    "slider",
+    "feedback",
+  ];
   const showDashboardTable = tableDashboardViews.includes(activeDashboardView);
   const paymentProofPreview = getPaymentProofPreview(selectedOrder);
   const paymentHistoryRows = [
-    ...shopOrders.map((order) => ({ ...order, service: 'Store purchase', reference: order.paymentReference || order.payment_reference, customer: order.name, amount: order.total, date: order.createdAt, status: order.status })),
-    ...applicants.filter((applicant) => applicant.paymentStatus || applicant.payment_status).map((applicant) => ({ ...applicant, service: 'Registration', reference: applicant.paymentReference || applicant.payment_reference, customer: applicant.fullName || applicant.parent_or_guardian_name, amount: 5000, date: applicant.submittedAt || applicant.created_at, status: applicant.paymentStatus || applicant.payment_status })),
-    ...bookings.filter((booking) => booking.paymentStatus || booking.payment_status).map((booking) => ({ ...booking, service: 'Booking session', reference: booking.paymentReference || booking.payment_reference, customer: booking.contactName || booking.contact_name, amount: 5000, date: booking.createdAt || booking.created_at, status: booking.paymentStatus || booking.payment_status }))
+    ...shopOrders.map((order) => ({
+      ...order,
+      service: "Store purchase",
+      reference: order.paymentReference || order.payment_reference,
+      customer: order.name,
+      amount: order.total,
+      date: order.createdAt,
+      status: order.status,
+    })),
+    ...applicants
+      .filter(
+        (applicant) => applicant.paymentStatus || applicant.payment_status,
+      )
+      .map((applicant) => ({
+        ...applicant,
+        service: "Registration",
+        reference: applicant.paymentReference || applicant.payment_reference,
+        customer: applicant.fullName || applicant.parent_or_guardian_name,
+        amount: 5000,
+        date: applicant.submittedAt || applicant.created_at,
+        status: applicant.paymentStatus || applicant.payment_status,
+      })),
+    ...bookings
+      .filter((booking) => booking.paymentStatus || booking.payment_status)
+      .map((booking) => ({
+        ...booking,
+        service: "Booking session",
+        reference: booking.paymentReference || booking.payment_reference,
+        customer: booking.contactName || booking.contact_name,
+        amount: 5000,
+        date: booking.createdAt || booking.created_at,
+        status: booking.paymentStatus || booking.payment_status,
+      })),
   ];
-  const bookingPaymentRows = paymentHistoryRows.filter((payment) => payment.service === 'Booking session');
-  const teenPaymentRows = paymentHistoryRows.filter((payment) => payment.service === 'Registration');
-  const storePaymentRows = paymentHistoryRows.filter((payment) => payment.service === 'Store purchase');
-  const selectedPaymentRows = paymentHistoryTab === 'booking' ? bookingPaymentRows : paymentHistoryTab === 'teens' ? teenPaymentRows : storePaymentRows;
+  const bookingPaymentRows = paymentHistoryRows.filter(
+    (payment) => payment.service === "Booking session",
+  );
+  const teenPaymentRows = paymentHistoryRows.filter(
+    (payment) => payment.service === "Registration",
+  );
+  const storePaymentRows = paymentHistoryRows.filter(
+    (payment) => payment.service === "Store purchase",
+  );
+  const selectedPaymentRows =
+    paymentHistoryTab === "booking"
+      ? bookingPaymentRows
+      : paymentHistoryTab === "teens"
+        ? teenPaymentRows
+        : storePaymentRows;
   const visiblePaymentRows = paymentReference
-    ? selectedPaymentRows.filter((payment) => String(payment.reference || '').trim() === paymentReference)
+    ? selectedPaymentRows.filter(
+        (payment) =>
+          String(payment.reference || "").trim() === paymentReference,
+      )
     : selectedPaymentRows;
 
   return (
-    <div className="admin-dashboard-page" style={{ minHeight: '100vh', background: '#f1f2f4', padding: '26px 20px 32px', fontFamily: 'Inter, Arial, sans-serif' }}>
-      <div className="admin-dashboard-shell" style={{ width: '100%', maxWidth: 'none', margin: '0 auto', border: '1px solid #dfe3e7', borderRadius: '22px', background: '#f3f2f0', padding: '28px 28px 24px', boxSizing: 'border-box' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap', marginBottom: '14px' }}>
+    <div
+      className="admin-dashboard-page"
+      style={{
+        minHeight: "100vh",
+        background: "#f1f2f4",
+        padding: "26px 20px 32px",
+        fontFamily: "Inter, Arial, sans-serif",
+      }}
+    >
+      <div
+        className="admin-dashboard-shell"
+        style={{
+          width: "100%",
+          maxWidth: "none",
+          margin: "0 auto",
+          border: "1px solid #dfe3e7",
+          borderRadius: "22px",
+          background: "#f3f2f0",
+          padding: "28px 28px 24px",
+          boxSizing: "border-box",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            gap: "16px",
+            flexWrap: "wrap",
+            marginBottom: "14px",
+          }}
+        >
           <div>
-            <h1 style={{ margin: 0, fontSize: 'clamp(2.5rem, 3vw, 4rem)', lineHeight: 1.05, fontWeight: 800, color: '#1d1d1d' }}>Admin dashboard</h1>
-            <p style={{ margin: '10px 0 0', fontSize: '1.1rem', fontWeight: 400, color: '#4b5563', maxWidth: '760px', lineHeight: 1.5 }}>
-              Overview of survey responses, contact submissions, and parent testimonials.
+            <h1
+              style={{
+                margin: 0,
+                fontSize: "clamp(2.5rem, 3vw, 4rem)",
+                lineHeight: 1.05,
+                fontWeight: 800,
+                color: "#1d1d1d",
+              }}
+            >
+              Admin dashboard
+            </h1>
+            <p
+              style={{
+                margin: "10px 0 0",
+                fontSize: "1.1rem",
+                fontWeight: 400,
+                color: "#4b5563",
+                maxWidth: "760px",
+                lineHeight: 1.5,
+              }}
+            >
+              Overview of survey responses, contact submissions, and parent
+              testimonials.
             </p>
           </div>
         </div>
@@ -1392,7 +2469,13 @@ export default function AdminDashboard(props) {
               className="stat-card"
               onClick={() => setActiveDashboardView(view.id)}
               aria-label={`Open ${view.label}`}
-              style={{ background: view.color, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.12)', border: 0, cursor: 'pointer', font: 'inherit' }}
+              style={{
+                background: view.color,
+                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.12)",
+                border: 0,
+                cursor: "pointer",
+                font: "inherit",
+              }}
             >
               <div className="label">{view.label}</div>
               <div className="value">{view.value}</div>
@@ -1400,293 +2483,1631 @@ export default function AdminDashboard(props) {
           ))}
         </div>
 
-        <div className="admin-dashboard-content" style={{ marginTop: '26px', padding: '0 2px' }}>
-          <div className="admin-commerce-section" style={{ marginTop: '18px', border: '1px solid #dfe3e7', borderRadius: '18px', background: '#f5f5f5', padding: '18px 20px 24px' }}>
-            {activeDashboardView === 'commerce' || activeDashboardView === 'payment-history' ? (
+        <div
+          className="admin-dashboard-content"
+          style={{ marginTop: "26px", padding: "0 2px" }}
+        >
+          <div
+            className="admin-commerce-section"
+            style={{
+              marginTop: "18px",
+              border: "1px solid #dfe3e7",
+              borderRadius: "18px",
+              background: "#f5f5f5",
+              padding: "18px 20px 24px",
+            }}
+          >
+            {activeDashboardView === "commerce" ||
+            activeDashboardView === "payment-history" ? (
               <>
-                {activeDashboardView === 'commerce' && <div className="commerce-tab-row" style={{ marginBottom: '22px' }}>
-                  {[
-                    { id: 'storefront', label: 'Store' },
-                    { id: 'ads', label: 'Ads' },
-                    { id: 'orders', label: 'Orders' }
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      type="button"
-                      onClick={() => setCommerceSubTab(tab.id)}
-                      className="commerce-tab-button"
+                {activeDashboardView === "commerce" && (
+                  <div
+                    className="commerce-tab-row"
+                    style={{ marginBottom: "22px" }}
+                  >
+                    {[
+                      { id: "storefront", label: "Store" },
+                      { id: "ads", label: "Ads" },
+                      { id: "orders", label: "Orders" },
+                    ].map((tab) => (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setCommerceSubTab(tab.id)}
+                        className="commerce-tab-button"
+                        style={{
+                          border: "1px solid #dfe7ef",
+                          background:
+                            commerceSubTab === tab.id ? "#111827" : "#fff",
+                          color: commerceSubTab === tab.id ? "#fff" : "#334155",
+                          borderRadius: "999px",
+                          padding: "9px 14px",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          fontSize: "0.83rem",
+                          letterSpacing: "0.02em",
+                          whiteSpace: "nowrap",
+                          flex: "0 0 auto",
+                        }}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {activeDashboardView === "commerce" &&
+                  commerceSubTab === "ads" && (
+                    <div
+                      className="commerce-panel-shell"
                       style={{
-                        border: '1px solid #dfe7ef',
-                        background: commerceSubTab === tab.id ? '#111827' : '#fff',
-                        color: commerceSubTab === tab.id ? '#fff' : '#334155',
-                        borderRadius: '999px',
-                        padding: '9px 14px',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        fontSize: '0.83rem',
-                        letterSpacing: '0.02em',
-                        whiteSpace: 'nowrap',
-                        flex: '0 0 auto'
+                        background: "#ffffff",
+                        border: "1px solid #dfe7ef",
+                        borderRadius: "20px",
+                        padding: "22px",
+                        boxShadow: "0 12px 28px rgba(15, 23, 42, 0.08)",
+                        minWidth: 0,
+                        width: "100%",
+                        boxSizing: "border-box",
                       }}
                     >
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>}
-
-                {activeDashboardView === 'commerce' && commerceSubTab === 'ads' && (
-                  <div className="commerce-panel-shell" style={{ background: '#ffffff', border: '1px solid #dfe7ef', borderRadius: '20px', padding: '22px', boxShadow: '0 12px 28px rgba(15, 23, 42, 0.08)', minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
-                    <p style={{ margin: 0, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '.12em', fontSize: '.72rem', fontWeight: 800 }}>Promotional board</p>
-                    <h3 style={{ margin: '8px 0 18px', fontSize: '1.5rem', color: '#111827' }}>Manage shop ads</h3>
-                    <form onSubmit={publishAdminAd} style={{ padding: '16px', background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: '14px' }}><div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 2fr auto', gap: '8px', alignItems: 'center' }}><input value={adminAdForm.eyebrow} onChange={(event) => setAdminAdForm({ ...adminAdForm, eyebrow: event.target.value })} placeholder="Ad label" style={adminFieldStyle} /><input required value={adminAdForm.headline} onChange={(event) => setAdminAdForm({ ...adminAdForm, headline: event.target.value })} placeholder="Ad headline" style={adminFieldStyle} /><input required value={adminAdForm.productUrl} onChange={(event) => setAdminAdForm({ ...adminAdForm, productUrl: event.target.value })} placeholder="Product link, e.g. /shop/book-name" style={adminFieldStyle} /><button type="submit" style={{ border: 0, borderRadius: '9px', padding: '11px 14px', background: '#0f766e', color: '#fff', fontWeight: 800, cursor: 'pointer' }}>Publish</button></div></form>
-                    <p style={{ margin: '14px 0', color: '#64748b', fontSize: '.84rem' }}>Ads from the main admin and approved vendors rotate above the shop search bar. Each ad should point to a product page.</p>
-                    <div style={{ display: 'grid', gap: '10px', marginTop: '16px' }}>{adminAds.length ? adminAds.map((ad) => <div key={ad.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', padding: '12px', border: '1px solid #e2e8f0', borderRadius: '10px' }}><div style={{ minWidth: 0, flex: '1 1 320px' }}><strong>{ad.headline}</strong>{ad.is_platform_ad && <span style={{ marginLeft: '8px', color: '#166534', fontSize: '.72rem', fontWeight: 800 }}>PAZ PLATFORM AD</span>}<div style={{ color: '#475569', fontSize: '.8rem', marginTop: '4px' }}>Published by: {ad.vendor_name || 'Main admin'} · Created by: {ad.posted_by_email || ad.posted_by || 'Unknown'} · {ad.status}</div><div style={{ color: '#64748b', fontSize: '.8rem', overflowWrap: 'anywhere' }}>{ad.product_url} · {ad.created_at ? new Date(ad.created_at).toLocaleString() : 'Date unavailable'}</div></div><div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>{ad.vendor_id && ad.status === 'pending' && <><button type="button" onClick={() => updateAdStatus(ad, 'approved')} style={{ border: 0, borderRadius: '8px', padding: '8px 10px', background: '#166534', color: '#fff', fontWeight: 800 }}>Approve</button><button type="button" onClick={() => updateAdStatus(ad, 'rejected')} style={{ border: 0, borderRadius: '8px', padding: '8px 10px', background: '#b91c1c', color: '#fff', fontWeight: 800 }}>Reject</button></>}{ad.status === 'unpublish_requested' && <button type="button" onClick={() => updateAdStatus(ad, 'archived')} style={{ border: '1px solid #f59e0b', borderRadius: '8px', padding: '8px 10px', background: '#fffbeb', color: '#92400e', fontWeight: 800 }}>Approve unpublish</button>}{['published', 'approved'].includes(ad.status) && <button type="button" onClick={() => updateAdStatus(ad, 'archived')} style={{ border: '1px solid #f59e0b', borderRadius: '8px', padding: '8px 10px', background: '#fffbeb', color: '#92400e', fontWeight: 800 }}>Unpublish</button>}{['archived', 'publish_requested'].includes(ad.status) && <button type="button" onClick={() => updateAdStatus(ad, 'published')} style={{ border: '1px solid #166534', borderRadius: '8px', padding: '8px 10px', background: '#f0fdf4', color: '#166534', fontWeight: 800 }}>{ad.status === 'publish_requested' ? 'Approve publish' : 'Publish'}</button>}{!ad.is_platform_ad && <button type="button" onClick={() => deleteAd(ad)} style={{ border: 0, borderRadius: '8px', padding: '8px 10px', background: '#b91c1c', color: '#fff', fontWeight: 800 }}>Delete</button>}</div></div>) : <p style={{ color: '#64748b' }}>No promotional ads have been submitted.</p>}</div>
-                  </div>
-                )}
-
-                {activeDashboardView === 'commerce' && commerceSubTab === 'storefront' && (
-                  <div className="commerce-panel-shell" style={{ background: '#ffffff', border: '1px solid #dfe7ef', borderRadius: '20px', padding: '22px', boxShadow: '0 12px 28px rgba(15, 23, 42, 0.08)', minWidth: 0, width: '100%', maxWidth: 'none', margin: '0 auto', boxSizing: 'border-box', overflow: 'hidden' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '18px' }}>
-                      <div>
-                        <p style={{ margin: 0, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.12em', fontSize: '0.72rem', fontWeight: 800 }}>Storefront</p>
-                        <h3 style={{ margin: '8px 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#111827' }}>Product manager</h3>
-                      </div>
-                      <div style={{ background: '#fff7ed', color: '#b45309', borderRadius: '999px', padding: '8px 12px', fontSize: '0.8rem', fontWeight: 700 }}>{storeProducts.length} live products</div>
-                    </div>
-                    <form ref={productEditorRef} onSubmit={handleStoreProductSubmit} style={{ display: 'grid', gap: '12px', scrollMarginTop: '24px' }}>
-                      <div className="commerce-form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-                        <input value={storeProductForm.title} onChange={(event) => setStoreProductForm((current) => ({ ...current, title: event.target.value }))} placeholder="Ebook title" style={adminFieldStyle} />
-                        <CustomDropdown value={storeProductForm.category} onChange={(value) => setStoreProductForm((current) => ({ ...current, category: value }))} ariaLabel="Product type" options={productCategories.map((category) => ({ value: category, label: category }))} />
-                      </div>
-                      <textarea value={storeProductForm.description} onChange={(event) => setStoreProductForm((current) => ({ ...current, description: event.target.value }))} placeholder="Description" style={{ ...adminFieldStyle, minHeight: '90px', resize: 'vertical' }} />
-                      <div className="commerce-form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 92px', gap: '8px', minWidth: 0, alignItems: 'start' }}>
-                          <div style={{ position: 'relative', minWidth: 0, display: 'flex', alignItems: 'center' }}>
-                            <span aria-hidden="true" style={{ position: 'absolute', inset: '0 auto 0 0', width: '34px', display: 'grid', placeItems: 'center', color: '#475569', fontWeight: 800, pointerEvents: 'none', zIndex: 1 }}>{currencySymbols[storeProductForm.currency] || storeProductForm.currency}</span>
-                            <input type="text" inputMode="decimal" pattern="[0-9]*[.]?[0-9]*" value={storeProductForm.price} onChange={(event) => setStoreProductForm((current) => ({ ...current, price: event.target.value.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1') }))} placeholder="Enter amount" disabled={storeProductForm.isFree} aria-label={`Amount in ${storeProductForm.currency}`} style={{ ...adminFieldStyle, height: '46px', paddingLeft: '34px', fontWeight: 700, color: '#111827' }} />
-                          </div>
-                          <CustomDropdown value={storeProductForm.currency} onChange={(nextCurrency) => setStoreProductForm((current) => {
-                            const previousRate = currencyRatesToNgn[current.currency] || 1;
-                            const nextRate = currencyRatesToNgn[nextCurrency] || 1;
-                            const convertedPrice = current.price ? Math.round((Number(current.price) * previousRate / nextRate) * 100) / 100 : current.price;
-                            return { ...current, currency: nextCurrency, price: convertedPrice };
-                          })} ariaLabel="Product currency" options={productCurrencies.map((currency) => ({ value: currency, label: currency }))} />
-                        </div>
-                        <div style={{ display: 'grid', gap: '8px', minWidth: 0 }}>
-                          <label style={{ color: '#475569', fontSize: '0.78rem', fontWeight: 700 }}>Product file</label>
-                          <label
-                            onDragOver={(event) => handleFileDragOver(event, setProductFileDragActive)}
-                            onDragLeave={(event) => handleFileDragLeave(event, setProductFileDragActive)}
-                            onDrop={handleProductFileDrop}
-                            style={{ display: 'grid', placeItems: 'center', gap: '4px', minHeight: '58px', padding: '8px', boxSizing: 'border-box', border: `1px dashed ${productFileDragActive ? '#f97316' : '#cbd5e1'}`, borderRadius: '10px', background: productFileDragActive ? '#fff7ed' : '#f8fafc', color: '#475569', cursor: productFileUploading ? 'wait' : 'pointer', textAlign: 'center', transition: 'border-color 160ms ease, background 160ms ease' }}
+                      <p
+                        style={{
+                          margin: 0,
+                          color: "#0f766e",
+                          textTransform: "uppercase",
+                          letterSpacing: ".12em",
+                          fontSize: ".72rem",
+                          fontWeight: 800,
+                        }}
+                      >
+                        Promotional board
+                      </p>
+                      <h3
+                        style={{
+                          margin: "8px 0 18px",
+                          fontSize: "1.5rem",
+                          color: "#111827",
+                        }}
+                      >
+                        Manage shop ads
+                      </h3>
+                      <form
+                        onSubmit={publishAdminAd}
+                        style={{
+                          padding: "16px",
+                          background: "#f0fdfa",
+                          border: "1px solid #99f6e4",
+                          borderRadius: "14px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "1fr 2fr 2fr auto",
+                            gap: "8px",
+                            alignItems: "center",
+                          }}
+                        >
+                          <input
+                            value={adminAdForm.eyebrow}
+                            onChange={(event) =>
+                              setAdminAdForm({
+                                ...adminAdForm,
+                                eyebrow: event.target.value,
+                              })
+                            }
+                            placeholder="Ad label"
+                            style={adminFieldStyle}
+                          />
+                          <input
+                            required
+                            value={adminAdForm.headline}
+                            onChange={(event) =>
+                              setAdminAdForm({
+                                ...adminAdForm,
+                                headline: event.target.value,
+                              })
+                            }
+                            placeholder="Ad headline"
+                            style={adminFieldStyle}
+                          />
+                          <input
+                            required
+                            value={adminAdForm.productUrl}
+                            onChange={(event) =>
+                              setAdminAdForm({
+                                ...adminAdForm,
+                                productUrl: event.target.value,
+                              })
+                            }
+                            placeholder="Product link, e.g. /shop/book-name"
+                            style={adminFieldStyle}
+                          />
+                          <button
+                            type="submit"
+                            style={{
+                              border: 0,
+                              borderRadius: "9px",
+                              padding: "11px 14px",
+                              background: "#0f766e",
+                              color: "#fff",
+                              fontWeight: 800,
+                              cursor: "pointer",
+                            }}
                           >
-                            <input type="file" accept=".pdf,.zip,application/pdf,application/zip" onChange={handleProductFileUpload} disabled={productFileUploading} style={{ display: 'none' }} />
-                            <span style={{ fontWeight: 700 }}>{productFileDragActive ? 'Drop product file here' : 'Drag PDF or ZIP here, or click to choose'}</span>
-                          </label>
-                          {productFileUploading && <span style={{ color: '#64748b', fontSize: '0.78rem' }}>Uploading product file...</span>}
-                          {!productFileUploading && productFileName && <span style={{ color: '#64748b', fontSize: '0.78rem', overflowWrap: 'anywhere' }}>Attached: {productFileName}<br />Storage path: product-files/{storeProductForm.fileUrl}</span>}
-                        </div>
-                      </div>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#334155', fontWeight: 700, fontSize: '0.88rem' }}>
-                        <input type="checkbox" checked={storeProductForm.isFree} onChange={(event) => setStoreProductForm((current) => ({ ...current, isFree: event.target.checked, price: event.target.checked ? '0' : current.price }))} />
-                        Free product (email delivery without Paystack)
-                      </label>
-                      <div className="commerce-form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '12px' }}>
-                        <CustomDropdown value={storeProductForm.inStock ? 'available' : 'out-of-stock'} onChange={(value) => setStoreProductForm((current) => ({ ...current, inStock: value === 'available' }))} ariaLabel="Stock status" options={[{ value: 'available', label: 'Available' }, { value: 'out-of-stock', label: 'Out of stock' }]} />
-                        <input
-                          type="number"
-                          min="0"
-                          value={storeProductForm.stockCount}
-                          onChange={(event) => setStoreProductForm((current) => ({ ...current, stockCount: event.target.value }))}
-                          placeholder="Stock count"
-                          style={adminFieldStyle}
-                        />
-                      </div>
-                      <div className="commerce-cover-row" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', gap: '12px', alignItems: 'center' }}>
-                        <div style={{ display: 'grid', gap: '8px', minWidth: 0 }}>
-                          <label style={{ color: '#475569', fontSize: '0.78rem', fontWeight: 700 }}>Cover image</label>
-                          <label
-                            onDragOver={(event) => handleFileDragOver(event, setCoverFileDragActive)}
-                            onDragLeave={(event) => handleFileDragLeave(event, setCoverFileDragActive)}
-                            onDrop={handleCoverFileDrop}
-                            style={{ display: 'grid', placeItems: 'center', gap: '4px', minHeight: '58px', padding: '8px', boxSizing: 'border-box', border: `1px dashed ${coverFileDragActive ? '#f97316' : '#cbd5e1'}`, borderRadius: '10px', background: coverFileDragActive ? '#fff7ed' : '#f8fafc', color: '#475569', cursor: coverFileUploading ? 'wait' : 'pointer', textAlign: 'center', transition: 'border-color 160ms ease, background 160ms ease' }}
-                          >
-                            <input type="file" accept="image/*" onChange={handleCoverFileUpload} disabled={coverFileUploading} style={{ display: 'none' }} />
-                            <span style={{ fontWeight: 700 }}>{coverFileDragActive ? 'Drop cover image here' : 'Drag an image here, or click to choose'}</span>
-                          </label>
-                          {coverFileUploading && <span style={{ color: '#64748b', fontSize: '0.78rem' }}>Uploading cover image...</span>}
-                          {!coverFileUploading && coverFileName && <span style={{ color: '#64748b', fontSize: '0.78rem' }}>Attached: {coverFileName}</span>}
-                        </div>
-                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                          <button type="submit" style={{ border: 'none', background: 'linear-gradient(135deg, #f59e0b, #ef4444)', color: '#fff', borderRadius: '12px', padding: '12px 18px', fontWeight: 800, cursor: 'pointer', boxShadow: '0 12px 20px rgba(245, 158, 11, 0.28)' }}>
-                            {editingStoreProductId ? 'Update product' : 'Add product'}
+                            Publish
                           </button>
-                          {editingStoreProductId && (
-                            <button type="button" onClick={resetStoreProductForm} style={{ border: '1px solid #cbd5e1', background: '#fff', color: '#334155', borderRadius: '12px', padding: '12px 14px', fontWeight: 700, cursor: 'pointer' }}>
-                              Cancel
-                            </button>
-                          )}
                         </div>
-                      </div>
-                    </form>
-
-                    {publishedProductLink && (
-                      <div style={{ marginTop: '16px', padding: '14px', border: '1px solid #bbf7d0', borderRadius: '12px', background: '#f0fdf4' }}>
-                        <div style={{ marginBottom: '8px', color: '#166534', fontSize: '0.8rem', fontWeight: 800 }}>Public product link</div>
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'stretch', flexWrap: 'wrap' }}>
-                          <input value={publishedProductLink} readOnly aria-label="Public product link" onFocus={(event) => event.target.select()} style={{ ...adminFieldStyle, flex: '1 1 280px', minWidth: 0, color: '#166534', background: '#fff' }} />
-                          <button type="button" onClick={copyPublishedProductLink} style={{ border: 'none', borderRadius: '10px', padding: '10px 14px', background: '#166534', color: '#fff', fontWeight: 800, cursor: 'pointer' }}><i className="fa-solid fa-copy" aria-hidden="true" /> Copy link</button>
-                          <a href={publishedProductLink} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', border: '1px solid #86efac', borderRadius: '10px', padding: '10px 14px', background: '#fff', color: '#166534', fontWeight: 800, textDecoration: 'none' }}><i className="fa-solid fa-arrow-up-right-from-square" aria-hidden="true" /> Open</a>
-                        </div>
-                        <div style={{ marginTop: '8px', color: '#166534', fontSize: '0.78rem' }}>Copy this URL to advertise the product on Facebook, WhatsApp, or any other platform.</div>
-                      </div>
-                    )}
-
-                    <div style={{ marginTop: '24px' }}>
-                      <div style={{ marginBottom: '12px', fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#64748b' }}>Published products</div>
-                      {storeProducts.length > 0 ? (
-                        <div className="commerce-product-list">
-                          {storeProducts.map((product) => {
-                            const isAvailable = product.inStock !== false && Number(product.stockCount || 0) > 0;
-                            return (
-                              <div key={product.id} className="commerce-product-card">
-                                <div className="commerce-product-media">
-                                  <img src={product.cover || '/logo/logomain.png'} alt={product.title} />
+                      </form>
+                      <p
+                        style={{
+                          margin: "14px 0",
+                          color: "#64748b",
+                          fontSize: ".84rem",
+                        }}
+                      >
+                        Ads from the main admin and approved vendors rotate
+                        above the shop search bar. Each ad should point to a
+                        product page.
+                      </p>
+                      <div
+                        style={{
+                          display: "grid",
+                          gap: "10px",
+                          marginTop: "16px",
+                        }}
+                      >
+                        {adminAds.length ? (
+                          adminAds.map((ad) => (
+                            <div
+                              key={ad.id}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: "12px",
+                                flexWrap: "wrap",
+                                padding: "12px",
+                                border: "1px solid #e2e8f0",
+                                borderRadius: "10px",
+                              }}
+                            >
+                              <div style={{ minWidth: 0, flex: "1 1 320px" }}>
+                                <strong>{ad.headline}</strong>
+                                {ad.is_platform_ad && (
+                                  <span
+                                    style={{
+                                      marginLeft: "8px",
+                                      color: "#166534",
+                                      fontSize: ".72rem",
+                                      fontWeight: 800,
+                                    }}
+                                  >
+                                    PAZ PLATFORM AD
+                                  </span>
+                                )}
+                                <div
+                                  style={{
+                                    color: "#475569",
+                                    fontSize: ".8rem",
+                                    marginTop: "4px",
+                                  }}
+                                >
+                                  Published by: {ad.vendor_name || "Main admin"}{" "}
+                                  · Created by:{" "}
+                                  {ad.posted_by_email ||
+                                    ad.posted_by ||
+                                    "Unknown"}{" "}
+                                  · {ad.status}
                                 </div>
-                                <div className="commerce-product-meta">
-                                  <div className="commerce-product-badges" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '4px' }}>
-                                    <span style={{ background: '#e0f2fe', color: '#0369a1', borderRadius: '999px', padding: '4px 8px', fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase' }}>{product.category || 'Ebook'}</span>
-                                    <span style={{ background: isAvailable ? '#dcfce7' : '#fee2e2', color: isAvailable ? '#166534' : '#b91c1c', borderRadius: '999px', padding: '4px 8px', fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase' }}>{isAvailable ? 'Available' : 'Out of stock'}</span>
-                                  </div>
-                                  <div className="commerce-product-title" style={{ fontWeight: 800, color: '#0f172a', fontSize: '1rem', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.title}</div>
-                                  <div className="commerce-product-desc" style={{ color: '#64748b', fontSize: '0.82rem', marginBottom: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.description || 'No description provided yet.'}</div>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                    <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>{product.isFree ? 'Free' : `${currencySymbols[product.currency || 'NGN'] || product.currency || ''}${Number(product.price || 0).toLocaleString()}`}</span>
-                                    <span style={{ color: '#64748b', fontSize: '0.78rem', overflowWrap: 'anywhere' }}>{product.fileUrl ? `File attached: product-files/${product.fileUrl}` : 'No product file'}</span>
-                                  </div>
-                                </div>
-                                <div className="commerce-product-actions">
-                                  <button type="button" onClick={() => toggleStoreProductAvailability(product.id)} style={{ border: '1px solid #d1d5db', background: '#f8fafc', color: '#1f2937', borderRadius: '10px', padding: '8px 10px', fontWeight: 700, cursor: 'pointer' }}>{isAvailable ? 'Mark sold out' : 'Mark available'}</button>
-                                  <button type="button" onClick={() => handleEditStoreProduct(product)} style={{ border: '1px solid #cbd5e1', background: '#fff', color: '#1f2937', borderRadius: '10px', padding: '8px 10px', fontWeight: 700, cursor: 'pointer' }}>Edit</button>
-                                  <button type="button" onClick={() => copyProductLink(product)} title={`Copy public link for ${product.title}`} style={{ border: '1px solid #86efac', background: '#f0fdf4', color: '#166534', borderRadius: '10px', padding: '8px 10px', fontWeight: 800, cursor: 'pointer' }}><i className="fa-solid fa-copy" aria-hidden="true" /> Copy link</button>
-                                  <button type="button" onClick={() => confirmDeleteStoreProduct(product)} style={{ border: '1px solid #fecaca', background: '#fff1f2', color: '#b91c1c', borderRadius: '10px', padding: '8px 10px', fontWeight: 700, cursor: 'pointer' }}>Delete</button>
+                                <div
+                                  style={{
+                                    color: "#64748b",
+                                    fontSize: ".8rem",
+                                    overflowWrap: "anywhere",
+                                  }}
+                                >
+                                  {ad.product_url} ·{" "}
+                                  {ad.created_at
+                                    ? new Date(ad.created_at).toLocaleString()
+                                    : "Date unavailable"}
                                 </div>
                               </div>
-                            );
-                          })}
+                              <div
+                                style={{
+                                  display: "flex",
+                                  gap: "8px",
+                                  flexWrap: "wrap",
+                                  justifyContent: "flex-end",
+                                }}
+                              >
+                                {ad.vendor_id && ad.status === "pending" && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        updateAdStatus(ad, "approved")
+                                      }
+                                      style={{
+                                        border: 0,
+                                        borderRadius: "8px",
+                                        padding: "8px 10px",
+                                        background: "#166534",
+                                        color: "#fff",
+                                        fontWeight: 800,
+                                      }}
+                                    >
+                                      Approve
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        updateAdStatus(ad, "rejected")
+                                      }
+                                      style={{
+                                        border: 0,
+                                        borderRadius: "8px",
+                                        padding: "8px 10px",
+                                        background: "#b91c1c",
+                                        color: "#fff",
+                                        fontWeight: 800,
+                                      }}
+                                    >
+                                      Reject
+                                    </button>
+                                  </>
+                                )}
+                                {ad.status === "unpublish_requested" && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateAdStatus(ad, "archived")
+                                    }
+                                    style={{
+                                      border: "1px solid #f59e0b",
+                                      borderRadius: "8px",
+                                      padding: "8px 10px",
+                                      background: "#fffbeb",
+                                      color: "#92400e",
+                                      fontWeight: 800,
+                                    }}
+                                  >
+                                    Approve unpublish
+                                  </button>
+                                )}
+                                {["published", "approved"].includes(
+                                  ad.status,
+                                ) && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateAdStatus(ad, "archived")
+                                    }
+                                    style={{
+                                      border: "1px solid #f59e0b",
+                                      borderRadius: "8px",
+                                      padding: "8px 10px",
+                                      background: "#fffbeb",
+                                      color: "#92400e",
+                                      fontWeight: 800,
+                                    }}
+                                  >
+                                    Unpublish
+                                  </button>
+                                )}
+                                {["archived", "publish_requested"].includes(
+                                  ad.status,
+                                ) && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      updateAdStatus(ad, "published")
+                                    }
+                                    style={{
+                                      border: "1px solid #166534",
+                                      borderRadius: "8px",
+                                      padding: "8px 10px",
+                                      background: "#f0fdf4",
+                                      color: "#166534",
+                                      fontWeight: 800,
+                                    }}
+                                  >
+                                    {ad.status === "publish_requested"
+                                      ? "Approve publish"
+                                      : "Publish"}
+                                  </button>
+                                )}
+                                {!ad.is_platform_ad && (
+                                  <button
+                                    type="button"
+                                    onClick={() => deleteAd(ad)}
+                                    style={{
+                                      border: 0,
+                                      borderRadius: "8px",
+                                      padding: "8px 10px",
+                                      background: "#b91c1c",
+                                      color: "#fff",
+                                      fontWeight: 800,
+                                    }}
+                                  >
+                                    Delete
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <p style={{ color: "#64748b" }}>
+                            No promotional ads have been submitted.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                {activeDashboardView === "commerce" &&
+                  commerceSubTab === "storefront" && (
+                    <div
+                      className="commerce-panel-shell"
+                      style={{
+                        background: "#ffffff",
+                        border: "1px solid #dfe7ef",
+                        borderRadius: "20px",
+                        padding: "22px",
+                        boxShadow: "0 12px 28px rgba(15, 23, 42, 0.08)",
+                        minWidth: 0,
+                        width: "100%",
+                        maxWidth: "none",
+                        margin: "0 auto",
+                        boxSizing: "border-box",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          gap: "12px",
+                          marginBottom: "18px",
+                        }}
+                      >
+                        <div>
+                          <p
+                            style={{
+                              margin: 0,
+                              color: "#f59e0b",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.12em",
+                              fontSize: "0.72rem",
+                              fontWeight: 800,
+                            }}
+                          >
+                            Storefront
+                          </p>
+                          <h3
+                            style={{
+                              margin: "8px 0 0",
+                              fontSize: "1.5rem",
+                              fontWeight: 800,
+                              color: "#111827",
+                            }}
+                          >
+                            Product manager
+                          </h3>
                         </div>
-                      ) : (
-                        <div style={{ color: '#64748b', background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '12px', padding: '18px', textAlign: 'center' }}>No products published yet.</div>
+                        <div
+                          style={{
+                            background: "#fff7ed",
+                            color: "#b45309",
+                            borderRadius: "999px",
+                            padding: "8px 12px",
+                            fontSize: "0.8rem",
+                            fontWeight: 700,
+                          }}
+                        >
+                          {storeProducts.length} live products
+                        </div>
+                      </div>
+                      <form
+                        ref={productEditorRef}
+                        onSubmit={handleStoreProductSubmit}
+                        style={{
+                          display: "grid",
+                          gap: "12px",
+                          scrollMarginTop: "24px",
+                        }}
+                      >
+                        <div
+                          className="commerce-form-grid"
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(180px, 1fr))",
+                            gap: "12px",
+                          }}
+                        >
+                          <input
+                            value={storeProductForm.title}
+                            onChange={(event) =>
+                              setStoreProductForm((current) => ({
+                                ...current,
+                                title: event.target.value,
+                              }))
+                            }
+                            placeholder="Ebook title"
+                            style={adminFieldStyle}
+                          />
+                          <CustomDropdown
+                            value={storeProductForm.category}
+                            onChange={(value) =>
+                              setStoreProductForm((current) => ({
+                                ...current,
+                                category: value,
+                              }))
+                            }
+                            ariaLabel="Product type"
+                            options={productCategories.map((category) => ({
+                              value: category,
+                              label: category,
+                            }))}
+                          />
+                        </div>
+                        <textarea
+                          value={storeProductForm.description}
+                          onChange={(event) =>
+                            setStoreProductForm((current) => ({
+                              ...current,
+                              description: event.target.value,
+                            }))
+                          }
+                          placeholder="Description"
+                          style={{
+                            ...adminFieldStyle,
+                            minHeight: "90px",
+                            resize: "vertical",
+                          }}
+                        />
+                        <div
+                          className="commerce-form-grid"
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(180px, 1fr))",
+                            gap: "12px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "minmax(0, 1fr) 92px",
+                              gap: "8px",
+                              minWidth: 0,
+                              alignItems: "start",
+                            }}
+                          >
+                            <div
+                              style={{
+                                position: "relative",
+                                minWidth: 0,
+                                display: "flex",
+                                alignItems: "center",
+                              }}
+                            >
+                              <span
+                                aria-hidden="true"
+                                style={{
+                                  position: "absolute",
+                                  inset: "0 auto 0 0",
+                                  width: "34px",
+                                  display: "grid",
+                                  placeItems: "center",
+                                  color: "#475569",
+                                  fontWeight: 800,
+                                  pointerEvents: "none",
+                                  zIndex: 1,
+                                }}
+                              >
+                                {currencySymbols[storeProductForm.currency] ||
+                                  storeProductForm.currency}
+                              </span>
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                pattern="[0-9]*[.]?[0-9]*"
+                                value={storeProductForm.price}
+                                onChange={(event) =>
+                                  setStoreProductForm((current) => ({
+                                    ...current,
+                                    price: event.target.value
+                                      .replace(/[^0-9.]/g, "")
+                                      .replace(/(\..*)\./g, "$1"),
+                                  }))
+                                }
+                                placeholder="Enter amount"
+                                disabled={storeProductForm.isFree}
+                                aria-label={`Amount in ${storeProductForm.currency}`}
+                                style={{
+                                  ...adminFieldStyle,
+                                  height: "46px",
+                                  paddingLeft: "34px",
+                                  fontWeight: 700,
+                                  color: "#111827",
+                                }}
+                              />
+                            </div>
+                            <CustomDropdown
+                              value={storeProductForm.currency}
+                              onChange={(nextCurrency) =>
+                                setStoreProductForm((current) => {
+                                  const previousRate =
+                                    currencyRatesToNgn[current.currency] || 1;
+                                  const nextRate =
+                                    currencyRatesToNgn[nextCurrency] || 1;
+                                  const convertedPrice = current.price
+                                    ? Math.round(
+                                        ((Number(current.price) *
+                                          previousRate) /
+                                          nextRate) *
+                                          100,
+                                      ) / 100
+                                    : current.price;
+                                  return {
+                                    ...current,
+                                    currency: nextCurrency,
+                                    price: convertedPrice,
+                                  };
+                                })
+                              }
+                              ariaLabel="Product currency"
+                              options={productCurrencies.map((currency) => ({
+                                value: currency,
+                                label: currency,
+                              }))}
+                            />
+                          </div>
+                          <div
+                            style={{ display: "grid", gap: "8px", minWidth: 0 }}
+                          >
+                            <label
+                              style={{
+                                color: "#475569",
+                                fontSize: "0.78rem",
+                                fontWeight: 700,
+                              }}
+                            >
+                              Product file
+                            </label>
+                            <label
+                              onDragOver={(event) =>
+                                handleFileDragOver(
+                                  event,
+                                  setProductFileDragActive,
+                                )
+                              }
+                              onDragLeave={(event) =>
+                                handleFileDragLeave(
+                                  event,
+                                  setProductFileDragActive,
+                                )
+                              }
+                              onDrop={handleProductFileDrop}
+                              style={{
+                                display: "grid",
+                                placeItems: "center",
+                                gap: "4px",
+                                minHeight: "58px",
+                                padding: "8px",
+                                boxSizing: "border-box",
+                                border: `1px dashed ${productFileDragActive ? "#f97316" : "#cbd5e1"}`,
+                                borderRadius: "10px",
+                                background: productFileDragActive
+                                  ? "#fff7ed"
+                                  : "#f8fafc",
+                                color: "#475569",
+                                cursor: productFileUploading
+                                  ? "wait"
+                                  : "pointer",
+                                textAlign: "center",
+                                transition:
+                                  "border-color 160ms ease, background 160ms ease",
+                              }}
+                            >
+                              <input
+                                type="file"
+                                accept=".pdf,.zip,application/pdf,application/zip"
+                                onChange={handleProductFileUpload}
+                                disabled={productFileUploading}
+                                style={{ display: "none" }}
+                              />
+                              <span style={{ fontWeight: 700 }}>
+                                {productFileDragActive
+                                  ? "Drop product file here"
+                                  : "Drag PDF or ZIP here, or click to choose"}
+                              </span>
+                            </label>
+                            {productFileUploading && (
+                              <span
+                                style={{
+                                  color: "#64748b",
+                                  fontSize: "0.78rem",
+                                }}
+                              >
+                                Uploading product file...
+                              </span>
+                            )}
+                            {!productFileUploading && productFileName && (
+                              <span
+                                style={{
+                                  color: "#64748b",
+                                  fontSize: "0.78rem",
+                                  overflowWrap: "anywhere",
+                                }}
+                              >
+                                Attached: {productFileName}
+                                <br />
+                                Storage path: product-files/
+                                {storeProductForm.fileUrl}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <label
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            color: "#334155",
+                            fontWeight: 700,
+                            fontSize: "0.88rem",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={storeProductForm.isFree}
+                            onChange={(event) =>
+                              setStoreProductForm((current) => ({
+                                ...current,
+                                isFree: event.target.checked,
+                                price: event.target.checked
+                                  ? "0"
+                                  : current.price,
+                              }))
+                            }
+                          />
+                          Free product (email delivery without Paystack)
+                        </label>
+                        <div
+                          className="commerce-form-grid"
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns:
+                              "repeat(auto-fit, minmax(160px, 1fr))",
+                            gap: "12px",
+                          }}
+                        >
+                          <CustomDropdown
+                            value={
+                              storeProductForm.inStock
+                                ? "available"
+                                : "out-of-stock"
+                            }
+                            onChange={(value) =>
+                              setStoreProductForm((current) => ({
+                                ...current,
+                                inStock: value === "available",
+                              }))
+                            }
+                            ariaLabel="Stock status"
+                            options={[
+                              { value: "available", label: "Available" },
+                              { value: "out-of-stock", label: "Out of stock" },
+                            ]}
+                          />
+                          <input
+                            type="number"
+                            min="0"
+                            value={storeProductForm.stockCount}
+                            onChange={(event) =>
+                              setStoreProductForm((current) => ({
+                                ...current,
+                                stockCount: event.target.value,
+                              }))
+                            }
+                            placeholder="Stock count"
+                            style={adminFieldStyle}
+                          />
+                        </div>
+                        <div
+                          className="commerce-cover-row"
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "minmax(0, 1fr) auto",
+                            gap: "12px",
+                            alignItems: "center",
+                          }}
+                        >
+                          <div
+                            style={{ display: "grid", gap: "8px", minWidth: 0 }}
+                          >
+                            <label
+                              style={{
+                                color: "#475569",
+                                fontSize: "0.78rem",
+                                fontWeight: 700,
+                              }}
+                            >
+                              Cover image
+                            </label>
+                            <label
+                              onDragOver={(event) =>
+                                handleFileDragOver(
+                                  event,
+                                  setCoverFileDragActive,
+                                )
+                              }
+                              onDragLeave={(event) =>
+                                handleFileDragLeave(
+                                  event,
+                                  setCoverFileDragActive,
+                                )
+                              }
+                              onDrop={handleCoverFileDrop}
+                              style={{
+                                display: "grid",
+                                placeItems: "center",
+                                gap: "4px",
+                                minHeight: "58px",
+                                padding: "8px",
+                                boxSizing: "border-box",
+                                border: `1px dashed ${coverFileDragActive ? "#f97316" : "#cbd5e1"}`,
+                                borderRadius: "10px",
+                                background: coverFileDragActive
+                                  ? "#fff7ed"
+                                  : "#f8fafc",
+                                color: "#475569",
+                                cursor: coverFileUploading ? "wait" : "pointer",
+                                textAlign: "center",
+                                transition:
+                                  "border-color 160ms ease, background 160ms ease",
+                              }}
+                            >
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleCoverFileUpload}
+                                disabled={coverFileUploading}
+                                style={{ display: "none" }}
+                              />
+                              <span style={{ fontWeight: 700 }}>
+                                {coverFileDragActive
+                                  ? "Drop cover image here"
+                                  : "Drag an image here, or click to choose"}
+                              </span>
+                            </label>
+                            {coverFileUploading && (
+                              <span
+                                style={{
+                                  color: "#64748b",
+                                  fontSize: "0.78rem",
+                                }}
+                              >
+                                Uploading cover image...
+                              </span>
+                            )}
+                            {!coverFileUploading && coverFileName && (
+                              <span
+                                style={{
+                                  color: "#64748b",
+                                  fontSize: "0.78rem",
+                                }}
+                              >
+                                Attached: {coverFileName}
+                              </span>
+                            )}
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "10px",
+                              alignItems: "center",
+                            }}
+                          >
+                            <button
+                              type="submit"
+                              style={{
+                                border: "none",
+                                background:
+                                  "linear-gradient(135deg, #f59e0b, #ef4444)",
+                                color: "#fff",
+                                borderRadius: "12px",
+                                padding: "12px 18px",
+                                fontWeight: 800,
+                                cursor: "pointer",
+                                boxShadow:
+                                  "0 12px 20px rgba(245, 158, 11, 0.28)",
+                              }}
+                            >
+                              {editingStoreProductId
+                                ? "Update product"
+                                : "Add product"}
+                            </button>
+                            {editingStoreProductId && (
+                              <button
+                                type="button"
+                                onClick={resetStoreProductForm}
+                                style={{
+                                  border: "1px solid #cbd5e1",
+                                  background: "#fff",
+                                  color: "#334155",
+                                  borderRadius: "12px",
+                                  padding: "12px 14px",
+                                  fontWeight: 700,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                Cancel
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </form>
+
+                      {publishedProductLink && (
+                        <div
+                          style={{
+                            marginTop: "16px",
+                            padding: "14px",
+                            border: "1px solid #bbf7d0",
+                            borderRadius: "12px",
+                            background: "#f0fdf4",
+                          }}
+                        >
+                          <div
+                            style={{
+                              marginBottom: "8px",
+                              color: "#166534",
+                              fontSize: "0.8rem",
+                              fontWeight: 800,
+                            }}
+                          >
+                            Public product link
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "8px",
+                              alignItems: "stretch",
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <input
+                              value={publishedProductLink}
+                              readOnly
+                              aria-label="Public product link"
+                              onFocus={(event) => event.target.select()}
+                              style={{
+                                ...adminFieldStyle,
+                                flex: "1 1 280px",
+                                minWidth: 0,
+                                color: "#166534",
+                                background: "#fff",
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={copyPublishedProductLink}
+                              style={{
+                                border: "none",
+                                borderRadius: "10px",
+                                padding: "10px 14px",
+                                background: "#166534",
+                                color: "#fff",
+                                fontWeight: 800,
+                                cursor: "pointer",
+                              }}
+                            >
+                              <i
+                                className="fa-solid fa-copy"
+                                aria-hidden="true"
+                              />{" "}
+                              Copy link
+                            </button>
+                            <a
+                              href={publishedProductLink}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                border: "1px solid #86efac",
+                                borderRadius: "10px",
+                                padding: "10px 14px",
+                                background: "#fff",
+                                color: "#166534",
+                                fontWeight: 800,
+                                textDecoration: "none",
+                              }}
+                            >
+                              <i
+                                className="fa-solid fa-arrow-up-right-from-square"
+                                aria-hidden="true"
+                              />{" "}
+                              Open
+                            </a>
+                          </div>
+                          <div
+                            style={{
+                              marginTop: "8px",
+                              color: "#166534",
+                              fontSize: "0.78rem",
+                            }}
+                          >
+                            Copy this URL to advertise the product on Facebook,
+                            WhatsApp, or any other platform.
+                          </div>
+                        </div>
+                      )}
+
+                      <div style={{ marginTop: "24px" }}>
+                        <div
+                          style={{
+                            marginBottom: "12px",
+                            fontSize: "0.8rem",
+                            fontWeight: 800,
+                            letterSpacing: "0.08em",
+                            textTransform: "uppercase",
+                            color: "#64748b",
+                          }}
+                        >
+                          Published products
+                        </div>
+                        {storeProducts.length > 0 ? (
+                          <div className="commerce-product-list">
+                            {storeProducts.map((product) => {
+                              const isAvailable =
+                                product.inStock !== false &&
+                                Number(product.stockCount || 0) > 0;
+                              return (
+                                <div
+                                  key={product.id}
+                                  className="commerce-product-card"
+                                >
+                                  <div className="commerce-product-media">
+                                    <img
+                                      src={
+                                        product.cover || "/logo/logomain.png"
+                                      }
+                                      alt={product.title}
+                                    />
+                                  </div>
+                                  <div className="commerce-product-meta">
+                                    <div
+                                      className="commerce-product-badges"
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "8px",
+                                        flexWrap: "wrap",
+                                        marginBottom: "4px",
+                                      }}
+                                    >
+                                      <span
+                                        style={{
+                                          background: "#e0f2fe",
+                                          color: "#0369a1",
+                                          borderRadius: "999px",
+                                          padding: "4px 8px",
+                                          fontSize: "0.7rem",
+                                          fontWeight: 800,
+                                          letterSpacing: "0.04em",
+                                          textTransform: "uppercase",
+                                        }}
+                                      >
+                                        {product.category || "Ebook"}
+                                      </span>
+                                      <span
+                                        style={{
+                                          background: isAvailable
+                                            ? "#dcfce7"
+                                            : "#fee2e2",
+                                          color: isAvailable
+                                            ? "#166534"
+                                            : "#b91c1c",
+                                          borderRadius: "999px",
+                                          padding: "4px 8px",
+                                          fontSize: "0.7rem",
+                                          fontWeight: 800,
+                                          letterSpacing: "0.04em",
+                                          textTransform: "uppercase",
+                                        }}
+                                      >
+                                        {isAvailable
+                                          ? "Available"
+                                          : "Out of stock"}
+                                      </span>
+                                    </div>
+                                    <div
+                                      className="commerce-product-title"
+                                      style={{
+                                        fontWeight: 800,
+                                        color: "#0f172a",
+                                        fontSize: "1rem",
+                                        marginBottom: "4px",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                      }}
+                                    >
+                                      {product.title}
+                                    </div>
+                                    <div
+                                      className="commerce-product-desc"
+                                      style={{
+                                        color: "#64748b",
+                                        fontSize: "0.82rem",
+                                        marginBottom: "6px",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                        whiteSpace: "nowrap",
+                                      }}
+                                    >
+                                      {product.description ||
+                                        "No description provided yet."}
+                                    </div>
+                                    <div
+                                      style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "8px",
+                                        flexWrap: "wrap",
+                                      }}
+                                    >
+                                      <span
+                                        style={{
+                                          fontWeight: 800,
+                                          color: "#0f172a",
+                                          fontSize: "0.9rem",
+                                        }}
+                                      >
+                                        {product.isFree
+                                          ? "Free"
+                                          : `${currencySymbols[product.currency || "NGN"] || product.currency || ""}${Number(product.price || 0).toLocaleString()}`}
+                                      </span>
+                                      <span
+                                        style={{
+                                          color: "#64748b",
+                                          fontSize: "0.78rem",
+                                          overflowWrap: "anywhere",
+                                        }}
+                                      >
+                                        {product.fileUrl
+                                          ? `File attached: product-files/${product.fileUrl}`
+                                          : "No product file"}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="commerce-product-actions">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        toggleStoreProductAvailability(
+                                          product.id,
+                                        )
+                                      }
+                                      style={{
+                                        border: "1px solid #d1d5db",
+                                        background: "#f8fafc",
+                                        color: "#1f2937",
+                                        borderRadius: "10px",
+                                        padding: "8px 10px",
+                                        fontWeight: 700,
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      {isAvailable
+                                        ? "Mark sold out"
+                                        : "Mark available"}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleEditStoreProduct(product)
+                                      }
+                                      style={{
+                                        border: "1px solid #cbd5e1",
+                                        background: "#fff",
+                                        color: "#1f2937",
+                                        borderRadius: "10px",
+                                        padding: "8px 10px",
+                                        fontWeight: 700,
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => copyProductLink(product)}
+                                      title={`Copy public link for ${product.title}`}
+                                      style={{
+                                        border: "1px solid #86efac",
+                                        background: "#f0fdf4",
+                                        color: "#166534",
+                                        borderRadius: "10px",
+                                        padding: "8px 10px",
+                                        fontWeight: 800,
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      <i
+                                        className="fa-solid fa-copy"
+                                        aria-hidden="true"
+                                      />{" "}
+                                      Copy link
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        confirmDeleteStoreProduct(product)
+                                      }
+                                      style={{
+                                        border: "1px solid #fecaca",
+                                        background: "#fff1f2",
+                                        color: "#b91c1c",
+                                        borderRadius: "10px",
+                                        padding: "8px 10px",
+                                        fontWeight: 700,
+                                        cursor: "pointer",
+                                      }}
+                                    >
+                                      Delete
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div
+                            style={{
+                              color: "#64748b",
+                              background: "#f8fafc",
+                              border: "1px dashed #cbd5e1",
+                              borderRadius: "12px",
+                              padding: "18px",
+                              textAlign: "center",
+                            }}
+                          >
+                            No products published yet.
+                          </div>
+                        )}
+                      </div>
+
+                      {productDeleteTarget && (
+                        <div
+                          onClick={() => setProductDeleteTarget(null)}
+                          style={{
+                            position: "fixed",
+                            inset: 0,
+                            background: "rgba(15, 23, 42, 0.6)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            zIndex: 20000,
+                            padding: "20px",
+                          }}
+                        >
+                          <div
+                            onClick={(event) => event.stopPropagation()}
+                            style={{
+                              width: "100%",
+                              maxWidth: "420px",
+                              background: "#fff",
+                              borderRadius: "18px",
+                              boxShadow: "0 30px 80px rgba(15, 23, 42, 0.28)",
+                              border: "1px solid #e2e8f0",
+                              overflow: "hidden",
+                            }}
+                          >
+                            <div
+                              style={{
+                                padding: "22px 22px 14px",
+                                borderBottom: "1px solid #eef2f7",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  fontSize: "0.76rem",
+                                  letterSpacing: "0.12em",
+                                  textTransform: "uppercase",
+                                  color: "#f97316",
+                                  fontWeight: 800,
+                                  marginBottom: "8px",
+                                }}
+                              >
+                                Delete product
+                              </div>
+                              <h4
+                                style={{
+                                  margin: 0,
+                                  color: "#0f172a",
+                                  fontSize: "1.3rem",
+                                  fontWeight: 800,
+                                }}
+                              >
+                                Remove this item?
+                              </h4>
+                            </div>
+                            <div
+                              style={{
+                                padding: "18px 22px",
+                                color: "#475569",
+                                lineHeight: 1.6,
+                              }}
+                            >
+                              This will remove{" "}
+                              <strong style={{ color: "#0f172a" }}>
+                                {productDeleteTarget.title || "this product"}
+                              </strong>{" "}
+                              from the storefront and shop pages.
+                            </div>
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "flex-end",
+                                gap: "10px",
+                                padding: "0 22px 22px",
+                              }}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => setProductDeleteTarget(null)}
+                                style={{
+                                  border: "1px solid #d1d5db",
+                                  background: "#fff",
+                                  color: "#334155",
+                                  borderRadius: "10px",
+                                  padding: "10px 16px",
+                                  fontWeight: 700,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleDeleteStoreProduct(
+                                    productDeleteTarget.id,
+                                  );
+                                  setProductDeleteTarget(null);
+                                }}
+                                style={{
+                                  border: "none",
+                                  background:
+                                    "linear-gradient(135deg, #ef4444, #b91c1c)",
+                                  color: "#fff",
+                                  borderRadius: "10px",
+                                  padding: "10px 16px",
+                                  fontWeight: 800,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                Delete product
+                              </button>
+                            </div>
+                          </div>
+                        </div>
                       )}
                     </div>
+                  )}
 
-                    {productDeleteTarget && (
-                      <div onClick={() => setProductDeleteTarget(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 20000, padding: '20px' }}>
-                        <div onClick={(event) => event.stopPropagation()} style={{ width: '100%', maxWidth: '420px', background: '#fff', borderRadius: '18px', boxShadow: '0 30px 80px rgba(15, 23, 42, 0.28)', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-                          <div style={{ padding: '22px 22px 14px', borderBottom: '1px solid #eef2f7' }}>
-                            <div style={{ fontSize: '0.76rem', letterSpacing: '0.12em', textTransform: 'uppercase', color: '#f97316', fontWeight: 800, marginBottom: '8px' }}>Delete product</div>
-                            <h4 style={{ margin: 0, color: '#0f172a', fontSize: '1.3rem', fontWeight: 800 }}>Remove this item?</h4>
-                          </div>
-                          <div style={{ padding: '18px 22px', color: '#475569', lineHeight: 1.6 }}>
-                            This will remove <strong style={{ color: '#0f172a' }}>{productDeleteTarget.title || 'this product'}</strong> from the storefront and shop pages.
-                          </div>
-                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', padding: '0 22px 22px' }}>
-                            <button type="button" onClick={() => setProductDeleteTarget(null)} style={{ border: '1px solid #d1d5db', background: '#fff', color: '#334155', borderRadius: '10px', padding: '10px 16px', fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
-                            <button type="button" onClick={() => {
-                              handleDeleteStoreProduct(productDeleteTarget.id);
-                              setProductDeleteTarget(null);
-                            }} style={{ border: 'none', background: 'linear-gradient(135deg, #ef4444, #b91c1c)', color: '#fff', borderRadius: '10px', padding: '10px 16px', fontWeight: 800, cursor: 'pointer' }}>Delete product</button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {activeDashboardView === 'payment-history' && (
-                  <div className="commerce-panel-shell" style={{ background: '#ffffff', border: '1px solid #dfe7ef', borderRadius: '20px', padding: '22px', boxShadow: '0 12px 28px rgba(15, 23, 42, 0.08)', minWidth: 0, width: '100%', maxWidth: 'none', margin: '0 auto', boxSizing: 'border-box', overflow: 'hidden' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '18px', flexWrap: 'wrap' }}>
+                {activeDashboardView === "payment-history" && (
+                  <div
+                    className="commerce-panel-shell"
+                    style={{
+                      background: "#ffffff",
+                      border: "1px solid #dfe7ef",
+                      borderRadius: "20px",
+                      padding: "22px",
+                      boxShadow: "0 12px 28px rgba(15, 23, 42, 0.08)",
+                      minWidth: 0,
+                      width: "100%",
+                      maxWidth: "none",
+                      margin: "0 auto",
+                      boxSizing: "border-box",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: "12px",
+                        marginBottom: "18px",
+                        flexWrap: "wrap",
+                      }}
+                    >
                       <div>
-                        <p style={{ margin: 0, color: '#10b981', textTransform: 'uppercase', letterSpacing: '0.12em', fontSize: '0.72rem', fontWeight: 800 }}>Payments</p>
-                        <h3 style={{ margin: '8px 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#111827' }}>Paystack payment history</h3>
+                        <p
+                          style={{
+                            margin: 0,
+                            color: "#10b981",
+                            textTransform: "uppercase",
+                            letterSpacing: "0.12em",
+                            fontSize: "0.72rem",
+                            fontWeight: 800,
+                          }}
+                        >
+                          Payments
+                        </p>
+                        <h3
+                          style={{
+                            margin: "8px 0 0",
+                            fontSize: "1.5rem",
+                            fontWeight: 800,
+                            color: "#111827",
+                          }}
+                        >
+                          Paystack payment history
+                        </h3>
                       </div>
-                      <div style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', borderRadius: '999px', padding: '8px 12px', fontSize: '0.8rem', fontWeight: 800 }}>{selectedPaymentRows.filter((payment) => payment.status === 'paid').length} successful</div>
+                      <div
+                        style={{
+                          background: "#ecfdf5",
+                          color: "#047857",
+                          border: "1px solid #a7f3d0",
+                          borderRadius: "999px",
+                          padding: "8px 12px",
+                          fontSize: "0.8rem",
+                          fontWeight: 800,
+                        }}
+                      >
+                        {
+                          selectedPaymentRows.filter(
+                            (payment) => payment.status === "paid",
+                          ).length
+                        }{" "}
+                        successful
+                      </div>
                     </div>
-                    <div className="commerce-tab-row" style={{ marginBottom: '16px' }}>
-                      {[['store', 'Store'], ['booking', 'Booking'], ['teens', 'Teens Reg']].map(([id, label]) => (
-                        <button key={id} type="button" onClick={() => setPaymentHistoryTab(id)} style={{ border: '1px solid #dfe7ef', background: paymentHistoryTab === id ? '#111827' : '#fff', color: paymentHistoryTab === id ? '#fff' : '#334155', borderRadius: '999px', padding: '9px 14px', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>{label}</button>
+                    <div
+                      className="commerce-tab-row"
+                      style={{ marginBottom: "16px" }}
+                    >
+                      {[
+                        ["store", "Store"],
+                        ["booking", "Booking"],
+                        ["teens", "Teens Reg"],
+                      ].map(([id, label]) => (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => setPaymentHistoryTab(id)}
+                          style={{
+                            border: "1px solid #dfe7ef",
+                            background:
+                              paymentHistoryTab === id ? "#111827" : "#fff",
+                            color:
+                              paymentHistoryTab === id ? "#fff" : "#334155",
+                            borderRadius: "999px",
+                            padding: "9px 14px",
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {label}
+                        </button>
                       ))}
                     </div>
-                    <div style={{ overflowX: 'auto', width: '100%' }}>
-                      <table style={{ width: '100%', minWidth: '680px', borderCollapse: 'collapse' }}>
-                        <thead><tr style={{ background: '#f8fafc', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.72rem' }}><th style={{ padding: '12px 14px', textAlign: 'left' }}>Service</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Customer</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Amount</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Paystack reference</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Mode</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Status</th><th style={{ padding: '12px 14px', textAlign: 'left' }}>Date</th></tr></thead>
-                        <tbody>{visiblePaymentRows.length > 0 ? visiblePaymentRows.map((payment, index) => (
-                          <tr key={payment.id || `${payment.reference}-${index}`} style={{ borderBottom: '1px solid #e2e8f0', background: paymentReference ? '#ecfdf5' : 'transparent' }}>
-                            <td style={{ padding: '12px 14px', fontWeight: 700 }}>{payment.service}</td>
-                            <td style={{ padding: '12px 14px' }}><div style={{ fontWeight: 700 }}>{payment.customer || 'Customer'}</div><div style={{ color: '#64748b', fontSize: '0.8rem' }}>{payment.email || 'No email'}</div></td>
-                            <td style={{ padding: '12px 14px', fontWeight: 700 }}>{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(Number(payment.amount || 0))}</td>
-                            <td style={{ padding: '12px 14px', color: '#475569', fontFamily: 'monospace', fontSize: '0.78rem' }}>{payment.reference || 'Pending'}</td>
-                            <td style={{ padding: '12px 14px' }}><span style={{ background: payment.paymentMode === 'test' ? '#fef3c7' : '#dcfce7', color: payment.paymentMode === 'test' ? '#92400e' : '#166534', borderRadius: '999px', padding: '6px 10px', fontSize: '0.76rem', fontWeight: 700 }}>{payment.paymentMode === 'test' ? 'Test' : 'Live'}</span></td>
-                            <td style={{ padding: '12px 14px' }}><span style={{ background: payment.status === 'paid' ? '#dcfce7' : '#fff7ed', color: payment.status === 'paid' ? '#166534' : '#b45309', borderRadius: '999px', padding: '6px 10px', fontSize: '0.76rem', fontWeight: 700, textTransform: 'capitalize' }}>{payment.status || 'pending'}</span></td>
-                            <td style={{ padding: '12px 14px', color: '#475569' }}>{payment.date ? new Date(payment.date).toLocaleDateString() : 'N/A'}</td>
-                          </tr>
-                        )) : <tr><td colSpan="7" style={{ padding: '22px 14px', textAlign: 'center', color: '#64748b' }}>{paymentReference ? `No transaction found for reference ${paymentReference}.` : 'No Paystack payments have been recorded yet.'}</td></tr>}</tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                {activeDashboardView === 'commerce' && commerceSubTab === 'orders' && (
-                  <div className="commerce-panel-shell" style={{ background: '#ffffff', border: '1px solid #dfe7ef', borderRadius: '20px', padding: '22px', boxShadow: '0 12px 28px rgba(15, 23, 42, 0.08)', minWidth: 0, width: '100%', maxWidth: 'none', margin: '0 auto', boxSizing: 'border-box', overflow: 'hidden' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '18px', flexWrap: 'wrap' }}>
-                      <div>
-                        <p style={{ margin: 0, color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.12em', fontSize: '0.72rem', fontWeight: 800 }}>Orders</p>
-                        <h3 style={{ margin: '8px 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#111827' }}>Recent customer orders</h3>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '999px', padding: '8px 12px', color: '#334155', fontWeight: 700 }}>{shopOrders.length} total</div>
-                        <button type="button" onClick={deleteTestPurchases} title="Delete test-mode purchases only" style={{ border: '1px solid #fecaca', background: '#fff1f2', color: '#b91c1c', borderRadius: '10px', padding: '9px 12px', fontWeight: 800, cursor: 'pointer' }}><i className="fa-solid fa-vial-circle-check" aria-hidden="true"></i> Delete test purchases</button>
-                      </div>
-                    </div>
-
-                    <div style={{ overflowX: 'auto', width: '100%' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '760px' }}>
+                    <div style={{ overflowX: "auto", width: "100%" }}>
+                      <table
+                        style={{
+                          width: "100%",
+                          minWidth: "680px",
+                          borderCollapse: "collapse",
+                        }}
+                      >
                         <thead>
-                          <tr style={{ background: '#f8fafc', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em', fontSize: '0.74rem' }}>
-                            <th style={{ padding: '12px 14px', textAlign: 'left' }}>Order</th>
-                            <th style={{ padding: '12px 14px', textAlign: 'left' }}>Customer</th>
-                            <th style={{ padding: '12px 14px', textAlign: 'left' }}>Items</th>
-                            <th style={{ padding: '12px 14px', textAlign: 'left' }}>Total</th>
-                            <th style={{ padding: '12px 14px', textAlign: 'left' }}>Mode</th>
-                            <th style={{ padding: '12px 14px', textAlign: 'left' }}>Status</th>
-                            <th style={{ padding: '12px 14px', textAlign: 'left' }}>Email</th>
-                            <th style={{ padding: '12px 14px', textAlign: 'left' }}>Date</th>
+                          <tr
+                            style={{
+                              background: "#f8fafc",
+                              color: "#475569",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.04em",
+                              fontSize: "0.72rem",
+                            }}
+                          >
+                            <th
+                              style={{
+                                padding: "12px 14px",
+                                textAlign: "left",
+                              }}
+                            >
+                              Service
+                            </th>
+                            <th
+                              style={{
+                                padding: "12px 14px",
+                                textAlign: "left",
+                              }}
+                            >
+                              Customer
+                            </th>
+                            <th
+                              style={{
+                                padding: "12px 14px",
+                                textAlign: "left",
+                              }}
+                            >
+                              Amount
+                            </th>
+                            <th
+                              style={{
+                                padding: "12px 14px",
+                                textAlign: "left",
+                              }}
+                            >
+                              Paystack reference
+                            </th>
+                            <th
+                              style={{
+                                padding: "12px 14px",
+                                textAlign: "left",
+                              }}
+                            >
+                              Mode
+                            </th>
+                            <th
+                              style={{
+                                padding: "12px 14px",
+                                textAlign: "left",
+                              }}
+                            >
+                              Status
+                            </th>
+                            <th
+                              style={{
+                                padding: "12px 14px",
+                                textAlign: "left",
+                              }}
+                            >
+                              Date
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
-                          {shopOrders.length > 0 ? shopOrders.map((order) => (
-                            <tr key={order.id || order.orderNumber} onClick={() => setSelectedOrder(order)} style={{ borderBottom: '1px solid #e2e8f0', cursor: 'pointer', transition: 'background 0.2s ease' }} onMouseEnter={(event) => { event.currentTarget.style.background = '#f8fafc'; }} onMouseLeave={(event) => { event.currentTarget.style.background = 'transparent'; }}>
-                              <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>{order.orderNumber || 'N/A'}</td>
-                              <td style={{ padding: '12px 14px' }}>
-                                <div style={{ fontWeight: 700, color: '#0f172a' }}>{order.name || 'Customer'}</div>
-                                <div style={{ color: '#64748b', fontSize: '0.82rem' }}>{order.email || 'No email'}</div>
-                              </td>
-                              <td style={{ padding: '12px 14px', color: '#334155' }}>{(order.items || []).map((item) => `${item.title} x${item.quantity}`).join(', ') || 'No items'}</td>
-                              <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(Number(order.total || 0))}</td>
-                              <td style={{ padding: '12px 14px' }}><span style={{ background: order.paymentMode === 'test' ? '#fef3c7' : '#dcfce7', color: order.paymentMode === 'test' ? '#92400e' : '#166534', borderRadius: '999px', padding: '6px 10px', fontSize: '0.76rem', fontWeight: 700 }}>{order.paymentMode === 'test' ? 'Test' : 'Live'}</span></td>
-                              <td style={{ padding: '12px 14px' }}>
-                                <span style={{ background: order.status === 'paid' ? '#dcfce7' : '#fff7ed', color: order.status === 'paid' ? '#166534' : '#b45309', borderRadius: '999px', padding: '6px 10px', fontSize: '0.76rem', fontWeight: 700, textTransform: 'capitalize' }}>{order.status || 'pending'}</span>
-                              </td>
-                              <td style={{ padding: '12px 14px' }}>
-                                <span style={{ background: order.deliverySent || order.productEmailSent ? '#dcfce7' : '#fef3c7', color: order.deliverySent || order.productEmailSent ? '#166534' : '#92400e', borderRadius: '999px', padding: '6px 10px', fontSize: '0.76rem', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                                  {order.deliverySent || order.productEmailSent ? 'Auto-sent' : 'Not delivered'}
-                                </span>
-                              </td>
-                              <td style={{ padding: '12px 14px', color: '#475569' }}>{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}</td>
-                            </tr>
-                          )) : (
+                          {visiblePaymentRows.length > 0 ? (
+                            visiblePaymentRows.map((payment, index) => (
+                              <tr
+                                key={
+                                  payment.id || `${payment.reference}-${index}`
+                                }
+                                style={{
+                                  borderBottom: "1px solid #e2e8f0",
+                                  background: paymentReference
+                                    ? "#ecfdf5"
+                                    : "transparent",
+                                }}
+                              >
+                                <td
+                                  style={{
+                                    padding: "12px 14px",
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  {payment.service}
+                                </td>
+                                <td style={{ padding: "12px 14px" }}>
+                                  <div style={{ fontWeight: 700 }}>
+                                    {payment.customer || "Customer"}
+                                  </div>
+                                  <div
+                                    style={{
+                                      color: "#64748b",
+                                      fontSize: "0.8rem",
+                                    }}
+                                  >
+                                    {payment.email || "No email"}
+                                  </div>
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "12px 14px",
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  {new Intl.NumberFormat("en-NG", {
+                                    style: "currency",
+                                    currency: "NGN",
+                                    maximumFractionDigits: 0,
+                                  }).format(Number(payment.amount || 0))}
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "12px 14px",
+                                    color: "#475569",
+                                    fontFamily: "monospace",
+                                    fontSize: "0.78rem",
+                                  }}
+                                >
+                                  {payment.reference || "Pending"}
+                                </td>
+                                <td style={{ padding: "12px 14px" }}>
+                                  <span
+                                    style={{
+                                      background:
+                                        payment.paymentMode === "test"
+                                          ? "#fef3c7"
+                                          : "#dcfce7",
+                                      color:
+                                        payment.paymentMode === "test"
+                                          ? "#92400e"
+                                          : "#166534",
+                                      borderRadius: "999px",
+                                      padding: "6px 10px",
+                                      fontSize: "0.76rem",
+                                      fontWeight: 700,
+                                    }}
+                                  >
+                                    {payment.paymentMode === "test"
+                                      ? "Test"
+                                      : "Live"}
+                                  </span>
+                                </td>
+                                <td style={{ padding: "12px 14px" }}>
+                                  <span
+                                    style={{
+                                      background:
+                                        payment.status === "paid"
+                                          ? "#dcfce7"
+                                          : "#fff7ed",
+                                      color:
+                                        payment.status === "paid"
+                                          ? "#166534"
+                                          : "#b45309",
+                                      borderRadius: "999px",
+                                      padding: "6px 10px",
+                                      fontSize: "0.76rem",
+                                      fontWeight: 700,
+                                      textTransform: "capitalize",
+                                    }}
+                                  >
+                                    {payment.status || "pending"}
+                                  </span>
+                                </td>
+                                <td
+                                  style={{
+                                    padding: "12px 14px",
+                                    color: "#475569",
+                                  }}
+                                >
+                                  {payment.date
+                                    ? new Date(
+                                        payment.date,
+                                      ).toLocaleDateString()
+                                    : "N/A"}
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
                             <tr>
-                              <td colSpan="7" style={{ padding: '22px 14px', textAlign: 'center', color: '#64748b' }}>No checkout orders have been placed yet.</td>
+                              <td
+                                colSpan="7"
+                                style={{
+                                  padding: "22px 14px",
+                                  textAlign: "center",
+                                  color: "#64748b",
+                                }}
+                              >
+                                {paymentReference
+                                  ? `No transaction found for reference ${paymentReference}.`
+                                  : "No Paystack payments have been recorded yet."}
+                              </td>
                             </tr>
                           )}
                         </tbody>
@@ -1694,121 +4115,2240 @@ export default function AdminDashboard(props) {
                     </div>
                   </div>
                 )}
+
+                {activeDashboardView === "commerce" &&
+                  commerceSubTab === "orders" && (
+                    <div
+                      className="commerce-panel-shell"
+                      style={{
+                        background: "#ffffff",
+                        border: "1px solid #dfe7ef",
+                        borderRadius: "20px",
+                        padding: "22px",
+                        boxShadow: "0 12px 28px rgba(15, 23, 42, 0.08)",
+                        minWidth: 0,
+                        width: "100%",
+                        maxWidth: "none",
+                        margin: "0 auto",
+                        boxSizing: "border-box",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          gap: "12px",
+                          marginBottom: "18px",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <div>
+                          <p
+                            style={{
+                              margin: 0,
+                              color: "#f59e0b",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.12em",
+                              fontSize: "0.72rem",
+                              fontWeight: 800,
+                            }}
+                          >
+                            Orders
+                          </p>
+                          <h3
+                            style={{
+                              margin: "8px 0 0",
+                              fontSize: "1.5rem",
+                              fontWeight: 800,
+                              color: "#111827",
+                            }}
+                          >
+                            Recent customer orders
+                          </h3>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            flexWrap: "wrap",
+                            justifyContent: "flex-end",
+                          }}
+                        >
+                          <div
+                            style={{
+                              background: "#f8fafc",
+                              border: "1px solid #e2e8f0",
+                              borderRadius: "999px",
+                              padding: "8px 12px",
+                              color: "#334155",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {shopOrders.length} total
+                          </div>
+                          <button
+                            type="button"
+                            onClick={deleteTestPurchases}
+                            title="Delete test-mode purchases only"
+                            style={{
+                              border: "1px solid #fecaca",
+                              background: "#fff1f2",
+                              color: "#b91c1c",
+                              borderRadius: "10px",
+                              padding: "9px 12px",
+                              fontWeight: 800,
+                              cursor: "pointer",
+                            }}
+                          >
+                            <i
+                              className="fa-solid fa-vial-circle-check"
+                              aria-hidden="true"
+                            ></i>{" "}
+                            Delete test purchases
+                          </button>
+                        </div>
+                      </div>
+
+                      <div style={{ overflowX: "auto", width: "100%" }}>
+                        <table
+                          style={{
+                            width: "100%",
+                            borderCollapse: "collapse",
+                            minWidth: "760px",
+                          }}
+                        >
+                          <thead>
+                            <tr
+                              style={{
+                                background: "#f8fafc",
+                                color: "#475569",
+                                textTransform: "uppercase",
+                                letterSpacing: "0.04em",
+                                fontSize: "0.74rem",
+                              }}
+                            >
+                              <th
+                                style={{
+                                  padding: "12px 14px",
+                                  textAlign: "left",
+                                }}
+                              >
+                                Order
+                              </th>
+                              <th
+                                style={{
+                                  padding: "12px 14px",
+                                  textAlign: "left",
+                                }}
+                              >
+                                Customer
+                              </th>
+                              <th
+                                style={{
+                                  padding: "12px 14px",
+                                  textAlign: "left",
+                                }}
+                              >
+                                Items
+                              </th>
+                              <th
+                                style={{
+                                  padding: "12px 14px",
+                                  textAlign: "left",
+                                }}
+                              >
+                                Total
+                              </th>
+                              <th
+                                style={{
+                                  padding: "12px 14px",
+                                  textAlign: "left",
+                                }}
+                              >
+                                Mode
+                              </th>
+                              <th
+                                style={{
+                                  padding: "12px 14px",
+                                  textAlign: "left",
+                                }}
+                              >
+                                Status
+                              </th>
+                              <th
+                                style={{
+                                  padding: "12px 14px",
+                                  textAlign: "left",
+                                }}
+                              >
+                                Email
+                              </th>
+                              <th
+                                style={{
+                                  padding: "12px 14px",
+                                  textAlign: "left",
+                                }}
+                              >
+                                Date
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {shopOrders.length > 0 ? (
+                              shopOrders.map((order) => (
+                                <tr
+                                  key={order.id || order.orderNumber}
+                                  onClick={() => setSelectedOrder(order)}
+                                  style={{
+                                    borderBottom: "1px solid #e2e8f0",
+                                    cursor: "pointer",
+                                    transition: "background 0.2s ease",
+                                  }}
+                                  onMouseEnter={(event) => {
+                                    event.currentTarget.style.background =
+                                      "#f8fafc";
+                                  }}
+                                  onMouseLeave={(event) => {
+                                    event.currentTarget.style.background =
+                                      "transparent";
+                                  }}
+                                >
+                                  <td
+                                    style={{
+                                      padding: "12px 14px",
+                                      fontWeight: 700,
+                                      color: "#0f172a",
+                                    }}
+                                  >
+                                    {order.orderNumber || "N/A"}
+                                  </td>
+                                  <td style={{ padding: "12px 14px" }}>
+                                    <div
+                                      style={{
+                                        fontWeight: 700,
+                                        color: "#0f172a",
+                                      }}
+                                    >
+                                      {order.name || "Customer"}
+                                    </div>
+                                    <div
+                                      style={{
+                                        color: "#64748b",
+                                        fontSize: "0.82rem",
+                                      }}
+                                    >
+                                      {order.email || "No email"}
+                                    </div>
+                                  </td>
+                                  <td
+                                    style={{
+                                      padding: "12px 14px",
+                                      color: "#334155",
+                                    }}
+                                  >
+                                    {(order.items || [])
+                                      .map(
+                                        (item) =>
+                                          `${item.title} x${item.quantity}`,
+                                      )
+                                      .join(", ") || "No items"}
+                                  </td>
+                                  <td
+                                    style={{
+                                      padding: "12px 14px",
+                                      fontWeight: 700,
+                                      color: "#0f172a",
+                                    }}
+                                  >
+                                    {new Intl.NumberFormat("en-NG", {
+                                      style: "currency",
+                                      currency: "NGN",
+                                      maximumFractionDigits: 0,
+                                    }).format(Number(order.total || 0))}
+                                  </td>
+                                  <td style={{ padding: "12px 14px" }}>
+                                    <span
+                                      style={{
+                                        background:
+                                          order.paymentMode === "test"
+                                            ? "#fef3c7"
+                                            : "#dcfce7",
+                                        color:
+                                          order.paymentMode === "test"
+                                            ? "#92400e"
+                                            : "#166534",
+                                        borderRadius: "999px",
+                                        padding: "6px 10px",
+                                        fontSize: "0.76rem",
+                                        fontWeight: 700,
+                                      }}
+                                    >
+                                      {order.paymentMode === "test"
+                                        ? "Test"
+                                        : "Live"}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: "12px 14px" }}>
+                                    <span
+                                      style={{
+                                        background:
+                                          order.status === "paid"
+                                            ? "#dcfce7"
+                                            : "#fff7ed",
+                                        color:
+                                          order.status === "paid"
+                                            ? "#166534"
+                                            : "#b45309",
+                                        borderRadius: "999px",
+                                        padding: "6px 10px",
+                                        fontSize: "0.76rem",
+                                        fontWeight: 700,
+                                        textTransform: "capitalize",
+                                      }}
+                                    >
+                                      {order.status || "pending"}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: "12px 14px" }}>
+                                    <span
+                                      style={{
+                                        background:
+                                          order.deliverySent ||
+                                          order.productEmailSent
+                                            ? "#dcfce7"
+                                            : "#fef3c7",
+                                        color:
+                                          order.deliverySent ||
+                                          order.productEmailSent
+                                            ? "#166534"
+                                            : "#92400e",
+                                        borderRadius: "999px",
+                                        padding: "6px 10px",
+                                        fontSize: "0.76rem",
+                                        fontWeight: 700,
+                                        whiteSpace: "nowrap",
+                                      }}
+                                    >
+                                      {order.deliverySent ||
+                                      order.productEmailSent
+                                        ? "Auto-sent"
+                                        : "Not delivered"}
+                                    </span>
+                                  </td>
+                                  <td
+                                    style={{
+                                      padding: "12px 14px",
+                                      color: "#475569",
+                                    }}
+                                  >
+                                    {order.createdAt
+                                      ? new Date(
+                                          order.createdAt,
+                                        ).toLocaleDateString()
+                                      : "N/A"}
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td
+                                  colSpan="7"
+                                  style={{
+                                    padding: "22px 14px",
+                                    textAlign: "center",
+                                    color: "#64748b",
+                                  }}
+                                >
+                                  No checkout orders have been placed yet.
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
               </>
-            ) : activeDashboardView === 'support' ? (
-              <div className="commerce-panel-shell" style={{ background: '#fff', border: '1px solid #dbeafe', borderRadius: '20px', padding: '22px', boxSizing: 'border-box' }}><p style={{ margin: 0, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '.12em', fontSize: '.72rem', fontWeight: 800 }}>Customer care</p><h3 style={{ margin: '8px 0 18px', fontSize: '1.5rem' }}>Support chat inbox</h3><div style={{ display: 'grid', gap: '10px' }}>{supportMessages.length ? supportMessages.map((message) => <article key={`${message.source}-${message.id}`} style={{ padding: '14px', border: '1px solid #e2e8f0', borderRadius: '12px', background: message.status === 'open' ? '#eff6ff' : '#f8fafc' }}><div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}><strong>{message.source} · {message.sender_name || message.sender_email || 'Vendor'}</strong><span style={{ color: '#64748b', fontSize: '.78rem' }}>{message.status} · {message.created_at ? new Date(message.created_at).toLocaleString() : ''}</span></div><div style={{ marginTop: '8px', color: '#334155', whiteSpace: 'pre-wrap' }}>{message.message}</div><div style={{ marginTop: '8px', color: '#64748b', fontSize: '.82rem' }}>{message.sender_email}</div></article>) : <p style={{ color: '#64748b' }}>No support messages have been received.</p>}</div></div>
-            ) : activeDashboardView === 'vendors' ? (
-              <div className="commerce-panel-shell" style={{ background: '#fff', border: '1px solid #dfe7ef', borderRadius: '20px', padding: '22px', boxSizing: 'border-box' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '18px' }}>
-                  <div><p style={{ margin: 0, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '.12em', fontSize: '.72rem', fontWeight: 800 }}>Trust and safety</p><h3 style={{ margin: '8px 0 0', fontSize: '1.5rem' }}>Vendor monitor</h3></div>
-                  <span style={{ background: '#f0fdfa', color: '#0f766e', borderRadius: '999px', padding: '8px 12px', fontWeight: 800 }}>{vendorProfiles.length} accounts</span>
+            ) : activeDashboardView === "support" ? (
+              <div
+                className="commerce-panel-shell"
+                style={{
+                  background: "#fff",
+                  border: "1px solid #dbeafe",
+                  borderRadius: "20px",
+                  padding: "22px",
+                  boxSizing: "border-box",
+                }}
+              >
+                <p
+                  style={{
+                    margin: 0,
+                    color: "#2563eb",
+                    textTransform: "uppercase",
+                    letterSpacing: ".12em",
+                    fontSize: ".72rem",
+                    fontWeight: 800,
+                  }}
+                >
+                  Customer care
+                </p>
+                <h3 style={{ margin: "8px 0 18px", fontSize: "1.5rem" }}>
+                  Support chat inbox
+                </h3>
+                <div style={{ display: "grid", gap: "10px" }}>
+                  {supportMessages.length ? (
+                    supportMessages.map((message) => (
+                      <article
+                        key={`${message.source}-${message.id}`}
+                        style={{
+                          padding: "14px",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: "12px",
+                          background:
+                            message.status === "open" ? "#eff6ff" : "#f8fafc",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            gap: "10px",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <strong>
+                            {message.source} ·{" "}
+                            {message.sender_name ||
+                              message.sender_email ||
+                              "Vendor"}
+                          </strong>
+                          <span
+                            style={{ color: "#64748b", fontSize: ".78rem" }}
+                          >
+                            {message.status} ·{" "}
+                            {message.created_at
+                              ? new Date(message.created_at).toLocaleString()
+                              : ""}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            marginTop: "8px",
+                            color: "#334155",
+                            whiteSpace: "pre-wrap",
+                          }}
+                        >
+                          {message.message}
+                        </div>
+                        <div
+                          style={{
+                            marginTop: "8px",
+                            color: "#64748b",
+                            fontSize: ".82rem",
+                          }}
+                        >
+                          {message.sender_email}
+                        </div>
+                        {message.admin_reply && (
+                          <div style={{ marginTop: "12px", padding: "10px 12px", borderRadius: "9px", background: "#ecfdf5", border: "1px solid #bbf7d0", color: "#166534", whiteSpace: "pre-wrap" }}>
+                            <strong style={{ display: "block", marginBottom: "4px" }}>Admin reply</strong>
+                            {message.admin_reply}
+                          </div>
+                        )}
+                        <div style={{ display: "grid", gap: "8px", marginTop: "12px" }}>
+                          <textarea value={supportReplyDrafts[message.id] || ""} onChange={(event) => setSupportReplyDrafts((current) => ({ ...current, [message.id]: event.target.value }))} placeholder="Write a reply to this chat" rows="2" style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", border: "1px solid #cbd5e1", borderRadius: "8px", resize: "vertical", font: "inherit" }} />
+                          <button type="button" onClick={() => replyToSupportMessage(message)} disabled={supportReplySaving === message.id || !String(supportReplyDrafts[message.id] || "").trim()} style={{ justifySelf: "start", border: 0, borderRadius: "8px", padding: "9px 13px", background: supportReplySaving === message.id ? "#cbd5e1" : "#2563eb", color: supportReplySaving === message.id ? "#475569" : "#fff", fontWeight: 800, cursor: supportReplySaving === message.id ? "wait" : "pointer" }}>{supportReplySaving === message.id ? "Saving reply..." : "Reply to chat"}</button>
+                        </div>
+                      </article>
+                    ))
+                  ) : (
+                    <p style={{ color: "#64748b" }}>
+                      No support messages have been received.
+                    </p>
+                  )}
                 </div>
-                <div style={{ display: 'grid', gap: '12px' }}>{vendorProfiles.length ? vendorProfiles.map((vendor) => <article key={vendor.id} style={{ display: 'grid', gridTemplateColumns: '56px minmax(0,1fr) auto', gap: '14px', alignItems: 'center', padding: '14px', border: '1px solid #e2e8f0', borderRadius: '14px' }}><img src={vendor.logo_url || '/logo/logomain.png'} alt="" style={{ width: '56px', height: '56px', borderRadius: '12px', objectFit: 'cover' }} /><div><strong style={{ color: '#0f172a' }}>{vendor.company_name}</strong><div style={{ color: '#64748b', fontSize: '.84rem' }}>{vendor.contact_email} · {vendor.id_type}</div><div style={{ color: '#475569', fontSize: '.82rem' }}>Payout: {vendor.payout_bank_name || 'Not provided'} · {vendor.payout_account_number || 'Not provided'}</div></div><div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }}><button type="button" onClick={() => viewVendorDetails(vendor)} style={{ border: '1px solid #cbd5e1', background: '#fff', borderRadius: '8px', padding: '8px 10px', fontWeight: 700 }}>View details</button>{vendor.status === 'pending' && <><button type="button" onClick={() => updateVendorStatus(vendor, 'approved')} style={{ border: 0, background: '#166534', color: '#fff', borderRadius: '8px', padding: '8px 10px', fontWeight: 800 }}>Approve</button><button type="button" onClick={() => updateVendorStatus(vendor, 'rejected')} style={{ border: 0, background: '#b91c1c', color: '#fff', borderRadius: '8px', padding: '8px 10px', fontWeight: 800 }}>Reject</button></>}</div></article>) : <p style={{ color: '#64748b' }}>No vendor accounts have been submitted.</p>}</div>
-                {selectedVendor && <div style={{ marginTop: '18px', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}><h4 style={{ margin: '0 0 10px' }}>{selectedVendor.company_name} details</h4><p style={{ margin: '5px 0', color: '#475569' }}>Status: <strong>{selectedVendor.status}</strong></p><p style={{ margin: '5px 0', color: '#475569' }}>Verification document: <strong>{selectedVendor.id_document_path || 'Not supplied'}</strong></p><p style={{ margin: '5px 0', color: '#475569' }}>Payout: <strong>{selectedVendor.payout_account_name || 'Not supplied'} · {selectedVendor.payout_bank_name || 'Not supplied'} · {selectedVendor.payout_account_number || 'Not supplied'}</strong></p>{selectedVendor.loading ? <p>Loading products and sales...</p> : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: '12px', marginTop: '14px' }}><div><strong>Uploaded products ({selectedVendor.products?.length || 0})</strong>{(selectedVendor.products || []).map((product) => <div key={product.id} style={{ marginTop: '6px', color: '#475569' }}>{product.title} · {product.currency} {product.price}</div>)}</div><div><strong>Sales ({selectedVendor.sales?.length || 0})</strong>{(selectedVendor.sales || []).map((sale) => <div key={sale.id} style={{ marginTop: '6px', color: '#475569' }}>{sale.product_title} x{sale.quantity} · {sale.currency} {sale.vendor_amount} · {sale.payout_status}</div>)}</div></div>}</div>}
+              </div>
+            ) : activeDashboardView === "vendors" ? (
+              <div
+                className="commerce-panel-shell"
+                style={{
+                  background: "#fff",
+                  border: "1px solid #dfe7ef",
+                  borderRadius: "20px",
+                  padding: "22px",
+                  boxSizing: "border-box",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: "12px",
+                    flexWrap: "wrap",
+                    marginBottom: "18px",
+                  }}
+                >
+                  <div>
+                    <p
+                      style={{
+                        margin: 0,
+                        color: "#0f766e",
+                        textTransform: "uppercase",
+                        letterSpacing: ".12em",
+                        fontSize: ".72rem",
+                        fontWeight: 800,
+                      }}
+                    >
+                      Trust and safety
+                    </p>
+                    <h3 style={{ margin: "8px 0 0", fontSize: "1.5rem" }}>
+                      Vendor monitor
+                    </h3>
+                  </div>
+                  <span
+                    style={{
+                      background: "#f0fdfa",
+                      color: "#0f766e",
+                      borderRadius: "999px",
+                      padding: "8px 12px",
+                      fontWeight: 800,
+                    }}
+                  >
+                    {vendorProfiles.length} accounts
+                  </span>
+                </div>
+                {false &&
+                  selectedVendor &&
+                  vendorEditForm &&
+                  !vendorEditing && (
+                    <section
+                      style={{
+                        marginBottom: "18px",
+                        padding: "18px",
+                        border: "1px solid #b7d9cf",
+                        borderRadius: "14px",
+                        background: "linear-gradient(135deg, #f8fffb, #f8fafc)",
+                      }}
+                      aria-labelledby="vendor-review-title"
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          gap: "12px",
+                          alignItems: "flex-start",
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <div>
+                          <p
+                            style={{
+                              margin: 0,
+                              color: "#0f766e",
+                              textTransform: "uppercase",
+                              letterSpacing: ".1em",
+                              fontSize: ".7rem",
+                              fontWeight: 800,
+                            }}
+                          >
+                            Vendor profile
+                          </p>
+                          <h4
+                            id="vendor-review-title"
+                            style={{
+                              margin: "6px 0 0",
+                              color: "#0f172a",
+                              fontSize: "1.25rem",
+                            }}
+                          >
+                            {selectedVendor.company_name || "Vendor profile"}
+                          </h4>
+                          <p
+                            style={{
+                              margin: "5px 0 0",
+                              color: "#64748b",
+                              fontSize: ".85rem",
+                            }}
+                          >
+                            {selectedVendor.contact_email ||
+                              "No email supplied"}
+                          </p>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: "8px",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <button
+                            type="button"
+                            onClick={() => setVendorEditing(true)}
+                            style={{
+                              border: 0,
+                              borderRadius: "8px",
+                              background: "#0f766e",
+                              color: "#fff",
+                              padding: "8px 12px",
+                              fontWeight: 800,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Edit profile
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedVendor(null);
+                              setVendorEditForm(null);
+                              setVendorDocumentPreviewOpen(false);
+                            }}
+                            style={{
+                              border: "1px solid #cbd5e1",
+                              borderRadius: "8px",
+                              background: "#fff",
+                              padding: "8px 11px",
+                              fontWeight: 700,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Close review
+                          </button>
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit,minmax(180px,1fr))",
+                          gap: "10px",
+                          marginTop: "16px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            padding: "12px",
+                            background: "#fff",
+                            border: "1px solid #e2e8f0",
+                            borderRadius: "10px",
+                          }}
+                        >
+                          <span
+                            style={{
+                              display: "block",
+                              color: "#64748b",
+                              fontSize: ".72rem",
+                              textTransform: "uppercase",
+                              fontWeight: 800,
+                            }}
+                          >
+                            Status
+                          </span>
+                          <strong
+                            style={{
+                              display: "block",
+                              marginTop: "5px",
+                              color:
+                                selectedVendor.status === "approved"
+                                  ? "#166534"
+                                  : "#b45309",
+                              textTransform: "capitalize",
+                            }}
+                          >
+                            {selectedVendor.status || "pending"}
+                          </strong>
+                        </div>
+                        <div
+                          style={{
+                            padding: "12px",
+                            background: "#fff",
+                            border: "1px solid #e2e8f0",
+                            borderRadius: "10px",
+                          }}
+                        >
+                          <span
+                            style={{
+                              display: "block",
+                              color: "#64748b",
+                              fontSize: ".72rem",
+                              textTransform: "uppercase",
+                              fontWeight: 800,
+                            }}
+                          >
+                            Identity type
+                          </span>
+                          <strong
+                            style={{
+                              display: "block",
+                              marginTop: "5px",
+                              color: "#334155",
+                            }}
+                          >
+                            {selectedVendor.id_type || "Not supplied"}
+                          </strong>
+                        </div>
+                        <div
+                          style={{
+                            padding: "12px",
+                            background: "#fff",
+                            border: "1px solid #e2e8f0",
+                            borderRadius: "10px",
+                          }}
+                        >
+                          <span
+                            style={{
+                              display: "block",
+                              color: "#64748b",
+                              fontSize: ".72rem",
+                              textTransform: "uppercase",
+                              fontWeight: 800,
+                            }}
+                          >
+                            Payout
+                          </span>
+                          <strong
+                            style={{
+                              display: "block",
+                              marginTop: "5px",
+                              color: "#334155",
+                            }}
+                          >
+                            {selectedVendor.payout_bank_name || "Not supplied"}{" "}
+                            ·{" "}
+                            {selectedVendor.payout_account_number ||
+                              "Not supplied"}
+                          </strong>
+                        </div>
+                      </div>
+                      <div
+                        style={{
+                          marginTop: "12px",
+                          padding: "12px 14px",
+                          border: "1px solid #dbe7df",
+                          borderRadius: "10px",
+                          background: "#fff",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            gap: "10px",
+                            alignItems: "center",
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <div>
+                            <strong>Identity document</strong>
+                            <div
+                              style={{
+                                color: "#64748b",
+                                fontSize: ".78rem",
+                                marginTop: "3px",
+                              }}
+                            >
+                              {selectedVendor.id_document_path
+                                ? "Private verification document ready for review"
+                                : "No document supplied"}
+                            </div>
+                          </div>
+                          {selectedVendor.documentPreviewUrl && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setVendorDocumentPreviewOpen(
+                                  (current) => !current,
+                                )
+                              }
+                              style={{
+                                border: "1px solid #0f766e",
+                                borderRadius: "8px",
+                                background: vendorDocumentPreviewOpen
+                                  ? "#e6fffa"
+                                  : "#fff",
+                                color: "#0f766e",
+                                padding: "8px 11px",
+                                fontWeight: 800,
+                                cursor: "pointer",
+                              }}
+                            >
+                              {vendorDocumentPreviewOpen
+                                ? "Hide document"
+                                : "Preview document"}
+                            </button>
+                          )}
+                        </div>
+                        {vendorDocumentPreviewOpen &&
+                          selectedVendor.documentPreviewUrl && (
+                            <iframe
+                              title="Vendor identity document preview"
+                              src={selectedVendor.documentPreviewUrl}
+                              style={{
+                                display: "block",
+                                width: "100%",
+                                height: "320px",
+                                marginTop: "12px",
+                                border: "1px solid #e2e8f0",
+                                borderRadius: "8px",
+                                background: "#f8fafc",
+                              }}
+                            />
+                          )}
+                      </div>
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fit,minmax(220px,1fr))",
+                          gap: "12px",
+                          marginTop: "12px",
+                        }}
+                      >
+                        <div>
+                          <strong>
+                            Uploaded products (
+                            {selectedVendor.products?.length || 0})
+                          </strong>
+                          {(selectedVendor.products || []).map((product) => (
+                            <div
+                              key={product.id}
+                              style={{
+                                marginTop: "5px",
+                                color: "#475569",
+                                fontSize: ".84rem",
+                              }}
+                            >
+                              {product.title} · {product.currency}{" "}
+                              {product.price}
+                            </div>
+                          ))}
+                        </div>
+                        <div>
+                          <strong>
+                            Sales ({selectedVendor.sales?.length || 0})
+                          </strong>
+                          {(selectedVendor.sales || []).map((sale) => (
+                            <div
+                              key={sale.id}
+                              style={{
+                                marginTop: "5px",
+                                color: "#475569",
+                                fontSize: ".84rem",
+                              }}
+                            >
+                              {sale.product_title} x{sale.quantity} ·{" "}
+                              {sale.currency} {sale.vendor_amount}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </section>
+                  )}
+                {false && selectedVendor && vendorEditForm && vendorEditing && (
+                  <section
+                    style={{
+                      marginBottom: "18px",
+                      padding: "18px",
+                      border: "1px solid #b7d9cf",
+                      borderRadius: "14px",
+                      background: "linear-gradient(135deg, #f8fffb, #f8fafc)",
+                    }}
+                    aria-labelledby="vendor-review-title"
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: "12px",
+                        alignItems: "flex-start",
+                        flexWrap: "wrap",
+                      }}
+                    >
+                      <div>
+                        <p
+                          style={{
+                            margin: 0,
+                            color: "#0f766e",
+                            textTransform: "uppercase",
+                            letterSpacing: ".1em",
+                            fontSize: ".7rem",
+                            fontWeight: 800,
+                          }}
+                        >
+                          Selected vendor
+                        </p>
+                        <h4
+                          id="vendor-review-title"
+                          style={{
+                            margin: "6px 0 0",
+                            color: "#0f172a",
+                            fontSize: "1.2rem",
+                          }}
+                        >
+                          {vendorEditForm.company_name || "Vendor profile"}
+                        </h4>
+                      </div>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <button
+                          type="button"
+                          onClick={() => setVendorEditing(false)}
+                          style={{
+                            border: "1px solid #cbd5e1",
+                            borderRadius: "8px",
+                            background: "#fff",
+                            padding: "7px 10px",
+                            fontWeight: 700,
+                            cursor: "pointer",
+                          }}
+                        >
+                          Back to profile
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedVendor(null);
+                            setVendorEditForm(null);
+                          }}
+                          style={{
+                            border: "1px solid #cbd5e1",
+                            borderRadius: "8px",
+                            background: "#fff",
+                            padding: "7px 10px",
+                            fontWeight: 700,
+                            cursor: "pointer",
+                          }}
+                        >
+                          Close review
+                        </button>
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns:
+                          "minmax(260px, .9fr) minmax(320px, 1.1fr)",
+                        gap: "18px",
+                        marginTop: "16px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          padding: "12px",
+                          border: "1px solid #dbe7df",
+                          borderRadius: "10px",
+                          background: "#fff",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            gap: "8px",
+                          }}
+                        >
+                          <strong>Identity document</strong>
+                          {selectedVendor.documentPreviewUrl && (
+                            <a
+                              href={selectedVendor.documentPreviewUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{
+                                color: "#0f766e",
+                                fontWeight: 800,
+                                fontSize: ".8rem",
+                              }}
+                            >
+                              Open full preview
+                            </a>
+                          )}
+                        </div>
+                        {selectedVendor.documentPreviewUrl ? (
+                          <iframe
+                            title="Vendor identity document preview"
+                            src={selectedVendor.documentPreviewUrl}
+                            style={{
+                              width: "100%",
+                              height: "300px",
+                              marginTop: "10px",
+                              border: "1px solid #e2e8f0",
+                              borderRadius: "8px",
+                              background: "#f8fafc",
+                            }}
+                          />
+                        ) : (
+                          <p
+                            style={{
+                              color: "#64748b",
+                              fontSize: ".82rem",
+                              lineHeight: 1.5,
+                            }}
+                          >
+                            {selectedVendor.loading
+                              ? "Preparing secure preview..."
+                              : selectedVendor.id_document_path
+                                ? "Preview unavailable for this document type."
+                                : "No identity document supplied."}
+                          </p>
+                        )}
+                      </div>
+                      <div style={{ display: "grid", gap: "9px" }}>
+                        <label
+                          style={{
+                            display: "grid",
+                            gap: "4px",
+                            color: "#334155",
+                            fontSize: ".8rem",
+                            fontWeight: 800,
+                          }}
+                        >
+                          Business name
+                          <input
+                            value={vendorEditForm.company_name || ""}
+                            onChange={(event) =>
+                              setVendorEditForm((current) => ({
+                                ...current,
+                                company_name: event.target.value,
+                              }))
+                            }
+                            style={{
+                              padding: "9px 10px",
+                              border: "1px solid #cbd5e1",
+                              borderRadius: "8px",
+                              font: "inherit",
+                              fontWeight: 400,
+                            }}
+                          />
+                        </label>
+                        <label
+                          style={{
+                            display: "grid",
+                            gap: "4px",
+                            color: "#334155",
+                            fontSize: ".8rem",
+                            fontWeight: 800,
+                          }}
+                        >
+                          Contact email
+                          <input
+                            type="email"
+                            value={vendorEditForm.contact_email || ""}
+                            onChange={(event) =>
+                              setVendorEditForm((current) => ({
+                                ...current,
+                                contact_email: event.target.value,
+                              }))
+                            }
+                            style={{
+                              padding: "9px 10px",
+                              border: "1px solid #cbd5e1",
+                              borderRadius: "8px",
+                              font: "inherit",
+                              fontWeight: 400,
+                            }}
+                          />
+                        </label>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "1fr 1fr",
+                            gap: "9px",
+                          }}
+                        >
+                          <label
+                            style={{
+                              display: "grid",
+                              gap: "4px",
+                              color: "#334155",
+                              fontSize: ".8rem",
+                              fontWeight: 800,
+                            }}
+                          >
+                            ID type
+                            <select
+                              value={vendorEditForm.id_type || ""}
+                              onChange={(event) =>
+                                setVendorEditForm((current) => ({
+                                  ...current,
+                                  id_type: event.target.value,
+                                }))
+                              }
+                              style={{
+                                padding: "9px 10px",
+                                border: "1px solid #cbd5e1",
+                                borderRadius: "8px",
+                                background: "#fff",
+                              }}
+                            >
+                              <option>National ID</option>
+                              <option>Passport</option>
+                              <option>Driver's licence</option>
+                              <option>Business registration</option>
+                            </select>
+                          </label>
+                          <label
+                            style={{
+                              display: "grid",
+                              gap: "4px",
+                              color: "#334155",
+                              fontSize: ".8rem",
+                              fontWeight: 800,
+                            }}
+                          >
+                            Status
+                            <select
+                              value={vendorEditForm.status || "pending"}
+                              onChange={(event) =>
+                                setVendorEditForm((current) => ({
+                                  ...current,
+                                  status: event.target.value,
+                                }))
+                              }
+                              style={{
+                                padding: "9px 10px",
+                                border: "1px solid #cbd5e1",
+                                borderRadius: "8px",
+                                background: "#fff",
+                              }}
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="approved">Approved</option>
+                              <option value="rejected">Rejected</option>
+                              <option value="suspended">Suspended</option>
+                            </select>
+                          </label>
+                        </div>
+                        <label
+                          style={{
+                            display: "grid",
+                            gap: "4px",
+                            color: "#334155",
+                            fontSize: ".8rem",
+                            fontWeight: 800,
+                          }}
+                        >
+                          Account holder
+                          <input
+                            value={vendorEditForm.payout_account_name || ""}
+                            onChange={(event) =>
+                              setVendorEditForm((current) => ({
+                                ...current,
+                                payout_account_name: event.target.value,
+                              }))
+                            }
+                            style={{
+                              padding: "9px 10px",
+                              border: "1px solid #cbd5e1",
+                              borderRadius: "8px",
+                              font: "inherit",
+                              fontWeight: 400,
+                            }}
+                          />
+                        </label>
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "1fr 1fr",
+                            gap: "9px",
+                          }}
+                        >
+                          <label
+                            style={{
+                              display: "grid",
+                              gap: "4px",
+                              color: "#334155",
+                              fontSize: ".8rem",
+                              fontWeight: 800,
+                            }}
+                          >
+                            Bank
+                            <input
+                              value={vendorEditForm.payout_bank_name || ""}
+                              onChange={(event) =>
+                                setVendorEditForm((current) => ({
+                                  ...current,
+                                  payout_bank_name: event.target.value,
+                                }))
+                              }
+                              style={{
+                                padding: "9px 10px",
+                                border: "1px solid #cbd5e1",
+                                borderRadius: "8px",
+                                font: "inherit",
+                                fontWeight: 400,
+                              }}
+                            />
+                          </label>
+                          <label
+                            style={{
+                              display: "grid",
+                              gap: "4px",
+                              color: "#334155",
+                              fontSize: ".8rem",
+                              fontWeight: 800,
+                            }}
+                          >
+                            Account number
+                            <input
+                              value={vendorEditForm.payout_account_number || ""}
+                              onChange={(event) =>
+                                setVendorEditForm((current) => ({
+                                  ...current,
+                                  payout_account_number: event.target.value,
+                                }))
+                              }
+                              style={{
+                                padding: "9px 10px",
+                                border: "1px solid #cbd5e1",
+                                borderRadius: "8px",
+                                font: "inherit",
+                                fontWeight: 400,
+                              }}
+                            />
+                          </label>
+                        </div>
+                        <label
+                          style={{
+                            display: "grid",
+                            gap: "4px",
+                            color: "#334155",
+                            fontSize: ".8rem",
+                            fontWeight: 800,
+                          }}
+                        >
+                          Review note
+                          <textarea
+                            rows="2"
+                            value={vendorEditForm.rejection_reason || ""}
+                            onChange={(event) =>
+                              setVendorEditForm((current) => ({
+                                ...current,
+                                rejection_reason: event.target.value,
+                              }))
+                            }
+                            placeholder="Add an internal rejection or review note"
+                            style={{
+                              padding: "9px 10px",
+                              border: "1px solid #cbd5e1",
+                              borderRadius: "8px",
+                              resize: "vertical",
+                              font: "inherit",
+                            }}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          disabled={vendorSaving}
+                          onClick={saveVendorProfile}
+                          style={{
+                            justifySelf: "start",
+                            border: 0,
+                            borderRadius: "8px",
+                            padding: "10px 14px",
+                            background: vendorSaving ? "#cbd5e1" : "#0f766e",
+                            color: vendorSaving ? "#475569" : "#fff",
+                            fontWeight: 800,
+                            cursor: vendorSaving ? "wait" : "pointer",
+                          }}
+                        >
+                          {vendorSaving
+                            ? "Saving profile..."
+                            : "Save vendor profile"}
+                        </button>
+                      </div>
+                    </div>
+                  </section>
+                )}
+                <div
+                  style={{ display: "grid", gap: "12px", marginBottom: "18px" }}
+                >
+                  <div
+                    role="tablist"
+                    aria-label="Vendor controls"
+                    style={{
+                      display: "flex",
+                      gap: "8px",
+                      flexWrap: "wrap",
+                      borderBottom: "1px solid #e2e8f0",
+                      paddingBottom: "10px",
+                    }}
+                  >
+                    {vendorTabs.map((tab) => (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={vendorTab === tab.id}
+                        onClick={() => setVendorTab(tab.id)}
+                        style={{
+                          border: "1px solid",
+                          borderColor:
+                            vendorTab === tab.id ? "#0f766e" : "#cbd5e1",
+                          borderRadius: "999px",
+                          padding: "9px 13px",
+                          background: vendorTab === tab.id ? "#0f766e" : "#fff",
+                          color: vendorTab === tab.id ? "#fff" : "#334155",
+                          fontWeight: 800,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {tab.label}
+                        {tab.id !== "profiles"
+                          ? ` (${vendorProfiles.filter((vendor) => tab.statuses.includes(vendor.status)).length})`
+                          : ` (${vendorProfiles.length})`}
+                      </button>
+                    ))}
+                  </div>
+                  <label style={{ position: "relative", display: "block" }}>
+                    <span
+                      style={{
+                        position: "absolute",
+                        left: "12px",
+                        top: "50%",
+                        transform: "translateY(-50%)",
+                        color: "#64748b",
+                      }}
+                      aria-hidden="true"
+                    >
+                      <i className="fa-solid fa-magnifying-glass" />
+                    </span>
+                    <input
+                      type="search"
+                      value={vendorSearch}
+                      onChange={(event) => setVendorSearch(event.target.value)}
+                      placeholder="Search vendors by name, email, bank, or status"
+                      aria-label="Search vendors"
+                      style={{
+                        width: "100%",
+                        boxSizing: "border-box",
+                        padding: "12px 38px",
+                        border: "1px solid #cbd5e1",
+                        borderRadius: "10px",
+                        font: "inherit",
+                      }}
+                    />
+                    {vendorSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setVendorSearch("")}
+                        aria-label="Clear vendor search"
+                        style={{
+                          position: "absolute",
+                          right: "10px",
+                          top: "50%",
+                          transform: "translateY(-50%)",
+                          border: 0,
+                          background: "transparent",
+                          color: "#64748b",
+                          fontSize: "1.1rem",
+                          cursor: "pointer",
+                        }}
+                      >
+                        ×
+                      </button>
+                    )}
+                  </label>
+                </div>
+                <div style={{ display: "grid", gap: "12px" }}>
+                  {visibleVendorProfiles.length ? (
+                    visibleVendorProfiles.map((vendor) => (
+                      <article
+                        key={vendor.id}
+                        style={{
+                          border: "1px solid #e2e8f0",
+                          borderRadius: "14px",
+                          overflow: "hidden",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "56px minmax(0,1fr) auto",
+                            gap: "14px",
+                            alignItems: "center",
+                            padding: "14px",
+                          }}
+                        >
+                          <img
+                            src={vendor.logo_url || "/logo/logomain.png"}
+                            alt=""
+                            style={{
+                              width: "56px",
+                              height: "56px",
+                              borderRadius: "12px",
+                              objectFit: "cover",
+                            }}
+                          />
+                          <div>
+                            <strong style={{ color: "#0f172a" }}>
+                              {vendor.company_name}
+                            </strong>
+                            <div
+                              style={{ color: "#64748b", fontSize: ".84rem" }}
+                            >
+                              {vendor.contact_email} · {vendor.id_type}
+                            </div>
+                            <div
+                              style={{ color: "#475569", fontSize: ".82rem" }}
+                            >
+                              Payout:{" "}
+                              {vendor.payout_bank_name || "Not provided"} ·{" "}
+                              {vendor.payout_account_number || "Not provided"}
+                            </div>
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "8px",
+                              flexWrap: "wrap",
+                              justifyContent: "flex-end",
+                            }}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => viewVendorDetails(vendor)}
+                              style={{
+                                border: "1px solid #cbd5e1",
+                                background: "#fff",
+                                borderRadius: "8px",
+                                padding: "8px 10px",
+                                fontWeight: 700,
+                              }}
+                            >
+                              {selectedVendor?.id === vendor.id &&
+                              !selectedVendor.loading
+                                ? "Hide profile"
+                                : "View profile"}
+                            </button>
+                            {vendor.status === "pending" && (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateVendorStatus(vendor, "approved")
+                                  }
+                                  style={{
+                                    border: 0,
+                                    background: "#166534",
+                                    color: "#fff",
+                                    borderRadius: "8px",
+                                    padding: "8px 10px",
+                                    fontWeight: 800,
+                                  }}
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    updateVendorStatus(vendor, "rejected")
+                                  }
+                                  style={{
+                                    border: 0,
+                                    background: "#b91c1c",
+                                    color: "#fff",
+                                    borderRadius: "8px",
+                                    padding: "8px 10px",
+                                    fontWeight: 800,
+                                  }}
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        {vendorTab === "approved" && (
+                          <div style={{ gridColumn: "1 / -1", margin: "0 14px 14px", padding: "11px 12px", border: "1px solid #dbe7df", borderRadius: "10px", background: "#f8fffb" }}>
+                            <strong style={{ color: "#166534" }}>Sold products</strong>
+                            {(approvedVendorSales[vendor.id] || []).length ? (
+                              <div style={{ display: "grid", gap: "6px", marginTop: "8px" }}>
+                                {approvedVendorSales[vendor.id].map((sale) => (
+                                  <div key={sale.id} style={{ display: "flex", justifyContent: "space-between", gap: "10px", flexWrap: "wrap", color: "#475569", fontSize: ".82rem" }}>
+                                    <span><strong style={{ color: "#0f172a" }}>{sale.product_title || "Product"}</strong> · Qty {sale.quantity || 1} · Order {sale.order_number || "N/A"}</span>
+                                    <span>{sale.currency || "NGN"} {sale.vendor_amount || 0} · {sale.payout_status || "pending"}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : <span style={{ display: "block", marginTop: "5px", color: "#64748b", fontSize: ".82rem" }}>No sales recorded for this vendor yet.</span>}
+                          </div>
+                        )}
+                        {selectedVendor?.id === vendor.id && (
+                          <div
+                            style={{
+                              padding: "16px",
+                              background: "#f8fafc",
+                              borderTop: "1px solid #e2e8f0",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                gap: "10px",
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              <h4 style={{ margin: "0 0 10px" }}>
+                                {selectedVendor.company_name} profile details
+                              </h4>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setVendorEditing((current) => !current)
+                                }
+                                style={{
+                                  border: 0,
+                                  borderRadius: "8px",
+                                  background: "#0f766e",
+                                  color: "#fff",
+                                  padding: "8px 11px",
+                                  fontWeight: 800,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                {vendorEditing
+                                  ? "View profile"
+                                  : "Edit profile"}
+                              </button>
+                            </div>
+                            <p style={{ margin: "5px 0", color: "#475569" }}>
+                              Status: <strong>{selectedVendor.status}</strong>
+                            </p>
+                            <p style={{ margin: "5px 0", color: "#475569" }}>
+                              Email:{" "}
+                              <strong>
+                                {selectedVendor.contact_email || "Not supplied"}
+                              </strong>
+                            </p>
+                            <div
+                              style={{
+                                margin: "12px 0",
+                                padding: "12px",
+                                border: "1px solid #dbe7df",
+                                borderRadius: "10px",
+                                background: "#fff",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  gap: "10px",
+                                  flexWrap: "wrap",
+                                }}
+                              >
+                                <div>
+                                  <strong>Identity document</strong>
+                                  <div
+                                    style={{
+                                      color: "#64748b",
+                                      fontSize: ".78rem",
+                                      marginTop: "3px",
+                                    }}
+                                  >
+                                    {selectedVendor.documentPreviewUrl
+                                      ? vendorDocumentPreviewOpen
+                                        ? "Document preview open"
+                                        : "Identity document ready to preview"
+                                      : selectedVendor.id_document_path
+                                        ? "Preview link unavailable"
+                                        : "Not supplied"}
+                                  </div>
+                                </div>
+                                {selectedVendor.documentPreviewUrl && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setVendorDocumentPreviewOpen(
+                                        (current) => !current,
+                                      )
+                                    }
+                                    style={{
+                                      border: "1px solid #0f766e",
+                                      borderRadius: "8px",
+                                      background: vendorDocumentPreviewOpen
+                                        ? "#e6fffa"
+                                        : "#fff",
+                                      color: "#0f766e",
+                                      padding: "8px 11px",
+                                      fontWeight: 800,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    {vendorDocumentPreviewOpen
+                                      ? "Hide document"
+                                      : "Preview document"}
+                                  </button>
+                                )}
+                              </div>
+                              {vendorDocumentPreviewOpen && selectedVendor.documentPreviewUrl && (/\.(jpe?g|png|webp)$/i.test(selectedVendor.id_document_path || "") ? <img src={selectedVendor.documentPreviewUrl} alt="Vendor identity document" style={{ display: "block", width: "100%", maxHeight: "520px", objectFit: "contain", marginTop: "12px", border: "1px solid #e2e8f0", borderRadius: "8px", background: "#f8fafc" }} /> : <iframe title="Vendor identity document preview" src={selectedVendor.documentPreviewUrl} style={{ display: "block", width: "100%", height: "420px", marginTop: "12px", border: "1px solid #e2e8f0", borderRadius: "8px", background: "#f8fafc" }} />)}
+                            </div>
+                            <p style={{ margin: "5px 0", color: "#475569" }}>
+                              Payout:{" "}
+                              <strong>
+                                {selectedVendor.payout_account_name ||
+                                  "Not supplied"}{" "}
+                                ·{" "}
+                                {selectedVendor.payout_bank_name ||
+                                  "Not supplied"}{" "}
+                                ·{" "}
+                                {selectedVendor.payout_account_number ||
+                                  "Not supplied"}{" "}
+                                · {selectedVendor.payout_currency || "NGN"}
+                              </strong>
+                            </p>
+                            {vendorEditing &&
+                              vendorEditForm?.id === selectedVendor.id && (
+                                <div
+                                  style={{
+                                    display: "grid",
+                                    gap: "9px",
+                                    marginTop: "14px",
+                                    padding: "14px",
+                                    border: "1px solid #b7d9cf",
+                                    borderRadius: "10px",
+                                    background: "#fff",
+                                  }}
+                                >
+                                  <strong style={{ color: "#0f766e" }}>
+                                    Edit vendor profile
+                                  </strong>
+                                  <input
+                                    value={vendorEditForm.company_name || ""}
+                                    onChange={(event) =>
+                                      setVendorEditForm((current) => ({
+                                        ...current,
+                                        company_name: event.target.value,
+                                      }))
+                                    }
+                                    placeholder="Business name"
+                                    style={{
+                                      padding: "9px 10px",
+                                      border: "1px solid #cbd5e1",
+                                      borderRadius: "8px",
+                                    }}
+                                  />
+                                  <input
+                                    type="email"
+                                    value={vendorEditForm.contact_email || ""}
+                                    onChange={(event) =>
+                                      setVendorEditForm((current) => ({
+                                        ...current,
+                                        contact_email: event.target.value,
+                                      }))
+                                    }
+                                    placeholder="Contact email"
+                                    style={{
+                                      padding: "9px 10px",
+                                      border: "1px solid #cbd5e1",
+                                      borderRadius: "8px",
+                                    }}
+                                  />
+                                  <div
+                                    style={{
+                                      display: "grid",
+                                      gridTemplateColumns: "1fr 1fr",
+                                      gap: "9px",
+                                    }}
+                                  >
+                                    <input
+                                      value={
+                                        vendorEditForm.payout_bank_name || ""
+                                      }
+                                      onChange={(event) =>
+                                        setVendorEditForm((current) => ({
+                                          ...current,
+                                          payout_bank_name: event.target.value,
+                                        }))
+                                      }
+                                      placeholder="Bank"
+                                      style={{
+                                        padding: "9px 10px",
+                                        border: "1px solid #cbd5e1",
+                                        borderRadius: "8px",
+                                      }}
+                                    />
+                                    <input
+                                      value={
+                                        vendorEditForm.payout_account_number ||
+                                        ""
+                                      }
+                                      onChange={(event) =>
+                                        setVendorEditForm((current) => ({
+                                          ...current,
+                                          payout_account_number:
+                                            event.target.value,
+                                        }))
+                                      }
+                                      placeholder="Account number"
+                                      style={{
+                                        padding: "9px 10px",
+                                        border: "1px solid #cbd5e1",
+                                        borderRadius: "8px",
+                                      }}
+                                    />
+                                  </div>
+                                  <textarea
+                                    value={
+                                      vendorEditForm.rejection_reason || ""
+                                    }
+                                    onChange={(event) =>
+                                      setVendorEditForm((current) => ({
+                                        ...current,
+                                        rejection_reason: event.target.value,
+                                      }))
+                                    }
+                                    placeholder="Review note"
+                                    rows="2"
+                                    style={{
+                                      padding: "9px 10px",
+                                      border: "1px solid #cbd5e1",
+                                      borderRadius: "8px",
+                                      resize: "vertical",
+                                      font: "inherit",
+                                    }}
+                                  />
+                                  <button
+                                    type="button"
+                                    disabled={vendorSaving}
+                                    onClick={saveVendorProfile}
+                                    style={{
+                                      justifySelf: "start",
+                                      border: 0,
+                                      borderRadius: "8px",
+                                      background: vendorSaving
+                                        ? "#cbd5e1"
+                                        : "#0f766e",
+                                      color: vendorSaving ? "#475569" : "#fff",
+                                      padding: "9px 13px",
+                                      fontWeight: 800,
+                                      cursor: vendorSaving ? "wait" : "pointer",
+                                    }}
+                                  >
+                                    {vendorSaving
+                                      ? "Saving..."
+                                      : "Save vendor profile"}
+                                  </button>
+                                </div>
+                              )}
+                            {selectedVendor.loading ? (
+                              <p>Loading products and sales...</p>
+                            ) : (
+                              <div
+                                style={{
+                                  display: "grid",
+                                  gridTemplateColumns:
+                                    "repeat(auto-fit,minmax(220px,1fr))",
+                                  gap: "12px",
+                                  marginTop: "14px",
+                                }}
+                              >
+                                <div>
+                                  <strong>
+                                    Uploaded products (
+                                    {selectedVendor.products?.length || 0})
+                                  </strong>
+                                  {(selectedVendor.products || []).map(
+                                    (product) => (
+                                      <div
+                                        key={product.id}
+                                        style={{
+                                          marginTop: "6px",
+                                          color: "#475569",
+                                        }}
+                                      >
+                                        {product.title} · {product.currency}{" "}
+                                        {product.price}
+                                      </div>
+                                    ),
+                                  )}
+                                </div>
+                                <div>
+                                  <strong>
+                                    Sales ({selectedVendor.sales?.length || 0})
+                                  </strong>
+                                  {(selectedVendor.sales || []).map((sale) => (
+                                    <div
+                                      key={sale.id}
+                                      style={{
+                                        marginTop: "6px",
+                                        color: "#475569",
+                                      }}
+                                    >
+                                      {sale.product_title} x{sale.quantity} ·{" "}
+                                      {sale.currency} {sale.vendor_amount} ·{" "}
+                                      {sale.payout_status}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </article>
+                    ))
+                  ) : (
+                    <p style={{ color: "#64748b" }}>
+                      {vendorProfiles.length
+                        ? "No vendors match this tab or search."
+                        : "No vendor accounts have been submitted."}
+                    </p>
+                  )}
+                </div>
               </div>
             ) : (
               <>
-                <h2 style={{ margin: 0, fontSize: '2rem', fontWeight: 800, color: '#1a1a1a' }}>{activeDashboardLabel}</h2>
-                <p style={{ margin: '8px 0 0', fontSize: '1.05rem', color: '#4b5563' }}>
-                  {activeDashboardView === 'visitors' ? 'Visitors logged from the main site.' : activeDashboardView === 'teens' ? 'Teens registration form details submitted through the public site.' : activeDashboardView === 'messages' ? 'Messages submitted via the main contact form.' : activeDashboardView === 'bookings' ? 'Session booking requests submitted through the public site.' : activeDashboardView === 'feedback' ? 'Parent mentoring feedback responses submitted through the public survey.' : activeDashboardView === 'slider' ? 'Testimonials currently published in the Client Voices slider on the home page.' : 'Testimonials submitted from the site and available for review.'}
+                <h2
+                  style={{
+                    margin: 0,
+                    fontSize: "2rem",
+                    fontWeight: 800,
+                    color: "#1a1a1a",
+                  }}
+                >
+                  {activeDashboardLabel}
+                </h2>
+                <p
+                  style={{
+                    margin: "8px 0 0",
+                    fontSize: "1.05rem",
+                    color: "#4b5563",
+                  }}
+                >
+                  {activeDashboardView === "visitors"
+                    ? "Visitors logged from the main site."
+                    : activeDashboardView === "teens"
+                      ? "Teens registration form details submitted through the public site."
+                      : activeDashboardView === "messages"
+                        ? "Messages submitted via the main contact form."
+                        : activeDashboardView === "bookings"
+                          ? "Session booking requests submitted through the public site."
+                          : activeDashboardView === "feedback"
+                            ? "Parent mentoring feedback responses submitted through the public survey."
+                            : activeDashboardView === "slider"
+                              ? "Testimonials currently published in the Client Voices slider on the home page."
+                              : "Testimonials submitted from the site and available for review."}
                 </p>
               </>
             )}
-            {showDashboardTable && <>
-            <div className="dashboard-actions-row">
-              <button className="dashboard-refresh-button" type="button" onClick={refreshAdminData} disabled={refreshLoading} title={refreshLoading ? 'Refreshing' : 'Refresh'} aria-label={refreshLoading ? 'Refreshing' : 'Refresh'} style={{ border: '1px solid #b7d9cf', background: refreshLoading ? '#dcebe6' : '#e8f6f1', color: '#17634f', borderRadius: '999px', padding: '0.8rem 1.2rem', fontSize: '1rem', fontWeight: 700, cursor: refreshLoading ? 'wait' : 'pointer' }}>
-                <i className={`fa-solid ${refreshLoading ? 'fa-spinner fa-spin' : 'fa-rotate'}`} aria-hidden="true"></i> <span>Refresh</span>
-              </button>
-              <button type="button" className="dashboard-action-button" aria-label="All rows" title="All rows" style={{ border: '1px solid #d8dfe7', background: '#f0f1f2', color: '#1f2937', borderRadius: '999px', padding: '0.8rem 1.2rem', fontSize: '1rem', fontWeight: 700, cursor: 'pointer' }}>
-                <i className="fa-solid fa-table-list" aria-hidden="true"></i> <span>All rows</span>
-              </button>
-              <button type="button" className="dashboard-action-button" aria-label="Selected rows" title="Selected rows" style={{ border: '1px solid #d8dfe7', background: '#f0f1f2', color: '#1f2937', borderRadius: '999px', padding: '0.8rem 1.2rem', fontSize: '1rem', fontWeight: 700, cursor: 'pointer' }}>
-                <i className="fa-solid fa-square-check" aria-hidden="true"></i> <span>Selected rows (0)</span>
-              </button>
-              <button type="button" className="dashboard-action-button" onClick={deleteSelected} disabled={selectedRowIds.length === 0} aria-label={activeDashboardView === 'slider' ? 'Unpost selected' : 'Delete selected'} title={activeDashboardView === 'slider' ? 'Unpost selected' : 'Delete selected'} style={{ border: '1px solid #d8dfe7', background: selectedRowIds.length === 0 ? '#f7f7f7' : '#f0f1f2', color: '#1f2937', borderRadius: '999px', padding: '0.8rem 1.2rem', fontSize: '1rem', fontWeight: 700, cursor: selectedRowIds.length === 0 ? 'not-allowed' : 'pointer' }}>
-                <i className={`fa-solid ${activeDashboardView === 'slider' ? 'fa-eye-slash' : 'fa-trash-can'}`} aria-hidden="true"></i> <span>{activeDashboardView === 'slider' ? 'Unpost selected' : 'Delete selected'} ({selectedRowIds.length})</span>
-              </button>
-              <button type="button" className="dashboard-action-button" aria-label="Preview PDF" title="Preview PDF" style={{ border: 'none', background: '#f0f1f2', color: '#1f2937', borderRadius: '999px', padding: '0.8rem 1.2rem', fontSize: '1rem', fontWeight: 700, cursor: 'pointer' }}>
-                <i className="fa-solid fa-file-pdf" aria-hidden="true"></i> <span>Preview PDF</span>
-              </button>
-              <button type="button" className="dashboard-action-button" aria-label="Print responses" title="Print responses" style={{ border: 'none', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', color: '#fff', borderRadius: '999px', padding: '0.8rem 1.5rem', fontSize: '1rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 12px 22px rgba(92,74,228,0.22)' }}>
-                <i className="fa-solid fa-print" aria-hidden="true"></i> <span>Print responses</span>
-              </button>
-                {activeFilterDefinitions.length > 0 && (
-                  <div className="dashboard-filters">
-                    {filterOptions.map((filter) => (
-                      <label key={filter.key} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.95rem', color: '#374151', fontWeight: 600 }}>
-                        {filter.label}
-                        <CustomDropdown value={activeFilters[filter.key] || ''} onChange={(value) => setTableFilters((current) => ({ ...current, [activeDashboardView]: { ...current[activeDashboardView], [filter.key]: value } }))} ariaLabel={filter.label} placeholder={`All ${filter.label.toLowerCase()}s`} options={[{ value: '', label: `All ${filter.label.toLowerCase()}s` }, ...filter.options.map((option) => ({ value: option, label: option }))]} />
-                      </label>
-                    ))}
-                    <button type="button" className="dashboard-action-button" onClick={() => setTableFilters((current) => ({ ...current, [activeDashboardView]: {} }))} aria-label="Clear filters" title="Clear filters" style={{ border: '1px solid #d8dfe7', background: '#fff', padding: '8px 10px', borderRadius: '8px', cursor: 'pointer' }}><i className="fa-solid fa-filter-circle-xmark" aria-hidden="true"></i> <span>Clear</span></button>
-                  </div>
-                )}
-            </div>
+            {showDashboardTable && (
+              <>
+                <div className="dashboard-actions-row">
+                  <button
+                    className="dashboard-refresh-button"
+                    type="button"
+                    onClick={refreshAdminData}
+                    disabled={refreshLoading}
+                    title={refreshLoading ? "Refreshing" : "Refresh"}
+                    aria-label={refreshLoading ? "Refreshing" : "Refresh"}
+                    style={{
+                      border: "1px solid #b7d9cf",
+                      background: refreshLoading ? "#dcebe6" : "#e8f6f1",
+                      color: "#17634f",
+                      borderRadius: "999px",
+                      padding: "0.8rem 1.2rem",
+                      fontSize: "1rem",
+                      fontWeight: 700,
+                      cursor: refreshLoading ? "wait" : "pointer",
+                    }}
+                  >
+                    <i
+                      className={`fa-solid ${refreshLoading ? "fa-spinner fa-spin" : "fa-rotate"}`}
+                      aria-hidden="true"
+                    ></i>{" "}
+                    <span>Refresh</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="dashboard-action-button"
+                    aria-label="All rows"
+                    title="All rows"
+                    style={{
+                      border: "1px solid #d8dfe7",
+                      background: "#f0f1f2",
+                      color: "#1f2937",
+                      borderRadius: "999px",
+                      padding: "0.8rem 1.2rem",
+                      fontSize: "1rem",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <i
+                      className="fa-solid fa-table-list"
+                      aria-hidden="true"
+                    ></i>{" "}
+                    <span>All rows</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="dashboard-action-button"
+                    aria-label="Selected rows"
+                    title="Selected rows"
+                    style={{
+                      border: "1px solid #d8dfe7",
+                      background: "#f0f1f2",
+                      color: "#1f2937",
+                      borderRadius: "999px",
+                      padding: "0.8rem 1.2rem",
+                      fontSize: "1rem",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <i
+                      className="fa-solid fa-square-check"
+                      aria-hidden="true"
+                    ></i>{" "}
+                    <span>Selected rows (0)</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="dashboard-action-button"
+                    onClick={deleteSelected}
+                    disabled={selectedRowIds.length === 0}
+                    aria-label={
+                      activeDashboardView === "slider"
+                        ? "Unpost selected"
+                        : "Delete selected"
+                    }
+                    title={
+                      activeDashboardView === "slider"
+                        ? "Unpost selected"
+                        : "Delete selected"
+                    }
+                    style={{
+                      border: "1px solid #d8dfe7",
+                      background:
+                        selectedRowIds.length === 0 ? "#f7f7f7" : "#f0f1f2",
+                      color: "#1f2937",
+                      borderRadius: "999px",
+                      padding: "0.8rem 1.2rem",
+                      fontSize: "1rem",
+                      fontWeight: 700,
+                      cursor:
+                        selectedRowIds.length === 0 ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    <i
+                      className={`fa-solid ${activeDashboardView === "slider" ? "fa-eye-slash" : "fa-trash-can"}`}
+                      aria-hidden="true"
+                    ></i>{" "}
+                    <span>
+                      {activeDashboardView === "slider"
+                        ? "Unpost selected"
+                        : "Delete selected"}{" "}
+                      ({selectedRowIds.length})
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="dashboard-action-button"
+                    aria-label="Preview PDF"
+                    title="Preview PDF"
+                    style={{
+                      border: "none",
+                      background: "#f0f1f2",
+                      color: "#1f2937",
+                      borderRadius: "999px",
+                      padding: "0.8rem 1.2rem",
+                      fontSize: "1rem",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <i className="fa-solid fa-file-pdf" aria-hidden="true"></i>{" "}
+                    <span>Preview PDF</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="dashboard-action-button"
+                    aria-label="Print responses"
+                    title="Print responses"
+                    style={{
+                      border: "none",
+                      background: "linear-gradient(135deg, #4f46e5, #7c3aed)",
+                      color: "#fff",
+                      borderRadius: "999px",
+                      padding: "0.8rem 1.5rem",
+                      fontSize: "1rem",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                      boxShadow: "0 12px 22px rgba(92,74,228,0.22)",
+                    }}
+                  >
+                    <i className="fa-solid fa-print" aria-hidden="true"></i>{" "}
+                    <span>Print responses</span>
+                  </button>
+                  {activeFilterDefinitions.length > 0 && (
+                    <div className="dashboard-filters">
+                      {filterOptions.map((filter) => (
+                        <label
+                          key={filter.key}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            fontSize: "0.95rem",
+                            color: "#374151",
+                            fontWeight: 600,
+                          }}
+                        >
+                          {filter.label}
+                          <CustomDropdown
+                            value={activeFilters[filter.key] || ""}
+                            onChange={(value) =>
+                              setTableFilters((current) => ({
+                                ...current,
+                                [activeDashboardView]: {
+                                  ...current[activeDashboardView],
+                                  [filter.key]: value,
+                                },
+                              }))
+                            }
+                            ariaLabel={filter.label}
+                            placeholder={`All ${filter.label.toLowerCase()}s`}
+                            options={[
+                              {
+                                value: "",
+                                label: `All ${filter.label.toLowerCase()}s`,
+                              },
+                              ...filter.options.map((option) => ({
+                                value: option,
+                                label: option,
+                              })),
+                            ]}
+                          />
+                        </label>
+                      ))}
+                      <button
+                        type="button"
+                        className="dashboard-action-button"
+                        onClick={() =>
+                          setTableFilters((current) => ({
+                            ...current,
+                            [activeDashboardView]: {},
+                          }))
+                        }
+                        aria-label="Clear filters"
+                        title="Clear filters"
+                        style={{
+                          border: "1px solid #d8dfe7",
+                          background: "#fff",
+                          padding: "8px 10px",
+                          borderRadius: "8px",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <i
+                          className="fa-solid fa-filter-circle-xmark"
+                          aria-hidden="true"
+                        ></i>{" "}
+                        <span>Clear</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
 
-            <div className="dashboard-table-wrap">
-              <table className="table">
-                <thead>
-                  <tr style={{ background: '#f8fafc' }}>
-                        <th style={{ width: '48px', textAlign: 'center', padding: '14px 8px' }}>
-                          <input type="checkbox" aria-label="Select all" onChange={(e) => {
-                            if (!filteredDashboardRows) return;
-                            if (e.target.checked) setSelectedRowIds(filteredDashboardRows.map((r) => r.id));
-                            else clearSelection();
-                          }} checked={selectedRowIds.length === filteredDashboardRows.length && filteredDashboardRows.length > 0} />
+                <div className="dashboard-table-wrap">
+                  <table className="table">
+                    <thead>
+                      <tr style={{ background: "#f8fafc" }}>
+                        <th
+                          style={{
+                            width: "48px",
+                            textAlign: "center",
+                            padding: "14px 8px",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            aria-label="Select all"
+                            onChange={(e) => {
+                              if (!filteredDashboardRows) return;
+                              if (e.target.checked)
+                                setSelectedRowIds(
+                                  filteredDashboardRows.map((r) => r.id),
+                                );
+                              else clearSelection();
+                            }}
+                            checked={
+                              selectedRowIds.length ===
+                                filteredDashboardRows.length &&
+                              filteredDashboardRows.length > 0
+                            }
+                          />
                         </th>
-                        {dashboardTableColumns[activeDashboardView]?.map((column) => (
-                          <th key={column} style={{ textAlign: 'left', padding: '14px 16px', color: '#374151', fontSize: '0.95rem', fontWeight: 700, whiteSpace: 'nowrap' }}>{column}</th>
-                        ))}
-                        <th style={{ textAlign: 'right', padding: '14px 16px', color: '#374151', fontSize: '0.95rem', fontWeight: 700, whiteSpace: 'nowrap' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredDashboardRows.length > 0 ? (
-                    filteredDashboardRows.map((row) => (
-                          <tr key={row.id} style={{ borderTop: '1px solid #eef2f7' }}>
-                            <td style={{ padding: '14px 8px', textAlign: 'center' }}>
-                              <input type="checkbox" checked={selectedRowIds.includes(row.id)} onChange={() => toggleSelectRow(row.id)} />
+                        {dashboardTableColumns[activeDashboardView]?.map(
+                          (column) => (
+                            <th
+                              key={column}
+                              style={{
+                                textAlign: "left",
+                                padding: "14px 16px",
+                                color: "#374151",
+                                fontSize: "0.95rem",
+                                fontWeight: 700,
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {column}
+                            </th>
+                          ),
+                        )}
+                        <th
+                          style={{
+                            textAlign: "right",
+                            padding: "14px 16px",
+                            color: "#374151",
+                            fontSize: "0.95rem",
+                            fontWeight: 700,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredDashboardRows.length > 0 ? (
+                        filteredDashboardRows.map((row) => (
+                          <tr
+                            key={row.id}
+                            style={{ borderTop: "1px solid #eef2f7" }}
+                          >
+                            <td
+                              style={{
+                                padding: "14px 8px",
+                                textAlign: "center",
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedRowIds.includes(row.id)}
+                                onChange={() => toggleSelectRow(row.id)}
+                              />
                             </td>
                             {row.columns.map((cell, index) => (
-                              <td key={`${row.id}-${index}`} style={{ padding: index === 0 ? 0 : '14px 16px', color: '#4b5563', verticalAlign: 'top', maxWidth: '260px', whiteSpace: 'normal', wordBreak: 'break-word' }}>
+                              <td
+                                key={`${row.id}-${index}`}
+                                style={{
+                                  padding: index === 0 ? 0 : "14px 16px",
+                                  color: "#4b5563",
+                                  verticalAlign: "top",
+                                  maxWidth: "260px",
+                                  whiteSpace: "normal",
+                                  wordBreak: "break-word",
+                                }}
+                              >
                                 {index === 0 ? (
-                                  <button type="button" onClick={() => viewRow(row)} style={{ display: 'block', width: '100%', minHeight: '52px', padding: '14px 16px', border: 0, background: 'transparent', color: '#14532d', fontWeight: 800, textAlign: 'left', textDecoration: 'none', cursor: 'pointer' }} aria-label={`View details for ${cell}`}>
+                                  <button
+                                    type="button"
+                                    onClick={() => viewRow(row)}
+                                    style={{
+                                      display: "block",
+                                      width: "100%",
+                                      minHeight: "52px",
+                                      padding: "14px 16px",
+                                      border: 0,
+                                      background: "transparent",
+                                      color: "#14532d",
+                                      fontWeight: 800,
+                                      textAlign: "left",
+                                      textDecoration: "none",
+                                      cursor: "pointer",
+                                    }}
+                                    aria-label={`View details for ${cell}`}
+                                  >
                                     {cell}
                                   </button>
-                                ) : cell}
+                                ) : (
+                                  cell
+                                )}
                               </td>
                             ))}
-                            <td style={{ padding: '14px 16px', textAlign: 'right', verticalAlign: 'middle' }}>
-                              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <td
+                              style={{
+                                padding: "14px 16px",
+                                textAlign: "right",
+                                verticalAlign: "middle",
+                              }}
+                            >
+                              <div
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "flex-end",
+                                  gap: "0.5rem",
+                                  flexWrap: "wrap",
+                                }}
+                              >
                                 <button
                                   type="button"
                                   onClick={() => viewRow(row)}
-                                  style={{ border: '1px solid #d5e8ff', background: '#edf6ff', color: '#14532d', borderRadius: '999px', padding: '0.55rem 0.9rem', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
+                                  style={{
+                                    border: "1px solid #d5e8ff",
+                                    background: "#edf6ff",
+                                    color: "#14532d",
+                                    borderRadius: "999px",
+                                    padding: "0.55rem 0.9rem",
+                                    fontSize: "0.8rem",
+                                    fontWeight: 700,
+                                    cursor: "pointer",
+                                  }}
                                 >
                                   View
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => deleteRow(row.id)}
-                                  style={{ border: '1px solid #fecaca', background: '#fff1f2', color: '#991b1b', borderRadius: '999px', padding: '0.55rem 0.9rem', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
+                                  style={{
+                                    border: "1px solid #fecaca",
+                                    background: "#fff1f2",
+                                    color: "#991b1b",
+                                    borderRadius: "999px",
+                                    padding: "0.55rem 0.9rem",
+                                    fontSize: "0.8rem",
+                                    fontWeight: 700,
+                                    cursor: "pointer",
+                                  }}
                                 >
-                                  {activeDashboardView === 'slider' ? 'Unpost' : 'Delete'}
+                                  {activeDashboardView === "slider"
+                                    ? "Unpost"
+                                    : "Delete"}
                                 </button>
                               </div>
                             </td>
                           </tr>
                         ))
-                  ) : (
-                    <tr>
-                          <td colSpan={(dashboardTableColumns[activeDashboardView]?.length || 1) + 2} style={{ padding: '18px 16px', color: '#6b7280', textAlign: 'center' }}>No records available yet.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-            </>}
+                      ) : (
+                        <tr>
+                          <td
+                            colSpan={
+                              (dashboardTableColumns[activeDashboardView]
+                                ?.length || 1) + 2
+                            }
+                            style={{
+                              padding: "18px 16px",
+                              color: "#6b7280",
+                              textAlign: "center",
+                            }}
+                          >
+                            No records available yet.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -1819,27 +6359,27 @@ export default function AdminDashboard(props) {
           aria-modal="true"
           onClick={() => setProofPreviewModal(null)}
           style={{
-            position: 'fixed',
+            position: "fixed",
             inset: 0,
             zIndex: 22000,
-            background: 'rgba(15, 23, 42, 0.7)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '24px'
+            background: "rgba(15, 23, 42, 0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "24px",
           }}
         >
           <div
             onClick={(event) => event.stopPropagation()}
             style={{
-              position: 'relative',
-              width: 'min(900px, calc(100vw - 36px))',
-              maxHeight: '88vh',
-              background: '#fff',
-              borderRadius: '18px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 26px 80px rgba(15, 23, 42, 0.32)',
-              overflow: 'hidden'
+              position: "relative",
+              width: "min(900px, calc(100vw - 36px))",
+              maxHeight: "88vh",
+              background: "#fff",
+              borderRadius: "18px",
+              border: "1px solid #e2e8f0",
+              boxShadow: "0 26px 80px rgba(15, 23, 42, 0.32)",
+              overflow: "hidden",
             }}
           >
             <button
@@ -1847,18 +6387,18 @@ export default function AdminDashboard(props) {
               aria-label="Close proof preview"
               onClick={() => setProofPreviewModal(null)}
               style={{
-                position: 'absolute',
-                top: '14px',
-                right: '14px',
-                width: '36px',
-                height: '36px',
-                borderRadius: '50%',
-                border: '1px solid #e2e8f0',
-                background: '#fff',
-                color: '#334155',
-                fontSize: '1.4rem',
-                cursor: 'pointer',
-                zIndex: 2
+                position: "absolute",
+                top: "14px",
+                right: "14px",
+                width: "36px",
+                height: "36px",
+                borderRadius: "50%",
+                border: "1px solid #e2e8f0",
+                background: "#fff",
+                color: "#334155",
+                fontSize: "1.4rem",
+                cursor: "pointer",
+                zIndex: 2,
               }}
             >
               ×
@@ -1867,11 +6407,11 @@ export default function AdminDashboard(props) {
               src={proofPreviewModal}
               alt="Payment proof preview"
               style={{
-                display: 'block',
-                width: '100%',
-                maxHeight: '88vh',
-                objectFit: 'contain',
-                background: '#f8fafc'
+                display: "block",
+                width: "100%",
+                maxHeight: "88vh",
+                objectFit: "contain",
+                background: "#f8fafc",
               }}
             />
           </div>
@@ -1879,11 +6419,16 @@ export default function AdminDashboard(props) {
       )}
 
       {adminToast && (
-        <div className="admin-toast" data-type={adminToast.type} role="status" aria-live="polite">
+        <div
+          className="admin-toast"
+          data-type={adminToast.type}
+          role="status"
+          aria-live="polite"
+        >
           <div className="admin-toast-header">
             <div className="admin-toast-content">
               <i
-                className={`admin-toast-icon fa-solid ${adminToast.type === 'success' ? 'fa-circle-check' : adminToast.type === 'warning' ? 'fa-triangle-exclamation' : 'fa-circle-exclamation'}`}
+                className={`admin-toast-icon fa-solid ${adminToast.type === "success" ? "fa-circle-check" : adminToast.type === "warning" ? "fa-triangle-exclamation" : "fa-circle-exclamation"}`}
                 aria-hidden="true"
               ></i>
               <div>
@@ -1891,7 +6436,14 @@ export default function AdminDashboard(props) {
                 <div className="admin-toast-body">{adminToast.message}</div>
               </div>
             </div>
-            <button type="button" className="admin-toast-close" onClick={() => setAdminToast(null)} aria-label="Close notification">×</button>
+            <button
+              type="button"
+              className="admin-toast-close"
+              onClick={() => setAdminToast(null)}
+              aria-label="Close notification"
+            >
+              ×
+            </button>
           </div>
           {adminToast.actions.length > 0 && (
             <div className="admin-toast-actions">
@@ -1899,7 +6451,7 @@ export default function AdminDashboard(props) {
                 <button
                   key={`${action.label}-${index}`}
                   type="button"
-                  className={`admin-toast-btn ${action.variant === 'danger' ? 'danger' : 'secondary'}`}
+                  className={`admin-toast-btn ${action.variant === "danger" ? "danger" : "secondary"}`}
                   onClick={action.onClick}
                 >
                   {action.label}
@@ -1911,94 +6463,391 @@ export default function AdminDashboard(props) {
       )}
 
       {deleteConfirmation && (
-        <div className="delete-confirmation-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setDeleteConfirmation(null); }}>
-          <section className="delete-confirmation-modal" role="dialog" aria-modal="true" aria-labelledby="delete-confirmation-title">
+        <div
+          className="delete-confirmation-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget)
+              setDeleteConfirmation(null);
+          }}
+        >
+          <section
+            className="delete-confirmation-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-confirmation-title"
+          >
             <h3 id="delete-confirmation-title">Are you sure?</h3>
             <p>{deleteConfirmation.message} This action cannot be undone.</p>
             <div className="delete-confirmation-actions">
-              <button type="button" className="delete-confirmation-cancel" onClick={() => setDeleteConfirmation(null)}>Cancel</button>
-              <button type="button" className="delete-confirmation-delete" onClick={confirmDelete}>Delete</button>
+              <button
+                type="button"
+                className="delete-confirmation-cancel"
+                onClick={() => setDeleteConfirmation(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="delete-confirmation-delete"
+                onClick={confirmDelete}
+              >
+                Delete
+              </button>
             </div>
           </section>
         </div>
       )}
 
       {selectedOrder && (
-        <div className="view-modal-overlay" onClick={() => setSelectedOrder(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 17000, padding: '20px' }}>
-          <div className="view-modal-content" onClick={(event) => event.stopPropagation()} style={{ background: '#fff', borderRadius: '18px', width: 'min(760px, calc(100vw - 32px))', maxWidth: '100%', maxHeight: '88vh', overflowY: 'auto', boxShadow: '0 28px 90px rgba(15,23,42,0.35)', border: '1px solid #e2e8f0', boxSizing: 'border-box' }}>
-            <div style={{ padding: '22px 22px 0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', marginBottom: '18px' }}>
+        <div
+          className="view-modal-overlay"
+          onClick={() => setSelectedOrder(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15,23,42,0.7)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 17000,
+            padding: "20px",
+          }}
+        >
+          <div
+            className="view-modal-content"
+            onClick={(event) => event.stopPropagation()}
+            style={{
+              background: "#fff",
+              borderRadius: "18px",
+              width: "min(760px, calc(100vw - 32px))",
+              maxWidth: "100%",
+              maxHeight: "88vh",
+              overflowY: "auto",
+              boxShadow: "0 28px 90px rgba(15,23,42,0.35)",
+              border: "1px solid #e2e8f0",
+              boxSizing: "border-box",
+            }}
+          >
+            <div style={{ padding: "22px 22px 0" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  gap: "16px",
+                  marginBottom: "18px",
+                }}
+              >
                 <div>
-                  <p style={{ margin: 0, color: '#f59e0b', fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Order review</p>
-                  <h3 style={{ margin: '8px 0 0', fontSize: '1.7rem', fontWeight: 800, color: '#111827' }}>{selectedOrder.orderNumber || 'Order details'}</h3>
+                  <p
+                    style={{
+                      margin: 0,
+                      color: "#f59e0b",
+                      fontSize: "0.7rem",
+                      fontWeight: 800,
+                      letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    Order review
+                  </p>
+                  <h3
+                    style={{
+                      margin: "8px 0 0",
+                      fontSize: "1.7rem",
+                      fontWeight: 800,
+                      color: "#111827",
+                    }}
+                  >
+                    {selectedOrder.orderNumber || "Order details"}
+                  </h3>
                 </div>
-                <button type="button" onClick={() => setSelectedOrder(null)} aria-label="Close order review" style={{ border: 'none', background: '#f1f5f9', color: '#334155', borderRadius: '10px', width: '36px', height: '36px', cursor: 'pointer', fontSize: '1.5rem' }}>×</button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedOrder(null)}
+                  aria-label="Close order review"
+                  style={{
+                    border: "none",
+                    background: "#f1f5f9",
+                    color: "#334155",
+                    borderRadius: "10px",
+                    width: "36px",
+                    height: "36px",
+                    cursor: "pointer",
+                    fontSize: "1.5rem",
+                  }}
+                >
+                  ×
+                </button>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '22px' }}>
-                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px 16px' }}>
-                  <div style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>Customer</div>
-                  <div style={{ marginTop: '8px', fontWeight: 735, color: '#0f172a' }}>{selectedOrder.name || 'Customer'}</div>
-                  <div style={{ color: '#475569', fontSize: '0.9rem' }}>{selectedOrder.email || 'No email'}</div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                  gap: "12px",
+                  marginBottom: "22px",
+                }}
+              >
+                <div
+                  style={{
+                    background: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "12px",
+                    padding: "14px 16px",
+                  }}
+                >
+                  <div
+                    style={{
+                      color: "#64748b",
+                      fontSize: "0.72rem",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      fontWeight: 700,
+                    }}
+                  >
+                    Customer
+                  </div>
+                  <div
+                    style={{
+                      marginTop: "8px",
+                      fontWeight: 735,
+                      color: "#0f172a",
+                    }}
+                  >
+                    {selectedOrder.name || "Customer"}
+                  </div>
+                  <div style={{ color: "#475569", fontSize: "0.9rem" }}>
+                    {selectedOrder.email || "No email"}
+                  </div>
                 </div>
-                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px 16px' }}>
-                  <div style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>Payment</div>
-                  <div style={{ marginTop: '8px', fontWeight: 800, color: '#0f172a' }}>{selectedOrder.status === 'paid' ? 'Confirmed' : 'Pending confirmation'}</div>
-                  <div style={{ color: '#475569', fontSize: '0.9rem' }}>{selectedOrder.paymentProofFile ? selectedOrder.paymentProofFile : 'No proof uploaded'}</div>
+                <div
+                  style={{
+                    background: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "12px",
+                    padding: "14px 16px",
+                  }}
+                >
+                  <div
+                    style={{
+                      color: "#64748b",
+                      fontSize: "0.72rem",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      fontWeight: 700,
+                    }}
+                  >
+                    Payment
+                  </div>
+                  <div
+                    style={{
+                      marginTop: "8px",
+                      fontWeight: 800,
+                      color: "#0f172a",
+                    }}
+                  >
+                    {selectedOrder.status === "paid"
+                      ? "Confirmed"
+                      : "Pending confirmation"}
+                  </div>
+                  <div style={{ color: "#475569", fontSize: "0.9rem" }}>
+                    {selectedOrder.paymentProofFile
+                      ? selectedOrder.paymentProofFile
+                      : "No proof uploaded"}
+                  </div>
                 </div>
-                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px 16px' }}>
-                  <div style={{ color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700 }}>Amount</div>
-                  <div style={{ marginTop: '8px', fontWeight: 800, color: '#0f172a' }}>{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(Number(selectedOrder.total || 0))}</div>
-                  <div style={{ color: '#475569', fontSize: '0.9rem' }}>{selectedOrder.createdAt ? new Date(selectedOrder.createdAt).toLocaleDateString() : 'N/A'}</div>
+                <div
+                  style={{
+                    background: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "12px",
+                    padding: "14px 16px",
+                  }}
+                >
+                  <div
+                    style={{
+                      color: "#64748b",
+                      fontSize: "0.72rem",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                      fontWeight: 700,
+                    }}
+                  >
+                    Amount
+                  </div>
+                  <div
+                    style={{
+                      marginTop: "8px",
+                      fontWeight: 800,
+                      color: "#0f172a",
+                    }}
+                  >
+                    {new Intl.NumberFormat("en-NG", {
+                      style: "currency",
+                      currency: "NGN",
+                      maximumFractionDigits: 0,
+                    }).format(Number(selectedOrder.total || 0))}
+                  </div>
+                  <div style={{ color: "#475569", fontSize: "0.9rem" }}>
+                    {selectedOrder.createdAt
+                      ? new Date(selectedOrder.createdAt).toLocaleDateString()
+                      : "N/A"}
+                  </div>
                 </div>
               </div>
 
-              <div className="order-review-columns" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '18px', alignItems: 'start' }}>
-                <section style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
-                  <h4 style={{ margin: '0 0 12px', color: '#111827', fontSize: '1rem' }}>Items</h4>
-                  <div style={{ display: 'grid', gap: '10px' }}>
-                    {(selectedOrder.items || []).length > 0 ? (selectedOrder.items || []).map((item, index) => (
-                      <div key={`${item.id || item.title || index}`} style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', borderBottom: index < (selectedOrder.items || []).length - 1 ? '1px solid #e2e8f0' : 'none', paddingBottom: index < (selectedOrder.items || []).length - 1 ? '10px' : 0 }}>
-                        <div>
-                          <div style={{ fontWeight: 700, color: '#0f172a' }}>{item.title || 'Product'}</div>
-                          <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Qty: {item.quantity || 1}</div>
+              <div
+                className="order-review-columns"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1.2fr 0.8fr",
+                  gap: "18px",
+                  alignItems: "start",
+                }}
+              >
+                <section
+                  style={{
+                    background: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "14px",
+                    padding: "16px",
+                  }}
+                >
+                  <h4
+                    style={{
+                      margin: "0 0 12px",
+                      color: "#111827",
+                      fontSize: "1rem",
+                    }}
+                  >
+                    Items
+                  </h4>
+                  <div style={{ display: "grid", gap: "10px" }}>
+                    {(selectedOrder.items || []).length > 0 ? (
+                      (selectedOrder.items || []).map((item, index) => (
+                        <div
+                          key={`${item.id || item.title || index}`}
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            gap: "12px",
+                            alignItems: "center",
+                            borderBottom:
+                              index < (selectedOrder.items || []).length - 1
+                                ? "1px solid #e2e8f0"
+                                : "none",
+                            paddingBottom:
+                              index < (selectedOrder.items || []).length - 1
+                                ? "10px"
+                                : 0,
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontWeight: 700, color: "#0f172a" }}>
+                              {item.title || "Product"}
+                            </div>
+                            <div
+                              style={{ fontSize: "0.8rem", color: "#64748b" }}
+                            >
+                              Qty: {item.quantity || 1}
+                            </div>
+                          </div>
+                          <div style={{ fontWeight: 700, color: "#0f172a" }}>
+                            {new Intl.NumberFormat("en-NG", {
+                              style: "currency",
+                              currency: "NGN",
+                              maximumFractionDigits: 0,
+                            }).format(
+                              Number(item.price || 0) *
+                                Number(item.quantity || 1),
+                            )}
+                          </div>
                         </div>
-                        <div style={{ fontWeight: 700, color: '#0f172a' }}>{new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(Number(item.price || 0) * Number(item.quantity || 1))}</div>
+                      ))
+                    ) : (
+                      <div style={{ color: "#64748b" }}>
+                        No items recorded for this order.
                       </div>
-                    )) : <div style={{ color: '#64748b' }}>No items recorded for this order.</div>}
+                    )}
                   </div>
                 </section>
 
-                <section style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '16px' }}>
-                  <h4 style={{ margin: '0 0 12px', color: '#111827', fontSize: '1rem' }}>Proof of payment</h4>
+                <section
+                  style={{
+                    background: "#f8fafc",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "14px",
+                    padding: "16px",
+                  }}
+                >
+                  <h4
+                    style={{
+                      margin: "0 0 12px",
+                      color: "#111827",
+                      fontSize: "1rem",
+                    }}
+                  >
+                    Proof of payment
+                  </h4>
                   {paymentProofPreview ? (
                     <>
-                      <img src={paymentProofPreview} alt="Payment proof preview" style={{ width: '100%', borderRadius: '10px', border: '1px solid #cbd5e1', maxHeight: '220px', objectFit: 'cover' }} />
-                      <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end' }}>
+                      <img
+                        src={paymentProofPreview}
+                        alt="Payment proof preview"
+                        style={{
+                          width: "100%",
+                          borderRadius: "10px",
+                          border: "1px solid #cbd5e1",
+                          maxHeight: "220px",
+                          objectFit: "cover",
+                        }}
+                      />
+                      <div
+                        style={{
+                          marginTop: "10px",
+                          display: "flex",
+                          justifyContent: "flex-end",
+                        }}
+                      >
                         <button
                           type="button"
-                          onClick={() => setProofPreviewModal(paymentProofPreview)}
+                          onClick={() =>
+                            setProofPreviewModal(paymentProofPreview)
+                          }
                           style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            background: '#111827',
-                            color: '#fff',
-                            border: 'none',
-                            borderRadius: '10px',
-                            padding: '8px 12px',
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            background: "#111827",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: "10px",
+                            padding: "8px 12px",
                             fontWeight: 700,
-                            fontSize: '0.8rem',
-                            cursor: 'pointer'
+                            fontSize: "0.8rem",
+                            cursor: "pointer",
                           }}
                         >
-                          <i className="fa-solid fa-expand" aria-hidden="true"></i>
+                          <i
+                            className="fa-solid fa-expand"
+                            aria-hidden="true"
+                          ></i>
                           View image
                         </button>
                       </div>
                     </>
                   ) : (
-                    <div style={{ color: '#64748b', padding: '20px 0', textAlign: 'center' }}>No proof image attached.</div>
+                    <div
+                      style={{
+                        color: "#64748b",
+                        padding: "20px 0",
+                        textAlign: "center",
+                      }}
+                    >
+                      No proof image attached.
+                    </div>
                   )}
                 </section>
               </div>
@@ -2127,8 +6976,30 @@ export default function AdminDashboard(props) {
                 </div>
               */}
 
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '22px', paddingBottom: '22px' }}>
-                <button type="button" onClick={() => setSelectedOrder(null)} style={{ background: '#f8fafc', color: '#334155', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '0.9rem 1.35rem', fontWeight: 800, cursor: 'pointer' }}>Close</button>
+              <div
+                style={{
+                  display: "flex",
+                  gap: "12px",
+                  flexWrap: "wrap",
+                  marginTop: "22px",
+                  paddingBottom: "22px",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setSelectedOrder(null)}
+                  style={{
+                    background: "#f8fafc",
+                    color: "#334155",
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "10px",
+                    padding: "0.9rem 1.35rem",
+                    fontWeight: 800,
+                    cursor: "pointer",
+                  }}
+                >
+                  Close
+                </button>
               </div>
             </div>
           </div>
@@ -2137,100 +7008,501 @@ export default function AdminDashboard(props) {
 
       {/* Viewing Modal */}
       {viewingRow && (
-        <div className="view-modal-overlay" onClick={() => setViewingRow(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.72)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 16000, padding: '20px' }}>
-          <div className={`view-modal-content printable-response-card ${['testimonials', 'slider'].includes(activeDashboardView) ? 'testimonial-view-modal' : ''}`} onClick={(e) => e.stopPropagation()} style={{ background: '#f5f8fa', borderRadius: '4px', padding: 0, maxWidth: '760px', width: '100%', maxHeight: '88vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.42)' }}>
-            <div className="response-letterhead" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '20px', margin: 0, background: '#164568', color: '#fff', padding: '0.9rem 1.25rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                <img src="/logo/logomain.png" alt="Paz Thriving Tribe logo" style={{ width: '46px', height: '46px', objectFit: 'contain', background: '#fff', borderRadius: '50%', padding: '3px' }} />
+        <div
+          className="view-modal-overlay"
+          onClick={() => setViewingRow(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15,23,42,0.72)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 16000,
+            padding: "20px",
+          }}
+        >
+          <div
+            className={`view-modal-content printable-response-card ${["testimonials", "slider"].includes(activeDashboardView) ? "testimonial-view-modal" : ""}`}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "#f5f8fa",
+              borderRadius: "4px",
+              padding: 0,
+              maxWidth: "760px",
+              width: "100%",
+              maxHeight: "88vh",
+              overflowY: "auto",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.42)",
+            }}
+          >
+            <div
+              className="response-letterhead"
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: "20px",
+                margin: 0,
+                background: "#164568",
+                color: "#fff",
+                padding: "0.9rem 1.25rem",
+              }}
+            >
+              <div
+                style={{ display: "flex", alignItems: "center", gap: "0.8rem" }}
+              >
+                <img
+                  src="/logo/logomain.png"
+                  alt="Paz Thriving Tribe logo"
+                  style={{
+                    width: "46px",
+                    height: "46px",
+                    objectFit: "contain",
+                    background: "#fff",
+                    borderRadius: "50%",
+                    padding: "3px",
+                  }}
+                />
                 <div>
-                  <p style={{ margin: 0, color: '#fff', fontSize: '0.66rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>PAZ THRIVING TRIBE</p>
-                  <h3 style={{ margin: '5px 0 0', fontSize: '1.25rem', fontWeight: 800, color: '#fff' }}>{['testimonials', 'slider'].includes(activeDashboardView) ? 'Testimonial Preview' : 'Parent Mentoring Feedback Form'}</h3>
+                  <p
+                    style={{
+                      margin: 0,
+                      color: "#fff",
+                      fontSize: "0.66rem",
+                      fontWeight: 800,
+                      letterSpacing: "0.12em",
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    PAZ THRIVING TRIBE
+                  </p>
+                  <h3
+                    style={{
+                      margin: "5px 0 0",
+                      fontSize: "1.25rem",
+                      fontWeight: 800,
+                      color: "#fff",
+                    }}
+                  >
+                    {["testimonials", "slider"].includes(activeDashboardView)
+                      ? "Testimonial Preview"
+                      : "Parent Mentoring Feedback Form"}
+                  </h3>
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <button type="button" onClick={printViewingRow} style={{ border: '1px solid rgba(255,255,255,.35)', background: '#fff', color: '#164568', borderRadius: '3px', padding: '0.5rem 0.75rem', fontWeight: 800, cursor: 'pointer' }}><i className="fa-solid fa-print" aria-hidden="true" /> Print</button>
-                <button type="button" onClick={() => setViewingRow(null)} aria-label="Close record details" style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#fff' }}>×</button>
-              </div>
-            </div>
-            <div className="response-letterhead-meta" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, margin: '1rem 1.25rem 0', color: '#164568', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}><span style={{ background: '#e8f0f5', padding: '0.65rem' }}>Response ID<br /><strong style={{ fontSize: '0.8rem' }}>{formatReferenceId(viewingRow.id)}</strong></span><span style={{ background: '#fff4d5', padding: '0.65rem' }}>Prepared<br /><strong style={{ fontSize: '0.8rem' }}>{new Date().toLocaleDateString()}</strong></span></div>
-            <div className="response-details-grid" style={{ display: 'grid', gap: 0, padding: '1rem 1.25rem 1.25rem' }}>
-              {Object.entries(viewingRow).filter(([key]) => !(key.toLowerCase() === 'id' && ['testimonials', 'slider'].includes(activeDashboardView))).map(([key, value]) => {
-                let displayValue = value;
-                if (Array.isArray(value)) {
-                  displayValue = value.length > 0 ? value.join(', ') : 'None selected';
-                } else if (typeof value === 'object' && value !== null) {
-                  try {
-                    displayValue = JSON.stringify(value, null, 2);
-                  } catch (e) {
-                    displayValue = String(value);
-                  }
-                }
-                if (/name|parent|child/i.test(key) && typeof displayValue === 'string') displayValue = formatName(displayValue);
-                return (
-                  <div className="response-detail-row" key={key} style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: '1rem', alignItems: 'stretch', border: '1px solid #d7e1e7', borderBottom: 0, background: '#fff' }}>
-                    <label className="response-detail-label" style={{ display: 'flex', alignItems: 'center', margin: 0, padding: '0.7rem 0.8rem', fontSize: '0.72rem', fontWeight: 800, color: '#164568', background: '#e8f0f5', textTransform: 'uppercase' }}>{key.replace(/_/g, ' ')}</label>
-                    <div style={{ padding: '0.7rem 0.8rem', fontSize: '0.9rem', color: '#1f2937', wordBreak: 'break-word', whiteSpace: 'pre-wrap', fontFamily: typeof displayValue === 'string' && displayValue.includes('{') ? 'monospace' : 'inherit' }}>{displayValue || '—'}</div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="testimonial-modal-actions" style={{ display: 'flex', gap: '1rem', marginTop: '2rem', justifyContent: 'flex-end', borderTop: '1px solid #e5e7eb', paddingTop: '1rem' }}>
-              {['testimonials', 'slider'].includes(activeDashboardView) && viewingRow.id && (
+              <div
+                style={{ display: "flex", gap: "8px", alignItems: "center" }}
+              >
                 <button
                   type="button"
-                  onClick={() => { const rowId = viewingRow.id; setViewingRow(null); deleteRow(rowId); }}
-                  title="Remove this testimonial from the home page slider"
-                  aria-label="Remove this testimonial from the home page slider"
-                  style={{ marginLeft: 'auto', background: '#fff1f2', color: '#991b1b', border: '1px solid #fecaca', padding: '0.75rem 1.5rem', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}
+                  onClick={printViewingRow}
+                  style={{
+                    border: "1px solid rgba(255,255,255,.35)",
+                    background: "#fff",
+                    color: "#164568",
+                    borderRadius: "3px",
+                    padding: "0.5rem 0.75rem",
+                    fontWeight: 800,
+                    cursor: "pointer",
+                  }}
                 >
-                  Unpost testimonial
+                  <i className="fa-solid fa-print" aria-hidden="true" /> Print
                 </button>
-              )}
-              {['testimonials', 'feedback'].includes(activeDashboardView) && (viewingRow.Testimonial || viewingRow.testimonial || viewingRow.text) && (
-                <button 
-                  type="button" 
-                  onClick={openTestimonialConfirmation}
-                  disabled={postingToSlider}
-                  title="Publish this testimonial to the home page testimonial slider"
-                  aria-label="Publish this testimonial to the home page testimonial slider"
-                  data-tooltip="Posts only this testimonial to the Testimonial section on the home page."
-                  style={{ background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: '#fff', border: 'none', padding: '0.75rem 1.5rem', borderRadius: '8px', fontWeight: 700, cursor: postingToSlider ? 'not-allowed' : 'pointer', opacity: postingToSlider ? 0.7 : 1 }}
+                <button
+                  type="button"
+                  onClick={() => setViewingRow(null)}
+                  aria-label="Close record details"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    fontSize: "1.5rem",
+                    cursor: "pointer",
+                    color: "#fff",
+                  }}
                 >
-                  {postingToSlider ? 'Posting...' : 'Post testimonial'}
+                  ×
                 </button>
-              )}
-              <button type="button" onClick={() => setViewingRow(null)} style={{ background: '#f0f1f2', color: '#1f2937', border: '1px solid #d8dfe7', padding: '0.75rem 1.5rem', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>Close</button>
+              </div>
+            </div>
+            <div
+              className="response-letterhead-meta"
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: 0,
+                margin: "1rem 1.25rem 0",
+                color: "#164568",
+                fontSize: "0.68rem",
+                textTransform: "uppercase",
+                letterSpacing: "0.05em",
+              }}
+            >
+              <span style={{ background: "#e8f0f5", padding: "0.65rem" }}>
+                Response ID
+                <br />
+                <strong style={{ fontSize: "0.8rem" }}>
+                  {formatReferenceId(viewingRow.id)}
+                </strong>
+              </span>
+              <span style={{ background: "#fff4d5", padding: "0.65rem" }}>
+                Prepared
+                <br />
+                <strong style={{ fontSize: "0.8rem" }}>
+                  {new Date().toLocaleDateString()}
+                </strong>
+              </span>
+            </div>
+            <div
+              className="response-details-grid"
+              style={{
+                display: "grid",
+                gap: 0,
+                padding: "1rem 1.25rem 1.25rem",
+              }}
+            >
+              {Object.entries(viewingRow)
+                .filter(
+                  ([key]) =>
+                    !(
+                      key.toLowerCase() === "id" &&
+                      ["testimonials", "slider"].includes(activeDashboardView)
+                    ),
+                )
+                .map(([key, value]) => {
+                  let displayValue = value;
+                  if (Array.isArray(value)) {
+                    displayValue =
+                      value.length > 0 ? value.join(", ") : "None selected";
+                  } else if (typeof value === "object" && value !== null) {
+                    try {
+                      displayValue = JSON.stringify(value, null, 2);
+                    } catch (e) {
+                      displayValue = String(value);
+                    }
+                  }
+                  if (
+                    /name|parent|child/i.test(key) &&
+                    typeof displayValue === "string"
+                  )
+                    displayValue = formatName(displayValue);
+                  return (
+                    <div
+                      className="response-detail-row"
+                      key={key}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "180px 1fr",
+                        gap: "1rem",
+                        alignItems: "stretch",
+                        border: "1px solid #d7e1e7",
+                        borderBottom: 0,
+                        background: "#fff",
+                      }}
+                    >
+                      <label
+                        className="response-detail-label"
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          margin: 0,
+                          padding: "0.7rem 0.8rem",
+                          fontSize: "0.72rem",
+                          fontWeight: 800,
+                          color: "#164568",
+                          background: "#e8f0f5",
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {key.replace(/_/g, " ")}
+                      </label>
+                      <div
+                        style={{
+                          padding: "0.7rem 0.8rem",
+                          fontSize: "0.9rem",
+                          color: "#1f2937",
+                          wordBreak: "break-word",
+                          whiteSpace: "pre-wrap",
+                          fontFamily:
+                            typeof displayValue === "string" &&
+                            displayValue.includes("{")
+                              ? "monospace"
+                              : "inherit",
+                        }}
+                      >
+                        {displayValue || "—"}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+            <div
+              className="testimonial-modal-actions"
+              style={{
+                display: "flex",
+                gap: "1rem",
+                marginTop: "2rem",
+                justifyContent: "flex-end",
+                borderTop: "1px solid #e5e7eb",
+                paddingTop: "1rem",
+              }}
+            >
+              {["testimonials", "slider"].includes(activeDashboardView) &&
+                viewingRow.id && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const rowId = viewingRow.id;
+                      setViewingRow(null);
+                      deleteRow(rowId);
+                    }}
+                    title="Remove this testimonial from the home page slider"
+                    aria-label="Remove this testimonial from the home page slider"
+                    style={{
+                      marginLeft: "auto",
+                      background: "#fff1f2",
+                      color: "#991b1b",
+                      border: "1px solid #fecaca",
+                      padding: "0.75rem 1.5rem",
+                      borderRadius: "8px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Unpost testimonial
+                  </button>
+                )}
+              {["testimonials", "feedback"].includes(activeDashboardView) &&
+                (viewingRow.Testimonial ||
+                  viewingRow.testimonial ||
+                  viewingRow.text) && (
+                  <button
+                    type="button"
+                    onClick={openTestimonialConfirmation}
+                    disabled={postingToSlider}
+                    title="Publish this testimonial to the home page testimonial slider"
+                    aria-label="Publish this testimonial to the home page testimonial slider"
+                    data-tooltip="Posts only this testimonial to the Testimonial section on the home page."
+                    style={{
+                      background: "linear-gradient(135deg, #22c55e, #16a34a)",
+                      color: "#fff",
+                      border: "none",
+                      padding: "0.75rem 1.5rem",
+                      borderRadius: "8px",
+                      fontWeight: 700,
+                      cursor: postingToSlider ? "not-allowed" : "pointer",
+                      opacity: postingToSlider ? 0.7 : 1,
+                    }}
+                  >
+                    {postingToSlider ? "Posting..." : "Post testimonial"}
+                  </button>
+                )}
+              <button
+                type="button"
+                onClick={() => setViewingRow(null)}
+                style={{
+                  background: "#f0f1f2",
+                  color: "#1f2937",
+                  border: "1px solid #d8dfe7",
+                  padding: "0.75rem 1.5rem",
+                  borderRadius: "8px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                }}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
       )}
 
       {testimonialConfirmation && (
-        <div className="testimonial-confirmation-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setTestimonialConfirmation(null); }} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.58)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 17000, padding: '20px' }}>
-          <section className="testimonial-confirmation-modal" role="dialog" aria-modal="true" aria-labelledby="testimonial-confirmation-title" style={{ width: 'min(560px, 100%)', background: '#fff', borderRadius: '18px', padding: '28px', boxShadow: '0 28px 80px rgba(15,23,42,.32)', border: '1px solid #dbe7df' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
+        <div
+          className="testimonial-confirmation-backdrop"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget)
+              setTestimonialConfirmation(null);
+          }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15,23,42,0.58)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 17000,
+            padding: "20px",
+          }}
+        >
+          <section
+            className="testimonial-confirmation-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="testimonial-confirmation-title"
+            style={{
+              width: "min(560px, 100%)",
+              background: "#fff",
+              borderRadius: "18px",
+              padding: "28px",
+              boxShadow: "0 28px 80px rgba(15,23,42,.32)",
+              border: "1px solid #dbe7df",
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "space-between",
+                gap: "1rem",
+              }}
+            >
               <div>
-                <p style={{ margin: 0, color: '#1e7d5b', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Review before publishing</p>
-                <h3 id="testimonial-confirmation-title" style={{ margin: '0.45rem 0 0', color: '#17212b', fontSize: '1.45rem' }}>Are you sure you want to post this?</h3>
+                <p
+                  style={{
+                    margin: 0,
+                    color: "#1e7d5b",
+                    fontSize: "0.72rem",
+                    fontWeight: 800,
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Review before publishing
+                </p>
+                <h3
+                  id="testimonial-confirmation-title"
+                  style={{
+                    margin: "0.45rem 0 0",
+                    color: "#17212b",
+                    fontSize: "1.45rem",
+                  }}
+                >
+                  Are you sure you want to post this?
+                </h3>
               </div>
-              <button type="button" onClick={() => setTestimonialConfirmation(null)} aria-label="Close testimonial preview" style={{ border: 0, background: 'transparent', color: '#64748b', fontSize: '1.5rem', lineHeight: 1, cursor: 'pointer' }}>×</button>
+              <button
+                type="button"
+                onClick={() => setTestimonialConfirmation(null)}
+                aria-label="Close testimonial preview"
+                style={{
+                  border: 0,
+                  background: "transparent",
+                  color: "#64748b",
+                  fontSize: "1.5rem",
+                  lineHeight: 1,
+                  cursor: "pointer",
+                }}
+              >
+                ×
+              </button>
             </div>
             <div className="testimonial-confirmation-preview">
-              <p style={{ margin: '0.85rem 0 1.25rem', color: '#64748b', lineHeight: 1.5 }}>This content will appear in the Client Voices testimonial slider on the home page.</p>
-              <div className="testimonial-confirmation-quote" style={{ background: 'linear-gradient(135deg, #f0f8f3, #fff8f3)', border: '1px solid #dbe7df', borderRadius: '12px', padding: '1.2rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'flex-start', marginBottom: '0.9rem' }}>
-                <div>
-                  <p style={{ margin: 0, color: '#17212b', fontWeight: 800 }}>{testimonialConfirmation.title}</p>
-                  <p style={{ margin: '0.25rem 0 0', color: '#1e7d5b', fontSize: '0.8rem', fontWeight: 700 }}>{testimonialConfirmation.origin}</p>
+              <p
+                style={{
+                  margin: "0.85rem 0 1.25rem",
+                  color: "#64748b",
+                  lineHeight: 1.5,
+                }}
+              >
+                This content will appear in the Client Voices testimonial slider
+                on the home page.
+              </p>
+              <div
+                className="testimonial-confirmation-quote"
+                style={{
+                  background: "linear-gradient(135deg, #f0f8f3, #fff8f3)",
+                  border: "1px solid #dbe7df",
+                  borderRadius: "12px",
+                  padding: "1.2rem",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: "1rem",
+                    alignItems: "flex-start",
+                    marginBottom: "0.9rem",
+                  }}
+                >
+                  <div>
+                    <p style={{ margin: 0, color: "#17212b", fontWeight: 800 }}>
+                      {testimonialConfirmation.title}
+                    </p>
+                    <p
+                      style={{
+                        margin: "0.25rem 0 0",
+                        color: "#1e7d5b",
+                        fontSize: "0.8rem",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {testimonialConfirmation.origin}
+                    </p>
+                  </div>
+                  <i
+                    className="fa-solid fa-quote-left"
+                    aria-hidden="true"
+                    style={{ color: "#e88767", fontSize: "1.15rem" }}
+                  />
                 </div>
-                <i className="fa-solid fa-quote-left" aria-hidden="true" style={{ color: '#e88767', fontSize: '1.15rem' }} />
-              </div>
-              <p style={{ margin: 0, color: '#334155', fontSize: '1.05rem', lineHeight: 1.65, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>“{testimonialConfirmation.text}”</p>
+                <p
+                  style={{
+                    margin: 0,
+                    color: "#334155",
+                    fontSize: "1.05rem",
+                    lineHeight: 1.65,
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
+                  }}
+                >
+                  “{testimonialConfirmation.text}”
+                </p>
               </div>
             </div>
-            <div className="testimonial-confirmation-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.5rem' }}>
-              <button type="button" onClick={() => setTestimonialConfirmation(null)} style={{ border: '1px solid #cbd5e1', background: '#f8fafc', color: '#334155', borderRadius: '8px', padding: '0.75rem 1.2rem', fontWeight: 800, cursor: 'pointer' }}>Decline</button>
-              <button type="button" onClick={postTestimonialToSlider} disabled={postingToSlider} style={{ border: 0, background: 'linear-gradient(135deg, #1e7d5b, #22a06b)', color: '#fff', borderRadius: '8px', padding: '0.75rem 1.35rem', fontWeight: 800, cursor: postingToSlider ? 'not-allowed' : 'pointer', opacity: postingToSlider ? 0.7 : 1 }}>{postingToSlider ? 'Posting...' : 'Post to slider'}</button>
+            <div
+              className="testimonial-confirmation-actions"
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "0.75rem",
+                marginTop: "1.5rem",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setTestimonialConfirmation(null)}
+                style={{
+                  border: "1px solid #cbd5e1",
+                  background: "#f8fafc",
+                  color: "#334155",
+                  borderRadius: "8px",
+                  padding: "0.75rem 1.2rem",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                }}
+              >
+                Decline
+              </button>
+              <button
+                type="button"
+                onClick={postTestimonialToSlider}
+                disabled={postingToSlider}
+                style={{
+                  border: 0,
+                  background: "linear-gradient(135deg, #1e7d5b, #22a06b)",
+                  color: "#fff",
+                  borderRadius: "8px",
+                  padding: "0.75rem 1.35rem",
+                  fontWeight: 800,
+                  cursor: postingToSlider ? "not-allowed" : "pointer",
+                  opacity: postingToSlider ? 0.7 : 1,
+                }}
+              >
+                {postingToSlider ? "Posting..." : "Post to slider"}
+              </button>
             </div>
           </section>
         </div>

@@ -546,6 +546,18 @@ values ('pazthrivingtribe@gmail.com', '44787dbc-03ba-475e-9d5c-86ba765d5b0a')
 on conflict (email) do update
 set uid = excluded.uid;
 
+-- Keep vendor identity documents private while allowing trusted admins to preview them.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname = 'admins read vendor verification documents'
+  ) THEN
+    EXECUTE 'CREATE POLICY "admins read vendor verification documents" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = ''vendor-verification'' AND EXISTS (SELECT 1 FROM public.site_admins WHERE uid = auth.uid()::text OR lower(email) = lower(auth.jwt() ->> ''email'')))';
+  END IF;
+END
+$$;
+
 -- Optional: if you want to allow public applicant inserts and block direct edits.
 alter table if exists tribe_applicants enable row level security;
 

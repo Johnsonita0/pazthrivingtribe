@@ -62,6 +62,8 @@ export default function VendorDashboard() {
   const [notice, setNotice] = useState(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [documentPreviewUrl, setDocumentPreviewUrl] = useState("");
+  const [documentPreviewOpen, setDocumentPreviewOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -115,6 +117,14 @@ export default function VendorDashboard() {
     setProducts(productRows || []);
     setSales(salesRows || []);
     setAds(adRows || []);
+    if (vendor?.id_document_path) {
+      const { data: documentUrlData } = await supabase.storage
+        .from("vendor-verification")
+        .createSignedUrl(vendor.id_document_path, 3600);
+      setDocumentPreviewUrl(documentUrlData?.signedUrl || "");
+    } else {
+      setDocumentPreviewUrl("");
+    }
     if (vendor)
       setProfileForm((current) => ({
         ...current,
@@ -714,6 +724,15 @@ export default function VendorDashboard() {
           }}
         >
           <h2>Verification and payout account</h2>
+          {profile?.id_document_path && (
+            <section style={{ padding: "14px", border: "1px solid #dbe7df", borderRadius: "12px", background: "#f8fffb" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+                <div><strong>Identity document</strong><p style={{ margin: "4px 0 0", color: "#64748b", fontSize: ".8rem" }}>Your submitted verification document.</p></div>
+                {documentPreviewUrl && <button type="button" onClick={() => setDocumentPreviewOpen((current) => !current)} style={{ border: "1px solid #0f766e", borderRadius: "8px", background: documentPreviewOpen ? "#dff8ef" : "#fff", color: "#0f766e", padding: "8px 11px", fontWeight: 800, cursor: "pointer" }}>{documentPreviewOpen ? "Hide document" : "Preview document"}</button>}
+              </div>
+              {documentPreviewOpen && documentPreviewUrl && <iframe title="Your vendor identity document" src={documentPreviewUrl} style={{ display: "block", width: "100%", height: "340px", marginTop: "12px", border: "1px solid #dbe7df", borderRadius: "8px", background: "#fff" }} />}
+            </section>
+          )}
           <div
             style={{
               display: "grid",

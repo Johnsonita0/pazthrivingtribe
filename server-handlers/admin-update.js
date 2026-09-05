@@ -82,13 +82,18 @@ export default async function handler(req, res) {
       }
     }
 
-    const { action, table, payload, match, columns = '*' } = requestBody || {}
+    const { action, table, payload, match, columns = '*', bucket, path, expiresIn = 3600 } = requestBody || {}
     if (!action) return jsonResponse(res, 400, { error: 'Missing action' })
 
     let result
     try {
       if (action === 'delete_test_shop_orders') {
         result = await supabase.from('shop_orders').delete().eq('payment_mode', 'test')
+      } else if (action === 'signed_url') {
+        if (bucket !== 'vendor-verification' || !path || !String(path).startsWith('vendors/')) return jsonResponse(res, 400, { error: 'Invalid vendor document path' })
+        const signedUrlResult = await supabase.storage.from(bucket).createSignedUrl(path, Math.min(Number(expiresIn) || 3600, 3600))
+        if (signedUrlResult.error) return jsonResponse(res, 404, { error: `Vendor document preview unavailable: ${signedUrlResult.error.message || signedUrlResult.error}` })
+        return jsonResponse(res, 200, { data: signedUrlResult.data, signedUrl: signedUrlResult.data?.signedUrl || signedUrlResult.data?.signedURL || null })
       } else if (!table) {
         return jsonResponse(res, 400, { error: 'Missing table' })
       } else if (action === 'update') {
