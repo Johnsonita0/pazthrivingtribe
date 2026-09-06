@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { sendResendEmail } from './lib/resend.js'
+import { buildPazEmailTemplate } from './lib/paz-email-template.js'
 
 // Serverless admin endpoint for secure updates using the Supabase service role key.
 // Requires these environment variables to be set in your deployment:
@@ -177,6 +178,146 @@ export default async function handler(req, res) {
         })
 
         return jsonResponse(res, 200, { ok: true, email: recipient, companyName: vendor.company_name || '' })
+      } else if (action === 'product_review') {
+        if (!payload?.id || !['in_review', 'approved', 'rejected', 'published'].includes(payload.status)) {
+          return jsonResponse(res, 400, { error: 'A product ID and valid review status are required' })
+        }
+
+        const { data: product, error: productLookupError } = await supabase
+          .from('store_products')
+          .select('id,title,status,name_verified,description_verified,cover_verified,attachment_verified,amount_verified,vendor_id,price,currency,description,file_url,cover')
+          .eq('id', payload.id)
+          .maybeSingle()
+        if (productLookupError) throw productLookupError
+        if (!product) return jsonResponse(res, 404, { error: 'Product not found' })
+
+        if (payload.review_again === true) {
+          const reviewUpdate = {
+            status: 'in_review',
+            name_verified: false,
+            description_verified: false,
+            cover_verified: false,
+            attachment_verified: false,
+            amount_verified: false,
+            updated_at: new Date().toISOString(),
+          }
+          const { data: reviewedProduct, error: reviewError } = await supabase
+            .from('store_products')
+            .update(reviewUpdate)
+            .eq('id', product.id)
+            .select('*')
+            .single()
+          if (reviewError) throw reviewError
+
+          const { data: vendor, error: vendorError } = await supabase
+            .from('vendor_profiles')
+            .select('contact_email,company_name')
+            .eq('id', product.vendor_id)
+            .maybeSingle()
+          if (vendorError) throw vendorError
+          const recipient = String(vendor?.contact_email || '').trim().toLowerCase()
+          let emailSent = false
+          if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
+            const subject = `Product review requested: ${product.title}`
+            const appUrl = String(process.env.VITE_APP_URL || 'https://pazthrivingtribe.org').replace(/\/$/, '')
+            const html = buildPazEmailTemplate({
+              title: subject,
+              eyebrow: 'Product review requested',
+              intro: `Hi ${vendor.company_name || 'there'},`,
+              accentText: `${product.title} needs another review before it can be approved.`,
+              bodyHtml: `<p>Our PAZ team reviewed this product and it does not yet meet the marketplace standards.</p><p><strong>Product:</strong> ${product.title}</p><p><strong>Product ID:</strong> ${product.id}</p><p>Please update the product details, cover, amount, or attachment as needed, then resubmit it for approval from your vendor dashboard.</p>`,
+              ctaLabel: 'Review product',
+              ctaUrl: `${appUrl}/vendor`,
+              showSecondaryCta: false,
+              footerNote: 'Please review and resend this product for approval when ready.'
+            })
+            await sendResendEmail({ to: recipient, subject, html, text: `${product.title} (ID: ${product.id}) needs another review. Please update it in your vendor dashboard and resend it for approval.`, from: process.env.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.org' })
+            emailSent = true
+          }
+          return jsonResponse(res, 200, { data: reviewedProduct, emailSent })
+        }
+
+        const nextStatus = payload.status
+        const updatePayload = { status: nextStatus, updated_at: new Date().toISOString() }
+        for (const field of ['name_verified', 'description_verified', 'cover_verified', 'attachment_verified', 'amount_verified']) {
+          if (typeof payload[field] === 'boolean') updatePayload[field] = payload[field]
+        }
+        if (typeof payload.name_verified === 'boolean') {
+          updatePayload.name_verified_at = payload.name_verified ? new Date().toISOString() : null
+          updatePayload.name_verified_by = payload.name_verified ? userData.user.id : null
+        }
+        if (nextStatus === 'published') {
+          const { data: duplicateProducts, error: duplicateError } = await supabase
+            .from('store_products')
+            .select('id,title')
+            .eq('status', 'published')
+            .ilike('title', product.title)
+            .neq('id', product.id)
+            .limit(1)
+          if (duplicateError) throw duplicateError
+          if (duplicateProducts?.length) return jsonResponse(res, 409, { error: 'A product with this name is already published in the shop.' })
+          const verification = ['name_verified', 'description_verified', 'cover_verified', 'attachment_verified', 'amount_verified']
+          const missingVerification = verification.find((field) => payload[field] !== true && product[field] !== true)
+          if (missingVerification) return jsonResponse(res, 400, { error: `Verify the product ${missingVerification.replace('_verified', '')} before publishing it.` })
+          updatePayload.published_at = new Date().toISOString()
+          updatePayload.published_by = userData.user.id
+        } else if (product.status === 'published') {
+          updatePayload.published_at = null
+          updatePayload.published_by = null
+        }
+
+        const { data: updatedProduct, error: updateError } = await supabase
+          .from('store_products')
+          .update(updatePayload)
+          .eq('id', product.id)
+          .select('*')
+          .single()
+        if (updateError) throw updateError
+
+        let emailSent = false
+        if (nextStatus === 'published' && product.vendor_id) {
+          const { data: vendor, error: vendorError } = await supabase
+            .from('vendor_profiles')
+            .select('contact_email,company_name')
+            .eq('id', product.vendor_id)
+            .maybeSingle()
+          if (vendorError) throw vendorError
+          const recipient = String(vendor?.contact_email || '').trim().toLowerCase()
+          if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) {
+            const appUrl = String(process.env.VITE_APP_URL || 'https://pazthrivingtribe.org').replace(/\/$/, '')
+            const productSlug = encodeURIComponent(String(product.title || product.id).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''))
+            const productUrl = `${appUrl}/shop/${productSlug}`
+            const subject = `Your product is now published: ${product.title}`
+            const html = buildPazEmailTemplate({
+              title: subject,
+              eyebrow: 'Product published',
+              intro: `Hi ${vendor.company_name || 'there'},`,
+              accentText: `${product.title} (ID: ${product.id}) is now visible in the PAZ shop.`,
+              bodyHtml: `<p>Your product name has been verified and the product is now live.</p><p><strong>Product ID:</strong> ${product.id}</p><p><strong>Shop link:</strong> <a href="${productUrl}">${productUrl}</a></p>`,
+              ctaLabel: 'Open product in shop',
+              ctaUrl: productUrl,
+              showSecondaryCta: false,
+              footerNote: 'Share your product link on your social media platforms.'
+            })
+            await sendResendEmail({ to: recipient, subject, html, text: `${product.title} is now published in the PAZ shop. Product ID: ${product.id}\nShop link: ${productUrl}`, from: process.env.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.org' })
+            emailSent = true
+          }
+        }
+        return jsonResponse(res, 200, { data: updatedProduct, emailSent })
+      } else if (action === 'product_file_signed_url') {
+        if (!match?.id) return jsonResponse(res, 400, { error: 'A product ID is required' })
+        const { data: product, error: productError } = await supabase
+          .from('store_products')
+          .select('file_url')
+          .eq('id', match.id)
+          .maybeSingle()
+        if (productError) throw productError
+        if (!product?.file_url) return jsonResponse(res, 404, { error: 'This product has no book attachment' })
+        const rawPath = String(product.file_url).trim()
+        const storagePath = rawPath.replace(/^https?:\/\/[^/]+\/storage\/v1\/object\/(?:sign|authenticated|public)\/product-files\//i, '').replace(/^\/+/, '')
+        const signedUrlResult = await supabase.storage.from('product-files').createSignedUrl(storagePath, 3600)
+        if (signedUrlResult.error) return jsonResponse(res, 404, { error: `Book preview unavailable: ${signedUrlResult.error.message || signedUrlResult.error}` })
+        return jsonResponse(res, 200, { signedUrl: signedUrlResult.data?.signedUrl || null })
       } else if (!table) {
         return jsonResponse(res, 400, { error: 'Missing table' })
       } else if (action === 'update') {

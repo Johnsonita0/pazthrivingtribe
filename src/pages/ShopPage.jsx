@@ -714,7 +714,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     if (!Array.isArray(storeProducts) || storeProducts.length === 0) return;
     setStoreData((current) => ({
       ...current,
-      products: storeProducts.filter((product) => product.status !== 'pending' && product.status !== 'rejected').map(normalizeProduct),
+      products: storeProducts.filter((product) => product.status === 'published').map(normalizeProduct),
       bankAccount: storeBankAccount || current.bankAccount
     }));
     setCart((current) => current.filter((item) => storeProducts.some((product) => product.id === item.id)));
@@ -731,7 +731,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
 
       if (!active || error || !Array.isArray(data) || data.length === 0) return;
 
-      const latestProducts = data.filter((product) => product.status !== 'pending' && product.status !== 'rejected').map(normalizeProduct);
+      const latestProducts = data.filter((product) => product.status === 'published').map(normalizeProduct);
       setStoreData((current) => ({ ...current, products: latestProducts }));
       setCart((current) => current.filter((item) => latestProducts.some((product) => product.id === item.id)));
     };

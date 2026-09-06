@@ -36,6 +36,7 @@ const withTimeout = (promise, message, timeoutMs = 15000) =>
       window.setTimeout(() => reject(new Error(message)), timeoutMs),
     ),
   ]);
+const productReviewColumns = "id,vendor_id,title,price,currency,status,name_verified,description_verified,cover_verified,attachment_verified,amount_verified,updated_at";
 
 export default function VendorDashboard() {
   const navigate = useNavigate();
@@ -87,6 +88,8 @@ export default function VendorDashboard() {
   });
   const [notice, setNotice] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [productsRefreshing, setProductsRefreshing] = useState(false);
+  const [refreshingProductId, setRefreshingProductId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [documentPreviewUrl, setDocumentPreviewUrl] = useState("");
   const [documentPreviewOpen, setDocumentPreviewOpen] = useState(false);
@@ -216,6 +219,44 @@ export default function VendorDashboard() {
     setLoading(false);
   };
 
+  const refreshProducts = async () => {
+    if (!session?.user?.id || productsRefreshing) return;
+    setProductsRefreshing(true);
+    const { data, error } = await supabase
+      .from("store_products")
+      .select(productReviewColumns)
+      .eq("vendor_id", session.user.id)
+      .order("created_at", { ascending: false });
+    setProductsRefreshing(false);
+    if (error) {
+      setNotice({ type: "error", text: error.message || "Product statuses could not be refreshed." });
+      return;
+    }
+    setProducts((current) => Array.isArray(data) ? data.map((freshProduct) => ({
+      ...(current.find((product) => product.id === freshProduct.id) || {}),
+      ...freshProduct,
+    })) : current);
+    setNotice({ type: "success", text: "Product verification statuses refreshed." });
+  };
+
+  const refreshProductStatus = async (productId) => {
+    if (!session?.user?.id || !productId || refreshingProductId) return;
+    setRefreshingProductId(productId);
+    const { data, error } = await supabase
+      .from("store_products")
+      .select(productReviewColumns)
+      .eq("id", productId)
+      .eq("vendor_id", session.user.id)
+      .maybeSingle();
+    setRefreshingProductId(null);
+    if (error || !data) {
+      setNotice({ type: "error", text: error?.message || "This product status could not be refreshed." });
+      return;
+    }
+    setProducts((current) => current.map((product) => product.id === productId ? { ...product, ...data } : product));
+    setNotice({ type: "success", text: `${data.title} verification status refreshed.` });
+  };
+
   useEffect(() => {
     let active = true;
     supabase.auth.getSession().then(({ data }) => {
@@ -248,6 +289,35 @@ export default function VendorDashboard() {
             type: changed.status === "rejected" ? "error" : "success",
             text: `Your ad "${changed.headline}" is now ${changed.status}.`,
           });
+        return data;
+      });
+    }, 15000);
+    return () => window.clearInterval(timer);
+  }, [session]);
+
+  useEffect(() => {
+    if (!session?.user?.id) return undefined;
+    const timer = window.setInterval(async () => {
+      const { data } = await supabase
+        .from("store_products")
+        .select("*")
+        .eq("vendor_id", session.user.id)
+        .order("created_at", { ascending: false });
+      if (!Array.isArray(data)) return;
+      setProducts((current) => {
+        const previous = new Map(current.map((product) => [product.id, product]));
+        const changed = data.find((product) => {
+          const oldProduct = previous.get(product.id);
+          return oldProduct && (oldProduct.status !== product.status || Boolean(oldProduct.name_verified) !== Boolean(product.name_verified));
+        });
+        if (changed) {
+          const statusText = changed.status === "published"
+            ? "is now published in the shop"
+            : changed.name_verified
+              ? "has a verified name"
+              : `is now ${changed.status || "in review"}`;
+          setNotice({ type: changed.status === "rejected" ? "error" : "success", text: `${changed.title} ${statusText}.` });
+        }
         return data;
       });
     }, 15000);
@@ -604,7 +674,14 @@ export default function VendorDashboard() {
         is_free: Boolean(productForm.isFree),
         vendor_id: session.user.id,
         vendor_name: profile.company_name,
-        status: editingProductId ? products.find((item) => item.id === editingProductId)?.status || "pending" : "pending",
+        status: "in_review",
+        name_verified: false,
+        name_verified_at: null,
+        description_verified: false,
+        cover_verified: false,
+        attachment_verified: false,
+        amount_verified: false,
+        published_at: null,
         in_stock: productForm.inStock !== false,
         stock_count: Math.max(Number(productForm.stockCount || 0), 0),
         updated_at: new Date().toISOString(),
@@ -891,6 +968,7 @@ export default function VendorDashboard() {
         .vendor-dashboard-header{position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap}
         .vendor-dashboard-header-copy{min-width:0}
         .vendor-dashboard-header-actions{position:relative;display:flex;align-items:center;gap:8px;flex-shrink:0}
+        .vendor-dashboard-monitor-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:24px}
         .vendor-dashboard-mobile-toggle{display:none}
         .vendor-dashboard-mobile-menu{display:none}
         @media(max-width:640px){
@@ -899,6 +977,7 @@ export default function VendorDashboard() {
           .vendor-dashboard-header-copy h1{margin:5px 0 0;font-size:1.35rem;line-height:1.2;overflow-wrap:anywhere}
           .vendor-dashboard-header-copy>p:last-child{margin:5px 0 0;font-size:.82rem}
           .vendor-dashboard-header-actions{gap:0}
+          .vendor-dashboard-monitor-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:24px}
           .vendor-dashboard-header-actions>.vendor-settings-button,.vendor-dashboard-header-actions>.vendor-signout-button{display:none!important}
           .vendor-dashboard-mobile-toggle{display:inline-grid;place-items:center;width:42px;height:42px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#166534;font-size:1.15rem;cursor:pointer}
           .vendor-dashboard-mobile-menu{position:absolute;top:calc(100% + 10px);right:0;z-index:20;display:grid;gap:6px;width:min(220px,calc(100vw - 40px));padding:8px;background:#fff;border:1px solid #dbe7df;border-radius:12px;box-shadow:0 16px 32px rgba(15,23,42,.14)}
@@ -994,14 +1073,7 @@ export default function VendorDashboard() {
             {notice.text}
           </div>
         )}
-        <section
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))",
-            gap: "12px",
-            marginTop: "24px",
-          }}
-        >
+        <section className="vendor-dashboard-monitor-grid">
           {[
             ["Products", products.length, "products"],
             ["Sales", sales.length, "sales"],
@@ -1359,7 +1431,7 @@ export default function VendorDashboard() {
               </p>
             )}
             <div style={{ marginTop: "24px" }}>
-              <div style={{ marginBottom: "12px", fontSize: ".8rem", fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: "#64748b" }}>Published products</div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", marginBottom: "12px" }}><div style={{ fontSize: ".8rem", fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase", color: "#64748b" }}>Your products and review status</div><button type="button" onClick={refreshProducts} disabled={productsRefreshing} aria-label="Refresh product verification statuses" title="Refresh product verification statuses" style={{ display: "inline-grid", placeItems: "center", width: "36px", height: "36px", flex: "0 0 36px", border: "1px solid #0f766e", borderRadius: "50%", background: "#fff", color: "#0f766e", fontSize: "1.15rem", fontWeight: 900, cursor: productsRefreshing ? "wait" : "pointer", opacity: productsRefreshing ? .65 : 1 }}>{productsRefreshing ? "..." : "↻"}</button></div>
               {products.length ? products.map((product) => (
                 <div
                   key={product.id}
@@ -1376,7 +1448,7 @@ export default function VendorDashboard() {
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start", flexWrap: "wrap" }}>
-                    <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}><img src={product.cover || "/logo/logomain.png"} alt="" style={{ width: "58px", height: "58px", objectFit: "cover", borderRadius: "9px", border: "1px solid #e2e8f0" }} /><div><strong>{product.title}</strong><div style={{ color: "#64748b", fontSize: ".82rem", marginTop: "3px" }}>{product.is_free ? "Free" : `${product.currency} ${product.price}`} · {product.category || "Product"}</div><div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}><span style={{ color: product.in_stock === false ? "#b91c1c" : "#166534", fontSize: ".8rem", fontWeight: 800 }}>{product.in_stock === false ? "Sold out" : `Available · ${product.stock_count ?? 0} in stock`}</span><span style={{ color: product.status === "approved" ? "#166534" : product.status === "rejected" ? "#b91c1c" : "#b45309", fontSize: ".8rem", fontWeight: 800 }}>· {product.status === "approved" ? "Admin approved" : product.status === "rejected" ? "Rejected by admin" : "Awaiting admin review"}</span></div></div></div>
+                    <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}><img src={product.cover || "/logo/logomain.png"} alt="" style={{ width: "58px", height: "58px", objectFit: "cover", borderRadius: "9px", border: "1px solid #e2e8f0" }} /><div style={{ minWidth: 0, flex: 1 }}><div style={{ display: "flex", alignItems: "center", gap: "7px" }}><strong>{product.title}</strong><button type="button" onClick={() => refreshProductStatus(product.id)} disabled={refreshingProductId === product.id} aria-label={`Refresh ${product.title} verification status`} title="Refresh this product verification status" style={{ display: "inline-grid", placeItems: "center", width: "27px", height: "27px", flex: "0 0 27px", border: "1px solid #0f766e", borderRadius: "50%", background: "#fff", color: "#0f766e", fontSize: "1rem", fontWeight: 900, cursor: refreshingProductId === product.id ? "wait" : "pointer", opacity: refreshingProductId === product.id ? .6 : 1 }}>{refreshingProductId === product.id ? "..." : "↻"}</button></div><div style={{ color: "#64748b", fontSize: ".82rem", marginTop: "3px" }}>{product.is_free ? "Free" : `${product.currency} ${product.price}`} · {product.category || "Product"}</div><div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}><span style={{ color: product.in_stock === false ? "#b91c1c" : "#166534", fontSize: ".8rem", fontWeight: 800 }}>{product.in_stock === false ? "Sold out" : `Available · ${product.stock_count ?? 0} in stock`}</span><span style={{ color: product.status === "published" ? "#166534" : product.status === "rejected" ? "#b91c1c" : product.status === "approved" ? "#0369a1" : "#b45309", fontSize: ".8rem", fontWeight: 800 }}>· {product.status === "published" ? "Published in shop" : product.status === "approved" ? "Admin approved · awaiting publish" : product.status === "rejected" ? "Rejected by admin" : "Awaiting admin review"}</span><span style={{ color: product.name_verified ? "#166534" : "#64748b", fontSize: ".8rem", fontWeight: 800 }}>· Name {product.name_verified ? "verified" : "not verified yet"}</span><span style={{ color: product.description_verified ? "#166534" : "#64748b", fontSize: ".8rem", fontWeight: 800 }}>· Description {product.description_verified ? "verified" : "not verified yet"}</span><span style={{ color: product.cover_verified ? "#166534" : "#64748b", fontSize: ".8rem", fontWeight: 800 }}>· Cover {product.cover_verified ? "verified" : "not verified yet"}</span><span style={{ color: product.attachment_verified ? "#166534" : "#64748b", fontSize: ".8rem", fontWeight: 800 }}>· Attachment {product.attachment_verified ? "verified" : "not verified yet"}</span></div></div></div>
                     <div style={{ display: "flex", gap: "7px", flexWrap: "wrap" }}><button type="button" disabled={saving} onClick={() => toggleProductStock(product)} style={{ border: "1px solid #cbd5e1", borderRadius: "8px", padding: "8px 10px", background: "#f8fafc", color: "#334155", fontWeight: 800 }}>{product.in_stock === false ? "Mark available" : "Mark sold out"}</button><button type="button" onClick={() => editProduct(product)} style={{ border: "1px solid #cbd5e1", borderRadius: "8px", padding: "8px 10px", background: "#fff", color: "#334155", fontWeight: 800 }}>Edit</button><button type="button" onClick={() => copyProductLink(product)} style={{ border: "1px solid #86efac", borderRadius: "8px", padding: "8px 10px", background: "#f0fdf4", color: "#166534", fontWeight: 800 }}>Copy link</button><button type="button" disabled={saving} onClick={() => deleteProduct(product)} style={{ border: "1px solid #fecaca", borderRadius: "8px", padding: "8px 10px", background: "#fef2f2", color: "#b91c1c", fontWeight: 800 }}>Delete</button></div>
                   </div>
                   {product.file_url && <div style={{ color: "#64748b", fontSize: ".78rem", overflowWrap: "anywhere" }}>File: {product.file_url.split("/").pop()}</div>}

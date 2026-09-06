@@ -225,6 +225,7 @@ export default function AdminDashboard(props) {
   const [productDeleteTarget, setProductDeleteTarget] = useState(null);
   const [vendorProfiles, setVendorProfiles] = useState([]);
   const [selectedVendor, setSelectedVendor] = useState(null);
+  const [productReviewModal, setProductReviewModal] = useState(null);
   const [vendorSearch, setVendorSearch] = useState("");
   const [vendorTab, setVendorTab] = useState("profiles");
   const [vendorEditForm, setVendorEditForm] = useState(null);
@@ -746,7 +747,7 @@ export default function AdminDashboard(props) {
             action: "select",
             table: "store_products",
             match: { vendor_id: vendor.id },
-            columns: "id,title,price,currency,created_at",
+            columns: "id,vendor_id,title,description,price,currency,category,file_url,cover,status,name_verified,description_verified,cover_verified,attachment_verified,name_verified_at,published_at,created_at,updated_at",
           }),
         }),
         fetch("/api/admin-update", {
@@ -1649,20 +1650,57 @@ export default function AdminDashboard(props) {
     }
   };
 
-  const updateStoreProductReviewStatus = async (product, status) => {
+  const updateStoreProductReviewStatus = async (product, status, verification) => {
     const token = session?.access_token || session?.accessToken || "";
     const response = await fetch("/api/admin-update", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ action: "update", table: "store_products", match: { id: product.id }, payload: { status, updated_at: new Date().toISOString() } }),
+      body: JSON.stringify({ action: "product_review", payload: { id: product.id, status, ...verification } }),
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
       showAdminToast("error", "Product review failed", payload.error || "The product review status could not be saved.");
       return;
     }
-    setStoreProducts((current) => current.map((item) => item.id === product.id ? { ...item, status } : item));
+    const updated = payload.data || { ...product, status, ...verification };
+    setStoreProducts((current) => current.map((item) => item.id === product.id ? { ...item, ...updated } : item));
+    setSelectedVendor((current) => current?.id === selectedVendor?.id ? { ...current, products: (current.products || []).map((item) => item.id === product.id ? { ...item, ...updated } : item) } : current);
+    setProductReviewModal((current) => current?.id === product.id ? { ...current, ...updated } : current);
     showAdminToast("success", "Product review updated", `${product.title} is now ${status}.`);
+  };
+
+  const requestProductReviewAgain = async (product) => {
+    const token = session?.access_token || session?.accessToken || "";
+    const response = await fetch("/api/admin-update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: "product_review", payload: { id: product.id, status: "in_review", review_again: true } }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      showAdminToast("error", "Review request failed", payload.error || "The vendor could not be notified.");
+      return;
+    }
+    const updated = payload.data || { ...product, status: "in_review", name_verified: false, description_verified: false, cover_verified: false, attachment_verified: false, amount_verified: false };
+    setSelectedVendor((current) => current?.id === selectedVendor?.id ? { ...current, products: (current.products || []).map((item) => item.id === product.id ? { ...item, ...updated } : item) } : current);
+    setProductReviewModal((current) => current?.id === product.id ? { ...current, ...updated } : current);
+    showAdminToast("success", "Vendor notified", `${product.title} was sent back for review.`);
+  };
+
+  const openProductReview = async (product) => {
+    setProductReviewModal({ ...product, filePreviewUrl: "", filePreviewLoading: Boolean(product.file_url) });
+    if (!product.file_url) {
+      setProductReviewModal((current) => current ? { ...current, filePreviewLoading: false, filePreviewError: "This product has no book attachment." } : current);
+      return;
+    }
+    const token = session?.access_token || session?.accessToken || "";
+    const response = await fetch("/api/admin-update", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ action: "product_file_signed_url", match: { id: product.id } }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    setProductReviewModal((current) => current ? { ...current, filePreviewUrl: response.ok ? payload.signedUrl || "" : "", filePreviewLoading: false, filePreviewError: response.ok ? "" : payload.error || "Book preview unavailable." } : current);
   };
 
   const handleDeleteStoreProduct = async (productId) => {
@@ -6062,14 +6100,42 @@ export default function AdminDashboard(props) {
                                       <div
                                         key={product.id}
                                         style={{
-                                          marginTop: "6px",
+                                          display: "flex",
+                                          justifyContent: "space-between",
+                                          alignItems: "center",
+                                          gap: "8px",
+                                          marginTop: "8px",
+                                          padding: "9px",
                                           color: "#475569",
+                                          background: "#fff",
+                                          border: "1px solid #e2e8f0",
+                                          borderRadius: "8px",
                                         }}
                                       >
-                                        {product.title} · {product.currency}{" "}
-                                        {product.price}
+                                        <span>
+                                          <strong style={{ color: "#0f172a" }}>{product.title}</strong><br />
+                                          <small>{product.currency} {product.price} · {product.status || "in_review"} · {product.name_verified ? "Name verified" : "Name not verified"}</small>
+                                        </span>
+                                        <button type="button" onClick={() => openProductReview(product)} style={{ border: "1px solid #0f766e", borderRadius: "7px", background: "#fff", color: "#0f766e", padding: "7px 9px", fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>
+                                          Review
+                                        </button>
                                       </div>
                                     ),
+                                  )}
+                                  {productReviewModal && productReviewModal.vendor_id === selectedVendor.id && (
+                                    <div className="product-review-backdrop" role="dialog" aria-modal="true" aria-labelledby="product-review-title">
+                                      <div className="product-review-modal">
+                                        <div className="product-review-heading">
+                                          <div><span style={{ color: "#0f766e", fontSize: ".72rem", fontWeight: 800, textTransform: "uppercase" }}>Product review</span><h3 id="product-review-title" style={{ margin: "5px 0" }}>{productReviewModal.title}</h3><small style={{ color: "#64748b" }}>ID: {productReviewModal.id}</small></div>
+                                          <button className="product-review-close" type="button" onClick={() => setProductReviewModal(null)} aria-label="Close product review">×</button>
+                                        </div>
+                                        <div className="product-review-content">
+                                          <label><strong>Approval status</strong><select value={productReviewModal.status || "in_review"} onChange={(event) => setProductReviewModal((current) => ({ ...current, status: event.target.value }))} style={{ display: "block", width: "100%", marginTop: "5px", padding: "10px", border: "1px solid #cbd5e1", borderRadius: "8px" }}><option value="in_review">In review</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="published">Published</option></select></label>
+                                          <div className="product-verification-list">{[{ key: "name_verified", label: "Product name", icon: "N", content: <strong className="product-verification-value">{productReviewModal.title || "No product name supplied"}</strong> }, { key: "description_verified", label: "Description", icon: "D", content: <span className="product-verification-value">{productReviewModal.description || "No description supplied"}</span> }, { key: "amount_verified", label: "Amount", icon: "$", content: <strong className="product-verification-value">{productReviewModal.currency || "NGN"} {productReviewModal.price ?? 0}</strong> }, { key: "cover_verified", label: "Cover image", icon: "C", content: productReviewModal.cover ? <img className="product-verification-cover" src={productReviewModal.cover} alt={`${productReviewModal.title} cover`} /> : <span className="product-verification-value">No cover image supplied</span> }, { key: "attachment_verified", label: "Book preview", icon: "A", content: productReviewModal.filePreviewLoading ? <span className="product-verification-value">Loading book preview...</span> : productReviewModal.filePreviewUrl ? <a className="product-verification-value product-verification-link" href={productReviewModal.filePreviewUrl} target="_blank" rel="noreferrer">Preview book</a> : <span className="product-verification-value">{productReviewModal.filePreviewError || "Book preview unavailable"}</span> }].map((check) => { const verified = Boolean(productReviewModal[check.key]); return <div className={`product-verification-row ${verified ? "is-verified" : ""}`} key={check.key}><span className="product-verification-copy"><span className="product-verification-icon" aria-hidden="true">{check.icon}</span><span><strong>{check.label}</strong><span className="product-verification-preview">{check.content}</span></span></span><button className="product-verification-toggle" type="button" role="switch" aria-checked={verified} title={`${verified ? "Turn off" : "Turn on"} ${check.label.toLowerCase()} verification`} onClick={() => setProductReviewModal((current) => ({ ...current, [check.key]: !current[check.key] }))}><span className="product-verification-toggle-knob" aria-hidden="true" />{verified ? "On" : "Off"}</button></div>; })}</div>
+                                          <div className="product-review-actions">{(() => { const checks = ["name_verified", "description_verified", "cover_verified", "attachment_verified", "amount_verified"]; const allVerified = checks.every((key) => productReviewModal[key]); const reviewStatus = allVerified ? (productReviewModal.status || "in_review") : "in_review"; return <><button className="product-review-save" type="button" onClick={() => updateStoreProductReviewStatus(productReviewModal, reviewStatus, Object.fromEntries(checks.map((key) => [key, Boolean(productReviewModal[key])] )))}><span aria-hidden="true">✓</span> Save review</button><button className="product-review-again" type="button" onClick={() => requestProductReviewAgain(productReviewModal)}><span aria-hidden="true">↻</span> Review again</button><button className="product-review-publish" type="button" disabled={!allVerified || !["approved", "published"].includes(productReviewModal.status)} onClick={() => updateStoreProductReviewStatus(productReviewModal, "published", Object.fromEntries(checks.map((key) => [key, true])))}><span aria-hidden="true">↗</span> Publish to shop</button></>; })()}</div>
+                                        </div>
+                                      </div>
+                                    </div>
                                   )}
                                 </div>
                                 <div>

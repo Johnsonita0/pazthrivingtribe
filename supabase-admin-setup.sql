@@ -119,7 +119,16 @@ create table if not exists store_products (
   in_stock boolean default true,
   stock_count integer default 0,
   prime boolean default false,
-  status text not null default 'approved' check (status in ('pending', 'approved', 'rejected')),
+  status text not null default 'in_review' check (status in ('pending', 'in_review', 'approved', 'rejected', 'published')),
+  name_verified boolean not null default false,
+  name_verified_at timestamptz,
+  name_verified_by uuid references auth.users(id),
+  description_verified boolean not null default false,
+  cover_verified boolean not null default false,
+  attachment_verified boolean not null default false,
+  amount_verified boolean not null default false,
+  published_at timestamptz,
+  published_by uuid references auth.users(id),
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -142,6 +151,17 @@ alter table if exists store_products add column if not exists in_stock boolean d
 alter table if exists store_products add column if not exists stock_count integer default 0;
 alter table if exists store_products add column if not exists prime boolean default false;
 alter table if exists store_products add column if not exists status text not null default 'approved';
+alter table if exists store_products add column if not exists name_verified boolean not null default false;
+alter table if exists store_products add column if not exists name_verified_at timestamptz;
+alter table if exists store_products add column if not exists name_verified_by uuid references auth.users(id);
+alter table if exists store_products add column if not exists description_verified boolean not null default false;
+alter table if exists store_products add column if not exists cover_verified boolean not null default false;
+alter table if exists store_products add column if not exists attachment_verified boolean not null default false;
+alter table if exists store_products add column if not exists amount_verified boolean not null default false;
+alter table if exists store_products add column if not exists published_at timestamptz;
+alter table if exists store_products add column if not exists published_by uuid references auth.users(id);
+alter table if exists store_products drop constraint if exists store_products_status_check;
+alter table if exists store_products add constraint store_products_status_check check (status in ('pending', 'in_review', 'approved', 'rejected', 'published'));
 alter table if exists store_products add column if not exists created_at timestamptz default now();
 alter table if exists store_products add column if not exists updated_at timestamptz default now();
 
@@ -381,12 +401,8 @@ alter table if exists shop_order_items enable row level security;
 
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public' AND tablename = 'store_products' AND policyname = 'allow public read storefront'
-  ) THEN
-    EXECUTE 'CREATE POLICY "allow public read storefront" ON public.store_products FOR SELECT USING (true);';
-  END IF;
+  EXECUTE 'DROP POLICY IF EXISTS "allow public read storefront" ON public.store_products;';
+  EXECUTE 'CREATE POLICY "allow public read storefront" ON public.store_products FOR SELECT USING (status = ''published'' OR vendor_id = auth.uid());';
 
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
@@ -444,12 +460,8 @@ BEGIN
     EXECUTE 'CREATE POLICY "allow public insert order items" ON public.shop_order_items FOR INSERT WITH CHECK (true);';
   END IF;
 
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public' AND tablename = 'store_products' AND policyname = 'allow authenticated update store products'
-  ) THEN
-    EXECUTE 'CREATE POLICY "allow authenticated update store products" ON public.store_products FOR UPDATE USING (auth.role() = ''authenticated'') WITH CHECK (auth.role() = ''authenticated'');';
-  END IF;
+  EXECUTE 'DROP POLICY IF EXISTS "allow authenticated update store products" ON public.store_products;';
+  EXECUTE 'CREATE POLICY "allow authenticated update store products" ON public.store_products FOR UPDATE TO authenticated USING (vendor_id = auth.uid() AND status <> ''published'') WITH CHECK (vendor_id = auth.uid() AND status IN (''in_review'', ''pending'', ''approved'', ''rejected''));';
 
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
@@ -458,12 +470,8 @@ BEGIN
     EXECUTE 'CREATE POLICY "allow authenticated update bank accounts" ON public.store_bank_accounts FOR UPDATE USING (auth.role() = ''authenticated'') WITH CHECK (auth.role() = ''authenticated'');';
   END IF;
 
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public' AND tablename = 'store_products' AND policyname = 'allow authenticated delete store products'
-  ) THEN
-    EXECUTE 'CREATE POLICY "allow authenticated delete store products" ON public.store_products FOR DELETE USING (auth.role() = ''authenticated'');';
-  END IF;
+  EXECUTE 'DROP POLICY IF EXISTS "allow authenticated delete store products" ON public.store_products;';
+  EXECUTE 'CREATE POLICY "allow authenticated delete store products" ON public.store_products FOR DELETE TO authenticated USING (vendor_id = auth.uid());';
 
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies

@@ -158,9 +158,7 @@ export default function StorePage() {
         .order('created_at', { ascending: false });
 
       if (!active || error || !Array.isArray(data)) return;
-      const approvedProducts = data.filter(
-        (product) => product.status !== 'pending' && product.status !== 'rejected',
-      );
+      const approvedProducts = data.filter((product) => product.status === 'published');
       if (approvedProducts.length === 0) return;
       setStoreData((current) => ({ ...current, products: approvedProducts.map(normalizeProduct) }));
     };
