@@ -97,6 +97,14 @@ export default function VendorDashboard() {
   const [idDocumentPreviewUrl, setIdDocumentPreviewUrl] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const dashboardContentRef = React.useRef(null);
+
+  const focusVendorSection = (targetTab) => {
+    setTab(targetTab);
+    window.requestAnimationFrame(() => {
+      dashboardContentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
   const [passwordResetMode, setPasswordResetMode] = useState(() =>
     new URLSearchParams(window.location.search).get("reset") === "1",
   );
@@ -1087,7 +1095,7 @@ export default function VendorDashboard() {
             <button
               key={label}
               type="button"
-              onClick={() => setTab(targetTab)}
+              onClick={() => focusVendorSection(targetTab)}
               aria-label={`Open ${label}`}
               style={{
                 width: "100%",
@@ -1262,13 +1270,13 @@ export default function VendorDashboard() {
             Save verification details
           </button>
         </form>}
-        {!settingsOpen && <>
+        {!settingsOpen && <div ref={dashboardContentRef}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "8px", marginTop: "22px" }}>
           {["products", "sales", "earnings", "ads"].map((sectionTab) => (
             <button
               key={sectionTab}
               type="button"
-              onClick={() => setTab(sectionTab)}
+              onClick={() => focusVendorSection(sectionTab)}
               style={{
                 padding: "12px 8px",
                 border: "1px solid #cbd5e1",
@@ -1588,7 +1596,7 @@ export default function VendorDashboard() {
             )}
           </section>
         )}
-        </>}
+        </div>}
       </div>
     </main>
   );

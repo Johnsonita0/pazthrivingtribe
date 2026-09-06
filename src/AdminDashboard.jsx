@@ -80,11 +80,19 @@ export default function AdminDashboard(props) {
   const location = useLocation();
   const emailInputRef = useRef(null);
   const productEditorRef = useRef(null);
+  const dashboardContentRef = useRef(null);
   const vendorCardRefs = useRef({});
   const [isMobileView, setIsMobileView] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [approvedVendorSales, setApprovedVendorSales] = useState({});
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const focusDashboardView = (setter, value) => {
+    setter(value);
+    window.requestAnimationFrame(() => {
+      dashboardContentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
 
   useEffect(() => {
     const updateViewport = () => {
@@ -2645,7 +2653,7 @@ export default function AdminDashboard(props) {
               key={view.id}
               type="button"
               className="stat-card"
-              onClick={() => setActiveDashboardView(view.id)}
+              onClick={() => focusDashboardView(setActiveDashboardView, view.id)}
               aria-label={`Open ${view.label}`}
               style={{
                 background: view.color,
@@ -2662,6 +2670,7 @@ export default function AdminDashboard(props) {
         </div>
 
         <div
+          ref={dashboardContentRef}
           className="admin-dashboard-content"
           style={{ marginTop: "26px", padding: "0 2px" }}
         >
@@ -2691,7 +2700,7 @@ export default function AdminDashboard(props) {
                       <button
                         key={tab.id}
                         type="button"
-                        onClick={() => setCommerceSubTab(tab.id)}
+                        onClick={() => focusDashboardView(setCommerceSubTab, tab.id)}
                         className="commerce-tab-button"
                         style={{
                           border: "1px solid #dfe7ef",
@@ -5576,7 +5585,7 @@ export default function AdminDashboard(props) {
                         type="button"
                         role="tab"
                         aria-selected={vendorTab === tab.id}
-                        onClick={() => setVendorTab(tab.id)}
+                        onClick={() => focusDashboardView(setVendorTab, tab.id)}
                         style={{
                           border: "1px solid",
                           borderColor:
