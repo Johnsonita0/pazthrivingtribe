@@ -805,6 +805,17 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   }, []);
 
   useEffect(() => {
+    if (!categoryDrawerOpen) return undefined;
+
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setCategoryDrawerOpen(false);
+    };
+
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [categoryDrawerOpen]);
+
+  useEffect(() => {
     if (!cart.length || submittedOrder) {
       setCartReminderVisible(false);
       return undefined;
@@ -1610,6 +1621,8 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
               <button
                 type="button"
                 onClick={() => setCategoryDrawerOpen(true)}
+                aria-expanded={categoryDrawerOpen}
+                aria-controls="shop-filter-drawer"
                 style={{
                   background: '#fff',
                   border: '1px solid #d5d9d9',
@@ -1625,7 +1638,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                   boxShadow: '0 4px 10px rgba(15, 23, 42, 0.06)'
                 }}
               >
-                <i className="fa-solid fa-bars" />
+                <i className="fa-solid fa-sliders" aria-hidden="true" />
                 Categories
               </button>
               <div style={{ fontSize: '12px', color: '#666' }}>
@@ -1637,11 +1650,11 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
           {isSmallScreen && (
             <aside style={{
               position: 'fixed',
-              left: categoryDrawerOpen ? 0 : '-100vw',
-              top: 0,
+              left: categoryDrawerOpen ? 0 : 'calc(-1 * min(88vw, 360px) - 24px)',
+              top: 'auto',
               bottom: 0,
-              width: '100%',
-              maxWidth: '100vw',
+              width: 'min(88vw, 360px)',
+              maxWidth: 'calc(100vw - 18px)',
               background: '#fff',
               borderRight: '1px solid #e0e0e0',
               padding: '14px 14px 18px',
@@ -1652,12 +1665,13 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
               borderRadius: '0 18px 18px 0',
               height: '84vh',
               borderTopRightRadius: '18px',
-              borderBottomRightRadius: '18px'
-            }}>
+              borderBottomRightRadius: '18px',
+              boxSizing: 'border-box'
+            }} id="shop-filter-drawer" role="dialog" aria-modal="true" aria-labelledby="shop-filter-title" onClick={(event) => event.stopPropagation()}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b', fontWeight: 800 }}>F</div>
-                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#111' }}>Filters</h3>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f59e0b', fontWeight: 800 }}><i className="fa-solid fa-sliders" aria-hidden="true" /></div>
+                  <h3 id="shop-filter-title" style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#111' }}>Shop filters</h3>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <button
@@ -1670,6 +1684,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                   <button
                     type="button"
                     onClick={() => setCategoryDrawerOpen(false)}
+                    aria-label="Close shop filters"
                     style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#444' }}
                   >
                     ×
@@ -1687,7 +1702,6 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                         checked={selectedCategory === cat}
                         onChange={() => {
                           setSelectedCategory(cat);
-                          setCategoryDrawerOpen(false);
                         }}
                         style={{ cursor: 'pointer' }}
                       />
@@ -1712,7 +1726,6 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                         checked={priceRange[0] === range.min && priceRange[1] === range.max}
                         onChange={() => {
                           setPriceRange([range.min, range.max]);
-                          setCategoryDrawerOpen(false);
                         }}
                       />
                       <span>{range.label}</span>
@@ -1731,7 +1744,6 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                         checked={minRating === stars}
                         onChange={() => {
                           setMinRating(stars);
-                          setCategoryDrawerOpen(false);
                         }}
                       />
                       <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>

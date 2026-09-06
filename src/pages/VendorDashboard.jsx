@@ -100,6 +100,7 @@ export default function VendorDashboard() {
   const dashboardContentRef = React.useRef(null);
 
   const focusVendorSection = (targetTab) => {
+    setSettingsOpen(false);
     setTab(targetTab);
     window.requestAnimationFrame(() => {
       dashboardContentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -1135,10 +1136,15 @@ export default function VendorDashboard() {
             boxShadow: "0 12px 30px rgba(15, 23, 42, .06)",
           }}
         >
-          <div>
-            <p style={{ margin: 0, color: "#15803d", fontSize: ".72rem", fontWeight: 800, letterSpacing: ".12em" }}>VENDOR SETTINGS</p>
-            <h2 style={{ marginBottom: "6px" }}>Profile, verification and payout</h2>
-            <p style={{ margin: 0, color: "#64748b", fontSize: ".85rem" }}>Business identity and login email are locked. Update your phone and choose the account to use for payouts below.</p>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "14px", flexWrap: "wrap" }}>
+            <div>
+              <p style={{ margin: 0, color: "#15803d", fontSize: ".72rem", fontWeight: 800, letterSpacing: ".12em" }}>VENDOR SETTINGS</p>
+              <h2 style={{ marginBottom: "6px" }}>Profile, verification and payout</h2>
+              <p style={{ margin: 0, color: "#64748b", fontSize: ".85rem" }}>Business identity and login email are locked. Update your phone and choose the account to use for payouts below.</p>
+            </div>
+            <button type="button" onClick={() => setSettingsOpen(false)} style={{ display: "inline-flex", alignItems: "center", gap: "7px", border: "1px solid #cbd5e1", borderRadius: "9px", padding: "9px 12px", background: "#fff", color: "#166534", fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>
+              <i className="fa-solid fa-arrow-left" aria-hidden="true" /> Back to preview
+            </button>
           </div>
           {profile?.id_document_path && (
             <section style={{ padding: "14px", border: "1px solid #dbe7df", borderRadius: "12px", background: "#f8fffb" }}>
