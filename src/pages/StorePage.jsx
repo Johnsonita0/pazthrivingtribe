@@ -157,8 +157,12 @@ export default function StorePage() {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!active || error || !Array.isArray(data) || data.length === 0) return;
-      setStoreData((current) => ({ ...current, products: data.map(normalizeProduct) }));
+      if (!active || error || !Array.isArray(data)) return;
+      const approvedProducts = data.filter(
+        (product) => product.status !== 'pending' && product.status !== 'rejected',
+      );
+      if (approvedProducts.length === 0) return;
+      setStoreData((current) => ({ ...current, products: approvedProducts.map(normalizeProduct) }));
     };
 
     loadLatestProducts();

@@ -80,6 +80,7 @@ export default function AdminDashboard(props) {
   const location = useLocation();
   const emailInputRef = useRef(null);
   const productEditorRef = useRef(null);
+  const vendorCardRefs = useRef({});
   const [isMobileView, setIsMobileView] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [approvedVendorSales, setApprovedVendorSales] = useState({});
@@ -230,6 +231,7 @@ export default function AdminDashboard(props) {
   const [vendorSaving, setVendorSaving] = useState(false);
   const [vendorPasswordResetting, setVendorPasswordResetting] = useState(null);
   const [vendorEditing, setVendorEditing] = useState(false);
+  const [vendorRecordCounts, setVendorRecordCounts] = useState({});
   const [vendorDocumentPreviewOpen, setVendorDocumentPreviewOpen] =
     useState(false);
   const [adminAdForm, setAdminAdForm] = useState({
@@ -502,6 +504,44 @@ export default function AdminDashboard(props) {
     };
   }, [activeDashboardView, mode, session]);
 
+  useEffect(() => {
+    if (mode !== "dashboard" || activeDashboardView !== "vendors" || !vendorProfiles.length)
+      return undefined;
+    let active = true;
+    const token = session?.access_token || session?.accessToken || "";
+    const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+    Promise.all([
+      fetch("/api/admin-update", { method: "POST", headers, body: JSON.stringify({ action: "select", table: "store_products", columns: "vendor_id,status,created_at" }) }),
+      fetch("/api/admin-update", { method: "POST", headers, body: JSON.stringify({ action: "select", table: "vendor_sales", columns: "vendor_id,payout_status,created_at" }) }),
+    ])
+      .then(async ([productsResponse, salesResponse]) => {
+        const productsPayload = await productsResponse.json().catch(() => ({}));
+        const salesPayload = await salesResponse.json().catch(() => ({}));
+        if (!active) return;
+        const counts = {};
+        vendorProfiles.forEach((vendor) => {
+          const products = productsResponse.ok && Array.isArray(productsPayload.data)
+            ? productsPayload.data.filter((item) => item.vendor_id === vendor.id)
+            : [];
+          const sales = salesResponse.ok && Array.isArray(salesPayload.data)
+            ? salesPayload.data.filter((item) => item.vendor_id === vendor.id)
+            : [];
+          counts[vendor.id] = {
+            products: products.length,
+            sales: sales.length,
+            newRecords: products.filter((item) => item.status === "pending").length + sales.filter((item) => item.payout_status === "pending").length,
+          };
+        });
+        setVendorRecordCounts(counts);
+      })
+      .catch(() => {
+        if (active) setVendorRecordCounts({});
+      });
+    return () => {
+      active = false;
+    };
+  }, [activeDashboardView, mode, session, vendorProfiles]);
+
   const replyToSupportMessage = async (message) => {
     const reply = String(supportReplyDrafts[message.id] || "").trim();
     if (!reply || !message.id || !message.sourceTable) return;
@@ -695,8 +735,10 @@ export default function AdminDashboard(props) {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     };
-    const [productsResponse, salesResponse] =
-      await Promise.all([
+    let productsResponse;
+    let salesResponse;
+    try {
+      [productsResponse, salesResponse] = await Promise.all([
         fetch("/api/admin-update", {
           method: "POST",
           headers,
@@ -719,6 +761,15 @@ export default function AdminDashboard(props) {
           }),
         }),
       ]);
+    } catch (error) {
+      setSelectedVendor(null);
+      showAdminToast(
+        "error",
+        "Vendor details unavailable",
+        "The local API server is not reachable. Start it on port 3001 and try again.",
+      );
+      return;
+    }
     const productsPayload = await productsResponse.json().catch(() => ({}));
     const salesPayload = await salesResponse.json().catch(() => ({}));
     let documentPreviewUrl = null;
@@ -756,6 +807,12 @@ export default function AdminDashboard(props) {
       sales: salesResponse.ok ? salesPayload.data || [] : [],
       loading: false,
     });
+    window.setTimeout(() => {
+      vendorCardRefs.current[vendor.id]?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 0);
   };
 
   const saveVendorProfile = async () => {
@@ -2017,8 +2074,7 @@ export default function AdminDashboard(props) {
       id: "vendors",
       label: "Vendors",
       color: "#0f766e",
-      value: vendorProfiles.filter((vendor) => vendor.status === "pending")
-        .length,
+      value: vendorProfiles.length,
     },
     {
       id: "support",
@@ -2465,6 +2521,25 @@ export default function AdminDashboard(props) {
           .commerce-product-meta{min-width:0}
           .commerce-product-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
           .commerce-product-actions button{min-width:72px}
+          .vendor-monitor-list{display:grid;grid-template-columns:1fr;gap:12px}
+          .vendor-monitor-card{background:#fff;box-shadow:0 6px 18px rgba(15,23,42,.04)}
+          .vendor-monitor-card-header{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px}
+          .vendor-monitor-card-header-clickable{cursor:pointer}
+          .vendor-monitor-card-header-clickable:focus-visible{outline:3px solid rgba(15,118,110,.35);outline-offset:-3px}
+          .vendor-monitor-card-meta{min-width:0;overflow-wrap:anywhere}
+          .vendor-monitor-card-counts{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px;font-size:.72rem;font-weight:800;color:#0f766e}
+          .vendor-monitor-card-counts span,.vendor-monitor-card-counts strong{padding:4px 7px;border-radius:999px;background:#f0fdfa;border:1px solid #ccfbf1;white-space:nowrap}
+          .vendor-monitor-card-counts strong{background:#fff7ed;border-color:#fed7aa;color:#c2410c}
+          .vendor-monitor-card-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+          .vendor-monitor-card-actions button{min-height:38px;white-space:nowrap}
+          .vendor-monitor-action-icon{margin-right:6px}
+          .vendor-monitor-sales{margin:0 14px 14px;padding:11px 12px;border:1px solid #dbe7df;border-radius:10px;background:#f8fffb}
+          .vendor-monitor-sale-row{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;color:#475569;font-size:.82rem}
+          .vendor-monitor-profile-panel{min-width:0;overflow:hidden}
+          .vendor-monitor-profile-form{min-width:0}
+          .vendor-monitor-profile-form input,.vendor-monitor-profile-form textarea{width:100%;max-width:100%;box-sizing:border-box;min-width:0}
+          .vendor-monitor-profile-details{min-width:0;overflow-wrap:anywhere}
+          .vendor-monitor-profile-columns{min-width:0}
           .view-modal-content{max-width:100%;box-sizing:border-box}
           .order-review-columns{min-width:0}
           .delivery-item-upload input{font-size:.82rem}
@@ -2502,9 +2577,28 @@ export default function AdminDashboard(props) {
           @media(min-width:900px){.stat-card{flex:1 1 calc(25% - 16px)}.stat-card .value{font-size:3rem}}
           @media(max-width:640px){.stat-card{min-width:0!important;width:100%;min-height:98px;padding:10px 4px}.stat-card .value{font-size:1.9rem}.dashboard-actions-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-items:center;width:100%}.dashboard-filters{grid-column:1/-1;margin-left:0;flex-wrap:nowrap;overflow-x:auto;max-width:100%;padding-bottom:2px}.dashboard-filters label{flex:0 0 auto}.dashboard-filters select{min-width:100px!important;width:100px}.dashboard-filters .dashboard-action-button{flex:0 0 46px}.table th,.table td{padding:10px}.table{min-width:1200px;width:100%;overflow-x:auto}.table th:last-child{position:relative;background:#f8fafc;border-left:1px solid #e5e7eb;text-align:center;max-width:none;min-width:120px}.table td:last-child{position:relative;background:#fff;border-left:1px solid #f3f4f6;text-align:center}.table tbody tr:hover td:last-child{background:#fff}.admin-toast{right:12px;bottom:12px;max-width:calc(100vw - 24px);z-index:21000}.commerce-panel-shell{padding:14px 12px!important;width:100% !important;max-width:100% !important}.commerce-tab-row{padding-bottom:6px;width:100%}.commerce-tab-row button{flex:1 1 0;min-width:90px}.commerce-input-grid{grid-template-columns:1fr!important;gap:10px!important;minmax:0!important}}
           @media(max-width:720px){.commerce-product-list{grid-template-columns:1fr;gap:12px}.commerce-product-card{grid-template-columns:96px minmax(0,1fr);align-items:start;min-height:0;padding:12px}.commerce-product-media{width:96px;height:96px}.commerce-product-actions{grid-column:1/-1;display:flex;flex-wrap:wrap;width:100%;gap:8px}.commerce-product-actions button{flex:1 1 120px;width:auto;min-width:0;padding:9px 10px!important}.commerce-product-meta{width:100%}.commerce-product-desc{display:block;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.commerce-product-title{white-space:normal!important;line-height:1.35;font-size:0.96rem}.commerce-product-badges{margin-bottom:6px}.commerce-product-meta > div:last-child{gap:4px!important}}
-          @media(max-width:640px){.admin-dashboard-page{padding:12px 8px 24px!important}.admin-dashboard-shell{padding:16px 12px 18px!important;border-radius:16px!important}.admin-dashboard-shell h1{font-size:2rem!important}.admin-dashboard-shell h1 + p{font-size:.92rem!important;line-height:1.4}.admin-dashboard-content{margin-top:18px!important;padding:0!important}.admin-commerce-section{margin-top:12px!important;padding:12px 10px 18px!important;border-radius:14px!important}.dashboard-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.stat-card{min-width:0!important;width:100%;min-height:84px;padding:10px 4px}.stat-card .label{font-size:.63rem;line-height:1.1}.stat-card .value{font-size:1.55rem;margin-top:6px}.dashboard-refresh-button,.dashboard-action-button{width:46px;height:46px;padding:0!important;display:inline-grid;place-items:center}.dashboard-refresh-button span,.dashboard-action-button span{display:none}.dashboard-action-button i{margin:0;font-size:1rem}.commerce-product-list{grid-template-columns:1fr;gap:10px}.commerce-product-card{grid-template-columns:82px minmax(0,1fr);gap:10px;padding:10px}.commerce-product-media{width:82px;height:82px}.commerce-product-actions{grid-template-columns:1fr;gap:6px}.commerce-product-actions button{flex:1 1 100%;padding:9px 10px!important}.commerce-product-title{white-space:normal!important;line-height:1.3}.commerce-product-desc{display:-webkit-box}.commerce-product-badges{margin-bottom:6px}.commerce-product-meta > div:last-child{font-size:0.78rem}.commerce-form-grid{grid-template-columns:1fr!important}.commerce-cover-row{grid-template-columns:1fr!important;align-items:stretch!important}.commerce-cover-row > div:last-child{display:grid!important;grid-template-columns:1fr!important}.commerce-cover-row button{width:100%}.commerce-tab-row button{min-width:84px!important}} 
+          @media(max-width:640px){.admin-dashboard-page{padding:12px 8px 24px!important}.admin-dashboard-shell{padding:16px 12px 18px!important;border-radius:16px!important}.admin-dashboard-shell h1{font-size:2rem!important}.admin-dashboard-shell h1 + p{font-size:.92rem!important;line-height:1.4}.admin-dashboard-content{margin-top:18px!important;padding:0!important}.admin-commerce-section{margin-top:12px!important;padding:12px 10px 18px!important;border-radius:14px!important}.dashboard-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.stat-card{min-width:0!important;width:100%;min-height:84px;padding:10px 4px}.stat-card .label{font-size:.63rem;line-height:1.1}.stat-card .value{font-size:1.55rem;margin-top:6px}.dashboard-refresh-button,.dashboard-action-button{width:46px;height:46px;padding:0!important;display:inline-grid;place-items:center}.dashboard-refresh-button span,.dashboard-action-button span{display:none}.dashboard-action-button i{margin:0;font-size:1rem}.commerce-product-list{grid-template-columns:1fr;gap:10px}.commerce-product-card{grid-template-columns:82px minmax(0,1fr);gap:10px;padding:10px}.commerce-product-media{width:82px;height:82px}.commerce-product-actions{grid-template-columns:1fr;gap:6px}.commerce-product-actions button{flex:1 1 100%;padding:9px 10px!important}.commerce-product-title{white-space:normal!important;line-height:1.3}.commerce-product-desc{display:-webkit-box}.commerce-product-badges{margin-bottom:6px}.commerce-product-meta > div:last-child{font-size:0.78rem}.commerce-form-grid{grid-template-columns:1fr!important}.commerce-cover-row{grid-template-columns:1fr!important;align-items:stretch!important}.commerce-cover-row > div:last-child{display:grid!important;grid-template-columns:1fr!important}.commerce-cover-row button{width:100%}.commerce-tab-row button{min-width:84px!important}.vendor-monitor-card-header{grid-template-columns:48px minmax(0,1fr);gap:10px;padding:12px}.vendor-monitor-card-header img{width:48px!important;height:48px!important}.vendor-monitor-card-actions{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;justify-content:stretch}.vendor-monitor-card-actions button{width:100%;padding:9px 7px!important;font-size:.78rem}.vendor-monitor-card-meta{font-size:.9rem}.vendor-monitor-card-meta div{line-height:1.45}.vendor-monitor-sales{margin:0 12px 12px;padding:10px}.vendor-monitor-sale-row{display:grid;gap:4px;font-size:.78rem}.vendor-monitor-sale-row span{overflow-wrap:anywhere}} 
           .publish-testimonial-button{position:relative}.publish-testimonial-button::after{content:attr(data-tooltip);position:absolute;right:0;bottom:calc(100% + 9px);width:250px;padding:9px 11px;border-radius:6px;background:#24333a;color:#fff;font-size:.75rem;font-weight:600;line-height:1.4;text-align:left;opacity:0;pointer-events:none;transform:translateY(4px);transition:opacity .2s,transform .2s;z-index:3}.publish-testimonial-button::before{content:'';position:absolute;right:18px;bottom:calc(100% + 3px);border:6px solid transparent;border-top-color:#24333a;opacity:0;transition:opacity .2s;z-index:3}.publish-testimonial-button:hover::after,.publish-testimonial-button:hover::before,.publish-testimonial-button:focus-visible::after,.publish-testimonial-button:focus-visible::before{opacity:1;transform:translateY(0)}
           @media(max-width:640px){.publish-testimonial-button::after{right:auto;left:0;width:210px}.publish-testimonial-button::before{right:auto;left:18px}}
+          @media(max-width:640px){
+            .vendor-monitor-card-actions button{display:inline-flex;align-items:center;justify-content:center;min-width:42px;padding:9px!important}
+            .vendor-monitor-card-counts{gap:5px;margin-top:7px;font-size:.66rem}
+            .vendor-monitor-card-counts span,.vendor-monitor-card-counts strong{padding:3px 6px}
+            .vendor-monitor-action-label{display:none}
+            .vendor-monitor-action-icon{margin-right:0;font-size:.9rem}
+            .vendor-monitor-profile-panel{padding:12px!important}
+            .vendor-monitor-profile-panel h4{font-size:1rem;line-height:1.3}
+            .vendor-monitor-profile-panel>div:first-child{align-items:stretch!important}
+            .vendor-monitor-profile-panel>div:first-child button{width:100%;margin-bottom:4px}
+            .vendor-monitor-profile-details{font-size:.88rem;line-height:1.5}
+            .vendor-monitor-profile-form{padding:11px!important;margin-top:12px!important}
+            .vendor-monitor-profile-form>div{grid-template-columns:1fr!important}
+            .vendor-monitor-profile-form button{width:100%;justify-self:stretch!important}
+            .vendor-monitor-profile-columns{grid-template-columns:1fr!important;gap:10px!important}
+            .vendor-monitor-profile-columns>div{min-width:0;overflow-wrap:anywhere}
+            .vendor-monitor-profile-columns>div div{overflow-wrap:anywhere}
+            .vendor-monitor-sales{overflow:hidden}
+          }
         `}</style>
 
         <div className="dashboard-stats">
@@ -5514,11 +5608,16 @@ export default function AdminDashboard(props) {
                     )}
                   </label>
                 </div>
-                <div style={{ display: "grid", gap: "12px" }}>
+                <div className="vendor-monitor-list">
                   {visibleVendorProfiles.length ? (
                     visibleVendorProfiles.map((vendor) => (
                       <article
                         key={vendor.id}
+                        className="vendor-monitor-card"
+                        ref={(element) => {
+                          if (element) vendorCardRefs.current[vendor.id] = element;
+                          else delete vendorCardRefs.current[vendor.id];
+                        }}
                         style={{
                           border: "1px solid #e2e8f0",
                           borderRadius: "14px",
@@ -5526,13 +5625,20 @@ export default function AdminDashboard(props) {
                         }}
                       >
                         <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns: "56px minmax(0,1fr) auto",
-                            gap: "14px",
-                            alignItems: "center",
-                            padding: "14px",
+                          className="vendor-monitor-card-header vendor-monitor-card-header-clickable"
+                          role="button"
+                          tabIndex={0}
+                          onClick={(event) => {
+                            if (event.target.closest("button, input, textarea, a")) return;
+                            viewVendorDetails(vendor);
                           }}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              viewVendorDetails(vendor);
+                            }
+                          }}
+                          aria-label={`View ${vendor.company_name || "vendor"} details`}
                         >
                           <img
                             src={vendor.logo_url || "/logo/logomain.png"}
@@ -5544,7 +5650,7 @@ export default function AdminDashboard(props) {
                               objectFit: "cover",
                             }}
                           />
-                          <div>
+                          <div className="vendor-monitor-card-meta">
                             <strong style={{ color: "#0f172a" }}>
                               {vendor.company_name}
                             </strong>
@@ -5560,18 +5666,20 @@ export default function AdminDashboard(props) {
                               {vendor.payout_bank_name || "Not provided"} ·{" "}
                               {vendor.payout_account_number || "Not provided"}
                             </div>
+                            <div className="vendor-monitor-card-counts" aria-label="Vendor record counts">
+                              <span>Products {vendorRecordCounts[vendor.id]?.products || 0}</span>
+                              <span>Sales {vendorRecordCounts[vendor.id]?.sales || 0}</span>
+                              {vendorRecordCounts[vendor.id]?.newRecords > 0 && (
+                                <strong>{vendorRecordCounts[vendor.id].newRecords} new</strong>
+                              )}
+                            </div>
                           </div>
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: "8px",
-                              flexWrap: "wrap",
-                              justifyContent: "flex-end",
-                            }}
-                          >
+                          <div className="vendor-monitor-card-actions">
                             <button
                               type="button"
                               onClick={() => viewVendorDetails(vendor)}
+                              aria-label={selectedVendor?.id === vendor.id && !selectedVendor.loading ? "Hide vendor profile" : "View vendor profile"}
+                              title={selectedVendor?.id === vendor.id && !selectedVendor.loading ? "Hide vendor profile" : "View vendor profile"}
                               style={{
                                 border: "1px solid #cbd5e1",
                                 background: "#fff",
@@ -5580,14 +5688,19 @@ export default function AdminDashboard(props) {
                                 fontWeight: 700,
                               }}
                             >
+                              <i className={`fa-solid ${selectedVendor?.id === vendor.id && !selectedVendor.loading ? "fa-chevron-up" : "fa-eye"} vendor-monitor-action-icon`} aria-hidden="true" />
+                              <span className="vendor-monitor-action-label">
                               {selectedVendor?.id === vendor.id &&
                               !selectedVendor.loading
                                 ? "Hide profile"
                                 : "View profile"}
+                              </span>
                             </button>
                             <button
                               type="button"
                               onClick={() => sendVendorPasswordReset(vendor)}
+                              aria-label="Reset vendor password"
+                              title="Reset vendor password"
                               disabled={vendorPasswordResetting === vendor.id || !vendor.contact_email}
                               style={{
                                 border: "1px solid #f97316",
@@ -5599,7 +5712,10 @@ export default function AdminDashboard(props) {
                                 cursor: vendorPasswordResetting === vendor.id ? "wait" : "pointer",
                               }}
                             >
-                              {vendorPasswordResetting === vendor.id ? "Sending..." : "Reset password"}
+                              <i className={`fa-solid ${vendorPasswordResetting === vendor.id ? "fa-spinner fa-spin" : "fa-key"} vendor-monitor-action-icon`} aria-hidden="true" />
+                              <span className="vendor-monitor-action-label">
+                                {vendorPasswordResetting === vendor.id ? "Sending..." : "Reset password"}
+                              </span>
                             </button>
                             {vendor.status === "pending" && (
                               <>
@@ -5608,6 +5724,8 @@ export default function AdminDashboard(props) {
                                   onClick={() =>
                                     updateVendorStatus(vendor, "approved")
                                   }
+                                  aria-label="Approve vendor"
+                                  title="Approve vendor"
                                   style={{
                                     border: 0,
                                     background: "#166534",
@@ -5617,13 +5735,16 @@ export default function AdminDashboard(props) {
                                     fontWeight: 800,
                                   }}
                                 >
-                                  Approve
+                                  <i className="fa-solid fa-check vendor-monitor-action-icon" aria-hidden="true" />
+                                  <span className="vendor-monitor-action-label">Approve</span>
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() =>
                                     updateVendorStatus(vendor, "rejected")
                                   }
+                                  aria-label="Reject vendor"
+                                  title="Reject vendor"
                                   style={{
                                     border: 0,
                                     background: "#b91c1c",
@@ -5633,19 +5754,20 @@ export default function AdminDashboard(props) {
                                     fontWeight: 800,
                                   }}
                                 >
-                                  Reject
+                                  <i className="fa-solid fa-xmark vendor-monitor-action-icon" aria-hidden="true" />
+                                  <span className="vendor-monitor-action-label">Reject</span>
                                 </button>
                               </>
                             )}
                           </div>
                         </div>
                         {vendorTab === "approved" && (
-                          <div style={{ gridColumn: "1 / -1", margin: "0 14px 14px", padding: "11px 12px", border: "1px solid #dbe7df", borderRadius: "10px", background: "#f8fffb" }}>
+                          <div className="vendor-monitor-sales">
                             <strong style={{ color: "#166534" }}>Sold products</strong>
                             {(approvedVendorSales[vendor.id] || []).length ? (
                               <div style={{ display: "grid", gap: "6px", marginTop: "8px" }}>
                                 {approvedVendorSales[vendor.id].map((sale) => (
-                                  <div key={sale.id} style={{ display: "flex", justifyContent: "space-between", gap: "10px", flexWrap: "wrap", color: "#475569", fontSize: ".82rem" }}>
+                                  <div key={sale.id} className="vendor-monitor-sale-row">
                                     <span><strong style={{ color: "#0f172a" }}>{sale.product_title || "Product"}</strong> · Qty {sale.quantity || 1} · Order {sale.order_number || "N/A"}</span>
                                     <span>{sale.currency || "NGN"} {sale.vendor_amount || 0} · {sale.payout_status || "pending"}</span>
                                   </div>
@@ -5656,6 +5778,7 @@ export default function AdminDashboard(props) {
                         )}
                         {selectedVendor?.id === vendor.id && (
                           <div
+                            className="vendor-monitor-profile-panel"
                             style={{
                               padding: "16px",
                               background: "#f8fafc",
@@ -5694,10 +5817,10 @@ export default function AdminDashboard(props) {
                                   : "Edit profile"}
                               </button>
                             </div>
-                            <p style={{ margin: "5px 0", color: "#475569" }}>
+                            <p className="vendor-monitor-profile-details" style={{ margin: "5px 0", color: "#475569" }}>
                               Status: <strong>{selectedVendor.status}</strong>
                             </p>
-                            <p style={{ margin: "5px 0", color: "#475569" }}>
+                            <p className="vendor-monitor-profile-details" style={{ margin: "5px 0", color: "#475569" }}>
                               Email:{" "}
                               <strong>
                                 {selectedVendor.contact_email || "Not supplied"}
@@ -5767,7 +5890,7 @@ export default function AdminDashboard(props) {
                               </div>
                               {vendorDocumentPreviewOpen && selectedVendor.documentPreviewUrl && (/\.(jpe?g|png|webp)$/i.test(selectedVendor.id_document_path || "") ? <img src={selectedVendor.documentPreviewUrl} alt="Vendor identity document" style={{ display: "block", width: "100%", maxHeight: "520px", objectFit: "contain", marginTop: "12px", border: "1px solid #e2e8f0", borderRadius: "8px", background: "#f8fafc" }} /> : <iframe title="Vendor identity document preview" src={selectedVendor.documentPreviewUrl} style={{ display: "block", width: "100%", height: "420px", marginTop: "12px", border: "1px solid #e2e8f0", borderRadius: "8px", background: "#f8fafc" }} />)}
                             </div>
-                            <p style={{ margin: "5px 0", color: "#475569" }}>
+                            <p className="vendor-monitor-profile-details" style={{ margin: "5px 0", color: "#475569" }}>
                               Payout:{" "}
                               <strong>
                                 {selectedVendor.payout_account_name ||
@@ -5784,6 +5907,7 @@ export default function AdminDashboard(props) {
                             {vendorEditing &&
                               vendorEditForm?.id === selectedVendor.id && (
                                 <div
+                                  className="vendor-monitor-profile-form"
                                   style={{
                                     display: "grid",
                                     gap: "9px",
@@ -5919,6 +6043,7 @@ export default function AdminDashboard(props) {
                               <p>Loading products and sales...</p>
                             ) : (
                               <div
+                                className="vendor-monitor-profile-columns"
                                 style={{
                                   display: "grid",
                                   gridTemplateColumns:

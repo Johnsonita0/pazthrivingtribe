@@ -80,10 +80,17 @@ export default async function handler(req, res) {
     const productIds = [...new Set(items.map((item) => String(item.id || '').trim()).filter(Boolean))];
     const { data: products, error: productsError } = await supabase
       .from('store_products')
-      .select('id,title,price,currency,file_url,is_free')
+      .select('id,title,price,currency,file_url,is_free,status')
       .in('id', productIds);
 
     if (productsError) throw productsError;
+
+    const unavailableProduct = (products || []).find(
+      (product) => product.status === 'pending' || product.status === 'rejected',
+    );
+    if (unavailableProduct) {
+      return sendJson(res, 400, { error: 'One or more products are waiting for admin approval.' });
+    }
 
     const productMap = new Map((products || []).map((product) => [String(product.id), product]));
     const normalizedItems = items.map((item) => {

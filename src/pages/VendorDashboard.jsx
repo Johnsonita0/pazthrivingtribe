@@ -93,6 +93,7 @@ export default function VendorDashboard() {
   const [logoPreviewUrl, setLogoPreviewUrl] = useState("");
   const [idDocumentPreviewUrl, setIdDocumentPreviewUrl] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [passwordResetMode, setPasswordResetMode] = useState(() =>
     new URLSearchParams(window.location.search).get("reset") === "1",
   );
@@ -721,6 +722,10 @@ export default function VendorDashboard() {
       ? documentPreviewUrl
       : ""
   );
+  const totalEarnings = sales.reduce(
+    (total, sale) => total + Number(sale.vendor_amount || 0),
+    0,
+  );
 
   if (passwordResetMode)
     return (
@@ -882,15 +887,35 @@ export default function VendorDashboard() {
         padding: "28px 20px 48px",
       }}
     >
+      <style>{`
+        .vendor-dashboard-header{position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap}
+        .vendor-dashboard-header-copy{min-width:0}
+        .vendor-dashboard-header-actions{position:relative;display:flex;align-items:center;gap:8px;flex-shrink:0}
+        .vendor-dashboard-mobile-toggle{display:none}
+        .vendor-dashboard-mobile-menu{display:none}
+        @media(max-width:640px){
+          .vendor-dashboard-header{align-items:center;gap:10px;flex-wrap:nowrap}
+          .vendor-dashboard-header-copy{flex:1;min-width:0}
+          .vendor-dashboard-header-copy h1{margin:5px 0 0;font-size:1.35rem;line-height:1.2;overflow-wrap:anywhere}
+          .vendor-dashboard-header-copy>p:last-child{margin:5px 0 0;font-size:.82rem}
+          .vendor-dashboard-header-actions{gap:0}
+          .vendor-dashboard-header-actions>.vendor-settings-button,.vendor-dashboard-header-actions>.vendor-signout-button{display:none!important}
+          .vendor-dashboard-mobile-toggle{display:inline-grid;place-items:center;width:42px;height:42px;border:1px solid #cbd5e1;border-radius:10px;background:#fff;color:#166534;font-size:1.15rem;cursor:pointer}
+          .vendor-dashboard-mobile-menu{position:absolute;top:calc(100% + 10px);right:0;z-index:20;display:grid;gap:6px;width:min(220px,calc(100vw - 40px));padding:8px;background:#fff;border:1px solid #dbe7df;border-radius:12px;box-shadow:0 16px 32px rgba(15,23,42,.14)}
+          .vendor-dashboard-mobile-menu button{width:100%;min-height:42px;padding:0 12px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;color:#0f172a;text-align:left;font:inherit;font-weight:700;cursor:pointer}
+          .vendor-dashboard-mobile-menu button:last-child{color:#b91c1c;background:#fff7f7}
+        }
+      `}</style>
       <div style={{ maxWidth: "1180px", margin: "0 auto" }}>
         <header
+          className="vendor-dashboard-header"
           style={{
             display: "flex",
             justifyContent: "space-between",
             flexWrap: "wrap",
           }}
         >
-          <div>
+          <div className="vendor-dashboard-header-copy">
             <p
               style={{
                 margin: 0,
@@ -908,9 +933,10 @@ export default function VendorDashboard() {
                 : "Pending admin verification"}
             </p>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <button type="button" onClick={() => setSettingsOpen((current) => !current)} aria-label="Open vendor settings" title="Vendor settings" style={{ width: "40px", height: "40px", border: "1px solid #cbd5e1", borderRadius: "9px", background: settingsOpen ? "#166534" : "#fff", color: settingsOpen ? "#fff" : "#0f172a", fontSize: "1.15rem" }}>⚙</button>
+          <div className="vendor-dashboard-header-actions">
+            <button className="vendor-settings-button" type="button" onClick={() => setSettingsOpen((current) => !current)} aria-label="Open vendor settings" title="Vendor settings" style={{ width: "40px", height: "40px", border: "1px solid #cbd5e1", borderRadius: "9px", background: settingsOpen ? "#166534" : "#fff", color: settingsOpen ? "#fff" : "#0f172a", fontSize: "1.15rem" }}>⚙</button>
             <button
+              className="vendor-signout-button"
               type="button"
               onClick={async () => {
                 await supabase.auth.signOut();
@@ -921,6 +947,38 @@ export default function VendorDashboard() {
             >
               Sign out
             </button>
+            <button
+              className="vendor-dashboard-mobile-toggle"
+              type="button"
+              onClick={() => setMobileMenuOpen((current) => !current)}
+              aria-expanded={mobileMenuOpen}
+              aria-label="Open vendor workspace menu"
+            >
+              <i className={mobileMenuOpen ? "fa-solid fa-xmark" : "fa-solid fa-bars"} aria-hidden="true" />
+            </button>
+            {mobileMenuOpen && (
+              <div className="vendor-dashboard-mobile-menu">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSettingsOpen(true);
+                    setMobileMenuOpen(false);
+                  }}
+                >
+                  <i className="fa-solid fa-gear" aria-hidden="true" /> Settings
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await supabase.auth.signOut();
+                    setSession(null);
+                    navigate("/vendor");
+                  }}
+                >
+                  <i className="fa-solid fa-right-from-bracket" aria-hidden="true" /> Sign out
+                </button>
+              </div>
+            )}
           </div>
         </header>
         {notice && (
@@ -945,27 +1003,30 @@ export default function VendorDashboard() {
           }}
         >
           {[
-            ["Products", products.length],
-            ["Sales", sales.length],
+            ["Products", products.length, "products"],
+            ["Sales", sales.length, "sales"],
             [
               "Earnings",
-              money(
-                sales.reduce(
-                  (total, sale) => total + Number(sale.vendor_amount || 0),
-                  0,
-                ),
-                profile?.payout_currency || "NGN",
-              ),
+              money(totalEarnings, profile?.payout_currency || "NGN"),
+              "earnings",
             ],
-            ["Ads", ads.length],
-          ].map(([label, value]) => (
-            <div
+            ["Ads", ads.length, "ads"],
+          ].map(([label, value, targetTab]) => (
+            <button
               key={label}
+              type="button"
+              onClick={() => setTab(targetTab)}
+              aria-label={`Open ${label}`}
               style={{
+                width: "100%",
+                border: 0,
+                textAlign: "left",
                 padding: "18px",
                 borderRadius: "14px",
                 background: "#166534",
                 color: "#fff",
+                cursor: "pointer",
+                font: "inherit",
               }}
             >
               <div style={{ fontSize: ".75rem", opacity: 0.8 }}>{label}</div>
@@ -978,7 +1039,7 @@ export default function VendorDashboard() {
               >
                 {value}
               </strong>
-            </div>
+            </button>
           ))}
         </section>
         {settingsOpen && <form
@@ -1079,20 +1140,31 @@ export default function VendorDashboard() {
               <option value="">Select bank</option>
               {banks.map(([name, code]) => <option key={name} value={code}>{name}</option>)}
             </select>
-            <select
-              value={profileForm.payoutCurrency}
-              onChange={(event) =>
-                setProfileForm({
-                  ...profileForm,
-                  payoutCurrency: event.target.value,
-                })
-              }
-              style={fieldStyle}
-            >
-              {currencies.map((currency) => (
-                <option key={currency}>{currency}</option>
-              ))}
-            </select>
+            <label style={{ display: "grid", gap: "6px" }}>
+              <span style={{ color: "#334155", fontWeight: 800 }}>
+                Receive payouts in
+              </span>
+              <select
+                value={profileForm.payoutCurrency}
+                onChange={(event) =>
+                  setProfileForm({
+                    ...profileForm,
+                    payoutCurrency: event.target.value,
+                  })
+                }
+                aria-label="Receive payouts in"
+                style={fieldStyle}
+              >
+                {currencies.map((currency) => (
+                  <option key={currency} value={currency}>
+                    {currency}
+                  </option>
+                ))}
+              </select>
+              <span style={{ color: "#64748b", fontSize: ".78rem", lineHeight: 1.4 }}>
+                Choose the currency PAZ should use when recording your vendor earnings.
+              </span>
+            </label>
           </div>
           <section style={{ display: "grid", gap: "8px", padding: "14px", border: "1px solid #dbe7df", borderRadius: "12px", background: "#f8fffb" }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
@@ -1119,37 +1191,25 @@ export default function VendorDashboard() {
           </button>
         </form>}
         {!settingsOpen && <>
-        <div style={{ display: "flex", gap: "8px", marginTop: "22px" }}>
-          <button
-            type="button"
-            onClick={() => setTab("products")}
-            style={{
-              flex: 1,
-              padding: "12px",
-              border: "1px solid #cbd5e1",
-              borderRadius: "9px",
-              background: tab === "products" ? "#166534" : "#fff",
-              color: tab === "products" ? "#fff" : "#334155",
-              fontWeight: 800,
-            }}
-          >
-            Products
-          </button>
-          <button
-            type="button"
-            onClick={() => setTab("ads")}
-            style={{
-              flex: 1,
-              padding: "12px",
-              border: "1px solid #cbd5e1",
-              borderRadius: "9px",
-              background: tab === "ads" ? "#166534" : "#fff",
-              color: tab === "ads" ? "#fff" : "#334155",
-              fontWeight: 800,
-            }}
-          >
-            Ads
-          </button>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "8px", marginTop: "22px" }}>
+          {["products", "sales", "earnings", "ads"].map((sectionTab) => (
+            <button
+              key={sectionTab}
+              type="button"
+              onClick={() => setTab(sectionTab)}
+              style={{
+                padding: "12px 8px",
+                border: "1px solid #cbd5e1",
+                borderRadius: "9px",
+                background: tab === sectionTab ? "#166534" : "#fff",
+                color: tab === sectionTab ? "#fff" : "#334155",
+                fontWeight: 800,
+                cursor: "pointer",
+              }}
+            >
+              {sectionTab[0].toUpperCase() + sectionTab.slice(1)}
+            </button>
+          ))}
         </div>
         {tab === "products" ? (
           <section
@@ -1324,7 +1384,7 @@ export default function VendorDashboard() {
               )) : <p style={{ color: "#64748b" }}>No products posted yet.</p>}
             </div>
           </section>
-        ) : (
+        ) : tab === "ads" ? (
           <section
             style={{
               marginTop: "14px",
@@ -1422,6 +1482,38 @@ export default function VendorDashboard() {
                 </div>
               ))}
             </div>
+          </section>
+        ) : (
+          <section
+            style={{
+              marginTop: "14px",
+              background: "#fff",
+              padding: "20px",
+              borderRadius: "16px",
+              border: "1px solid #dfe7ef",
+              boxShadow: "0 12px 28px rgba(15, 23, 42, .06)",
+            }}
+          >
+            <p style={{ margin: 0, color: "#15803d", textTransform: "uppercase", letterSpacing: ".12em", fontSize: ".7rem", fontWeight: 800 }}>
+              {tab === "earnings" ? "Earnings overview" : "Sales history"}
+            </p>
+            <h2 style={{ margin: "6px 0 18px", color: "#111827", fontSize: "1.35rem" }}>
+              {tab === "earnings"
+                ? money(totalEarnings, profile?.payout_currency || "NGN")
+                : `${sales.length} sales recorded`}
+            </h2>
+            {sales.length ? (
+              <div style={{ display: "grid", gap: "10px" }}>
+                {sales.map((sale) => (
+                  <div key={sale.id} style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap", padding: "12px 0", borderBottom: "1px solid #e2e8f0", color: "#475569" }}>
+                    <span><strong style={{ color: "#0f172a" }}>{sale.product_title || "Product sale"}</strong><br /><small>{sale.order_number || "No order number"} · Qty {sale.quantity || 1}</small></span>
+                    <span style={{ color: "#166534", fontWeight: 800 }}>{sale.currency || profile?.payout_currency || "NGN"} {sale.vendor_amount || 0} · {sale.payout_status || "pending"}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ color: "#64748b" }}>No sales have been recorded yet.</p>
+            )}
           </section>
         )}
         </>}
