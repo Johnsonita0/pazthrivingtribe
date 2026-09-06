@@ -179,20 +179,32 @@ export default async function handler(req, res) {
 
         return jsonResponse(res, 200, { ok: true, email: recipient, companyName: vendor.company_name || '' })
       } else if (action === 'product_review') {
-        const requestedStatus = payload?.status || 'in_review'
-        if (!payload?.id || !['in_review', 'approved', 'rejected', 'published'].includes(requestedStatus)) {
+        const reviewPayload = payload && typeof payload === 'object' && !Array.isArray(payload)
+          ? payload
+          : requestBody?.product || {}
+        const requestedStatus = reviewPayload.status || 'in_review'
+        if (!reviewPayload.id || !['in_review', 'approved', 'rejected', 'published'].includes(requestedStatus)) {
           return jsonResponse(res, 400, { error: 'A product ID and valid review status are required' })
         }
 
-        const { data: product, error: productLookupError } = await supabase
+        let { data: product, error: productLookupError } = await supabase
           .from('store_products')
-          .select('id,title,status,name_verified,description_verified,cover_verified,attachment_verified,vendor_id,price,currency,description,file_url,cover')
-          .eq('id', payload.id)
+          .select('id,title,status,name_verified,description_verified,cover_verified,attachment_verified,amount_verified,vendor_id,price,currency,description,file_url,cover')
+          .eq('id', reviewPayload.id)
           .maybeSingle()
+        if (productLookupError && /amount_verified.*does not exist/i.test(productLookupError.message || '')) {
+          const compatibleLookup = await supabase
+            .from('store_products')
+            .select('id,title,status,name_verified,description_verified,cover_verified,attachment_verified,vendor_id,price,currency,description,file_url,cover')
+            .eq('id', reviewPayload.id)
+            .maybeSingle()
+          product = compatibleLookup.data
+          productLookupError = compatibleLookup.error
+        }
         if (productLookupError) throw productLookupError
         if (!product) return jsonResponse(res, 404, { error: 'Product not found' })
 
-        if (payload.review_again === true) {
+        if (reviewPayload.review_again === true) {
           const reviewUpdate = {
             status: 'in_review',
             name_verified: false,
@@ -241,11 +253,11 @@ export default async function handler(req, res) {
         const nextStatus = requestedStatus
         const updatePayload = { status: nextStatus, updated_at: new Date().toISOString() }
         for (const field of ['name_verified', 'description_verified', 'cover_verified', 'attachment_verified', 'amount_verified']) {
-          if (typeof payload[field] === 'boolean') updatePayload[field] = payload[field]
+          if (typeof reviewPayload[field] === 'boolean') updatePayload[field] = reviewPayload[field]
         }
-        if (typeof payload.name_verified === 'boolean') {
-          updatePayload.name_verified_at = payload.name_verified ? new Date().toISOString() : null
-          updatePayload.name_verified_by = payload.name_verified ? userData.user.id : null
+        if (typeof reviewPayload.name_verified === 'boolean') {
+          updatePayload.name_verified_at = reviewPayload.name_verified ? new Date().toISOString() : null
+          updatePayload.name_verified_by = reviewPayload.name_verified ? userData.user.id : null
         }
         if (nextStatus === 'published') {
           const { data: duplicateProducts, error: duplicateError } = await supabase
@@ -258,7 +270,7 @@ export default async function handler(req, res) {
           if (duplicateError) throw duplicateError
           if (duplicateProducts?.length) return jsonResponse(res, 409, { error: 'A product with this name is already published in the shop.' })
           const verification = ['name_verified', 'description_verified', 'cover_verified', 'attachment_verified', 'amount_verified']
-          const missingVerification = verification.find((field) => payload[field] !== true && product[field] !== true)
+          const missingVerification = verification.find((field) => reviewPayload[field] !== true && product[field] !== true)
           if (missingVerification) return jsonResponse(res, 400, { error: `Verify the product ${missingVerification.replace('_verified', '')} before publishing it.` })
           updatePayload.published_at = new Date().toISOString()
           updatePayload.published_by = userData.user.id

@@ -12,6 +12,12 @@ body, html {
   -webkit-font-smoothing: antialiased;
 }
 
+@media (max-width: 640px) {
+  .shop-promotional-board {
+    margin-top: -8px;
+  }
+}
+
 .product-review-backdrop {
   position: fixed;
   inset: 0;

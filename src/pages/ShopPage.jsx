@@ -4,6 +4,10 @@ import confetti from 'canvas-confetti';
 import { getCountries, getCountryCallingCode, isValidPhoneNumber, parsePhoneNumberFromString } from 'libphonenumber-js';
 import { supabase } from '../supabaseClient';
 
+const isStorefrontProduct = (product) =>
+  product.status === 'published' ||
+  (!product.vendor_id && product.status === 'approved');
+
 const defaultBankAccount = {
   bankName: 'Access Bank',
   accountName: 'Paz Thriving Tribe',
@@ -714,7 +718,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     if (!Array.isArray(storeProducts) || storeProducts.length === 0) return;
     setStoreData((current) => ({
       ...current,
-      products: storeProducts.filter((product) => product.status === 'published').map(normalizeProduct),
+      products: storeProducts.filter(isStorefrontProduct).map(normalizeProduct),
       bankAccount: storeBankAccount || current.bankAccount
     }));
     setCart((current) => current.filter((item) => storeProducts.some((product) => product.id === item.id)));
@@ -731,7 +735,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
 
       if (!active || error || !Array.isArray(data) || data.length === 0) return;
 
-      const latestProducts = data.filter((product) => product.status === 'published').map(normalizeProduct);
+      const latestProducts = data.filter(isStorefrontProduct).map(normalizeProduct);
       setStoreData((current) => ({ ...current, products: latestProducts }));
       setCart((current) => current.filter((item) => latestProducts.some((product) => product.id === item.id)));
     };
@@ -1409,7 +1413,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
 
   return (
     <div style={{ minHeight: '100vh', background: '#ffffff', color: '#1b1b1b', fontFamily: "'Amazon Ember', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
-      <div style={{ minHeight: '110px', backgroundColor: '#166534', backgroundImage: activePromotionalCover ? `linear-gradient(90deg, rgba(15, 118, 110, 0.9), rgba(22, 101, 52, 0.68) 52%, rgba(15, 23, 42, 0.82)), url("${activePromotionalCover}")` : 'linear-gradient(90deg, #0f766e, #166534 52%, #0f172a)', backgroundSize: 'cover', backgroundPosition: 'center', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 14px', boxSizing: 'border-box' }}>
+      <div className="shop-promotional-board" style={{ minHeight: '110px', backgroundColor: '#166534', backgroundImage: activePromotionalCover ? `linear-gradient(90deg, rgba(15, 118, 110, 0.9), rgba(22, 101, 52, 0.68) 52%, rgba(15, 23, 42, 0.82)), url("${activePromotionalCover}")` : 'linear-gradient(90deg, #0f766e, #166534 52%, #0f172a)', backgroundSize: 'cover', backgroundPosition: 'center', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 14px', boxSizing: 'border-box' }}>
         <div style={{ width: 'min(1400px, 100%)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
           <div key={activePromotionalIndex} style={{ minWidth: 0, animation: 'fadeIn 0.35s ease-out' }}>
             <span style={{ display: 'block', fontSize: '9px', fontWeight: 900, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#bbf7d0' }}>{activePromotionalItem.eyebrow}</span>
