@@ -179,7 +179,8 @@ export default async function handler(req, res) {
 
         return jsonResponse(res, 200, { ok: true, email: recipient, companyName: vendor.company_name || '' })
       } else if (action === 'product_review') {
-        if (!payload?.id || !['in_review', 'approved', 'rejected', 'published'].includes(payload.status)) {
+        const requestedStatus = payload?.status || 'in_review'
+        if (!payload?.id || !['in_review', 'approved', 'rejected', 'published'].includes(requestedStatus)) {
           return jsonResponse(res, 400, { error: 'A product ID and valid review status are required' })
         }
 
@@ -237,7 +238,7 @@ export default async function handler(req, res) {
           return jsonResponse(res, 200, { data: reviewedProduct, emailSent })
         }
 
-        const nextStatus = payload.status
+        const nextStatus = requestedStatus
         const updatePayload = { status: nextStatus, updated_at: new Date().toISOString() }
         for (const field of ['name_verified', 'description_verified', 'cover_verified', 'attachment_verified', 'amount_verified']) {
           if (typeof payload[field] === 'boolean') updatePayload[field] = payload[field]
