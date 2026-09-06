@@ -271,6 +271,10 @@ export default function StorePage() {
             transform: translateY(0) scale(1);
           }
         }
+        @keyframes storeHeroMobileFade {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
         .store-hero-shell {
           position: relative;
           z-index: 1;
@@ -591,8 +595,13 @@ export default function StorePage() {
           }
           .store-hero-shell {
             padding: 0 12px 20px;
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            box-sizing: border-box;
           }
           .store-hero-slider {
+            width: 100%;
             border-radius: 26px;
             box-shadow: 0 20px 42px rgba(5, 17, 14, 0.22);
           }
@@ -609,14 +618,21 @@ export default function StorePage() {
           }
           .store-hero-copy {
             max-width: 100%;
+            align-items: center;
+            text-align: center;
           }
           .store-hero-kicker,
           .store-hero-subline {
             max-width: 100%;
+            width: 100%;
             box-sizing: border-box;
             padding: 0.62rem 0.8rem;
             font-size: 0.62rem;
             line-height: 1.25;
+            justify-content: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
           }
           .store-hero-subline {
             margin-top: 0.75rem;
@@ -627,6 +643,10 @@ export default function StorePage() {
             line-height: 1.02;
             margin: 0.95rem 0 0.55rem;
             letter-spacing: -0.04em;
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
           }
           .store-hero-text {
             max-width: 30rem;
@@ -636,7 +656,7 @@ export default function StorePage() {
           }
           .store-hero-panel {
             display: block;
-            margin-top: 1rem;
+            margin: 1rem auto 0;
             width: min(100%, 340px);
             padding: 0;
             background: transparent;
@@ -645,6 +665,9 @@ export default function StorePage() {
             backdrop-filter: none;
           }
           .store-hero-product {
+            width: 100%;
+            box-sizing: border-box;
+            margin: 0 auto;
             padding: 0.85rem;
             border-radius: 18px;
             background: rgba(255, 255, 255, 0.96);
@@ -694,7 +717,12 @@ export default function StorePage() {
             display: grid;
             grid-template-columns: repeat(3, minmax(0, 1fr));
             gap: 0.5rem;
-            margin-top: 1.2rem;
+            position: absolute;
+            left: 1rem;
+            right: 1rem;
+            bottom: 3.2rem;
+            z-index: 4;
+            margin-top: 0;
           }
           .store-hero-btn-primary,
           .store-hero-btn-secondary,
@@ -710,9 +738,7 @@ export default function StorePage() {
           .store-hero-copy {
             display: flex;
             flex-direction: column;
-          }
-          .store-hero-actions {
-            order: 3;
+            animation: storeHeroMobileFade 0.45s ease-out;
           }
           .store-hero-controls {
             padding: 0 0.5rem;
