@@ -587,24 +587,48 @@ export default function StorePage() {
         @media (max-width: 620px) {
           .store-hero-slider,
           .store-hero-inner {
-            min-height: 420px;
+            min-height: 540px;
           }
           .store-hero-inner {
             display: block;
-            padding: 1.25rem 1.1rem 4.4rem;
+            padding: 1.35rem 1.1rem 4.6rem;
           }
           .store-hero-copy {
             max-width: 100%;
           }
           .store-hero-title {
-            font-size: clamp(2.3rem, 10vw, 3.3rem);
+            font-size: clamp(2.15rem, 10vw, 3rem);
+            line-height: 1.02;
+            margin-bottom: 0.65rem;
           }
           .store-hero-text {
             font-size: 0.95rem;
             line-height: 1.6;
           }
           .store-hero-panel {
-            display: none;
+            display: block;
+            margin-top: 1.25rem;
+            width: min(100%, 340px);
+          }
+          .store-hero-product {
+            padding: 0.8rem;
+            border-radius: 16px;
+            background: rgba(7, 24, 22, 0.72);
+            backdrop-filter: blur(10px);
+          }
+          .store-hero-product-body {
+            grid-template-columns: 72px minmax(0, 1fr);
+            gap: 0.75rem;
+          }
+          .store-hero-image {
+            width: 72px;
+            height: 92px;
+          }
+          .store-hero-product-description {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
           }
           .store-hero-actions {
             display: grid;
@@ -622,6 +646,13 @@ export default function StorePage() {
             text-align: center;
             white-space: normal;
             line-height: 1.2;
+          }
+          .store-hero-copy {
+            display: flex;
+            flex-direction: column;
+          }
+          .store-hero-actions {
+            order: 3;
           }
           .store-hero-controls {
             padding: 0 0.5rem;
