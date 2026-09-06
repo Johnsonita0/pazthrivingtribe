@@ -402,7 +402,7 @@ alter table if exists shop_order_items enable row level security;
 DO $$
 BEGIN
   EXECUTE 'DROP POLICY IF EXISTS "allow public read storefront" ON public.store_products;';
-  EXECUTE 'CREATE POLICY "allow public read storefront" ON public.store_products FOR SELECT USING (status = ''published'' OR vendor_id = auth.uid());';
+  EXECUTE 'CREATE POLICY "allow public read storefront" ON public.store_products FOR SELECT USING (status = ''published'' OR (vendor_id IS NULL AND status = ''approved'') OR vendor_id = auth.uid());';
 
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies

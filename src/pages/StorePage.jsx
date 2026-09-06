@@ -2,6 +2,10 @@
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 
+const isStorefrontProduct = (product) =>
+  product.status === 'published' ||
+  (!product.vendor_id && product.status === 'approved');
+
 const defaultBankAccount = {
   bankName: 'Access Bank',
   accountName: 'Paz Thriving Tribe',
@@ -152,13 +156,22 @@ export default function StorePage() {
     let active = true;
 
     const loadLatestProducts = async () => {
+      const publicProductsResponse = await fetch('/api/store-products-public');
+      const publicProductsPayload = await publicProductsResponse.json().catch(() => ({}));
+      if (publicProductsResponse.ok && Array.isArray(publicProductsPayload.data)) {
+        const publicProducts = publicProductsPayload.data.filter(isStorefrontProduct);
+        if (!active) return;
+        setStoreData((current) => ({ ...current, products: publicProducts.map(normalizeProduct) }));
+        return;
+      }
+
       const { data, error } = await supabase
         .from('store_products')
         .select('*')
         .order('created_at', { ascending: false });
 
       if (!active || error || !Array.isArray(data)) return;
-      const approvedProducts = data.filter((product) => product.status === 'published');
+      const approvedProducts = data.filter(isStorefrontProduct);
       if (approvedProducts.length === 0) return;
       setStoreData((current) => ({ ...current, products: approvedProducts.map(normalizeProduct) }));
     };

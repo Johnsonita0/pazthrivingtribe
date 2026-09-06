@@ -22,6 +22,7 @@ import completeServicePaymentHandler from './server-handlers/complete-service-pa
 import vendorSupportHandler from './server-handlers/vendor-support.js';
 import customerSupportHandler from './server-handlers/customer-support.js';
 import resolveBankAccountHandler from './server-handlers/resolve-bank-account.js';
+import storeProductsPublicHandler from './server-handlers/store-products-public.js';
 
 try {
   process.loadEnvFile?.('.env');
@@ -100,6 +101,11 @@ const server = http.createServer((req, res) => {
       if (pathname === '/api/resolve-bank-account' && req.method === 'POST') {
         req.body = body;
         await resolveBankAccountHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/store-products-public' && req.method === 'GET') {
+        await storeProductsPublicHandler(req, res);
         return;
       }
 

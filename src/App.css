@@ -14,7 +14,8 @@ body, html {
 
 @media (max-width: 640px) {
   .shop-promotional-board {
-    margin-top: -8px;
+    min-height: 128px !important;
+    margin-top: 0;
   }
 }
 

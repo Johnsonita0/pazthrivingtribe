@@ -728,12 +728,30 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     let active = true;
 
     const loadLatestProducts = async () => {
+      const publicProductsResponse = await fetch('/api/store-products-public');
+      const publicProductsPayload = await publicProductsResponse.json().catch(() => ({}));
+      if (publicProductsResponse.ok && Array.isArray(publicProductsPayload.data)) {
+        const publicProducts = publicProductsPayload.data.map(normalizeProduct);
+        if (!active) return;
+        setStoreData((current) => ({ ...current, products: publicProducts }));
+        setCart((current) => current.filter((item) => publicProducts.some((product) => product.id === item.id)));
+        return;
+      }
+
       const { data, error } = await supabase
         .from('store_products')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!active || error || !Array.isArray(data) || data.length === 0) return;
+      if (error || !Array.isArray(data) || data.length === 0) {
+        const publicProductsResponse = await fetch('/api/store-products-public');
+        const publicProductsPayload = await publicProductsResponse.json().catch(() => ({}));
+        if (!active || !publicProductsResponse.ok || !Array.isArray(publicProductsPayload.data)) return;
+        const fallbackProducts = publicProductsPayload.data.map(normalizeProduct);
+        setStoreData((current) => ({ ...current, products: fallbackProducts }));
+        setCart((current) => current.filter((item) => fallbackProducts.some((product) => product.id === item.id)));
+        return;
+      }
 
       const latestProducts = data.filter(isStorefrontProduct).map(normalizeProduct);
       setStoreData((current) => ({ ...current, products: latestProducts }));

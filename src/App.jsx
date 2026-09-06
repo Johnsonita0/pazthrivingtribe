@@ -794,6 +794,9 @@ export default function App() {
       rating: Number(product.rating ?? 0),
       reviews: Number(product.reviews ?? 0),
       prime: Boolean(product.prime ?? false),
+      status: product.status || 'approved',
+      vendor_id: product.vendor_id || product.vendorId || null,
+      vendor_name: product.vendor_name || product.vendorName || '',
       createdAt: product.created_at || product.createdAt || null,
       updatedAt: product.updated_at || product.updatedAt || null
     };
@@ -842,9 +845,21 @@ export default function App() {
         supabase.from('shop_orders').select('*').order('created_at', { ascending: false }).limit(200)
       ]);
 
-      if (!productsResult.error && Array.isArray(productsResult.data) && productsResult.data.length > 0) {
-        setStoreProducts(productsResult.data.map(normalizeStoreProduct));
-      } else if (!productsResult.error && Array.isArray(productsResult.data) && productsResult.data.length === 0) {
+      let loadedPublicProducts = false;
+      if (productsResult.error || !productsResult.data?.length) {
+        const publicProductsResponse = await fetch('/api/store-products-public');
+        const publicProductsPayload = await publicProductsResponse.json().catch(() => ({}));
+        if (publicProductsResponse.ok && Array.isArray(publicProductsPayload.data)) {
+          setStoreProducts(publicProductsPayload.data.map(normalizeStoreProduct));
+          loadedPublicProducts = true;
+        }
+      }
+
+      if (!loadedPublicProducts && !productsResult.error && Array.isArray(productsResult.data) && productsResult.data.length > 0) {
+        setStoreProducts(productsResult.data
+          .filter((product) => product.status === 'published' || (!product.vendor_id && product.status === 'approved'))
+          .map(normalizeStoreProduct));
+      } else if (!loadedPublicProducts && !productsResult.error && Array.isArray(productsResult.data) && productsResult.data.length === 0) {
         setStoreProducts(defaultStoreProducts);
       }
 
@@ -2095,6 +2110,9 @@ export default function App() {
           padding: 92px 0 0;
           box-sizing: border-box;
           overflow-x: clip;
+        }
+        .public-website-container.shop-page-shell {
+          padding-top: 0;
         }
         
         /* SLIDING HERO SECTION FRAMEWORKS */
@@ -4073,8 +4091,8 @@ export default function App() {
           <Route path="/book-session" element={<BookSessionPage paystackPublicKey={paystackPublicKey} />} />
           <Route path="/feedback" element={<FeedbackPage />} />
           <Route path="/store" element={<div className="public-website-container"><StorePage /></div>} />
-          <Route path="/shop" element={<div className="public-website-container"><ShopPage onOrderSubmitted={setShopOrders} paystackPublicKey={paystackPublicKey} storeProducts={storeProducts} storeBankAccount={storeBankAccount} /></div>} />
-          <Route path="/shop/:productName" element={<div className="public-website-container"><ShopPage onOrderSubmitted={setShopOrders} paystackPublicKey={paystackPublicKey} storeProducts={storeProducts} storeBankAccount={storeBankAccount} /></div>} />
+          <Route path="/shop" element={<div className="public-website-container shop-page-shell" style={{ paddingTop: '72px' }}><ShopPage onOrderSubmitted={setShopOrders} paystackPublicKey={paystackPublicKey} storeProducts={storeProducts} storeBankAccount={storeBankAccount} /></div>} />
+          <Route path="/shop/:productName" element={<div className="public-website-container shop-page-shell" style={{ paddingTop: '72px' }}><ShopPage onOrderSubmitted={setShopOrders} paystackPublicKey={paystackPublicKey} storeProducts={storeProducts} storeBankAccount={storeBankAccount} /></div>} />
           <Route path="/vendor" element={<><VendorDashboard /><VendorSupportChat /></>} />
           <Route path="/payment/callback" element={<PaystackCallbackPage />} />
           <Route path="/care-counseling" element={<CareCounselingPage />} />
