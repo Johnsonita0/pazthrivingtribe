@@ -3612,6 +3612,10 @@ export default function App() {
                   <i className="fa-solid fa-user-plus" aria-hidden="true"></i>
                   <span>Apply</span>
                 </Link>
+                <Link to="/vendor" className="nav-cta-link vendor-nav-link" onClick={() => setNavOpen(false)} aria-label="Register as a vendor" title="Register as a vendor">
+                  <i className="fa-solid fa-store" aria-hidden="true"></i>
+                  <span>Vendor</span>
+                </Link>
                 <Link to="/book-session" className="nav-cta-link secondary" onClick={() => setNavOpen(false)}>
                   <i className="fa-solid fa-calendar-check" aria-hidden="true"></i>
                   <span>Book</span>
