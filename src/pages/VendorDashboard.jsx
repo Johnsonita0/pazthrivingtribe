@@ -36,7 +36,7 @@ const withTimeout = (promise, message, timeoutMs = 15000) =>
       window.setTimeout(() => reject(new Error(message)), timeoutMs),
     ),
   ]);
-const productReviewColumns = "id,vendor_id,title,price,currency,status,name_verified,description_verified,cover_verified,attachment_verified,amount_verified,updated_at";
+const productReviewColumns = "id,vendor_id,title,price,currency,status,name_verified,description_verified,cover_verified,attachment_verified,updated_at";
 
 export default function VendorDashboard() {
   const navigate = useNavigate();

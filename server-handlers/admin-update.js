@@ -185,7 +185,7 @@ export default async function handler(req, res) {
 
         const { data: product, error: productLookupError } = await supabase
           .from('store_products')
-          .select('id,title,status,name_verified,description_verified,cover_verified,attachment_verified,amount_verified,vendor_id,price,currency,description,file_url,cover')
+          .select('id,title,status,name_verified,description_verified,cover_verified,attachment_verified,vendor_id,price,currency,description,file_url,cover')
           .eq('id', payload.id)
           .maybeSingle()
         if (productLookupError) throw productLookupError
@@ -266,12 +266,26 @@ export default async function handler(req, res) {
           updatePayload.published_by = null
         }
 
-        const { data: updatedProduct, error: updateError } = await supabase
+        let { data: updatedProduct, error: updateError } = await supabase
           .from('store_products')
           .update(updatePayload)
           .eq('id', product.id)
           .select('*')
           .single()
+        let schemaWarning = ''
+        if (updateError && /amount_verified.*does not exist/i.test(updateError.message || '')) {
+          const compatiblePayload = { ...updatePayload }
+          delete compatiblePayload.amount_verified
+          const compatibleResult = await supabase
+            .from('store_products')
+            .update(compatiblePayload)
+            .eq('id', product.id)
+            .select('*')
+            .single()
+          updatedProduct = compatibleResult.data
+          updateError = compatibleResult.error
+          schemaWarning = 'Amount verification is waiting for the Supabase migration.'
+        }
         if (updateError) throw updateError
 
         let emailSent = false
@@ -303,7 +317,7 @@ export default async function handler(req, res) {
             emailSent = true
           }
         }
-        return jsonResponse(res, 200, { data: updatedProduct, emailSent })
+        return jsonResponse(res, 200, { data: updatedProduct, emailSent, schemaWarning })
       } else if (action === 'product_file_signed_url') {
         if (!match?.id) return jsonResponse(res, 400, { error: 'A product ID is required' })
         const { data: product, error: productError } = await supabase

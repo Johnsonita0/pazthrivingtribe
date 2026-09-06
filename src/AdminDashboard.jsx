@@ -1666,7 +1666,7 @@ export default function AdminDashboard(props) {
     setStoreProducts((current) => current.map((item) => item.id === product.id ? { ...item, ...updated } : item));
     setSelectedVendor((current) => current?.id === selectedVendor?.id ? { ...current, products: (current.products || []).map((item) => item.id === product.id ? { ...item, ...updated } : item) } : current);
     setProductReviewModal((current) => current?.id === product.id ? { ...current, ...updated } : current);
-    showAdminToast("success", "Product review updated", `${product.title} is now ${status}.`);
+    showAdminToast(payload.schemaWarning ? "info" : "success", "Product review updated", payload.schemaWarning || `${product.title} is now ${status}.`);
   };
 
   const requestProductReviewAgain = async (product) => {
