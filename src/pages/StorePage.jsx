@@ -587,34 +587,77 @@ export default function StorePage() {
         @media (max-width: 620px) {
           .store-hero-slider,
           .store-hero-inner {
-            min-height: 540px;
+            min-height: 570px;
+          }
+          .store-hero-shell {
+            padding: 0 12px 20px;
+          }
+          .store-hero-slider {
+            border-radius: 26px;
+            box-shadow: 0 20px 42px rgba(5, 17, 14, 0.22);
+          }
+          .store-hero-slider::before {
+            background: linear-gradient(180deg, rgba(7, 24, 22, 0.68) 0%, rgba(7, 24, 22, 0.56) 52%, rgba(7, 24, 22, 0.72) 100%);
+          }
+          .store-hero-bg {
+            transform: scale(1.02);
+            filter: saturate(0.78) contrast(1.02) brightness(0.82);
           }
           .store-hero-inner {
             display: block;
-            padding: 1.35rem 1.1rem 4.6rem;
+            padding: 1.15rem 1rem 4.35rem;
           }
           .store-hero-copy {
             max-width: 100%;
           }
+          .store-hero-kicker,
+          .store-hero-subline {
+            max-width: 100%;
+            box-sizing: border-box;
+            padding: 0.62rem 0.8rem;
+            font-size: 0.62rem;
+            line-height: 1.25;
+          }
+          .store-hero-subline {
+            margin-top: 0.75rem;
+            letter-spacing: 0.05em;
+          }
           .store-hero-title {
-            font-size: clamp(2.15rem, 10vw, 3rem);
+            font-size: clamp(2rem, 10vw, 2.8rem);
             line-height: 1.02;
-            margin-bottom: 0.65rem;
+            margin: 0.95rem 0 0.55rem;
+            letter-spacing: -0.04em;
           }
           .store-hero-text {
-            font-size: 0.95rem;
-            line-height: 1.6;
+            max-width: 30rem;
+            font-size: 0.88rem;
+            line-height: 1.45;
+            -webkit-line-clamp: 2;
           }
           .store-hero-panel {
             display: block;
-            margin-top: 1.25rem;
+            margin-top: 1rem;
             width: min(100%, 340px);
+            padding: 0;
+            background: transparent;
+            border: 0;
+            box-shadow: none;
+            backdrop-filter: none;
           }
           .store-hero-product {
-            padding: 0.8rem;
-            border-radius: 16px;
-            background: rgba(7, 24, 22, 0.72);
-            backdrop-filter: blur(10px);
+            padding: 0.85rem;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 14px 28px rgba(3, 18, 16, 0.2);
+          }
+          .store-hero-product-top {
+            margin-bottom: 0.8rem;
+          }
+          .store-hero-add-btn {
+            padding: 0.62rem 0.8rem;
+            border-radius: 10px;
+            font-size: 0.76rem;
           }
           .store-hero-product-body {
             grid-template-columns: 72px minmax(0, 1fr);
@@ -629,6 +672,23 @@ export default function StorePage() {
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            font-size: 0.78rem;
+            line-height: 1.35;
+          }
+          .store-hero-product-name {
+            font-size: 1.05rem;
+          }
+          .store-hero-price {
+            font-size: 1.2rem;
+            color: #166534;
+          }
+          .store-hero-product-meta {
+            margin-top: 0.7rem;
+          }
+          .store-hero-details-btn {
+            padding: 0.58rem 0.75rem;
+            border-radius: 10px;
+            font-size: 0.74rem;
           }
           .store-hero-actions {
             display: grid;
@@ -657,8 +717,23 @@ export default function StorePage() {
           .store-hero-controls {
             padding: 0 0.5rem;
           }
+          .store-hero-nav-btn {
+            width: 38px;
+            height: 38px;
+            background: rgba(255, 255, 255, 0.16);
+            backdrop-filter: blur(8px);
+          }
           .store-hero-dots {
             bottom: 0.6rem;
+            gap: 0.38rem;
+            padding: 0.35rem 0.45rem;
+          }
+          .store-hero-dot {
+            width: 8px;
+            height: 8px;
+          }
+          .store-hero-dot.active {
+            width: 24px;
           }
         }
       `}</style>

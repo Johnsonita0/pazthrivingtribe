@@ -3490,15 +3490,19 @@ export default function App() {
         }
 
         @media (max-width: 480px) {
-          .public-navbar { min-height: 64px; padding: 0.65rem 0.75rem; gap: 0.45rem; }
+          .public-navbar { min-height: 64px; padding: 0.65rem 0.75rem; gap: 0.45rem; background: rgba(255,255,255,0.96); box-shadow: 0 8px 22px rgba(15,23,42,0.08); }
           .nav-logo-brand-zone { gap: 0.4rem; margin-right: 0; }
           .nav-logo-img { width: 36px; height: 36px; }
-          .nav-brand-name { font-size: 0.82rem; max-width: 128px; line-height: 1.2; letter-spacing: 0; }
+          .nav-brand-name { font-size: 0.82rem; max-width: 128px; line-height: 1.2; letter-spacing: 0; color: #17352f; }
           .nav-right-cluster { gap: 0.3rem; }
-          .nav-shop-link, .nav-cta-link { width: 38px; height: 38px; min-width: 38px; padding: 0; margin-left: 0; display: inline-flex; align-items: center; justify-content: center; gap: 0; border-radius: 10px; font-size: 0; }
+          .nav-shop-link, .nav-cta-link { width: 38px; height: 38px; min-width: 38px; padding: 0; margin-left: 0; display: inline-flex; align-items: center; justify-content: center; gap: 0; border-radius: 11px; font-size: 0; border: 1px solid rgba(22,101,52,0.12); box-shadow: 0 5px 12px rgba(22,101,52,0.1); }
+          .nav-shop-link { background: #f0fdf4; color: #166534; }
+          .nav-shop-link.active { background: linear-gradient(135deg, #166534, #15966a); color: #fff; border-color: transparent; }
+          .nav-cta-link { background: linear-gradient(135deg, #20c878, #13ad69); }
+          .nav-cta-link.secondary { background: #fff; color: #17352f; border-color: #dbe7df; box-shadow: 0 5px 12px rgba(15,23,42,0.06); }
           .nav-shop-link i, .nav-cta-link i { margin: 0; font-size: 0.92rem; }
           .nav-cta-group { gap: 0.3rem; margin-left: 0; }
-          .nav-menu-toggle { width: 38px; height: 38px; padding: 0; margin-left: 0; display: inline-grid; place-items: center; font-size: 1.2rem; }
+          .nav-menu-toggle { width: 38px; height: 38px; padding: 0; margin-left: 0; display: inline-grid; place-items: center; border-radius: 11px; background: #f0fdf4; color: #17352f; font-size: 1.2rem; }
           .hero-copy-card h1 { font-size: clamp(2rem, 8vw, 2.6rem); }
           .hero-copy-card p { font-size: 0.95rem; }
           .hero-scroll-btn { min-width: 0; width: 100%; padding: 0.9rem 1.2rem; }
