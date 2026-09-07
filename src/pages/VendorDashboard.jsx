@@ -110,6 +110,10 @@ export default function VendorDashboard() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const dashboardContentRef = React.useRef(null);
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, []);
+
   const focusVendorSection = (targetTab) => {
     setSettingsOpen(false);
     setTab(targetTab);
@@ -1068,9 +1072,18 @@ export default function VendorDashboard() {
     );
   if (loading)
     return (
-      <main style={{ padding: "48px", textAlign: "center" }}>
-        Loading vendor dashboard...
-      </main>
+      <div className="app-preloader-overlay" role="alert" aria-busy="true">
+        <div className="app-preloader-box">
+          <img
+            src="/logo/logomain.png"
+            alt="Paz Thriving Tribe logo"
+            className="app-preloader-logo"
+          />
+          <p style={{ margin: 0, fontSize: "0.95rem", lineHeight: "1.6" }}>
+            Loading vendor dashboard...
+          </p>
+        </div>
+      </div>
     );
 
   return (
