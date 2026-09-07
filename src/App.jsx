@@ -1735,6 +1735,7 @@ export default function App() {
         }
 
         .full-view-app-root-override { padding-top: 72px; }
+        .full-view-app-root-override.vendor-route-root { padding-top: 0; }
 
         body { overflow-x: hidden; }
 
@@ -3569,7 +3570,7 @@ export default function App() {
         </div>
       )}
 
-      <div className="full-view-app-root-override">
+      <div className={`full-view-app-root-override ${isVendorRoute ? 'vendor-route-root' : ''}`}>
         <button
           type="button"
           className={`scroll-to-top-btn ${showScrollTop ? 'visible' : ''}`}
@@ -4416,7 +4417,7 @@ export default function App() {
         )}
 
         {/* Global Multi-Column Footer Component */}
-        {!isAdminRoute && !isFeedbackRoute && !isStoreRoute && (
+        {!isAdminRoute && !isVendorRoute && !isFeedbackRoute && !isStoreRoute && (
           <footer className="workspace-fluid-footer">
             <div className="footer-columns-container">
               <div className="footer-brand-column">

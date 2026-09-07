@@ -15,6 +15,8 @@ import vendorSupportHandler from '../server-handlers/vendor-support.js';
 import customerSupportHandler from '../server-handlers/customer-support.js';
 import resolveBankAccountHandler from '../server-handlers/resolve-bank-account.js';
 import storeProductsPublicHandler from '../server-handlers/store-products-public.js';
+import vendorPasswordResetEmailHandler from '../server-handlers/vendor-password-reset-email.js';
+import vendorPinChangedEmailHandler from '../server-handlers/vendor-pin-changed-email.js';
 
 const handlers = {
   '/admin-auth': adminAuthHandler,
@@ -27,6 +29,8 @@ const handlers = {
   '/customer-support': customerSupportHandler,
   '/resolve-bank-account': resolveBankAccountHandler,
   '/store-products-public': storeProductsPublicHandler,
+  '/vendor-password-reset-email': vendorPasswordResetEmailHandler,
+  '/vendor-pin-changed-email': vendorPinChangedEmailHandler,
   '/currency-rates': currencyRatesHandler,
   '/fetch-meta': fetchMetaHandler,
   '/paystack-webhook': paystackWebhookHandler,

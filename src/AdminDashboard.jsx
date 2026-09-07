@@ -1823,7 +1823,9 @@ export default function AdminDashboard(props) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#f4f4f4",
+          backgroundImage: "linear-gradient(rgba(244, 244, 244, .72), rgba(244, 244, 244, .72)), url('/logo/logo2.jpeg')",
+          backgroundPosition: "center",
+          backgroundSize: "cover",
           padding: "32px 16px",
           fontFamily: "Inter, Arial, sans-serif",
         }}

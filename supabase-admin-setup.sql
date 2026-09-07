@@ -234,6 +234,7 @@ alter table if exists vendor_profiles add column if not exists payout_accounts j
 alter table if exists vendor_profiles add column if not exists selected_payout_account_id text;
 alter table if exists vendor_profiles add column if not exists vendor_terms_version text;
 alter table if exists vendor_profiles add column if not exists vendor_terms_accepted_at timestamptz;
+alter table if exists vendor_profiles add column if not exists vendor_pin_hash text;
 create unique index if not exists vendor_profiles_username_unique on vendor_profiles (lower(username)) where username is not null;
 create unique index if not exists vendor_profiles_email_unique on vendor_profiles (lower(contact_email)) where contact_email is not null;
 create unique index if not exists vendor_profiles_company_name_unique on vendor_profiles (lower(company_name));
@@ -256,6 +257,75 @@ as $$
 $$;
 
 grant execute on function public.check_vendor_identity_availability(text, text, text) to anon, authenticated;
+
+create extension if not exists pgcrypto with schema extensions;
+
+create or replace function public.vendor_pin_is_set()
+returns boolean
+language sql
+security invoker
+set search_path = public, extensions
+as $$
+  select exists(
+    select 1
+    from public.vendor_profiles
+    where id = auth.uid()
+      and vendor_pin_hash is not null
+  );
+$$;
+
+create or replace function public.set_vendor_pin(p_pin text)
+returns boolean
+language plpgsql
+security invoker
+set search_path = public, extensions
+as $$
+begin
+  if p_pin !~ '^\d{4}$' then
+    raise exception 'Vendor PIN must contain exactly 4 digits';
+  end if;
+
+  update public.vendor_profiles
+  set vendor_pin_hash = encode(digest(p_pin, 'sha256'), 'hex'),
+      updated_at = now()
+  where id = auth.uid()
+    and vendor_pin_hash is null;
+
+  return found;
+end;
+$$;
+
+create or replace function public.verify_vendor_pin(p_pin text)
+returns boolean
+language sql
+security invoker
+set search_path = public, extensions
+as $$
+  select exists(
+    select 1
+    from public.vendor_profiles
+    where id = auth.uid()
+      and vendor_pin_hash = encode(digest(p_pin, 'sha256'), 'hex')
+  );
+$$;
+
+create or replace function public.clear_vendor_pin()
+returns boolean
+language sql
+security invoker
+set search_path = public
+as $$
+  update public.vendor_profiles
+  set vendor_pin_hash = null,
+      updated_at = now()
+  where id = auth.uid()
+  returning true;
+$$;
+
+grant execute on function public.vendor_pin_is_set() to authenticated;
+grant execute on function public.set_vendor_pin(text) to authenticated;
+grant execute on function public.verify_vendor_pin(text) to authenticated;
+grant execute on function public.clear_vendor_pin() to authenticated;
 
 alter table if exists store_products add column if not exists vendor_id uuid references vendor_profiles(id) on delete set null;
 alter table if exists store_products add column if not exists vendor_name text;

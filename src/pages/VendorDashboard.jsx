@@ -47,6 +47,7 @@ const withTimeout = (promise, message, timeoutMs = 15000) =>
     ),
   ]);
 const productReviewColumns = "id,vendor_id,title,price,currency,status,name_verified,description_verified,cover_verified,attachment_verified,updated_at";
+const vendorProfileColumns = "id,company_name,logo_url,contact_email,id_type,id_document_path,status,payout_account_name,payout_account_number,payout_bank_name,payout_currency,rejection_reason,approved_at,approved_by,created_at,updated_at,phone,username,payout_accounts,selected_payout_account_id,vendor_terms_version,vendor_terms_accepted_at";
 
 export default function VendorDashboard() {
   const navigate = useNavigate();
@@ -108,6 +109,14 @@ export default function VendorDashboard() {
   const [idDocumentPreviewUrl, setIdDocumentPreviewUrl] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [pinMode, setPinMode] = useState(null);
+  const [vendorPin, setVendorPin] = useState("");
+  const [vendorPinConfirm, setVendorPinConfirm] = useState("");
+  const [vendorPinError, setVendorPinError] = useState("");
+  const [vendorLogoUrl, setVendorLogoUrl] = useState("");
+  const [vendorCompanyName, setVendorCompanyName] = useState("");
+  const vendorPinInputRefs = React.useRef([]);
+  const vendorPinFormRef = React.useRef(null);
   const dashboardContentRef = React.useRef(null);
 
   useEffect(() => {
@@ -192,7 +201,7 @@ export default function VendorDashboard() {
     ] = await Promise.all([
       supabase
         .from("vendor_profiles")
-        .select("*")
+        .select(vendorProfileColumns)
         .eq("id", user.id)
         .maybeSingle(),
       supabase
@@ -248,6 +257,109 @@ export default function VendorDashboard() {
     setLoading(false);
   };
 
+  const prepareVendorAccess = async (user) => {
+    const [{ data: vendor }, { data: pinIsSet, error: pinError }] = await Promise.all([
+      supabase
+      .from("vendor_profiles")
+        .select("logo_url,company_name")
+      .eq("id", user.id)
+      .maybeSingle(),
+      supabase.rpc("vendor_pin_is_set"),
+    ]);
+    if (pinError) throw pinError;
+    setVendorLogoUrl(vendor?.logo_url || "");
+    setVendorCompanyName(vendor?.company_name || "");
+    setPinMode(pinIsSet ? "unlock" : "setup");
+    setVendorPin("");
+    setVendorPinConfirm("");
+    setVendorPinError("");
+    setLoading(false);
+  };
+
+  const unlockVendor = async (event) => {
+    event.preventDefault();
+    if (!/^\d{4}$/.test(vendorPin)) {
+      setVendorPinError("Enter the 4-digit PIN for this browser.");
+      return;
+    }
+    if (pinMode === "setup" && vendorPin !== vendorPinConfirm) {
+      setVendorPinError("The PINs do not match.");
+      return;
+    }
+    setSaving(true);
+    try {
+      if (pinMode === "unlock") {
+        const { data: validPin, error } = await supabase.rpc("verify_vendor_pin", { p_pin: vendorPin });
+        if (error) throw error;
+        if (!validPin) {
+          setVendorPinError("That PIN is not correct.");
+          return;
+        }
+      } else {
+        const { error } = await supabase.rpc("set_vendor_pin", { p_pin: vendorPin });
+        if (error) throw error;
+      }
+      setVendorPinError("");
+      await loadData(session.user);
+      setPinMode(null);
+      setVendorPin("");
+      setVendorPinConfirm("");
+    } catch (error) {
+      setVendorPinError(error.message || "The PIN could not be saved. Try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const sendPasswordChangeEmail = async () => {
+    setSaving(true);
+    try {
+      const response = await withTimeout(
+        fetch("/api/vendor-password-reset-email", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        }),
+        "The password reset email is taking too long. Check your connection and try again.",
+      );
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "The password change email could not be sent.");
+      setNotice({ type: "success", text: "A password change link has been sent to your vendor email." });
+    } catch (error) {
+      setNotice({ type: "error", text: error.message || "The password change email could not be sent." });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const startPinChange = async () => {
+    setSaving(true);
+    try {
+      const emailResponse = await fetch("/api/vendor-pin-changed-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ event: "change_requested" }),
+      });
+      if (!emailResponse.ok) {
+        const emailPayload = await emailResponse.json().catch(() => ({}));
+        throw new Error(emailPayload.error || "The PIN security email could not be sent.");
+      }
+      const { error } = await supabase.rpc("clear_vendor_pin");
+      if (error) throw error;
+      setPinMode("setup");
+      setVendorPin("");
+      setVendorPinConfirm("");
+      setVendorPinError("");
+      setNotice(null);
+    } catch (error) {
+      setNotice({ type: "error", text: error.message || "The PIN could not be reset." });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const refreshProducts = async () => {
     if (!session?.user?.id || productsRefreshing) return;
     setProductsRefreshing(true);
@@ -291,7 +403,7 @@ export default function VendorDashboard() {
     supabase.auth.getSession().then(({ data }) => {
       if (!active) return;
       setSession(data?.session || null);
-      if (data?.session?.user) void loadData(data.session.user);
+      if (data?.session?.user) void prepareVendorAccess(data.session.user);
       else setLoading(false);
     });
     return () => {
@@ -323,6 +435,29 @@ export default function VendorDashboard() {
     }, 15000);
     return () => window.clearInterval(timer);
   }, [session]);
+
+  useEffect(() => {
+    if (!session?.user?.id || pinMode) return undefined;
+    let inactivityTimer;
+    const lockDashboard = () => {
+      setPinMode("unlock");
+      setVendorPin("");
+      setVendorPinConfirm("");
+      setVendorPinError("");
+      setLoading(false);
+    };
+    const resetInactivityTimer = () => {
+      window.clearTimeout(inactivityTimer);
+      inactivityTimer = window.setTimeout(lockDashboard, 5 * 60 * 1000);
+    };
+    const activityEvents = ["click", "keydown", "pointerdown", "scroll", "touchstart"];
+    activityEvents.forEach((eventName) => window.addEventListener(eventName, resetInactivityTimer, { passive: true }));
+    resetInactivityTimer();
+    return () => {
+      window.clearTimeout(inactivityTimer);
+      activityEvents.forEach((eventName) => window.removeEventListener(eventName, resetInactivityTimer));
+    };
+  }, [session?.user?.id, pinMode]);
 
   useEffect(() => {
     if (!session?.user?.id) return undefined;
@@ -558,8 +693,8 @@ export default function VendorDashboard() {
           }
         }
         await withTimeout(
-          loadData(result.data.session.user),
-          "You signed in, but loading the vendor workspace took too long. Refresh and try again.",
+          prepareVendorAccess(result.data.session.user),
+          "You signed in, but preparing the vendor PIN took too long. Refresh and try again.",
         );
       } else {
         setAuthMode("sign-in");
@@ -920,6 +1055,135 @@ export default function VendorDashboard() {
       </main>
     );
 
+  if (session && pinMode)
+    return (
+      <main
+        style={{
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          padding: "clamp(18px, 4vw, 48px)",
+          backgroundImage: `linear-gradient(135deg, rgba(6, 36, 28, .78), rgba(22, 101, 52, .52)), url("${vendorLogoUrl || "/logo/logomain.png"}")`,
+          backgroundPosition: "center",
+          backgroundSize: "cover",
+        }}
+      >
+        <form
+          ref={vendorPinFormRef}
+          onSubmit={unlockVendor}
+          style={{
+            width: "min(430px, 100%)",
+            display: "grid",
+            gap: "20px",
+            padding: "clamp(24px, 6vw, 42px)",
+            background: "rgba(255, 255, 255, .97)",
+            border: "1px solid rgba(255, 255, 255, .72)",
+            borderRadius: "26px",
+            boxShadow: "0 28px 80px rgba(2, 24, 17, .32)",
+            textAlign: "center",
+          }}
+        >
+          <img
+            src={vendorLogoUrl || "/logo/logomain.png"}
+            alt="Vendor logo"
+            style={{ width: "88px", height: "88px", objectFit: "cover", borderRadius: "22px", justifySelf: "center", border: "6px solid #fff", boxShadow: "0 10px 26px rgba(15, 23, 42, .16)" }}
+          />
+          <div>
+            <p style={{ margin: "0 0 8px", color: "#15803d", fontSize: ".7rem", fontWeight: 900, letterSpacing: ".18em", textTransform: "uppercase" }}>
+              {vendorCompanyName || "Vendor workspace"}
+            </p>
+            <h1 style={{ margin: 0, color: "#102a20", fontSize: "clamp(1.55rem, 5vw, 2rem)", letterSpacing: "-.02em" }}>
+              {pinMode === "setup" ? "Create your vendor PIN" : "Welcome back"}
+            </h1>
+            <p style={{ margin: "10px auto 0", maxWidth: "32rem", color: "#64756e", lineHeight: 1.6, fontSize: ".92rem" }}>
+              {pinMode === "setup"
+                ? "Set a private 4-digit PIN to open your vendor workspace."
+                : "Enter your 4-digit PIN to continue to your vendor workspace."}
+            </p>
+          </div>
+          <div style={{ display: "grid", gap: "10px" }}>
+            <p style={{ margin: 0, color: "#385449", fontSize: ".78rem", fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase" }}>
+              {pinMode === "setup" ? "Choose PIN" : "Enter PIN"}
+            </p>
+            <div role="group" aria-label="4-digit vendor PIN" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "10px", maxWidth: "260px", width: "100%", margin: "0 auto" }}>
+              {[0, 1, 2, 3].map((index) => (
+                <input
+                  key={`pin-${index}`}
+                  ref={(element) => { vendorPinInputRefs.current[index] = element; }}
+                  required
+                  autoFocus={index === 0}
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]"
+                  maxLength="1"
+                  value={vendorPin[index] || ""}
+                  onChange={(event) => {
+                    const digit = event.target.value.replace(/\D/g, "").slice(-1);
+                    const nextPin = vendorPin.padEnd(4, " ").split("");
+                    nextPin[index] = digit;
+                    setVendorPin(nextPin.join("").replace(/ /g, ""));
+                    setVendorPinError("");
+                    if (digit && index < 3) vendorPinInputRefs.current[index + 1]?.focus();
+                    if (digit && index === 3 && pinMode === "unlock") {
+                      window.setTimeout(() => vendorPinFormRef.current?.requestSubmit(), 0);
+                    }
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Backspace" && !vendorPin[index] && index > 0) vendorPinInputRefs.current[index - 1]?.focus();
+                  }}
+                  aria-label={`PIN digit ${index + 1}`}
+                  style={{ ...fieldStyle, minWidth: 0, height: "62px", padding: "8px 4px", textAlign: "center", fontSize: "1.5rem", fontWeight: 800, border: "2px solid #b7d6c3", borderRadius: "14px", background: "#f8fcf9", color: "#14532d", boxShadow: "inset 0 1px 2px rgba(15, 23, 42, .04)" }}
+                />
+              ))}
+            </div>
+            {pinMode === "setup" && (
+              <>
+                <p style={{ margin: "4px 0 0", color: "#385449", fontSize: ".78rem", fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase" }}>Confirm PIN</p>
+                <div role="group" aria-label="Confirm 4-digit vendor PIN" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "10px", maxWidth: "260px", width: "100%", margin: "0 auto" }}>
+                {[0, 1, 2, 3].map((index) => (
+                  <input
+                    key={`confirm-pin-${index}`}
+                    ref={(element) => { vendorPinInputRefs.current[index + 4] = element; }}
+                    required
+                    type="password"
+                    inputMode="numeric"
+                    pattern="[0-9]"
+                    maxLength="1"
+                    value={vendorPinConfirm[index] || ""}
+                    onChange={(event) => {
+                      const digit = event.target.value.replace(/\D/g, "").slice(-1);
+                      const nextPin = vendorPinConfirm.padEnd(4, " ").split("");
+                      nextPin[index] = digit;
+                      setVendorPinConfirm(nextPin.join("").replace(/ /g, ""));
+                      setVendorPinError("");
+                      if (digit && index < 3) vendorPinInputRefs.current[index + 5]?.focus();
+                      if (digit && index === 3) {
+                        window.setTimeout(() => vendorPinFormRef.current?.requestSubmit(), 0);
+                      }
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key === "Backspace" && !vendorPinConfirm[index] && index > 0) vendorPinInputRefs.current[index + 3]?.focus();
+                    }}
+                    aria-label={`Confirm PIN digit ${index + 1}`}
+                    style={{ ...fieldStyle, minWidth: 0, height: "62px", padding: "8px 4px", textAlign: "center", fontSize: "1.5rem", fontWeight: 800, border: "2px solid #b7d6c3", borderRadius: "14px", background: "#f8fcf9", color: "#14532d", boxShadow: "inset 0 1px 2px rgba(15, 23, 42, .04)" }}
+                  />
+                ))}
+                </div>
+              </>
+            )}
+          </div>
+          {vendorPinError && <div role="alert" style={{ padding: "10px 12px", border: "1px solid #fecaca", borderRadius: "10px", background: "#fff7f7", color: "#b91c1c", fontSize: ".85rem", fontWeight: 700 }}>{vendorPinError}</div>}
+          <button
+            type="submit"
+            disabled={saving}
+            style={{ padding: "14px 16px", border: 0, borderRadius: "12px", background: "#166534", color: "#fff", fontWeight: 850, fontSize: ".95rem", cursor: saving ? "wait" : "pointer", opacity: saving ? .65 : 1, boxShadow: "0 10px 20px rgba(22, 101, 52, .2)" }}
+          >
+            {saving ? "Opening dashboard..." : pinMode === "setup" ? "Save PIN and open dashboard" : "Open dashboard"}
+          </button>
+        </form>
+      </main>
+    );
+
   if (!session)
     return (
       <main
@@ -928,7 +1192,9 @@ export default function VendorDashboard() {
           display: "grid",
           placeItems: "center",
           padding: "24px",
-          background: "#f1f5f3",
+          backgroundImage: "linear-gradient(rgba(241, 245, 243, .72), rgba(241, 245, 243, .72)), url('/logo/logomain.png')",
+          backgroundPosition: "center",
+          backgroundSize: "cover",
         }}
       >
         <form
@@ -1267,6 +1533,20 @@ export default function VendorDashboard() {
               {documentPreviewOpen && documentPreviewUrl && <iframe title="Your vendor identity document" src={documentPreviewUrl} style={{ display: "block", width: "100%", height: "340px", marginTop: "12px", border: "1px solid #dbe7df", borderRadius: "8px", background: "#fff" }} />}
             </section>
           )}
+          <section style={{ display: "grid", gap: "10px", padding: "16px", border: "1px solid #dbe7df", borderRadius: "12px", background: "#f8fffb" }}>
+            <div>
+              <strong>Account security</strong>
+              <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: ".8rem", lineHeight: 1.45 }}>Manage the password and 4-digit PIN used to protect your vendor workspace.</p>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "10px" }}>
+              <button type="button" onClick={sendPasswordChangeEmail} disabled={saving} style={{ padding: "11px 12px", border: "1px solid #166534", borderRadius: "9px", background: "#fff", color: "#166534", fontWeight: 800, cursor: saving ? "wait" : "pointer" }}>
+                <i className="fa-solid fa-envelope" aria-hidden="true" /> Change password
+              </button>
+              <button type="button" onClick={startPinChange} disabled={saving} style={{ padding: "11px 12px", border: "1px solid #0f766e", borderRadius: "9px", background: "#fff", color: "#0f766e", fontWeight: 800, cursor: saving ? "wait" : "pointer" }}>
+                <i className="fa-solid fa-key" aria-hidden="true" /> Change PIN
+              </button>
+            </div>
+          </section>
           <div
             style={{
               display: "grid",

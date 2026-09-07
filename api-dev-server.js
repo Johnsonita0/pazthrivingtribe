@@ -23,6 +23,7 @@ import vendorSupportHandler from './server-handlers/vendor-support.js';
 import customerSupportHandler from './server-handlers/customer-support.js';
 import resolveBankAccountHandler from './server-handlers/resolve-bank-account.js';
 import storeProductsPublicHandler from './server-handlers/store-products-public.js';
+import vendorPinChangedEmailHandler from './server-handlers/vendor-pin-changed-email.js';
 
 try {
   process.loadEnvFile?.('.env');
@@ -106,6 +107,12 @@ const server = http.createServer((req, res) => {
 
       if (pathname === '/api/store-products-public' && req.method === 'GET') {
         await storeProductsPublicHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/vendor-pin-changed-email' && req.method === 'POST') {
+        req.body = body ? JSON.parse(body) : {};
+        await vendorPinChangedEmailHandler(req, res);
         return;
       }
 
