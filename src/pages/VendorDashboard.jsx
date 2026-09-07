@@ -843,7 +843,7 @@ export default function VendorDashboard() {
       setNotice({ type: "error", text: error.message });
       return;
     }
-    setProducts((current) => current.map((item) => item.id === product.id ? data : item));
+    setProducts((current) => current.map((item) => item.id === product.id ? { ...data, currency: accountCurrency } : item));
     setNotice({ type: "success", text: nextInStock ? "Product marked as available." : "Product marked as sold out." });
   };
 
@@ -1784,7 +1784,7 @@ export default function VendorDashboard() {
                   {["Ebook", "Planner", "Guide", "Workbook", "Journal", "Course", "Audio", "Bundle"].map((category) => <option key={category}>{category}</option>)}
                 </select>
                 <label style={{ display: "flex", alignItems: "center", gap: "7px", color: "#334155", fontWeight: 700, fontSize: ".7rem", gridColumn: "1 / -1", gridRow: "4" }}>
-                  <input type="checkbox" checked={productForm.isFree} onChange={(event) => setProductForm({ ...productForm, isFree: event.target.checked, price: event.target.checked ? "0" : productForm.price })} />
+                  <input type="checkbox" checked={productForm.isFree} onChange={(event) => setProductForm({ ...productForm, isFree: event.target.checked, price: event.target.checked ? "0" : (Number(productForm.price) > 0 ? productForm.price : "1") })} />
                   Free product (email delivery without Paystack)
                 </label>
                 <select value={productForm.inStock ? "available" : "out-of-stock"} onChange={(event) => setProductForm({ ...productForm, inStock: event.target.value === "available" })} aria-label="Stock status" style={{ ...productFieldStyle, gridColumn: "1", gridRow: "5" }}>

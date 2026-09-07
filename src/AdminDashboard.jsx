@@ -3361,7 +3361,9 @@ export default function AdminDashboard(props) {
                                 isFree: event.target.checked,
                                 price: event.target.checked
                                   ? "0"
-                                  : current.price,
+                                  : Number(current.price) > 0
+                                    ? current.price
+                                    : "1",
                               }))
                             }
                           />
