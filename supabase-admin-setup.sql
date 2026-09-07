@@ -229,8 +229,33 @@ create table if not exists vendor_profiles (
 );
 
 alter table if exists vendor_profiles add column if not exists phone text;
+alter table if exists vendor_profiles add column if not exists username text;
 alter table if exists vendor_profiles add column if not exists payout_accounts jsonb not null default '[]'::jsonb;
 alter table if exists vendor_profiles add column if not exists selected_payout_account_id text;
+alter table if exists vendor_profiles add column if not exists vendor_terms_version text;
+alter table if exists vendor_profiles add column if not exists vendor_terms_accepted_at timestamptz;
+create unique index if not exists vendor_profiles_username_unique on vendor_profiles (lower(username)) where username is not null;
+create unique index if not exists vendor_profiles_email_unique on vendor_profiles (lower(contact_email)) where contact_email is not null;
+create unique index if not exists vendor_profiles_company_name_unique on vendor_profiles (lower(company_name));
+
+create or replace function public.check_vendor_identity_availability(
+  p_username text,
+  p_email text,
+  p_company_name text
+)
+returns jsonb
+language sql
+security definer
+set search_path = public
+as $$
+  select jsonb_build_object(
+    'username_taken', exists(select 1 from public.vendor_profiles where lower(username) = lower(trim(p_username))),
+    'email_taken', exists(select 1 from public.vendor_profiles where lower(contact_email) = lower(trim(p_email))),
+    'company_name_taken', exists(select 1 from public.vendor_profiles where lower(company_name) = lower(trim(p_company_name)))
+  );
+$$;
+
+grant execute on function public.check_vendor_identity_availability(text, text, text) to anon, authenticated;
 
 alter table if exists store_products add column if not exists vendor_id uuid references vendor_profiles(id) on delete set null;
 alter table if exists store_products add column if not exists vendor_name text;
@@ -243,6 +268,7 @@ create table if not exists vendor_sales (
   product_title text,
   quantity integer not null default 1,
   gross_amount numeric(12,2) not null default 0,
+  platform_fee numeric(12,2) not null default 0,
   vendor_amount numeric(12,2) not null default 0,
   currency text not null default 'NGN',
   payout_status text not null default 'pending' check (payout_status in ('pending', 'approved', 'paid', 'held')),

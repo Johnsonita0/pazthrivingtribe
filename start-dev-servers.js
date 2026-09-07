@@ -34,7 +34,8 @@ setTimeout(() => {
   const viteCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';
   const viteServer = spawn(viteCommand, ['run', 'dev:frontend'], {
     stdio: 'inherit',
-    cwd: __dirname
+    cwd: __dirname,
+    shell: process.platform === 'win32'
   });
 
   viteServer.on('error', (error) => {

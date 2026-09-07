@@ -125,11 +125,13 @@ export default async function handler(req, res) {
       return sendJson(res, 402, { error: 'The payment amount does not match this order.' });
     }
 
+    const orderNumber = String(body.orderNumber || `PAZ-${Date.now().toString().slice(-6)}`);
     if (!isFreeOrder) {
       const vendorSales = normalizedItems
         .filter((item) => item.product.vendor_id)
         .map((item) => {
           const grossAmount = Number(item.product.price || 0) * item.quantity;
+          const platformFee = Math.round(grossAmount * 0.15 * 100) / 100;
           return {
             vendor_id: item.product.vendor_id,
             order_number: orderNumber,
@@ -137,7 +139,8 @@ export default async function handler(req, res) {
             product_title: item.product.title,
             quantity: item.quantity,
             gross_amount: grossAmount,
-            vendor_amount: grossAmount,
+            platform_fee: platformFee,
+            vendor_amount: Math.round((grossAmount - platformFee) * 100) / 100,
             currency: orderCurrency,
             payout_status: 'pending'
           };
@@ -194,7 +197,6 @@ export default async function handler(req, res) {
       });
     }
 
-    const orderNumber = String(body.orderNumber || `PAZ-${Date.now().toString().slice(-6)}`);
     const itemSummary = normalizedItems.map(({ product, quantity }) => `• ${product.title} x${quantity}`).join('\n');
     const customerName = String(body.customerName || 'Customer').trim();
     const subject = `Your PAZ products are ready — #${orderNumber}`;

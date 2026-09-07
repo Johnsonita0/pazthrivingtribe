@@ -3,6 +3,15 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 
 const vendorDraftKey = "paz-vendor-registration-draft";
+const vendorTermsVersion = "2026-09-07";
+const vendorTermsSections = [
+  ["1. Marketplace relationship", "PAZ Thriving Tribe provides a marketplace and digital delivery service. You remain responsible for the accuracy, legality, quality, ownership, and support of every product you submit."],
+  ["2. Platform commission", "For every paid sale of any vendor product, PAZ retains a mandatory 15% platform commission calculated on the gross product amount. You receive the remaining 85%, subject to refunds, chargebacks, taxes, payment costs, holds, and applicable law. This commission applies regardless of product category, price, currency, promotion, or payout method."],
+  ["3. Product standards", "You must only upload content you are authorized to sell. Products must be accurately described, deliverable, safe, and compliant with applicable laws. PAZ may reject, suspend, remove, or restrict products or accounts that do not meet these requirements."],
+  ["4. Orders, refunds, and payouts", "A sale is recorded after payment verification. Payouts may remain pending while an order, refund, dispute, fraud signal, or compliance review is assessed. You authorize PAZ to deduct the commission and any valid reversals or adjustments from amounts otherwise payable to you."],
+  ["5. Account and compliance duties", "You must keep your account, identity, payout, tax, and contact information accurate and secure. You are responsible for customer support relating to your products and for complying with intellectual-property, consumer-protection, tax, privacy, and other applicable obligations."],
+  ["6. Acceptance and changes", "By creating a vendor account, you accept these Vendor Marketplace Terms and authorize the 15% commission. PAZ may update these terms prospectively by publishing a new version and may require renewed acceptance before continued selling."],
+];
 const currencies = ["NGN", "USD", "GBP", "EUR", "GHS", "KES", "ZAR"];
 const banks = [
   ["Access Bank", "044"], ["Citibank Nigeria", "023"], ["Ecobank Nigeria", "050"], ["FCMB", "214"], ["Fidelity Bank", "070"], ["First Bank of Nigeria", "011"], ["Globus Bank", "103"], ["Guaranty Trust Bank", "058"], ["Heritage Bank", "030"], ["Jaiz Bank", "301"], ["Keystone Bank", "082"], ["Kuda Bank", "090267"], ["Moniepoint", "50515"], ["Opay", "999992"], ["PalmPay", "999991"], ["Polaris Bank", "076"], ["Premium Trust Bank", "105"], ["Providus Bank", "101"], ["Stanbic IBTC Bank", "221"], ["Standard Chartered Bank Nigeria", "068"], ["Sterling Bank", "232"], ["SunTrust Bank", "100"], ["Taj Bank", "302"], ["UBA", "033"], ["Union Bank of Nigeria", "032"], ["Unity Bank", "215"], ["Wema Bank", "035"], ["Zenith Bank", "057"], ["Other / International bank", ""],
@@ -29,6 +38,7 @@ const money = (value, currency = "NGN") =>
     maximumFractionDigits: 2,
   }).format(Number(value || 0));
 const appUrl = String(import.meta.env.VITE_APP_URL || window.location.origin).replace(/\/$/, "");
+const normalizeUsername = (value) => String(value || "").trim().toLowerCase().replace(/[^a-z0-9._-]/g, "").slice(0, 30);
 const withTimeout = (promise, message, timeoutMs = 15000) =>
   Promise.race([
     promise,
@@ -49,6 +59,7 @@ export default function VendorDashboard() {
   const [authMode, setAuthMode] = useState("sign-in");
   const [authForm, setAuthForm] = useState({ email: "", password: "" });
   const [profileForm, setProfileForm] = useState({
+    username: "",
     companyName: "",
     phone: "",
     logoUrl: "",
@@ -112,6 +123,10 @@ export default function VendorDashboard() {
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [vendorTermsOpen, setVendorTermsOpen] = useState(false);
+  const [vendorTermsAccepted, setVendorTermsAccepted] = useState(false);
+  const [usernameAvailability, setUsernameAvailability] = useState("unknown");
+  const [usernameSuggestion, setUsernameSuggestion] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -208,6 +223,7 @@ export default function VendorDashboard() {
       setProfileForm((current) => ({
         ...current,
         companyName: vendor.company_name || "",
+        username: vendor.username || "",
         phone: vendor.phone || "",
         logoUrl: vendor.logo_url || "",
         logoFile: null,
@@ -366,6 +382,7 @@ export default function VendorDashboard() {
       .from("vendor_profiles")
       .upsert({
         id: user.id,
+        username: normalizeUsername(values.username),
         company_name: values.companyName.trim(),
         phone: values.phone.trim(),
         logo_url: logoUrl,
@@ -378,12 +395,52 @@ export default function VendorDashboard() {
         payout_currency: values.payoutCurrency,
         payout_accounts: values.payoutAccounts || [],
         selected_payout_account_id: values.selectedPayoutAccountId || null,
+        vendor_terms_version: vendorTermsVersion,
+        vendor_terms_accepted_at: new Date().toISOString(),
         status: existingProfile?.status || "pending",
       })
       .select()
       .single();
     if (error) throw error;
     return data;
+  };
+
+  const checkVendorAvailability = async () => {
+    const username = normalizeUsername(profileForm.username);
+    const companyName = profileForm.companyName.trim();
+    const email = authForm.email.trim().toLowerCase();
+    if (!username || !companyName || !email) return false;
+    setUsernameAvailability("checking");
+    const { data: availability, error } = await supabase.rpc("check_vendor_identity_availability", {
+      p_username: username,
+      p_email: email,
+      p_company_name: companyName,
+    });
+    if (error) {
+      setUsernameAvailability("unknown");
+      setNotice({ type: "error", text: "Vendor availability could not be checked. Please try again." });
+      return false;
+    }
+    if (availability?.email_taken) {
+      setUsernameAvailability("unknown");
+      setNotice({ type: "error", text: "This email already belongs to a vendor record." });
+      return false;
+    }
+    if (availability?.company_name_taken) {
+      setUsernameAvailability("unknown");
+      setNotice({ type: "error", text: "This business name is already registered." });
+      return false;
+    }
+    if (availability?.username_taken) {
+      const suggestion = `${username}${Math.floor(100 + Math.random() * 900)}`.slice(0, 30);
+      setUsernameSuggestion(suggestion);
+      setUsernameAvailability("taken");
+      setNotice({ type: "error", text: `That username is already taken. Try ${suggestion}.` });
+      return false;
+    }
+    setUsernameSuggestion("");
+    setUsernameAvailability("available");
+    return true;
   };
 
   const verifyBankAccount = async () => {
@@ -431,12 +488,21 @@ export default function VendorDashboard() {
       setNotice({ type: "error", text: !profileForm.idDocument ? "Drag in your identity document before creating your vendor account." : "Verify the payout account name before creating your vendor account." });
       return;
     }
+    if (authMode === "sign-up" && !vendorTermsAccepted) {
+      setNotice({ type: "error", text: "Read and accept the Vendor Marketplace Terms before creating your account." });
+      return;
+    }
     setSaving(true);
     try {
       if (authMode === "sign-up") {
+        if (!(await checkVendorAvailability())) {
+          setSaving(false);
+          return;
+        }
         window.sessionStorage.setItem(vendorDraftKey, JSON.stringify({
           email: authForm.email,
           profile: {
+            username: profileForm.username,
             companyName: profileForm.companyName,
             logoUrl: profileForm.logoUrl,
             idType: profileForm.idType,
@@ -537,7 +603,7 @@ export default function VendorDashboard() {
 
   const saveProfile = async (event) => {
     event.preventDefault();
-    if (!profileForm.companyName.trim() || !profileForm.payoutName.trim() || !profileForm.payoutAccount.trim() || !profileForm.payoutBank.trim() || (!profile?.id_document_path && !profileForm.idDocument) || !profileForm.verifiedAccountName) {
+    if (!profileForm.username.trim() || !profileForm.companyName.trim() || !profileForm.payoutName.trim() || !profileForm.payoutAccount.trim() || !profileForm.payoutBank.trim() || (!profile?.id_document_path && !profileForm.idDocument) || !profileForm.verifiedAccountName) {
       setNotice({ type: "error", text: !profile?.id_document_path && !profileForm.idDocument ? "Drag in your identity document before saving your vendor profile." : "Business name, bank, account number, and a successfully verified account name are required for vendor verification." });
       return;
     }
@@ -812,6 +878,20 @@ export default function VendorDashboard() {
     (total, sale) => total + Number(sale.vendor_amount || 0),
     0,
   );
+  const canCreateVendorAccount = Boolean(
+    authForm.email.trim()
+    && authForm.password.length >= 8
+    && profileForm.companyName.trim()
+    && normalizeUsername(profileForm.username).length >= 3
+    && profileForm.idType
+    && profileForm.idDocument
+    && profileForm.payoutName.trim()
+    && /^\d{10}$/.test(profileForm.payoutAccount)
+    && profileForm.payoutBankCode
+    && profileForm.verifiedAccountName
+    && profileForm.payoutCurrency
+    && vendorTermsAccepted
+  );
 
   if (passwordResetMode)
     return (
@@ -830,7 +910,7 @@ export default function VendorDashboard() {
             </div>
             <button disabled={saving} style={{ padding: "12px", background: "#166534", color: "#fff", border: 0, borderRadius: "9px", fontWeight: 800 }}>{saving ? "Updating..." : "Update password"}</button>
           </div>
-          {notice && <p style={{ color: notice.type === "error" ? "#b91c1c" : "#166534" }}>{notice.text}</p>}
+          {notice && <div role="status" aria-live="polite" style={{ position: "fixed", top: "20px", right: "20px", zIndex: 100, width: "min(380px, calc(100vw - 40px))", padding: "13px 16px", borderRadius: "10px", border: `1px solid ${notice.type === "error" ? "#fecaca" : "#bbf7d0"}`, background: notice.type === "error" ? "#fef2f2" : "#ecfdf5", color: notice.type === "error" ? "#b91c1c" : "#166534", boxShadow: "0 12px 28px rgba(15, 23, 42, .16)", fontWeight: 700 }}>{notice.text}</div>}
           <button type="button" onClick={() => { setPasswordResetMode(false); navigate("/vendor", { replace: true }); }} style={{ marginTop: "12px", border: 0, background: "none", color: "#166534", fontWeight: 700 }}>Return to sign in</button>
         </form>
       </main>
@@ -887,6 +967,11 @@ export default function VendorDashboard() {
             {authMode === "sign-up" && (
               <>
                 <input required placeholder="Business or brand name" value={profileForm.companyName} onChange={(event) => setProfileForm({ ...profileForm, companyName: event.target.value })} style={fieldStyle} />
+                <div style={{ display: "grid", gap: "5px" }}>
+                  <input required minLength="3" maxLength="30" pattern="[A-Za-z0-9._-]+" placeholder="Username (shown in your vendor dashboard)" value={profileForm.username} onChange={(event) => { setProfileForm({ ...profileForm, username: normalizeUsername(event.target.value) }); setUsernameAvailability("unknown"); setUsernameSuggestion(""); }} onBlur={checkVendorAvailability} style={fieldStyle} />
+                  <small style={{ color: usernameAvailability === "taken" ? "#b91c1c" : "#64748b" }}>{usernameAvailability === "checking" ? "Checking username..." : usernameAvailability === "available" ? "Username is available." : usernameSuggestion ? `Suggested username: ${usernameSuggestion}` : "3-30 letters, numbers, dots, underscores, or hyphens."}</small>
+                  {usernameSuggestion && <button type="button" onClick={() => { setProfileForm({ ...profileForm, username: usernameSuggestion }); setUsernameSuggestion(""); setUsernameAvailability("unknown"); }} style={{ width: "fit-content", border: "1px solid #166534", borderRadius: "7px", padding: "5px 8px", background: "#f0fdf4", color: "#166534", fontWeight: 700, cursor: "pointer" }}>Use {usernameSuggestion}</button>}
+                </div>
                 <label onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }} onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file?.type.startsWith("image/")) setProfileForm({ ...profileForm, logoFile: file }); }} style={{ display: "grid", gap: "6px", padding: "16px", border: "1px dashed #86efac", borderRadius: "10px", background: "#f0fdf4", color: "#166534", textAlign: "center", cursor: "copy" }}>
                   <strong>Drag business logo here</strong>
                   <span style={{ fontSize: ".78rem" }}>{profileForm.logoFile?.name || "PNG, JPG, or WebP"}</span>
@@ -916,8 +1001,14 @@ export default function VendorDashboard() {
                 </select>
               </>
             )}
+            {authMode === "sign-up" && (
+              <label style={{ display: "flex", alignItems: "flex-start", gap: "8px", color: "#334155", fontSize: ".82rem", lineHeight: 1.45 }}>
+                <input type="checkbox" name="vendor-terms-acceptance" required checked={vendorTermsAccepted} onChange={(event) => setVendorTermsAccepted(event.target.checked)} aria-label="Accept Vendor Marketplace Terms" style={{ appearance: "none", width: "15px", height: "15px", flex: "0 0 15px", marginTop: "3px", border: "2px solid #166534", borderRadius: "50%", background: vendorTermsAccepted ? "#166534" : "#fff", boxShadow: vendorTermsAccepted ? "inset 0 0 0 3px #fff" : "none", cursor: "pointer" }} />
+                <span>I agree to the <button type="button" onClick={() => setVendorTermsOpen(true)} style={{ border: 0, padding: 0, background: "none", color: "#166534", font: "inherit", fontWeight: 800, textDecoration: "underline", cursor: "pointer" }}>Vendor Marketplace Terms</button>, including PAZ's mandatory 15% commission on every paid product sale.</span>
+              </label>
+            )}
             <button
-              disabled={saving}
+              disabled={saving || (authMode === "sign-up" && !canCreateVendorAccount)}
               style={{
                 padding: "12px",
                 background: "#166534",
@@ -925,12 +1016,14 @@ export default function VendorDashboard() {
                 border: 0,
                 borderRadius: "9px",
                 fontWeight: 800,
+                opacity: saving || (authMode === "sign-up" && !canCreateVendorAccount) ? 0.55 : 1,
+                cursor: saving || (authMode === "sign-up" && !canCreateVendorAccount) ? "not-allowed" : "pointer",
               }}
             >
               {saving ? "Please wait..." : authMode === "sign-in" ? "Sign in" : authMode === "reset" ? "Send reset link" : "Create account"}
             </button>
           </div>
-          {notice && <p>{notice.text}</p>}
+          {notice && <div role="status" aria-live="polite" style={{ position: "fixed", top: "20px", right: "20px", zIndex: 100, width: "min(380px, calc(100vw - 40px))", padding: "13px 16px", borderRadius: "10px", border: `1px solid ${notice.type === "error" ? "#fecaca" : "#bbf7d0"}`, background: notice.type === "error" ? "#fef2f2" : "#ecfdf5", color: notice.type === "error" ? "#b91c1c" : "#166534", boxShadow: "0 12px 28px rgba(15, 23, 42, .16)", fontWeight: 700 }}>{notice.text}</div>}
           {authMode === "sign-in" && (
             <button
               type="button"
@@ -942,9 +1035,11 @@ export default function VendorDashboard() {
           )}
           <button
             type="button"
-            onClick={() =>
-              setAuthMode(authMode === "sign-up" ? "sign-in" : "sign-in")
-            }
+            onClick={() => {
+              const openingSignup = authMode === "sign-in";
+              setAuthMode(openingSignup ? "sign-up" : "sign-in");
+              if (openingSignup) setVendorTermsAccepted(false);
+            }}
             style={{
               marginTop: "12px",
               border: 0,
@@ -956,6 +1051,19 @@ export default function VendorDashboard() {
             {authMode === "sign-in" ? "Create a vendor account" : "Return to sign in"}
           </button>
         </form>
+        {vendorTermsOpen && (
+          <div role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setVendorTermsOpen(false); }} style={{ position: "fixed", inset: 0, zIndex: 50, display: "grid", placeItems: "center", padding: "20px", background: "rgba(15, 23, 42, .58)" }}>
+            <section role="dialog" aria-modal="true" aria-labelledby="vendor-terms-title" style={{ width: "min(680px, 100%)", maxHeight: "min(760px, 90vh)", overflow: "auto", background: "#fff", borderRadius: "16px", padding: "24px", boxShadow: "0 24px 60px rgba(15,23,42,.25)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "14px" }}>
+                <div><p style={{ margin: 0, color: "#15803d", fontSize: ".72rem", fontWeight: 800, letterSpacing: ".12em" }}>VERSION {vendorTermsVersion}</p><h2 id="vendor-terms-title" style={{ margin: "6px 0 0" }}>Vendor Marketplace Terms</h2></div>
+                <button type="button" onClick={() => setVendorTermsOpen(false)} aria-label="Close Vendor Marketplace Terms" style={{ border: "1px solid #cbd5e1", borderRadius: "8px", background: "#fff", padding: "6px 10px", fontSize: "1.1rem", cursor: "pointer" }}>×</button>
+              </div>
+              <p style={{ color: "#475569", lineHeight: 1.55 }}>Please review these terms before creating or continuing to use a PAZ vendor account.</p>
+              <div style={{ display: "grid", gap: "16px", color: "#334155", lineHeight: 1.55 }}>{vendorTermsSections.map(([heading, text]) => <div key={heading}><h3 style={{ margin: 0, fontSize: "1rem", color: "#0f172a" }}>{heading}</h3><p style={{ margin: "4px 0 0" }}>{text}</p></div>)}</div>
+              <button type="button" onClick={() => { setVendorTermsAccepted(true); setVendorTermsOpen(false); }} style={{ marginTop: "20px", width: "100%", border: 0, borderRadius: "9px", padding: "12px", background: "#166534", color: "#fff", fontWeight: 800, cursor: "pointer" }}>I understand and accept these terms</button>
+            </section>
+          </div>
+        )}
       </main>
     );
   if (loading)
@@ -1014,11 +1122,10 @@ export default function VendorDashboard() {
             >
               VENDOR WORKSPACE
             </p>
-            <h1>{profile?.company_name || "Complete your vendor profile"}</h1>
+            <h1>{profile?.username ? `Welcome, ${profile.username}` : profile?.company_name || "Complete your vendor profile"}</h1>
             <p style={{ color: "#64748b" }}>
-              {profile?.status === "approved"
-                ? "Verified vendor"
-                : "Pending admin verification"}
+              {profile?.username && profile?.company_name ? `${profile.company_name} · ` : ""}
+              {profile?.status === "approved" ? "Verified vendor" : "Pending admin verification"}
             </p>
           </div>
           <div className="vendor-dashboard-header-actions">
@@ -1070,15 +1177,7 @@ export default function VendorDashboard() {
           </div>
         </header>
         {notice && (
-          <div
-            style={{
-              marginTop: "16px",
-              padding: "12px 14px",
-              borderRadius: "9px",
-              background: notice.type === "error" ? "#fef2f2" : "#ecfdf5",
-              color: notice.type === "error" ? "#b91c1c" : "#166534",
-            }}
-          >
+          <div role="status" aria-live="polite" style={{ position: "fixed", top: "20px", right: "20px", zIndex: 100, width: "min(380px, calc(100vw - 40px))", padding: "13px 16px", borderRadius: "10px", border: `1px solid ${notice.type === "error" ? "#fecaca" : "#bbf7d0"}`, background: notice.type === "error" ? "#fef2f2" : "#ecfdf5", color: notice.type === "error" ? "#b91c1c" : "#166534", boxShadow: "0 12px 28px rgba(15, 23, 42, .16)", fontWeight: 700 }}>
             {notice.text}
           </div>
         )}
@@ -1162,6 +1261,7 @@ export default function VendorDashboard() {
               gap: "12px",
             }}
           >
+            <input required placeholder="Username (locked)" value={profileForm.username} readOnly style={{ ...fieldStyle, background: "#f1f5f9", color: "#475569" }} />
             <input required placeholder="Business name (locked)" value={profileForm.companyName} readOnly style={{ ...fieldStyle, background: "#f1f5f9", color: "#475569" }} />
             <input required type="email" placeholder="Email (locked)" value={profile?.contact_email || session.user.email || ""} readOnly style={{ ...fieldStyle, background: "#f1f5f9", color: "#475569" }} />
             <input placeholder="Phone number" value={profileForm.phone} onChange={(event) => setProfileForm({ ...profileForm, phone: event.target.value })} style={fieldStyle} />
