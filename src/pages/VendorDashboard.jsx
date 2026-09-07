@@ -749,7 +749,12 @@ export default function VendorDashboard() {
   const saveProfile = async (event) => {
     event.preventDefault();
     const isNewVendorProfile = !profile?.id;
-    if (!profileForm.username.trim() || !profileForm.companyName.trim() || (isNewVendorProfile && (!profileForm.payoutName.trim() || !profileForm.payoutAccount.trim() || !profileForm.payoutBank.trim() || (!profile?.id_document_path && !profileForm.idDocument) || !profileForm.verifiedAccountName))) {
+    setNotice(null);
+    if (!profileForm.username.trim() || !profileForm.companyName.trim()) {
+      setNotice({ type: "error", text: "Username and business name are required to update your profile." });
+      return;
+    }
+    if (isNewVendorProfile && (!profileForm.payoutName.trim() || !profileForm.payoutAccount.trim() || !profileForm.payoutBank.trim() || (!profile?.id_document_path && !profileForm.idDocument) || !profileForm.verifiedAccountName)) {
       setNotice({ type: "error", text: !profile?.id_document_path && !profileForm.idDocument ? "Drag in your identity document before saving your vendor profile." : "Business name, bank, account number, and a successfully verified account name are required for vendor verification." });
       return;
     }
