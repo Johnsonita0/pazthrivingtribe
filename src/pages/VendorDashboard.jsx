@@ -53,6 +53,12 @@ const withTimeout = (promise, message, timeoutMs = 15000) =>
       window.setTimeout(() => reject(new Error(message)), timeoutMs),
     ),
   ]);
+const userFacingError = (error, fallback) => {
+  const message = String(error?.message || error || "");
+  if (/failed to fetch|network|fetch/i.test(message)) return "We could not reach the vendor workspace. Check your connection and try again.";
+  if (/jwt|token|session|unauthorized|401/i.test(message)) return "Your vendor session needs to be refreshed. Please sign in again.";
+  return message && !/^typeerror:/i.test(message) ? message : fallback;
+};
 const productReviewColumns = "id,vendor_id,title,price,currency,status,name_verified,description_verified,cover_verified,attachment_verified,updated_at";
 const vendorProfileColumns = "id,company_name,logo_url,contact_email,id_type,id_document_path,status,payout_account_name,payout_account_number,payout_bank_name,payout_currency,rejection_reason,approved_at,approved_by,created_at,updated_at,phone,username,payout_accounts,selected_payout_account_id,vendor_terms_version,vendor_terms_accepted_at";
 
@@ -317,11 +323,11 @@ export default function VendorDashboard() {
   const unlockVendor = async (event) => {
     event.preventDefault();
     if (!/^\d{4}$/.test(vendorPin)) {
-      setVendorPinError("Enter the 4-digit PIN for this browser.");
+      setNotice({ type: "error", text: "Enter all 4 digits of your vendor PIN." });
       return;
     }
     if (pinMode === "setup" && vendorPin !== vendorPinConfirm) {
-      setVendorPinError("The PINs do not match.");
+      setNotice({ type: "error", text: "The PINs do not match. Check them and try again." });
       return;
     }
     setSaving(true);
@@ -330,7 +336,7 @@ export default function VendorDashboard() {
         const { data: validPin, error } = await supabase.rpc("verify_vendor_pin", { p_pin: vendorPin });
         if (error) throw error;
         if (!validPin) {
-          setVendorPinError("That PIN is not correct.");
+          setNotice({ type: "error", text: "That PIN is not correct. Try again." });
           return;
         }
       } else {
@@ -344,7 +350,8 @@ export default function VendorDashboard() {
       setVendorPinConfirm("");
       if (pinResetMode) navigate("/vendor", { replace: true });
     } catch (error) {
-      setVendorPinError(error.message || "The PIN could not be saved. Try again.");
+      setVendorPinError("");
+      setNotice({ type: "error", text: userFacingError(error, "The PIN could not be saved. Try again.") });
     } finally {
       setSaving(false);
     }
@@ -437,7 +444,12 @@ export default function VendorDashboard() {
     supabase.auth.getSession().then(({ data }) => {
       if (!active) return;
       setSession(data?.session || null);
-      if (data?.session?.user) void prepareVendorAccess(data.session.user);
+      if (data?.session?.user) {
+        void prepareVendorAccess(data.session.user).catch((error) => {
+          setLoading(false);
+          setNotice({ type: "error", text: userFacingError(error, "The vendor workspace could not be loaded. Please try again.") });
+        });
+      }
       else setLoading(false);
     });
     return () => {
@@ -1108,6 +1120,7 @@ export default function VendorDashboard() {
           backgroundSize: "cover",
         }}
       >
+        {notice && <div role="status" aria-live="polite" style={{ position: "fixed", top: "20px", right: "20px", zIndex: 100, width: "min(380px, calc(100vw - 40px))", padding: "13px 16px", borderRadius: "10px", border: `1px solid ${notice.type === "error" ? "#fecaca" : "#bbf7d0"}`, background: notice.type === "error" ? "#fef2f2" : "#ecfdf5", color: notice.type === "error" ? "#b91c1c" : "#166534", boxShadow: "0 12px 28px rgba(15, 23, 42, .16)", fontWeight: 700 }}>{notice.text}</div>}
         <form
           ref={vendorPinFormRef}
           onSubmit={unlockVendor}
@@ -1212,7 +1225,6 @@ export default function VendorDashboard() {
               </>
             )}
           </div>
-          {vendorPinError && <div role="alert" style={{ padding: "10px 12px", border: "1px solid #fecaca", borderRadius: "10px", background: "#fff7f7", color: "#b91c1c", fontSize: ".85rem", fontWeight: 700 }}>{vendorPinError}</div>}
           <button
             type="submit"
             disabled={saving}
@@ -1408,10 +1420,12 @@ export default function VendorDashboard() {
         .vendor-dashboard-theme-coral{--vendor-bg:#fff1ec;--vendor-surface:#fffdfc;--vendor-soft:#fff7f3;--vendor-text:#42251f;--vendor-muted:#86645d;--vendor-border:#f2c8bb;--vendor-accent:#c2412d;--vendor-accent-soft:#ffe4dc;--vendor-input:#fff}
         .vendor-dashboard-theme-gold{--vendor-bg:#fff8e7;--vendor-surface:#fffefa;--vendor-soft:#fffaf0;--vendor-text:#3f3217;--vendor-muted:#806d43;--vendor-border:#ead79f;--vendor-accent:#a16207;--vendor-accent-soft:#fff1c7;--vendor-input:#fff}
         .vendor-dashboard-theme>div>header h1,.vendor-dashboard-theme h2,.vendor-dashboard-theme h3,.vendor-dashboard-theme strong{color:var(--vendor-text)}
-        .vendor-dashboard-theme p,.vendor-dashboard-theme small,.vendor-dashboard-theme label{color:var(--vendor-muted)}
+        .vendor-dashboard-theme p,.vendor-dashboard-theme small,.vendor-dashboard-theme label,.vendor-dashboard-theme [style*="color: #64748b"],.vendor-dashboard-theme [style*="color: \"#64748b\""],.vendor-dashboard-theme [style*="color: #475569"]{color:var(--vendor-muted)!important}
         .vendor-dashboard-theme>div>section>button,.vendor-dashboard-theme button[aria-label^="Open"]{background:var(--vendor-accent)!important;color:#fff!important}
-        .vendor-dashboard-theme form,.vendor-dashboard-theme section[style*="background: #fff"],.vendor-dashboard-theme section[style*="background: \"#fff\""],.vendor-dashboard-theme [style*="background: #fff"]{background:var(--vendor-surface)!important;border-color:var(--vendor-border)!important;color:var(--vendor-text)}
+        .vendor-dashboard-theme form,.vendor-dashboard-theme section[style*="background: #fff"],.vendor-dashboard-theme section[style*="background: \"#fff\""],.vendor-dashboard-theme [style*="background: #fff"],.vendor-dashboard-theme [style*="background: #f8fffb"],.vendor-dashboard-theme [style*="background: \"#f8fffb\""]{background:var(--vendor-surface)!important;border-color:var(--vendor-border)!important;color:var(--vendor-text)!important}
         .vendor-dashboard-theme input,.vendor-dashboard-theme textarea,.vendor-dashboard-theme select{background:var(--vendor-input)!important;color:var(--vendor-text)!important;border-color:var(--vendor-border)!important}
+        .vendor-dashboard-theme button{color:var(--vendor-text)}
+        .vendor-dashboard-theme button[style*="background: #166534"],.vendor-dashboard-theme button[style*="background: \"#166534\""],.vendor-dashboard-theme button[style*="background: linear-gradient"]{background:var(--vendor-accent)!important;color:#fff!important}
         .vendor-dashboard-theme .vendor-dashboard-mobile-toggle,.vendor-dashboard-theme .vendor-dashboard-mobile-menu,.vendor-dashboard-theme .vendor-dashboard-mobile-menu button{background:var(--vendor-surface)!important;color:var(--vendor-text)!important;border-color:var(--vendor-border)!important}
         .vendor-dashboard-theme .vendor-dashboard-mobile-menu button:last-child{color:#b91c1c!important}
         .vendor-dashboard-theme .vendor-settings-button{background:var(--vendor-surface)!important;color:var(--vendor-text)!important;border-color:var(--vendor-border)!important}
@@ -1419,6 +1433,7 @@ export default function VendorDashboard() {
         .vendor-theme-choice{display:grid;gap:5px;text-align:left;padding:12px;border:2px solid var(--vendor-border);border-radius:12px;background:var(--vendor-surface);color:var(--vendor-text);cursor:pointer;font:inherit}
         .vendor-theme-choice[aria-pressed="true"]{border-color:var(--vendor-accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--vendor-accent) 18%, transparent)}
         .vendor-theme-swatch{width:30px;height:30px;border-radius:9px;border:2px solid rgba(15,23,42,.12)}
+        @media(max-width:640px){.vendor-theme-choice{grid-template-columns:30px minmax(0,1fr);align-items:center;padding:10px}.vendor-theme-choice small{grid-column:2}.vendor-theme-choice:first-child,.vendor-theme-choice:nth-child(2){grid-column:span 1}.vendor-theme-swatch{grid-row:span 2}}
         .vendor-dashboard-header{position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap}
         .vendor-dashboard-header-copy{min-width:0}
         .vendor-dashboard-header-actions{position:relative;display:flex;align-items:center;gap:8px;flex-shrink:0}
