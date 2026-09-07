@@ -148,6 +148,12 @@ export default function VendorDashboard() {
   const accountCurrency = profileForm.payoutCurrency || "NGN";
 
   useEffect(() => {
+    if (!notice) return undefined;
+    const timer = window.setTimeout(() => setNotice(null), 5000);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+
+  useEffect(() => {
     try {
       const savedDraft = JSON.parse(window.sessionStorage.getItem(vendorDraftKey) || "null");
       if (!savedDraft) return;
