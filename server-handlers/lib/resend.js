@@ -1,13 +1,8 @@
-const BLOCKED_EMAIL_RECIPIENTS = new Set([
-  'imeobongj@gmail.com'
-]);
-
 function normalizeRecipients(recipients) {
   const list = (Array.isArray(recipients) ? recipients : [recipients])
     .filter(Boolean)
     .map((email) => String(email).trim().toLowerCase())
     .filter((email) => email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-    .filter((email) => !BLOCKED_EMAIL_RECIPIENTS.has(email));
 
   return [...new Set(list)];
 }

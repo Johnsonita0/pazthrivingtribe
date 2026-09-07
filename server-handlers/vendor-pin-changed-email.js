@@ -2,7 +2,11 @@ import { createClient } from '@supabase/supabase-js';
 import { sendResendEmail } from './lib/resend.js';
 import { buildPazEmailTemplate } from './lib/paz-email-template.js';
 
-const json = (res, status, body) => res.status(status).json(body);
+const json = (res, status, body) => {
+  if (typeof res.status === 'function') return res.status(status).json(body);
+  res.writeHead(status, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(body));
+};
 const validEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
 export default async function handler(req, res) {
