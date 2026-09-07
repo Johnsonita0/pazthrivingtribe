@@ -13,6 +13,13 @@ const vendorTermsSections = [
   ["6. Acceptance and changes", "By creating a vendor account, you accept these Vendor Marketplace Terms and authorize the 15% commission. PAZ may update these terms prospectively by publishing a new version and may require renewed acceptance before continued selling."],
 ];
 const currencies = ["NGN", "USD", "GBP", "EUR", "GHS", "KES", "ZAR"];
+const vendorThemes = [
+  { id: "light", label: "Light", description: "Clean PAZ workspace", swatch: "#f1f5f3" },
+  { id: "dark", label: "Dark", description: "Low-glare workspace", swatch: "#17212b" },
+  { id: "sage", label: "Sage", description: "Soft green PAZ tones", swatch: "#dff5e8" },
+  { id: "coral", label: "Coral", description: "Warm accent workspace", swatch: "#ffe4dc" },
+  { id: "gold", label: "Gold", description: "Bright marketplace tones", swatch: "#fff1c7" },
+];
 const banks = [
   ["Access Bank", "044"], ["Citibank Nigeria", "023"], ["Ecobank Nigeria", "050"], ["FCMB", "214"], ["Fidelity Bank", "070"], ["First Bank of Nigeria", "011"], ["Globus Bank", "103"], ["Guaranty Trust Bank", "058"], ["Heritage Bank", "030"], ["Jaiz Bank", "301"], ["Keystone Bank", "082"], ["Kuda Bank", "090267"], ["Moniepoint", "50515"], ["Opay", "999992"], ["PalmPay", "999991"], ["Polaris Bank", "076"], ["Premium Trust Bank", "105"], ["Providus Bank", "101"], ["Stanbic IBTC Bank", "221"], ["Standard Chartered Bank Nigeria", "068"], ["Sterling Bank", "232"], ["SunTrust Bank", "100"], ["Taj Bank", "302"], ["UBA", "033"], ["Union Bank of Nigeria", "032"], ["Unity Bank", "215"], ["Wema Bank", "035"], ["Zenith Bank", "057"], ["Other / International bank", ""],
 ];
@@ -145,7 +152,22 @@ export default function VendorDashboard() {
   const [usernameSuggestion, setUsernameSuggestion] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [vendorTheme, setVendorTheme] = useState(() => {
+    try {
+      return window.localStorage.getItem("paz-vendor-theme") || "light";
+    } catch {
+      return "light";
+    }
+  });
   const accountCurrency = profileForm.payoutCurrency || "NGN";
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("paz-vendor-theme", vendorTheme);
+    } catch {
+      // Preferences remain active for the current session if storage is unavailable.
+    }
+  }, [vendorTheme]);
 
   useEffect(() => {
     if (!notice) return undefined;
@@ -1372,6 +1394,7 @@ export default function VendorDashboard() {
 
   return (
     <main
+      className={`vendor-dashboard-theme vendor-dashboard-theme-${vendorTheme}`}
       style={{
         minHeight: "100vh",
         background: "#f1f5f3",
@@ -1379,6 +1402,23 @@ export default function VendorDashboard() {
       }}
     >
       <style>{`
+        .vendor-dashboard-theme{--vendor-bg:#f1f5f3;--vendor-surface:#fff;--vendor-soft:#f8fffb;--vendor-text:#0f172a;--vendor-muted:#64748b;--vendor-border:#dbe7df;--vendor-accent:#166534;--vendor-accent-soft:#ecfdf5;--vendor-input:#fff;color:var(--vendor-text);background:var(--vendor-bg)!important;transition:background .2s ease,color .2s ease}
+        .vendor-dashboard-theme-dark{--vendor-bg:#17212b;--vendor-surface:#202d38;--vendor-soft:#263743;--vendor-text:#f1f5f9;--vendor-muted:#b6c4cf;--vendor-border:#405563;--vendor-accent:#86efac;--vendor-accent-soft:#234b3b;--vendor-input:#263743}
+        .vendor-dashboard-theme-sage{--vendor-bg:#e7f4ed;--vendor-surface:#fbfffc;--vendor-soft:#effaf3;--vendor-text:#16352b;--vendor-muted:#527066;--vendor-border:#b9dac8;--vendor-accent:#0f766e;--vendor-accent-soft:#dff8ef;--vendor-input:#fff}
+        .vendor-dashboard-theme-coral{--vendor-bg:#fff1ec;--vendor-surface:#fffdfc;--vendor-soft:#fff7f3;--vendor-text:#42251f;--vendor-muted:#86645d;--vendor-border:#f2c8bb;--vendor-accent:#c2412d;--vendor-accent-soft:#ffe4dc;--vendor-input:#fff}
+        .vendor-dashboard-theme-gold{--vendor-bg:#fff8e7;--vendor-surface:#fffefa;--vendor-soft:#fffaf0;--vendor-text:#3f3217;--vendor-muted:#806d43;--vendor-border:#ead79f;--vendor-accent:#a16207;--vendor-accent-soft:#fff1c7;--vendor-input:#fff}
+        .vendor-dashboard-theme>div>header h1,.vendor-dashboard-theme h2,.vendor-dashboard-theme h3,.vendor-dashboard-theme strong{color:var(--vendor-text)}
+        .vendor-dashboard-theme p,.vendor-dashboard-theme small,.vendor-dashboard-theme label{color:var(--vendor-muted)}
+        .vendor-dashboard-theme>div>section>button,.vendor-dashboard-theme button[aria-label^="Open"]{background:var(--vendor-accent)!important;color:#fff!important}
+        .vendor-dashboard-theme form,.vendor-dashboard-theme section[style*="background: #fff"],.vendor-dashboard-theme section[style*="background: \"#fff\""],.vendor-dashboard-theme [style*="background: #fff"]{background:var(--vendor-surface)!important;border-color:var(--vendor-border)!important;color:var(--vendor-text)}
+        .vendor-dashboard-theme input,.vendor-dashboard-theme textarea,.vendor-dashboard-theme select{background:var(--vendor-input)!important;color:var(--vendor-text)!important;border-color:var(--vendor-border)!important}
+        .vendor-dashboard-theme .vendor-dashboard-mobile-toggle,.vendor-dashboard-theme .vendor-dashboard-mobile-menu,.vendor-dashboard-theme .vendor-dashboard-mobile-menu button{background:var(--vendor-surface)!important;color:var(--vendor-text)!important;border-color:var(--vendor-border)!important}
+        .vendor-dashboard-theme .vendor-dashboard-mobile-menu button:last-child{color:#b91c1c!important}
+        .vendor-dashboard-theme .vendor-settings-button{background:var(--vendor-surface)!important;color:var(--vendor-text)!important;border-color:var(--vendor-border)!important}
+        .vendor-dashboard-theme .vendor-settings-button[aria-pressed="true"]{background:var(--vendor-accent)!important;color:#fff!important}
+        .vendor-theme-choice{display:grid;gap:5px;text-align:left;padding:12px;border:2px solid var(--vendor-border);border-radius:12px;background:var(--vendor-surface);color:var(--vendor-text);cursor:pointer;font:inherit}
+        .vendor-theme-choice[aria-pressed="true"]{border-color:var(--vendor-accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--vendor-accent) 18%, transparent)}
+        .vendor-theme-swatch{width:30px;height:30px;border-radius:9px;border:2px solid rgba(15,23,42,.12)}
         .vendor-dashboard-header{position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap}
         .vendor-dashboard-header-copy{min-width:0}
         .vendor-dashboard-header-actions{position:relative;display:flex;align-items:center;gap:8px;flex-shrink:0}
@@ -1426,7 +1466,7 @@ export default function VendorDashboard() {
             </p>
           </div>
           <div className="vendor-dashboard-header-actions">
-            <button className="vendor-settings-button" type="button" onClick={() => setSettingsOpen((current) => !current)} aria-label="Open vendor settings" title="Vendor settings" style={{ width: "40px", height: "40px", border: "1px solid #cbd5e1", borderRadius: "9px", background: settingsOpen ? "#166534" : "#fff", color: settingsOpen ? "#fff" : "#0f172a", fontSize: "1.15rem" }}>⚙</button>
+            <button className="vendor-settings-button" type="button" onClick={() => setSettingsOpen((current) => !current)} aria-pressed={settingsOpen} aria-label="Open vendor settings" title="Vendor settings" style={{ width: "40px", height: "40px", border: "1px solid #cbd5e1", borderRadius: "9px", background: settingsOpen ? "#166534" : "#fff", color: settingsOpen ? "#fff" : "#0f172a", fontSize: "1.15rem" }}>⚙</button>
             <button
               className="vendor-signout-button"
               type="button"
@@ -1542,6 +1582,27 @@ export default function VendorDashboard() {
               <i className="fa-solid fa-arrow-left" aria-hidden="true" /> Back to preview
             </button>
           </div>
+          <section style={{ display: "grid", gap: "10px", padding: "14px", border: "1px solid #dbe7df", borderRadius: "12px", background: "#f8fffb" }}>
+            <div>
+              <strong>Preferences</strong>
+              <p style={{ margin: "4px 0 0", fontSize: ".8rem" }}>Choose your vendor dashboard theme. This preference is saved on this browser.</p>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(145px, 1fr))", gap: "8px" }}>
+              {vendorThemes.map((theme) => (
+                <button
+                  key={theme.id}
+                  type="button"
+                  className="vendor-theme-choice"
+                  aria-pressed={vendorTheme === theme.id}
+                  onClick={() => setVendorTheme(theme.id)}
+                >
+                  <span className="vendor-theme-swatch" style={{ background: theme.swatch }} aria-hidden="true" />
+                  <strong>{theme.label}</strong>
+                  <small>{theme.description}</small>
+                </button>
+              ))}
+            </div>
+          </section>
           {profile?.id_document_path && (
             <section style={{ padding: "14px", border: "1px solid #dbe7df", borderRadius: "12px", background: "#f8fffb" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
