@@ -145,6 +145,7 @@ export default function VendorDashboard() {
   const [usernameSuggestion, setUsernameSuggestion] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const accountCurrency = profileForm.payoutCurrency || "NGN";
 
   useEffect(() => {
     try {
@@ -224,8 +225,9 @@ export default function VendorDashboard() {
         .order("created_at", { ascending: false }),
     ]);
     setProfile(vendor || null);
-    setProducts(productRows || []);
-    setSales(salesRows || []);
+    const selectedCurrency = vendor?.payout_currency || "NGN";
+    setProducts((productRows || []).map((product) => ({ ...product, currency: selectedCurrency })));
+    setSales((salesRows || []).map((sale) => ({ ...sale, currency: selectedCurrency })));
     setAds(adRows || []);
     if (vendor?.id_document_path) {
       const { data: documentUrlData } = await supabase.storage
@@ -257,6 +259,7 @@ export default function VendorDashboard() {
             : [],
         selectedPayoutAccountId: vendor.selected_payout_account_id || (vendor.payout_account_number ? "legacy-primary" : ""),
       }));
+    setProductForm((current) => ({ ...current, currency: vendor?.payout_currency || "NGN" }));
     setLoading(false);
   };
 
@@ -378,6 +381,7 @@ export default function VendorDashboard() {
     setProducts((current) => Array.isArray(data) ? data.map((freshProduct) => ({
       ...(current.find((product) => product.id === freshProduct.id) || {}),
       ...freshProduct,
+      currency: accountCurrency,
     })) : current);
     setNotice({ type: "success", text: "Product verification statuses refreshed." });
   };
@@ -396,7 +400,7 @@ export default function VendorDashboard() {
       setNotice({ type: "error", text: error?.message || "This product status could not be refreshed." });
       return;
     }
-    setProducts((current) => current.map((product) => product.id === productId ? { ...product, ...data } : product));
+    setProducts((current) => current.map((product) => product.id === productId ? { ...product, ...data, currency: accountCurrency } : product));
     setNotice({ type: "success", text: `${data.title} verification status refreshed.` });
   };
 
@@ -846,7 +850,7 @@ export default function VendorDashboard() {
 
   const editProduct = (product) => {
     setEditingProductId(product.id);
-    setProductForm({ title: product.title || "", description: product.description || "", price: product.price || "", currency: product.currency || "NGN", category: product.category || "Ebook", fileUrl: product.file_url || "", cover: product.cover || "/logo/logomain.png", isFree: Boolean(product.is_free), stockCount: String(product.stock_count ?? 1), inStock: product.in_stock !== false });
+    setProductForm({ title: product.title || "", description: product.description || "", price: product.price || "", currency: accountCurrency, category: product.category || "Ebook", fileUrl: product.file_url || "", cover: product.cover || "/logo/logomain.png", isFree: Boolean(product.is_free), stockCount: String(product.stock_count ?? 1), inStock: product.in_stock !== false });
     setProductFile(null);
     setCoverFile(null);
     window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
@@ -883,7 +887,7 @@ export default function VendorDashboard() {
         title: productForm.title.trim(),
         description: productForm.description.trim(),
         price: Number(productForm.price || 0),
-        currency: productForm.currency,
+        currency: accountCurrency,
         category: productForm.category,
         file_url: productForm.fileUrl,
         cover: productForm.cover || "/logo/logomain.png",
@@ -914,7 +918,7 @@ export default function VendorDashboard() {
         title: "",
         description: "",
         price: "",
-        currency: "NGN",
+        currency: accountCurrency,
         category: "Ebook",
         fileUrl: "",
         cover: "/logo/logomain.png",
@@ -1627,12 +1631,11 @@ export default function VendorDashboard() {
               </span>
               <select
                 value={profileForm.payoutCurrency}
-                onChange={(event) =>
-                  setProfileForm({
-                    ...profileForm,
-                    payoutCurrency: event.target.value,
-                  })
-                }
+                onChange={(event) => {
+                  const nextCurrency = event.target.value;
+                  setProfileForm({ ...profileForm, payoutCurrency: nextCurrency });
+                  setProductForm((current) => ({ ...current, currency: nextCurrency }));
+                }}
                 aria-label="Receive payouts in"
                 style={fieldStyle}
               >
@@ -1734,7 +1737,7 @@ export default function VendorDashboard() {
                   style={{ ...productFieldStyle, minHeight: "58px", gridColumn: "1 / -1", gridRow: "2", resize: "vertical" }}
                 />
                 <div style={{ display: "flex", alignItems: "center", gap: "7px", gridColumn: "1", gridRow: "3" }}>
-                  <span aria-hidden="true" style={{ display: "grid", placeItems: "center", minWidth: "24px", height: "32px", color: "#475569", fontWeight: 800, fontSize: ".78rem" }}>₦</span>
+                  <span aria-hidden="true" style={{ display: "grid", placeItems: "center", minWidth: "42px", height: "32px", color: "#475569", fontWeight: 800, fontSize: ".78rem" }}>{accountCurrency}</span>
                   <input
                     required
                     type="number"
@@ -1753,20 +1756,9 @@ export default function VendorDashboard() {
                     style={{ ...productFieldStyle, width: "100%" }}
                   />
                 </div>
-                <select
-                  value={productForm.currency}
-                  onChange={(event) =>
-                    setProductForm({
-                      ...productForm,
-                      currency: event.target.value,
-                    })
-                  }
-                  style={{ ...productFieldStyle, gridColumn: "2", gridRow: "3" }}
-                >
-                  {currencies.map((currency) => (
-                    <option key={currency}>{currency}</option>
-                  ))}
-                </select>
+                <div style={{ ...productFieldStyle, gridColumn: "2", gridRow: "3", display: "flex", alignItems: "center", color: "#475569", background: "#f8fafc", fontWeight: 800 }}>
+                  Product currency: {accountCurrency}
+                </div>
                 <select
                   value={productForm.category}
                   onChange={(event) =>
