@@ -748,7 +748,8 @@ export default function VendorDashboard() {
 
   const saveProfile = async (event) => {
     event.preventDefault();
-    if (!profileForm.username.trim() || !profileForm.companyName.trim() || !profileForm.payoutName.trim() || !profileForm.payoutAccount.trim() || !profileForm.payoutBank.trim() || (!profile?.id_document_path && !profileForm.idDocument) || !profileForm.verifiedAccountName) {
+    const isNewVendorProfile = !profile?.id;
+    if (!profileForm.username.trim() || !profileForm.companyName.trim() || (isNewVendorProfile && (!profileForm.payoutName.trim() || !profileForm.payoutAccount.trim() || !profileForm.payoutBank.trim() || (!profile?.id_document_path && !profileForm.idDocument) || !profileForm.verifiedAccountName))) {
       setNotice({ type: "error", text: !profile?.id_document_path && !profileForm.idDocument ? "Drag in your identity document before saving your vendor profile." : "Business name, bank, account number, and a successfully verified account name are required for vendor verification." });
       return;
     }
@@ -774,7 +775,7 @@ export default function VendorDashboard() {
       setProfileForm(values);
       setNotice({
         type: "success",
-        text: "Verification details sent to the main admin.",
+        text: isNewVendorProfile ? "Verification details sent to the main admin." : "Your vendor profile was updated.",
       });
     } catch (error) {
       setNotice({ type: "error", text: error.message });
@@ -1671,7 +1672,7 @@ export default function VendorDashboard() {
               fontWeight: 800,
             }}
           >
-            Save verification details
+            {profile?.id ? "Update profile" : "Save verification details"}
           </button>
         </form>}
         {!settingsOpen && <div ref={dashboardContentRef}>

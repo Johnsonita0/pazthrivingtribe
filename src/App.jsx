@@ -13,7 +13,6 @@ import FeedbackPage from './pages/FeedbackPage';
 import StorePage from './pages/StorePage';
 import ShopPage from './pages/ShopPage';
 import VendorDashboard from './pages/VendorDashboard';
-import VendorSupportChat from './pages/VendorSupportChat';
 import CustomerSupportChat from './components/CustomerSupportChat';
 import PaystackCallbackPage from './pages/PaystackCallbackPage';
 import CustomDropdown from './components/CustomDropdown';
@@ -4102,7 +4101,7 @@ export default function App() {
           <Route path="/store" element={<div className="public-website-container"><StorePage /></div>} />
           <Route path="/shop" element={<div className="public-website-container shop-page-shell" style={{ paddingTop: '72px' }}><ShopPage onOrderSubmitted={setShopOrders} paystackPublicKey={paystackPublicKey} storeProducts={storeProducts} storeBankAccount={storeBankAccount} /></div>} />
           <Route path="/shop/:productName" element={<div className="public-website-container shop-page-shell" style={{ paddingTop: '72px' }}><ShopPage onOrderSubmitted={setShopOrders} paystackPublicKey={paystackPublicKey} storeProducts={storeProducts} storeBankAccount={storeBankAccount} /></div>} />
-          <Route path="/vendor" element={<><VendorDashboard /><VendorSupportChat /></>} />
+          <Route path="/vendor" element={<><VendorDashboard /><CustomerSupportChat /></>} />
           <Route path="/payment/callback" element={<PaystackCallbackPage />} />
           <Route path="/care-counseling" element={<CareCounselingPage />} />
           <Route path="/services/family" element={<ComingSoonPage title="Thriving Parents" description="Empowering parents with tools and wisdom" />} />
