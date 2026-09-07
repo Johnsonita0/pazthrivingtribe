@@ -48,8 +48,8 @@ export default async function handler(req, res) {
       bodyHtml: isChangeRequest
         ? '<p>The PIN change screen is ready for your authenticated vendor session.</p><p>If you did not request this change, do not continue and change your account password immediately.</p>'
         : '<p>This security update was completed from your PAZ vendor settings.</p><p>Your PIN is never included in email. If you did not make this change, sign in and change your PIN again immediately.</p>',
-      ctaLabel: isChangeRequest ? 'Continue to vendor security' : 'Open vendor dashboard',
-      ctaUrl: `${appUrl}/vendor`,
+      ctaLabel: isChangeRequest ? 'Reset vendor PIN' : 'Open vendor dashboard',
+      ctaUrl: `${appUrl}/vendor${isChangeRequest ? '?reset_pin=1' : ''}`,
       showSecondaryCta: false,
       footerNote: isChangeRequest ? 'Continue only if you requested this PIN change.' : 'Keep your vendor password and PIN private.',
     });
@@ -58,7 +58,7 @@ export default async function handler(req, res) {
       subject,
       html,
       text: isChangeRequest
-        ? `Hi ${vendorName},\n\nA request was made to change your PAZ vendor PIN. Continue only if you requested this change: ${appUrl}/vendor`
+        ? `Hi ${vendorName},\n\nA request was made to change your PAZ vendor PIN. Reset it here only if you requested this change: ${appUrl}/vendor?reset_pin=1`
         : `Hi ${vendorName},\n\nYour PAZ vendor PIN was successfully changed. If you did not make this change, sign in and change your PIN again immediately.\n\nOpen your vendor dashboard: ${appUrl}/vendor`,
       from: process.env.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.org',
     });

@@ -133,6 +133,9 @@ export default function VendorDashboard() {
   const [passwordResetMode, setPasswordResetMode] = useState(() =>
     new URLSearchParams(window.location.search).get("reset") === "1",
   );
+  const [pinResetMode] = useState(() =>
+    new URLSearchParams(window.location.search).get("reset_pin") === "1",
+  );
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -269,7 +272,11 @@ export default function VendorDashboard() {
     if (pinError) throw pinError;
     setVendorLogoUrl(vendor?.logo_url || "");
     setVendorCompanyName(vendor?.company_name || "");
-    setPinMode(pinIsSet ? "unlock" : "setup");
+    if (pinResetMode && pinIsSet) {
+      const { error: clearPinError } = await supabase.rpc("clear_vendor_pin");
+      if (clearPinError) throw clearPinError;
+    }
+    setPinMode(pinResetMode || !pinIsSet ? "setup" : "unlock");
     setVendorPin("");
     setVendorPinConfirm("");
     setVendorPinError("");
@@ -304,6 +311,7 @@ export default function VendorDashboard() {
       setPinMode(null);
       setVendorPin("");
       setVendorPinConfirm("");
+      if (pinResetMode) navigate("/vendor", { replace: true });
     } catch (error) {
       setVendorPinError(error.message || "The PIN could not be saved. Try again.");
     } finally {
@@ -346,13 +354,7 @@ export default function VendorDashboard() {
         const emailPayload = await emailResponse.json().catch(() => ({}));
         throw new Error(emailPayload.error || "The PIN security email could not be sent.");
       }
-      const { error } = await supabase.rpc("clear_vendor_pin");
-      if (error) throw error;
-      setPinMode("setup");
-      setVendorPin("");
-      setVendorPinConfirm("");
-      setVendorPinError("");
-      setNotice(null);
+      setNotice({ type: "success", text: "A secure PIN reset link has been sent to your vendor email. Your current PIN is still active until you use that link." });
     } catch (error) {
       setNotice({ type: "error", text: error.message || "The PIN could not be reset." });
     } finally {
