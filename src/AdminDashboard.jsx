@@ -1279,6 +1279,21 @@ export default function AdminDashboard(props) {
     setEditingStoreProductId(null);
   };
 
+  const normalizeAdminProduct = (product = {}) => ({
+    ...product,
+    id: product.id || product.product_id,
+    title: product.title || product.name || "Untitled product",
+    description: product.description || "",
+    price: Number(product.price ?? product.amount ?? 0),
+    currency: product.currency || "NGN",
+    isFree: Boolean(product.isFree ?? product.is_free ?? false),
+    category: product.category || "Ebook",
+    fileUrl: product.fileUrl || product.file_url || "",
+    cover: product.cover || product.cover_url || "/logo/logomain.png",
+    inStock: (product.inStock ?? product.in_stock ?? true) !== false,
+    stockCount: Number(product.stockCount ?? product.stock_count ?? 0),
+  });
+
   const persistStoreProductToSupabase = async (
     product,
     operation = "upsert",
@@ -1315,14 +1330,16 @@ export default function AdminDashboard(props) {
           directInsertError.message,
         );
       } else if (operation === "upsert") {
-        const { error: directUpdateError } = await supabase
+        const { data: directUpdateData, error: directUpdateError } = await supabase
           .from("store_products")
           .update(payload)
-          .eq("id", product.id);
-        if (!directUpdateError) return true;
+          .eq("id", product.id)
+          .select()
+          .maybeSingle();
+        if (!directUpdateError && directUpdateData) return true;
         console.warn(
-          "Direct store product update failed, trying admin API:",
-          directUpdateError.message,
+          "Direct store product update did not persist, trying admin API:",
+          directUpdateError?.message || "No updated row returned",
         );
       }
 
@@ -1560,7 +1577,7 @@ export default function AdminDashboard(props) {
         );
         return;
       }
-      setStoreProducts(updatedProducts);
+      setStoreProducts(updatedProducts.map(normalizeAdminProduct));
       resetStoreProductForm();
       setPublishedProductLink(
         getProductLink({ ...targetProduct, ...productValues }),
@@ -1590,7 +1607,7 @@ export default function AdminDashboard(props) {
       }
       setStoreProducts((current = []) => [
         ...(Array.isArray(current) ? current : []),
-        newProduct,
+        normalizeAdminProduct(newProduct),
       ]);
       setPublishedProductLink(getProductLink(newProduct));
       showAdminToast(
@@ -1608,23 +1625,24 @@ export default function AdminDashboard(props) {
     setActiveDashboardView("commerce");
     setCommerceSubTab("storefront");
     setEditingStoreProductId(product.id);
+    const normalizedProduct = normalizeAdminProduct(product);
     setStoreProductForm({
-      title: product.title || "",
-      description: product.description || "",
-      price: product.price ?? "",
-      currency: product.currency || "NGN",
-      isFree: Boolean(product.isFree),
-      category: product.category || "Ebook",
-      fileUrl: product.fileUrl || "",
-      cover: product.cover || "/logo/logomain.png",
-      inStock: product.inStock !== false,
+      title: normalizedProduct.title,
+      description: normalizedProduct.description,
+      price: normalizedProduct.price,
+      currency: normalizedProduct.currency,
+      isFree: normalizedProduct.isFree,
+      category: normalizedProduct.category,
+      fileUrl: normalizedProduct.fileUrl,
+      cover: normalizedProduct.cover,
+      inStock: normalizedProduct.inStock,
       stockCount:
-        Number(product.stockCount ?? 0) > 0
-          ? Number(product.stockCount ?? 0)
+        normalizedProduct.stockCount > 0
+          ? normalizedProduct.stockCount
           : "",
     });
-    setProductFileName(getStoredFileName(product.fileUrl));
-    setCoverFileName(getStoredFileName(product.cover));
+    setProductFileName(getStoredFileName(normalizedProduct.fileUrl));
+    setCoverFileName(getStoredFileName(normalizedProduct.cover));
     window.requestAnimationFrame(() => {
       productEditorRef.current?.scrollIntoView({
         behavior: "smooth",
@@ -1654,7 +1672,12 @@ export default function AdminDashboard(props) {
       (product) => product.id === productId,
     );
     if (targetProduct) {
-      await persistStoreProductToSupabase(targetProduct, "upsert");
+      const persisted = await persistStoreProductToSupabase(targetProduct, "upsert");
+      if (!persisted) {
+        showAdminToast("error", "Availability was not saved", "The product status could not be saved. Please try again.");
+        return;
+      }
+      showAdminToast("success", "Product availability updated", targetProduct.inStock ? "The product is available again." : "The product is now out of sale.");
     }
   };
 
