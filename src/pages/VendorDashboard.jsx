@@ -1414,14 +1414,15 @@ export default function VendorDashboard() {
       }}
     >
       <style>{`
-        .vendor-dashboard-theme{--vendor-bg:#f1f5f3;--vendor-surface:#fff;--vendor-soft:#f8fffb;--vendor-text:#0f172a;--vendor-muted:#64748b;--vendor-border:#dbe7df;--vendor-accent:#166534;--vendor-accent-soft:#ecfdf5;--vendor-input:#fff;color:var(--vendor-text);background:var(--vendor-bg)!important;transition:background .2s ease,color .2s ease}
-        .vendor-dashboard-theme-dark{--vendor-bg:#17212b;--vendor-surface:#202d38;--vendor-soft:#263743;--vendor-text:#f1f5f9;--vendor-muted:#b6c4cf;--vendor-border:#405563;--vendor-accent:#86efac;--vendor-accent-soft:#234b3b;--vendor-input:#263743}
+        .vendor-dashboard-theme{--vendor-bg:#f1f5f3;--vendor-surface:#fff;--vendor-soft:#f8fffb;--vendor-text:#0f172a;--vendor-muted:#64748b;--vendor-border:#dbe7df;--vendor-accent:#166534;--vendor-accent-soft:#ecfdf5;--vendor-input:#fff;--vendor-monitor:#166534;--vendor-monitor-text:#fff;color:var(--vendor-text);background:var(--vendor-bg)!important;transition:background .2s ease,color .2s ease}
+        .vendor-dashboard-theme-dark{--vendor-bg:#111820;--vendor-surface:#1b2731;--vendor-soft:#22333f;--vendor-text:#f8fafc;--vendor-muted:#c5d0d8;--vendor-border:#415563;--vendor-accent:#8be9b0;--vendor-accent-soft:#234b3b;--vendor-input:#22333f;--vendor-monitor:#202d38;--vendor-monitor-text:#f8fafc}
         .vendor-dashboard-theme-sage{--vendor-bg:#e7f4ed;--vendor-surface:#fbfffc;--vendor-soft:#effaf3;--vendor-text:#16352b;--vendor-muted:#527066;--vendor-border:#b9dac8;--vendor-accent:#0f766e;--vendor-accent-soft:#dff8ef;--vendor-input:#fff}
         .vendor-dashboard-theme-coral{--vendor-bg:#fff1ec;--vendor-surface:#fffdfc;--vendor-soft:#fff7f3;--vendor-text:#42251f;--vendor-muted:#86645d;--vendor-border:#f2c8bb;--vendor-accent:#c2412d;--vendor-accent-soft:#ffe4dc;--vendor-input:#fff}
         .vendor-dashboard-theme-gold{--vendor-bg:#fff8e7;--vendor-surface:#fffefa;--vendor-soft:#fffaf0;--vendor-text:#3f3217;--vendor-muted:#806d43;--vendor-border:#ead79f;--vendor-accent:#a16207;--vendor-accent-soft:#fff1c7;--vendor-input:#fff}
         .vendor-dashboard-theme>div>header h1,.vendor-dashboard-theme h2,.vendor-dashboard-theme h3,.vendor-dashboard-theme strong{color:var(--vendor-text)}
         .vendor-dashboard-theme p,.vendor-dashboard-theme small,.vendor-dashboard-theme label,.vendor-dashboard-theme [style*="color: #64748b"],.vendor-dashboard-theme [style*="color: \"#64748b\""],.vendor-dashboard-theme [style*="color: #475569"]{color:var(--vendor-muted)!important}
-        .vendor-dashboard-theme>div>section>button,.vendor-dashboard-theme button[aria-label^="Open"]{background:var(--vendor-accent)!important;color:#fff!important}
+        .vendor-dashboard-theme .vendor-monitor-card{background:var(--vendor-monitor)!important;color:var(--vendor-monitor-text)!important}
+        .vendor-dashboard-theme .vendor-monitor-card div,.vendor-dashboard-theme .vendor-monitor-card strong{color:var(--vendor-monitor-text)!important}
         .vendor-dashboard-theme form,.vendor-dashboard-theme section[style*="background: #fff"],.vendor-dashboard-theme section[style*="background: \"#fff\""],.vendor-dashboard-theme [style*="background: #fff"],.vendor-dashboard-theme [style*="background: #f8fffb"],.vendor-dashboard-theme [style*="background: \"#f8fffb\""]{background:var(--vendor-surface)!important;border-color:var(--vendor-border)!important;color:var(--vendor-text)!important}
         .vendor-dashboard-theme input,.vendor-dashboard-theme textarea,.vendor-dashboard-theme select{background:var(--vendor-input)!important;color:var(--vendor-text)!important;border-color:var(--vendor-border)!important}
         .vendor-dashboard-theme button{color:var(--vendor-text)}
@@ -1545,6 +1546,7 @@ export default function VendorDashboard() {
             ["Ads", ads.length, "ads"],
           ].map(([label, value, targetTab]) => (
             <button
+              className="vendor-monitor-card"
               key={label}
               type="button"
               onClick={() => focusVendorSection(targetTab)}
