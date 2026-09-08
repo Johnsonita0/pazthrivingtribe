@@ -86,6 +86,42 @@ const userFacingError = (error, fallback) => {
   if (/jwt|token|session|unauthorized|401/i.test(message)) return "Your vendor session needs to be refreshed. Please sign in again.";
   return message && !/^typeerror:/i.test(message) ? message : fallback;
 };
+const credentialLockoutMaxAttempts = 5;
+const credentialLockoutDurationMs = 10 * 60 * 1000;
+const credentialLockoutStoragePrefix = "paz-vendor-lockout:";
+const formatLockoutCountdown = (milliseconds) => {
+  const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = String(totalSeconds % 60).padStart(2, "0");
+  return `${minutes}:${seconds}`;
+};
+const readCredentialLockout = (key) => {
+  try {
+    const record = JSON.parse(window.localStorage.getItem(`${credentialLockoutStoragePrefix}${key}`) || "null");
+    if (!record) return { failures: 0, lockedUntil: 0 };
+    if (record.lockedUntil && record.lockedUntil <= Date.now()) {
+      window.localStorage.removeItem(`${credentialLockoutStoragePrefix}${key}`);
+      return { failures: 0, lockedUntil: 0 };
+    }
+    return { failures: Number(record.failures || 0), lockedUntil: Number(record.lockedUntil || 0) };
+  } catch {
+    return { failures: 0, lockedUntil: 0 };
+  }
+};
+const writeCredentialLockout = (key, record) => {
+  try {
+    window.localStorage.setItem(`${credentialLockoutStoragePrefix}${key}`, JSON.stringify(record));
+  } catch {
+    // Authentication still works for the current tab if storage is unavailable.
+  }
+};
+const clearCredentialLockout = (key) => {
+  try {
+    window.localStorage.removeItem(`${credentialLockoutStoragePrefix}${key}`);
+  } catch {
+    // Nothing else is required when storage is unavailable.
+  }
+};
 const productReviewColumns = "id,vendor_id,title,price,currency,status,name_verified,description_verified,cover_verified,attachment_verified,updated_at";
 const vendorProfileColumns = "id,company_name,logo_url,contact_email,id_type,id_document_path,status,payout_account_name,payout_account_number,payout_bank_name,payout_currency,rejection_reason,approved_at,approved_by,created_at,updated_at,phone,username,payout_accounts,selected_payout_account_id,vendor_terms_version,vendor_terms_accepted_at";
 
@@ -140,6 +176,8 @@ export default function VendorDashboard() {
     productUrl: "",
   });
   const [notice, setNotice] = useState(null);
+  const [lockoutUntil, setLockoutUntil] = useState(0);
+  const [lockoutLabel, setLockoutLabel] = useState("");
   const [saving, setSaving] = useState(false);
   const [productsRefreshing, setProductsRefreshing] = useState(false);
   const [refreshingProductId, setRefreshingProductId] = useState(null);
@@ -209,6 +247,36 @@ export default function VendorDashboard() {
     "#0891b2",
   ].sort(() => Math.random() - 0.5));
   const accountCurrency = profileForm.payoutCurrency || "NGN";
+  const passwordLockoutKey = `password:${String(authForm.email || "").trim().toLowerCase()}`;
+  const pinLockoutKey = session?.user?.id ? `pin:${session.user.id}` : "";
+  const showActiveLockout = (key, label) => {
+    const record = readCredentialLockout(key);
+    if (!record.lockedUntil || record.lockedUntil <= Date.now()) return false;
+    setLockoutUntil(record.lockedUntil);
+    setLockoutLabel(label);
+    setNotice({ type: "error", text: `${label} locked. Try again in ${formatLockoutCountdown(record.lockedUntil - Date.now())}.` });
+    return true;
+  };
+  const registerCredentialFailure = (key, label) => {
+    const current = readCredentialLockout(key);
+    const failures = current.failures + 1;
+    if (failures >= credentialLockoutMaxAttempts) {
+      const lockedUntil = Date.now() + credentialLockoutDurationMs;
+      writeCredentialLockout(key, { failures, lockedUntil });
+      setLockoutUntil(lockedUntil);
+      setLockoutLabel(label);
+      setNotice({ type: "error", text: `${label} locked after 5 failed attempts. Try again in 10:00.` });
+      return true;
+    }
+    writeCredentialLockout(key, { failures, lockedUntil: 0 });
+    setNotice({ type: "error", text: `Incorrect ${label.toLowerCase()}. ${credentialLockoutMaxAttempts - failures} attempts remaining.` });
+    return false;
+  };
+  const clearCredentialFailure = (key) => {
+    clearCredentialLockout(key);
+    setLockoutUntil(0);
+    setLockoutLabel("");
+  };
 
   useEffect(() => {
     try {
@@ -223,6 +291,41 @@ export default function VendorDashboard() {
     const timer = window.setTimeout(() => setNotice(null), 5000);
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  useEffect(() => {
+    if (!lockoutUntil) return undefined;
+    const updateCountdown = () => {
+      const remaining = lockoutUntil - Date.now();
+      if (remaining <= 0) {
+        setLockoutUntil(0);
+        setLockoutLabel("");
+        setNotice({ type: "success", text: "Your lockout has ended. You have 5 more attempts." });
+        return;
+      }
+      setNotice({ type: "error", text: `${lockoutLabel} locked. Try again in ${formatLockoutCountdown(remaining)}.` });
+    };
+    updateCountdown();
+    const timer = window.setInterval(updateCountdown, 1000);
+    return () => window.clearInterval(timer);
+  }, [lockoutUntil, lockoutLabel]);
+
+  useEffect(() => {
+    if (!authForm.email.trim()) return;
+    const record = readCredentialLockout(`password:${authForm.email.trim().toLowerCase()}`);
+    if (record.lockedUntil > Date.now()) {
+      setLockoutUntil(record.lockedUntil);
+      setLockoutLabel("Password sign-in");
+    }
+  }, [authForm.email]);
+
+  useEffect(() => {
+    if (!session?.user?.id || pinMode !== "unlock") return;
+    const record = readCredentialLockout(`pin:${session.user.id}`);
+    if (record.lockedUntil > Date.now()) {
+      setLockoutUntil(record.lockedUntil);
+      setLockoutLabel("PIN access");
+    }
+  }, [pinMode, session?.user?.id]);
 
   useEffect(() => {
     try {
@@ -366,12 +469,14 @@ export default function VendorDashboard() {
 
   const unlockVendor = async (event) => {
     event.preventDefault();
+    if (pinMode === "unlock" && pinLockoutKey && showActiveLockout(pinLockoutKey, "PIN access")) return;
     if (!/^\d{4}$/.test(vendorPin)) {
       setNotice({ type: "error", text: "Enter all 4 digits of your vendor PIN." });
       return;
     }
     if (pinMode === "setup" && vendorPin !== vendorPinConfirm) {
-      setNotice({ type: "error", text: "The PINs do not match. Check them and try again." });
+      if (pinLockoutKey) registerCredentialFailure(pinLockoutKey, "PIN setup");
+      else setNotice({ type: "error", text: "The PINs do not match. Check them and try again." });
       return;
     }
     setSaving(true);
@@ -380,13 +485,14 @@ export default function VendorDashboard() {
         const { data: validPin, error } = await supabase.rpc("verify_vendor_pin", { p_pin: vendorPin });
         if (error) throw error;
         if (!validPin) {
-          setNotice({ type: "error", text: "That PIN is not correct. Try again." });
+          registerCredentialFailure(pinLockoutKey, "PIN access");
           return;
         }
       } else {
         const { error } = await supabase.rpc("set_vendor_pin", { p_pin: vendorPin });
         if (error) throw error;
       }
+      if (pinLockoutKey) clearCredentialFailure(pinLockoutKey);
       setVendorPinError("");
       await loadData(session.user);
       setPinMode(null);
@@ -750,6 +856,7 @@ export default function VendorDashboard() {
 
   const authenticate = async (event) => {
     event.preventDefault();
+    if (authMode === "sign-in" && showActiveLockout(passwordLockoutKey, "Password sign-in")) return;
     if (authMode === "reset") {
       setSaving(true);
       try {
@@ -806,6 +913,7 @@ export default function VendorDashboard() {
             );
       if (result.error) throw result.error;
       if (result.data?.session) {
+        if (authMode === "sign-in") clearCredentialFailure(passwordLockoutKey);
         setSession(result.data.session);
         if (authMode === "sign-up") {
           await withTimeout(
@@ -840,7 +948,8 @@ export default function VendorDashboard() {
         });
       }
     } catch (error) {
-      setNotice({ type: "error", text: error.message || "Your vendor account could not be created." });
+      if (authMode === "sign-in") registerCredentialFailure(passwordLockoutKey, "Password sign-in");
+      else setNotice({ type: "error", text: error.message || "Your vendor account could not be created." });
     } finally {
       setSaving(false);
     }
