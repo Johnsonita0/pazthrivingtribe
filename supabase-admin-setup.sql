@@ -235,6 +235,8 @@ alter table if exists vendor_profiles add column if not exists selected_payout_a
 alter table if exists vendor_profiles add column if not exists vendor_terms_version text;
 alter table if exists vendor_profiles add column if not exists vendor_terms_accepted_at timestamptz;
 alter table if exists vendor_profiles add column if not exists vendor_pin_hash text;
+alter table if exists vendor_profiles alter column id_type drop not null;
+alter table if exists vendor_profiles alter column id_document_path drop not null;
 create unique index if not exists vendor_profiles_username_unique on vendor_profiles (lower(username)) where username is not null;
 create unique index if not exists vendor_profiles_email_unique on vendor_profiles (lower(contact_email)) where contact_email is not null;
 create unique index if not exists vendor_profiles_company_name_unique on vendor_profiles (lower(company_name));

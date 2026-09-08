@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import { jsPDF } from "jspdf";
 
 const vendorDraftKey = "paz-vendor-registration-draft";
 const vendorTermsVersion = "2026-09-07";
 const vendorTermsSections = [
   ["1. Marketplace relationship", "PAZ Thriving Tribe provides a marketplace and digital delivery service. You remain responsible for the accuracy, legality, quality, ownership, and support of every product you submit."],
-  ["2. Platform commission", "For every paid sale of any vendor product, PAZ retains a mandatory 15% platform commission calculated on the gross product amount. You receive the remaining 85%, subject to refunds, chargebacks, taxes, payment costs, holds, and applicable law. This commission applies regardless of product category, price, currency, promotion, or payout method."],
+  ["2. Platform commission and payout", "For every paid sale of any vendor product, PAZ retains a mandatory 15% platform commission calculated on the gross product amount. The remaining 85% is the vendor payout, sent to the approved registered payout account after payment verification, subject to refunds, chargebacks, taxes, payment costs, holds, compliance review, and applicable law. This commission applies regardless of product category, price, currency, promotion, or payout method."],
   ["3. Product standards", "You must only upload content you are authorized to sell. Products must be accurately described, deliverable, safe, and compliant with applicable laws. PAZ may reject, suspend, remove, or restrict products or accounts that do not meet these requirements."],
   ["4. Orders, refunds, and payouts", "A sale is recorded after payment verification. Payouts may remain pending while an order, refund, dispute, fraud signal, or compliance review is assessed. You authorize PAZ to deduct the commission and any valid reversals or adjustments from amounts otherwise payable to you."],
   ["5. Account and compliance duties", "You must keep your account, identity, payout, tax, and contact information accurate and secure. You are responsible for customer support relating to your products and for complying with intellectual-property, consumer-protection, tax, privacy, and other applicable obligations."],
@@ -72,6 +73,7 @@ export default function VendorDashboard() {
   const [tab, setTab] = useState("products");
   const [authMode, setAuthMode] = useState("sign-in");
   const [authForm, setAuthForm] = useState({ email: "", password: "" });
+  const [signupPasswordConfirm, setSignupPasswordConfirm] = useState("");
   const [profileForm, setProfileForm] = useState({
     username: "",
     companyName: "",
@@ -154,6 +156,7 @@ export default function VendorDashboard() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [vendorTermsOpen, setVendorTermsOpen] = useState(false);
   const [vendorTermsAccepted, setVendorTermsAccepted] = useState(false);
+  const [vendorTermsRequired, setVendorTermsRequired] = useState(false);
   const [usernameAvailability, setUsernameAvailability] = useState("unknown");
   const [usernameSuggestion, setUsernameSuggestion] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -259,6 +262,7 @@ export default function VendorDashboard() {
         .order("created_at", { ascending: false }),
     ]);
     setProfile(vendor || null);
+    setVendorTermsRequired(Boolean(vendor && !vendor.vendor_terms_accepted_at));
     const selectedCurrency = vendor?.payout_currency || "NGN";
     setProducts((productRows || []).map((product) => ({ ...product, currency: selectedCurrency })));
     setSales((salesRows || []).map((sale) => ({ ...sale, currency: selectedCurrency })));
@@ -355,6 +359,53 @@ export default function VendorDashboard() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const downloadVendorTermsPdf = () => {
+    const document = new jsPDF();
+    const lines = [
+      "PAZ Thriving Tribe Vendor Marketplace Terms",
+      `Version ${vendorTermsVersion}`,
+      "",
+      "Commission and payouts",
+      "PAZ retains 15% of the gross amount paid for every paid vendor product sale. The remaining 85% is recorded for payout to the vendor's registered payout account, subject to payment verification, refunds, chargebacks, holds, compliance review, and applicable law.",
+      "",
+      "Payout account changes",
+      "Vendors may register or update payout details in Vendor Settings. The first registered payout account may be used after verification. A second or subsequent account change requires PAZ admin approval before a payout can be processed to the changed account.",
+      "",
+      ...vendorTermsSections.flatMap(([heading, text]) => [heading, text, ""]),
+      "",
+      "By continuing to use the vendor workspace, you confirm that you have read and accepted these terms.",
+    ];
+    let y = 18;
+    document.setFontSize(16);
+    lines.forEach((line) => {
+      const wrapped = document.splitTextToSize(line, 175);
+      if (y > 275) { document.addPage(); y = 18; }
+      document.text(wrapped, 18, y);
+      y += Math.max(7, wrapped.length * 6);
+    });
+    document.save("paz-vendor-marketplace-terms.pdf");
+  };
+
+  const acceptVendorTerms = async () => {
+    if (!session?.user?.id) return;
+    setSaving(true);
+    const acceptedAt = new Date().toISOString();
+    const { data, error } = await supabase
+      .from("vendor_profiles")
+      .update({ vendor_terms_version: vendorTermsVersion, vendor_terms_accepted_at: acceptedAt, updated_at: acceptedAt })
+      .eq("id", session.user.id)
+      .select()
+      .maybeSingle();
+    setSaving(false);
+    if (error) {
+      setNotice({ type: "error", text: userFacingError(error, "Your terms acceptance could not be saved. Try again.") });
+      return;
+    }
+    setProfile((current) => ({ ...current, ...(data || {}), vendor_terms_version: vendorTermsVersion, vendor_terms_accepted_at: acceptedAt }));
+    setVendorTermsRequired(false);
+    setNotice({ type: "success", text: "Vendor terms accepted. Your workspace is ready." });
   };
 
   const signOutVendor = async () => {
@@ -581,7 +632,7 @@ export default function VendorDashboard() {
         phone: values.phone.trim(),
         logo_url: logoUrl,
         contact_email: user.email,
-        id_type: values.idType,
+        id_type: values.idType || null,
         id_document_path: documentPath,
         payout_account_name: values.payoutName.trim(),
         payout_account_number: values.payoutAccount.trim(),
@@ -678,12 +729,8 @@ export default function VendorDashboard() {
       }
       return;
     }
-    if (authMode === "sign-up" && (!profileForm.idDocument || !profileForm.verifiedAccountName)) {
-      setNotice({ type: "error", text: !profileForm.idDocument ? "Drag in your identity document before creating your vendor account." : "Verify the payout account name before creating your vendor account." });
-      return;
-    }
-    if (authMode === "sign-up" && !vendorTermsAccepted) {
-      setNotice({ type: "error", text: "Read and accept the Vendor Marketplace Terms before creating your account." });
+    if (authMode === "sign-up" && authForm.password !== signupPasswordConfirm) {
+      setNotice({ type: "error", text: "The passwords do not match. Check both password fields and try again." });
       return;
     }
     setSaving(true);
@@ -699,13 +746,7 @@ export default function VendorDashboard() {
             username: profileForm.username,
             companyName: profileForm.companyName,
             logoUrl: profileForm.logoUrl,
-            idType: profileForm.idType,
-            payoutName: profileForm.payoutName,
-            payoutAccount: profileForm.payoutAccount,
-            payoutBank: profileForm.payoutBank,
-            payoutBankCode: profileForm.payoutBankCode,
-            verifiedAccountName: profileForm.verifiedAccountName,
-            payoutCurrency: profileForm.payoutCurrency,
+            phone: profileForm.phone,
           },
         }));
       }
@@ -728,7 +769,7 @@ export default function VendorDashboard() {
         setSession(result.data.session);
         if (authMode === "sign-up") {
           await withTimeout(
-            persistVendorProfile(result.data.session.user, profileForm),
+            persistVendorProfile(result.data.session.user, { ...profileForm, idType: null, idDocument: null, payoutName: "", payoutAccount: "", payoutBank: "", payoutBankCode: "", verifiedAccountName: "", payoutCurrency: "NGN" }),
             "Your account was created, but loading the vendor profile took too long. Refresh and try again.",
           );
           window.sessionStorage.removeItem(vendorDraftKey);
@@ -739,9 +780,9 @@ export default function VendorDashboard() {
             .eq("id", result.data.session.user.id)
             .maybeSingle();
           if (profileError) throw profileError;
-          if (!existingProfile && profileForm.idDocument && profileForm.verifiedAccountName) {
+          if (!existingProfile) {
             await withTimeout(
-              persistVendorProfile(result.data.session.user, profileForm),
+              persistVendorProfile(result.data.session.user, { ...profileForm, idType: null, idDocument: null, payoutName: "", payoutAccount: "", payoutBank: "", payoutBankCode: "", verifiedAccountName: "", payoutCurrency: "NGN" }),
               "Your account was opened, but saving the vendor profile took too long. Refresh and try again.",
             );
             window.sessionStorage.removeItem(vendorDraftKey);
@@ -1083,14 +1124,7 @@ export default function VendorDashboard() {
     && authForm.password.length >= 8
     && profileForm.companyName.trim()
     && normalizeUsername(profileForm.username).length >= 3
-    && profileForm.idType
-    && profileForm.idDocument
-    && profileForm.payoutName.trim()
-    && /^\d{10}$/.test(profileForm.payoutAccount)
-    && profileForm.payoutBankCode
-    && profileForm.verifiedAccountName
-    && profileForm.payoutCurrency
-    && vendorTermsAccepted
+    && profileForm.phone.trim()
   );
 
   if (passwordResetMode)
@@ -1253,6 +1287,24 @@ export default function VendorDashboard() {
       </main>
     );
 
+  if (session && vendorTermsRequired && !pinMode)
+    return (
+      <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: "24px", background: "#f1f5f3" }}>
+        {notice && <div role="status" aria-live="polite" style={{ position: "fixed", top: "20px", right: "20px", zIndex: 100, width: "min(380px, calc(100vw - 40px))", padding: "13px 16px", borderRadius: "10px", background: notice.type === "error" ? "#fef2f2" : "#ecfdf5", color: notice.type === "error" ? "#b91c1c" : "#166534", fontWeight: 700 }}>{notice.text}</div>}
+        <section role="dialog" aria-modal="true" aria-labelledby="first-login-terms-title" style={{ width: "min(680px, 100%)", maxHeight: "90vh", overflow: "auto", background: "#fff", borderRadius: "18px", padding: "26px", boxShadow: "0 24px 70px rgba(15,23,42,.22)" }}>
+          <p style={{ margin: 0, color: "#15803d", fontSize: ".72rem", fontWeight: 900, letterSpacing: ".14em" }}>FIRST LOGIN</p>
+          <h1 id="first-login-terms-title" style={{ margin: "7px 0 8px", color: "#102a20" }}>Vendor Marketplace Terms</h1>
+          <p style={{ color: "#475569", lineHeight: 1.55 }}>Review these terms before entering your vendor workspace. Download a copy for your records.</p>
+          <div style={{ display: "grid", gap: "14px", color: "#334155", lineHeight: 1.55 }}>{vendorTermsSections.map(([heading, text]) => <div key={heading}><h2 style={{ margin: 0, fontSize: "1rem", color: "#102a20" }}>{heading}</h2><p style={{ margin: "4px 0 0" }}>{text}</p></div>)}</div>
+          <div style={{ marginTop: "16px", padding: "14px", borderRadius: "12px", background: "#f0fdf4", border: "1px solid #bbf7d0", color: "#166534", lineHeight: 1.5 }}><strong>Commission and payout rule:</strong> PAZ retains 15% of each paid product sale. The vendor payout is 85% of the gross amount, sent to the approved registered payout account after payment verification and applicable review.</div>
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginTop: "22px" }}>
+            <button type="button" onClick={downloadVendorTermsPdf} style={{ flex: "1 1 220px", padding: "12px 14px", border: "1px solid #166534", borderRadius: "9px", background: "#fff", color: "#166534", fontWeight: 800 }}><i className="fa-solid fa-file-pdf" aria-hidden="true" /> Download terms PDF</button>
+            <button type="button" onClick={acceptVendorTerms} disabled={saving} style={{ flex: "1 1 220px", padding: "12px 14px", border: 0, borderRadius: "9px", background: "#166534", color: "#fff", fontWeight: 800 }}>{saving ? "Saving..." : "Accept and enter workspace"}</button>
+          </div>
+        </section>
+      </main>
+    );
+
   if (!session)
     return (
       <main
@@ -1303,48 +1355,17 @@ export default function VendorDashboard() {
               />
               <button type="button" onClick={() => setShowPassword((current) => !current)} aria-label={showPassword ? "Hide password" : "Show password"} style={{ position: "absolute", right: "8px", top: "50%", transform: "translateY(-50%)", border: 0, background: "transparent", padding: "6px", fontSize: "1.05rem" }}>{showPassword ? "🙈" : "👁"}</button>
             </div>}
+            {authMode === "sign-up" && <input required minLength="8" type="password" placeholder="Confirm password" value={signupPasswordConfirm} onChange={(event) => setSignupPasswordConfirm(event.target.value)} style={fieldStyle} />}
             {authMode === "sign-up" && (
               <>
-                <input required placeholder="Business or brand name" value={profileForm.companyName} onChange={(event) => setProfileForm({ ...profileForm, companyName: event.target.value })} style={fieldStyle} />
+                <input required placeholder="Business name" value={profileForm.companyName} onChange={(event) => setProfileForm({ ...profileForm, companyName: event.target.value })} style={fieldStyle} />
                 <div style={{ display: "grid", gap: "5px" }}>
                   <input required minLength="3" maxLength="30" pattern="[A-Za-z0-9._-]+" placeholder="Username (shown in your vendor dashboard)" value={profileForm.username} onChange={(event) => { setProfileForm({ ...profileForm, username: normalizeUsername(event.target.value) }); setUsernameAvailability("unknown"); setUsernameSuggestion(""); }} onBlur={checkVendorAvailability} style={fieldStyle} />
                   <small style={{ color: usernameAvailability === "taken" ? "#b91c1c" : "#64748b" }}>{usernameAvailability === "checking" ? "Checking username..." : usernameAvailability === "available" ? "Username is available." : usernameSuggestion ? `Suggested username: ${usernameSuggestion}` : "3-30 letters, numbers, dots, underscores, or hyphens."}</small>
                   {usernameSuggestion && <button type="button" onClick={() => { setProfileForm({ ...profileForm, username: usernameSuggestion }); setUsernameSuggestion(""); setUsernameAvailability("unknown"); }} style={{ width: "fit-content", border: "1px solid #166534", borderRadius: "7px", padding: "5px 8px", background: "#f0fdf4", color: "#166534", fontWeight: 700, cursor: "pointer" }}>Use {usernameSuggestion}</button>}
                 </div>
-                <label onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }} onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file?.type.startsWith("image/")) setProfileForm({ ...profileForm, logoFile: file }); }} style={{ display: "grid", gap: "6px", padding: "16px", border: "1px dashed #86efac", borderRadius: "10px", background: "#f0fdf4", color: "#166534", textAlign: "center", cursor: "copy" }}>
-                  <strong>Drag business logo here</strong>
-                  <span style={{ fontSize: ".78rem" }}>{profileForm.logoFile?.name || "PNG, JPG, or WebP"}</span>
-                  <input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => setProfileForm({ ...profileForm, logoFile: event.target.files?.[0] || null })} style={{ display: "none" }} />
-                </label>
-                <select required value={profileForm.idType} onChange={(event) => setProfileForm({ ...profileForm, idType: event.target.value })} style={fieldStyle}>
-                  <option value="">Select identity document type</option>
-                  <option>National ID</option>
-                  <option>Passport</option>
-                  <option>Driver's licence</option>
-                  <option>Business registration</option>
-                </select>
-                <label onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }} onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file?.type.startsWith("image/") || file?.type === "application/pdf") setProfileForm({ ...profileForm, idDocument: file }); }} style={{ display: "grid", gap: "6px", padding: "16px", border: "1px dashed #93c5fd", borderRadius: "10px", background: "#eff6ff", color: "#1d4ed8", textAlign: "center", cursor: "copy" }}>
-                  <strong>Drag identity document here</strong>
-                  <span style={{ fontSize: ".78rem" }}>{profileForm.idDocument?.name || "ID image or PDF"}</span>
-                  <input type="file" accept="image/*,.pdf" onChange={(event) => setProfileForm({ ...profileForm, idDocument: event.target.files?.[0] || null })} style={{ display: "none" }} />
-                </label>
-                <input required placeholder="Account holder name (must match vendor)" value={profileForm.payoutName} readOnly={Boolean(profileForm.verifiedAccountName)} onChange={(event) => setProfileForm({ ...profileForm, payoutName: event.target.value })} style={{ ...fieldStyle, background: profileForm.verifiedAccountName ? "#ecfdf5" : "#fff" }} />
-                <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", gap: "8px" }}><input required inputMode="numeric" placeholder="Payout account number" value={profileForm.payoutAccount} onChange={(event) => setProfileForm({ ...profileForm, payoutAccount: event.target.value.replace(/\D/g, ""), verifiedAccountName: "" })} style={fieldStyle} /><button type="button" onClick={verifyBankAccount} disabled={saving} style={{ border: 0, borderRadius: "9px", padding: "0 12px", background: "#0f766e", color: "#fff", fontWeight: 800, cursor: saving ? "wait" : "pointer" }}>Verify</button></div>
-                <select required value={profileForm.payoutBankCode} onChange={(event) => { const selected = banks.find(([, code]) => code === event.target.value); setProfileForm({ ...profileForm, payoutBankCode: event.target.value, payoutBank: selected?.[0] || "", verifiedAccountName: "" }); }} style={fieldStyle}>
-                  <option value="">Select bank</option>
-                  {banks.map(([name, code]) => <option key={name} value={code}>{name}</option>)}
-                </select>
-                <p style={{ margin: "-4px 0 0", color: "#64748b", fontSize: ".78rem", lineHeight: 1.4 }}>Use the legal account-holder name connected to this vendor account. The admin will verify the account details before approval.</p>
-                <select required value={profileForm.payoutCurrency} onChange={(event) => setProfileForm({ ...profileForm, payoutCurrency: event.target.value })} style={fieldStyle}>
-                  {currencies.map((currency) => <option key={currency}>{currency}</option>)}
-                </select>
+                <input required placeholder="Phone number" value={profileForm.phone} onChange={(event) => setProfileForm({ ...profileForm, phone: event.target.value })} style={fieldStyle} />
               </>
-            )}
-            {authMode === "sign-up" && (
-              <label style={{ display: "flex", alignItems: "flex-start", gap: "8px", color: "#334155", fontSize: ".82rem", lineHeight: 1.45 }}>
-                <input type="checkbox" name="vendor-terms-acceptance" required checked={vendorTermsAccepted} onChange={(event) => setVendorTermsAccepted(event.target.checked)} aria-label="Accept Vendor Marketplace Terms" style={{ appearance: "none", width: "15px", height: "15px", flex: "0 0 15px", marginTop: "3px", border: "2px solid #166534", borderRadius: "50%", background: vendorTermsAccepted ? "#166534" : "#fff", boxShadow: vendorTermsAccepted ? "inset 0 0 0 3px #fff" : "none", cursor: "pointer" }} />
-                <span>I agree to the <button type="button" onClick={() => setVendorTermsOpen(true)} style={{ border: 0, padding: 0, background: "none", color: "#166534", font: "inherit", fontWeight: 800, textDecoration: "underline", cursor: "pointer" }}>Vendor Marketplace Terms</button>, including PAZ's mandatory 15% commission on every paid product sale.</span>
-              </label>
             )}
             <button
               disabled={saving || (authMode === "sign-up" && !canCreateVendorAccount)}
