@@ -793,6 +793,7 @@ export default function VendorDashboard() {
     }
     setVendorTourStep(0);
     setVendorTourOpen(true);
+    setSettingsOpen(true);
   }, [loading, pinMode, profile?.id, session?.user?.id]);
 
   useEffect(() => {
@@ -1844,6 +1845,8 @@ export default function VendorDashboard() {
         .vendor-dashboard-theme-dark .vendor-theme-choice:hover{filter:brightness(1.12);transform:translateY(-1px)}
         .vendor-dashboard-theme-dark .vendor-theme-choice[aria-pressed="true"]{box-shadow:0 0 0 3px rgba(255,255,255,.7),0 8px 18px rgba(0,0,0,.2)!important}
         .vendor-dashboard-theme-dark .vendor-settings-action{background:var(--vendor-settings-action-bg,#334155)!important;color:#fff!important;border-color:color-mix(in srgb,var(--vendor-settings-action-bg,#334155) 62%,#fff)!important;box-shadow:0 5px 12px rgba(0,0,0,.16)}
+        .vendor-dashboard-theme-dark .vendor-approval-notice{background:#3b2a1a!important;border:1px solid #b45309!important;color:#fed7aa!important}
+        .vendor-dashboard-theme-dark .vendor-approval-notice strong,.vendor-dashboard-theme-dark .vendor-approval-notice a{color:#ffedd5!important}
         .vendor-dashboard-theme-dark .vendor-settings-action:hover:not(:disabled){filter:brightness(1.13);transform:translateY(-1px)}
         @media(max-width:640px){.vendor-theme-choice{grid-template-columns:30px minmax(0,1fr);align-items:center;padding:10px}.vendor-theme-choice small{grid-column:2}.vendor-theme-choice:first-child,.vendor-theme-choice:nth-child(2){grid-column:span 1}.vendor-theme-swatch{grid-row:span 2}}
         .vendor-dashboard-header{position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap}
@@ -1866,28 +1869,6 @@ export default function VendorDashboard() {
           .vendor-dashboard-mobile-menu button:last-child{color:#b91c1c;background:#fff7f7}
         }
       `}</style>
-      {vendorTourOpen && (
-        <div role="dialog" aria-modal="true" aria-labelledby="vendor-tour-title" style={{ position: "fixed", inset: 0, zIndex: 30000, display: "grid", placeItems: "center", padding: "20px", background: "rgba(15, 23, 42, .58)" }}>
-          <section style={{ width: "min(520px, 100%)", maxHeight: "min(720px, calc(100vh - 40px))", overflow: "auto", padding: "clamp(24px, 5vw, 36px)", borderRadius: "20px", background: "#fff", color: "#102a20", boxShadow: "0 28px 90px rgba(15, 23, 42, .3)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "14px" }}>
-              <p style={{ margin: 0, color: "#15803d", fontSize: ".7rem", fontWeight: 900, letterSpacing: ".15em" }}>{vendorTourSteps[vendorTourStep].eyebrow}</p>
-              <span style={{ color: "#64748b", fontSize: ".78rem", fontWeight: 800 }}>{vendorTourStep + 1} of {vendorTourSteps.length}</span>
-            </div>
-            <h2 id="vendor-tour-title" style={{ margin: "10px 0 10px", color: "#102a20", fontSize: "clamp(1.45rem, 4vw, 1.9rem)" }}>{vendorTourSteps[vendorTourStep].title}</h2>
-            <p style={{ margin: 0, color: "#526b61", lineHeight: 1.65 }}>{vendorTourSteps[vendorTourStep].text}</p>
-            <div style={{ display: "grid", gridTemplateColumns: `repeat(${vendorTourSteps.length}, 1fr)`, gap: "5px", marginTop: "22px" }} aria-hidden="true">
-              {vendorTourSteps.map((step, index) => <span key={step.title} style={{ height: "4px", borderRadius: "99px", background: index <= vendorTourStep ? "#166534" : "#dbe7df" }} />)}
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", flexWrap: "wrap", marginTop: "24px" }}>
-              <button type="button" onClick={closeVendorTour} style={{ border: 0, background: "transparent", color: "#64748b", fontWeight: 800, cursor: "pointer" }}>Skip tour</button>
-              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
-                <button type="button" onClick={() => runVendorTourAction(vendorTourSteps[vendorTourStep].action)} style={{ border: "1px solid #166534", borderRadius: "9px", padding: "10px 13px", background: "#fff", color: "#166534", fontWeight: 800, cursor: "pointer" }}>{vendorTourSteps[vendorTourStep].actionLabel}</button>
-                <button type="button" onClick={advanceVendorTour} style={{ border: 0, borderRadius: "9px", padding: "10px 15px", background: "#166534", color: "#fff", fontWeight: 800, cursor: "pointer" }}>{vendorTourStep === vendorTourSteps.length - 1 ? "Finish tour" : "Next"} <i className="fa-solid fa-arrow-right" aria-hidden="true" /></button>
-              </div>
-            </div>
-          </section>
-        </div>
-      )}
       <div style={{ maxWidth: "1180px", margin: "0 auto" }}>
         <header
           className="vendor-dashboard-header"
@@ -2012,6 +1993,29 @@ export default function VendorDashboard() {
             </button>
           ))}
         </section>
+        {vendorTourOpen && (
+          <section
+            aria-labelledby="vendor-tour-title"
+            style={{ marginTop: "22px", padding: "18px 20px", border: "1px solid #bbf7d0", borderLeft: "4px solid #166534", borderRadius: "14px", background: "#f0fdf4", boxShadow: "0 8px 20px rgba(15, 23, 42, .06)" }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+              <p style={{ margin: 0, color: "#15803d", fontSize: ".7rem", fontWeight: 900, letterSpacing: ".15em" }}>{vendorTourSteps[vendorTourStep].eyebrow}</p>
+              <span style={{ color: "#64748b", fontSize: ".78rem", fontWeight: 800 }}>{vendorTourStep + 1} of {vendorTourSteps.length}</span>
+            </div>
+            <h2 id="vendor-tour-title" style={{ margin: "8px 0 7px", color: "#102a20", fontSize: "1.25rem" }}>{vendorTourSteps[vendorTourStep].title}</h2>
+            <p style={{ margin: 0, color: "#526b61", lineHeight: 1.55 }}>{vendorTourSteps[vendorTourStep].text}</p>
+            <div style={{ display: "grid", gridTemplateColumns: `repeat(${vendorTourSteps.length}, 1fr)`, gap: "5px", marginTop: "16px" }} aria-hidden="true">
+              {vendorTourSteps.map((step, index) => <span key={step.title} style={{ height: "4px", borderRadius: "99px", background: index <= vendorTourStep ? "#166534" : "#dbe7df" }} />)}
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", flexWrap: "wrap", marginTop: "16px" }}>
+              <button type="button" onClick={closeVendorTour} style={{ border: 0, background: "transparent", color: "#64748b", fontWeight: 800, cursor: "pointer" }}>Skip tour</button>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                <button type="button" onClick={() => runVendorTourAction(vendorTourSteps[vendorTourStep].action)} style={{ border: "1px solid #166534", borderRadius: "9px", padding: "9px 12px", background: "#fff", color: "#166534", fontWeight: 800, cursor: "pointer" }}>{vendorTourSteps[vendorTourStep].actionLabel}</button>
+                <button type="button" onClick={advanceVendorTour} style={{ border: 0, borderRadius: "9px", padding: "9px 14px", background: "#166534", color: "#fff", fontWeight: 800, cursor: "pointer" }}>{vendorTourStep === vendorTourSteps.length - 1 ? "Finish tour" : "Next"} <i className="fa-solid fa-arrow-right" aria-hidden="true" /></button>
+              </div>
+            </div>
+          </section>
+        )}
         {settingsOpen && <form
           onSubmit={saveProfile}
           style={{
@@ -2352,6 +2356,7 @@ export default function VendorDashboard() {
               </form>
             ) : (
               <p
+                className="vendor-approval-notice"
                 style={{
                   color: "#92400e",
                   background: "#fff7ed",
@@ -2444,6 +2449,7 @@ export default function VendorDashboard() {
               </button>
             </form>
             <p
+              className="vendor-approval-notice"
               style={{
                 color: "#92400e",
                 background: "#fff7ed",
