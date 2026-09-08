@@ -257,6 +257,9 @@ export default function VendorDashboard() {
   };
   const closeVendorTour = () => {
     setVendorTourOpen(false);
+  };
+  const completeVendorTour = () => {
+    setVendorTourOpen(false);
     if (session?.user?.id) {
       try {
         window.localStorage.setItem(`paz-vendor-tour-complete:${session.user.id}`, "1");
@@ -1104,6 +1107,7 @@ export default function VendorDashboard() {
         type: "success",
         text: isNewVendorProfile ? "Verification details sent to the main admin." : "Your vendor profile was updated.",
       });
+      completeVendorTour();
     } catch (error) {
       setNotice({ type: "error", text: error.message });
     } finally {
