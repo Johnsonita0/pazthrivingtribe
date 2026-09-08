@@ -21,6 +21,32 @@ const vendorThemes = [
   { id: "coral", label: "Coral", description: "Warm accent workspace", swatch: "#ffe4dc" },
   { id: "gold", label: "Gold", description: "Bright marketplace tones", swatch: "#fff1c7" },
 ];
+const vendorEntryPalettes = {
+  light: { bg: "#e8f0ed", surface: "#ffffff", soft: "#f1f8f4", text: "#102a20", muted: "#526b61", border: "#b9d2c4", accent: "#166534", accentAlt: "#0f766e", input: "#ffffff" },
+  dark: { bg: "#0d151d", surface: "#192833", soft: "#223946", text: "#f8fafc", muted: "#c5d7df", border: "#587381", accent: "#0891b2", accentAlt: "#be185d", input: "#223946" },
+  sage: { bg: "#dcefe4", surface: "#fbfffc", soft: "#effaf3", text: "#16352b", muted: "#527066", border: "#a9d2bb", accent: "#0f766e", accentAlt: "#166534", input: "#ffffff" },
+  coral: { bg: "#ffebe4", surface: "#fffdfc", soft: "#fff4ef", text: "#42251f", muted: "#86645d", border: "#edb8a8", accent: "#c2412d", accentAlt: "#be185d", input: "#ffffff" },
+  gold: { bg: "#fff3cf", surface: "#fffefa", soft: "#fff9e9", text: "#3f3217", muted: "#806d43", border: "#e3c875", accent: "#a16207", accentAlt: "#b45309", input: "#ffffff" },
+};
+const vendorEntryThemeCss = `
+  .vendor-entry-theme{color:var(--entry-text)!important;background-color:var(--entry-bg)!important;transition:background-color .2s ease,color .2s ease}
+  .vendor-entry-theme{background-repeat:no-repeat!important;background-position:center!important;background-size:cover!important}
+  .vendor-entry-theme .vendor-entry-panel{background:var(--entry-surface)!important;color:var(--entry-text)!important;border:1px solid var(--entry-border)!important;box-shadow:0 24px 70px rgba(0,0,0,.2)}
+  .vendor-entry-theme h1,.vendor-entry-theme p,.vendor-entry-theme label,.vendor-entry-theme small{color:var(--entry-text)!important}
+  .vendor-entry-theme input{background:var(--entry-input)!important;color:var(--entry-text)!important;border-color:var(--entry-border)!important}
+  .vendor-entry-theme input::placeholder{color:var(--entry-muted)!important;opacity:1}
+  .vendor-entry-theme form > button[type="submit"]{background:var(--entry-accent)!important;color:#fff!important;border-color:var(--entry-accent)!important;box-shadow:0 10px 20px color-mix(in srgb,var(--entry-accent) 28%,transparent)}
+  .vendor-entry-theme form > button[type="button"]{background:var(--entry-soft)!important;color:var(--entry-accent)!important;border-color:var(--entry-border)!important}
+  .vendor-entry-theme form > button:hover:not(:disabled){filter:brightness(1.12);transform:translateY(-1px)}
+  .vendor-entry-theme [aria-label*="PIN digit"],.vendor-entry-theme [aria-label*="Confirm 4-digit"]{background:var(--entry-input)!important;color:var(--entry-accent)!important;border-color:var(--entry-accent)!important}
+  .vendor-entry-theme.vendor-entry-theme-dark form > button.vendor-login-forgot{background:transparent!important;color:#f87171!important;border-color:transparent!important}
+  .vendor-entry-theme.vendor-entry-theme-dark form > button.vendor-login-create{background:transparent!important;color:#60a5fa!important;border-color:transparent!important}
+  .vendor-entry-theme.vendor-entry-theme-dark form > button.vendor-login-submit{background:#0f766e!important;color:#fff!important;border-color:#2dd4bf!important;box-shadow:0 10px 20px rgba(15,118,110,.32)!important}
+  .vendor-entry-theme.vendor-entry-theme-dark form > button.vendor-login-forgot:hover,.vendor-entry-theme.vendor-entry-theme-dark form > button.vendor-login-create:hover{filter:brightness(1.2);text-decoration:underline}
+  .vendor-entry-theme.vendor-entry-theme-dark form > button.vendor-login-submit:hover:not(:disabled){background:#0891b2!important}
+    .vendor-entry-theme form > button.vendor-login-forgot{color:#dc2626!important}
+    .vendor-entry-theme form > button.vendor-login-forgot:hover{color:#b91c1c!important;text-decoration:underline}
+`;
 const banks = [
   ["Access Bank", "044"], ["Citibank Nigeria", "023"], ["Ecobank Nigeria", "050"], ["FCMB", "214"], ["Fidelity Bank", "070"], ["First Bank of Nigeria", "011"], ["Globus Bank", "103"], ["Guaranty Trust Bank", "058"], ["Heritage Bank", "030"], ["Jaiz Bank", "301"], ["Keystone Bank", "082"], ["Kuda Bank", "090267"], ["Moniepoint", "50515"], ["Opay", "999992"], ["PalmPay", "999991"], ["Polaris Bank", "076"], ["Premium Trust Bank", "105"], ["Providus Bank", "101"], ["Stanbic IBTC Bank", "221"], ["Standard Chartered Bank Nigeria", "068"], ["Sterling Bank", "232"], ["SunTrust Bank", "100"], ["Taj Bank", "302"], ["UBA", "033"], ["Union Bank of Nigeria", "032"], ["Unity Bank", "215"], ["Wema Bank", "035"], ["Zenith Bank", "057"], ["Other / International bank", ""],
 ];
@@ -173,6 +199,14 @@ export default function VendorDashboard() {
     { background: "#b45309", text: "#ffffff", label: "#fef3c7" },
     { background: "#be185d", text: "#ffffff", label: "#fce7f3" },
     { background: "#2563eb", text: "#ffffff", label: "#dbeafe" },
+  ].sort(() => Math.random() - 0.5));
+  const [settingsButtonColors] = useState(() => [
+    "#0f766e",
+    "#2563eb",
+    "#b45309",
+    "#be185d",
+    "#7c3aed",
+    "#0891b2",
   ].sort(() => Math.random() - 0.5));
   const accountCurrency = profileForm.payoutCurrency || "NGN";
 
@@ -1132,11 +1166,24 @@ export default function VendorDashboard() {
     && normalizeUsername(profileForm.username).length >= 3
     && profileForm.phone.trim()
   );
+  const entryPalette = vendorEntryPalettes[vendorTheme] || vendorEntryPalettes.light;
+  const entryThemeStyle = {
+    "--entry-bg": entryPalette.bg,
+    "--entry-surface": entryPalette.surface,
+    "--entry-soft": entryPalette.soft,
+    "--entry-text": entryPalette.text,
+    "--entry-muted": entryPalette.muted,
+    "--entry-border": entryPalette.border,
+    "--entry-accent": entryPalette.accent,
+    "--entry-accent-alt": entryPalette.accentAlt,
+    "--entry-input": entryPalette.input,
+  };
 
   if (passwordResetMode)
     return (
-      <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: "24px", background: "#f1f5f3" }}>
-        <form onSubmit={updatePassword} style={{ width: "min(460px,100%)", background: "#fff", padding: "28px", borderRadius: "18px" }}>
+      <main className={`vendor-entry-theme vendor-entry-theme-${vendorTheme}`} style={{ ...entryThemeStyle, minHeight: "100vh", display: "grid", placeItems: "center", padding: "24px" }}>
+        <style>{vendorEntryThemeCss}</style>
+        <form className="vendor-entry-panel" onSubmit={updatePassword} style={{ width: "min(460px,100%)", padding: "28px", borderRadius: "18px" }}>
           <h1>Reset vendor password</h1>
           <p style={{ color: "#64748b" }}>Choose a new password for your PAZ vendor account.</p>
           <div style={{ display: "grid", gap: "12px" }}>
@@ -1159,18 +1206,22 @@ export default function VendorDashboard() {
   if (session && pinMode)
     return (
       <main
+        className={`vendor-entry-theme vendor-entry-theme-${vendorTheme}`}
         style={{
+          ...entryThemeStyle,
           minHeight: "100vh",
           display: "grid",
           placeItems: "center",
           padding: "clamp(18px, 4vw, 48px)",
-          backgroundImage: `linear-gradient(135deg, rgba(6, 36, 28, .78), rgba(22, 101, 52, .52)), url("${vendorLogoUrl || "/logo/logomain.png"}")`,
+          backgroundImage: `linear-gradient(135deg, rgba(13, 21, 29, .82), rgba(8, 145, 178, .28)), url("${vendorLogoUrl || "/logo/logomain.png"}")`,
           backgroundPosition: "center",
           backgroundSize: "cover",
         }}
       >
+        <style>{vendorEntryThemeCss}</style>
         {notice && <div role="status" aria-live="polite" style={{ position: "fixed", top: "20px", right: "20px", zIndex: 100, width: "min(380px, calc(100vw - 40px))", padding: "13px 16px", borderRadius: "10px", border: `1px solid ${notice.type === "error" ? "#fecaca" : "#bbf7d0"}`, background: notice.type === "error" ? "#fef2f2" : "#ecfdf5", color: notice.type === "error" ? "#b91c1c" : "#166534", boxShadow: "0 12px 28px rgba(15, 23, 42, .16)", fontWeight: 700 }}>{notice.text}</div>}
         <form
+          className="vendor-entry-panel"
           ref={vendorPinFormRef}
           onSubmit={unlockVendor}
           style={{
@@ -1178,7 +1229,7 @@ export default function VendorDashboard() {
             display: "grid",
             gap: "20px",
             padding: "clamp(24px, 6vw, 42px)",
-            background: "rgba(255, 255, 255, .97)",
+            background: "var(--entry-surface)",
             border: "1px solid rgba(255, 255, 255, .72)",
             borderRadius: "26px",
             boxShadow: "0 28px 80px rgba(2, 24, 17, .32)",
@@ -1314,17 +1365,21 @@ export default function VendorDashboard() {
   if (!session)
     return (
       <main
+        className={`vendor-entry-theme vendor-entry-theme-${vendorTheme}`}
         style={{
+          ...entryThemeStyle,
           minHeight: "100vh",
           display: "grid",
           placeItems: "center",
           padding: "24px",
-          backgroundImage: "linear-gradient(rgba(241, 245, 243, .72), rgba(241, 245, 243, .72)), url('/logo/logomain.png')",
+          backgroundImage: `linear-gradient(135deg, rgba(13, 21, 29, .78), rgba(190, 24, 93, .2)), url('/logo/logomain.png')`,
           backgroundPosition: "center",
           backgroundSize: "cover",
         }}
       >
+        <style>{vendorEntryThemeCss}</style>
         <form
+          className="vendor-entry-panel"
           onSubmit={authenticate}
           style={{
             width: "min(460px,100%)",
@@ -1374,6 +1429,7 @@ export default function VendorDashboard() {
               </>
             )}
             <button
+              className="vendor-login-submit"
               disabled={saving || (authMode === "sign-up" && !canCreateVendorAccount)}
               style={{
                 padding: "12px",
@@ -1394,6 +1450,7 @@ export default function VendorDashboard() {
             <button
               type="button"
               onClick={() => { setAuthMode("reset"); setNotice(null); }}
+              className="vendor-login-forgot"
               style={{ marginTop: "12px", border: 0, background: "none", color: "#c2410c", fontWeight: 700 }}
             >
               Forgot password?
@@ -1406,6 +1463,7 @@ export default function VendorDashboard() {
               setAuthMode(openingSignup ? "sign-up" : "sign-in");
               if (openingSignup) setVendorTermsAccepted(false);
             }}
+            className="vendor-login-create"
             style={{
               marginTop: "12px",
               border: 0,
@@ -1528,6 +1586,17 @@ export default function VendorDashboard() {
         .vendor-theme-choice{display:grid;gap:5px;text-align:left;padding:12px;border:2px solid var(--vendor-border);border-radius:12px;background:var(--vendor-surface);color:var(--vendor-text);cursor:pointer;font:inherit}
         .vendor-theme-choice[aria-pressed="true"]{border-color:var(--vendor-accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--vendor-accent) 18%, transparent)}
         .vendor-theme-swatch{width:30px;height:30px;border-radius:9px;border:2px solid rgba(15,23,42,.12)}
+        .vendor-dashboard-theme-dark .vendor-theme-choice{color:#f8fafc!important;border-color:#647b89!important}
+        .vendor-dashboard-theme-dark .vendor-theme-choice strong,.vendor-dashboard-theme-dark .vendor-theme-choice small{color:inherit!important}
+        .vendor-dashboard-theme-dark .vendor-theme-choice:nth-child(1){background:#e2e8f0!important;color:#0f172a!important;border-color:#cbd5e1!important}
+        .vendor-dashboard-theme-dark .vendor-theme-choice:nth-child(2){background:#17212b!important;color:#f8fafc!important;border-color:#64748b!important}
+        .vendor-dashboard-theme-dark .vendor-theme-choice:nth-child(3){background:#285943!important;color:#ecfdf5!important;border-color:#86efac!important}
+        .vendor-dashboard-theme-dark .vendor-theme-choice:nth-child(4){background:#9f4938!important;color:#fff7ed!important;border-color:#fdbaaa!important}
+        .vendor-dashboard-theme-dark .vendor-theme-choice:nth-child(5){background:#9a6a12!important;color:#fffbeb!important;border-color:#fcd34d!important}
+        .vendor-dashboard-theme-dark .vendor-theme-choice:hover{filter:brightness(1.12);transform:translateY(-1px)}
+        .vendor-dashboard-theme-dark .vendor-theme-choice[aria-pressed="true"]{box-shadow:0 0 0 3px rgba(255,255,255,.7),0 8px 18px rgba(0,0,0,.2)!important}
+        .vendor-dashboard-theme-dark .vendor-settings-action{background:var(--vendor-settings-action-bg,#334155)!important;color:#fff!important;border-color:color-mix(in srgb,var(--vendor-settings-action-bg,#334155) 62%,#fff)!important;box-shadow:0 5px 12px rgba(0,0,0,.16)}
+        .vendor-dashboard-theme-dark .vendor-settings-action:hover:not(:disabled){filter:brightness(1.13);transform:translateY(-1px)}
         @media(max-width:640px){.vendor-theme-choice{grid-template-columns:30px minmax(0,1fr);align-items:center;padding:10px}.vendor-theme-choice small{grid-column:2}.vendor-theme-choice:first-child,.vendor-theme-choice:nth-child(2){grid-column:span 1}.vendor-theme-swatch{grid-row:span 2}}
         .vendor-dashboard-header{position:relative;display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap}
         .vendor-dashboard-header-copy{min-width:0}
@@ -1692,7 +1761,7 @@ export default function VendorDashboard() {
               <h2 style={{ marginBottom: "6px" }}>Profile, verification and payout</h2>
               <p style={{ margin: 0, color: "#64748b", fontSize: ".85rem" }}>Business identity and login email are locked. Update your phone and choose the account to use for payouts below.</p>
             </div>
-            <button type="button" onClick={() => setSettingsOpen(false)} style={{ display: "inline-flex", alignItems: "center", gap: "7px", border: "1px solid #cbd5e1", borderRadius: "9px", padding: "9px 12px", background: "#fff", color: "#166534", fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>
+            <button className="vendor-settings-action" type="button" onClick={() => setSettingsOpen(false)} style={{ "--vendor-settings-action-bg": settingsButtonColors[0], display: "inline-flex", alignItems: "center", gap: "7px", border: "1px solid #cbd5e1", borderRadius: "9px", padding: "9px 12px", background: "#fff", color: "#166534", fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}>
               <i className="fa-solid fa-arrow-left" aria-hidden="true" /> Back to preview
             </button>
           </div>
@@ -1721,7 +1790,7 @@ export default function VendorDashboard() {
             <section style={{ padding: "14px", border: "1px solid #dbe7df", borderRadius: "12px", background: "#f8fffb" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
                 <div><strong>Identity document</strong><p style={{ margin: "4px 0 0", color: "#64748b", fontSize: ".8rem" }}>Your submitted verification document.</p></div>
-                {documentPreviewUrl && <button type="button" onClick={() => setDocumentPreviewOpen((current) => !current)} style={{ border: "1px solid #0f766e", borderRadius: "8px", background: documentPreviewOpen ? "#dff8ef" : "#fff", color: "#0f766e", padding: "8px 11px", fontWeight: 800, cursor: "pointer" }}>{documentPreviewOpen ? "Hide document" : "Preview document"}</button>}
+                {documentPreviewUrl && <button className="vendor-settings-action" type="button" onClick={() => setDocumentPreviewOpen((current) => !current)} style={{ "--vendor-settings-action-bg": settingsButtonColors[1], border: "1px solid #0f766e", borderRadius: "8px", background: documentPreviewOpen ? "#dff8ef" : "#fff", color: "#0f766e", padding: "8px 11px", fontWeight: 800, cursor: "pointer" }}>{documentPreviewOpen ? "Hide document" : "Preview document"}</button>}
               </div>
               {documentPreviewOpen && documentPreviewUrl && <iframe title="Your vendor identity document" src={documentPreviewUrl} style={{ display: "block", width: "100%", height: "340px", marginTop: "12px", border: "1px solid #dbe7df", borderRadius: "8px", background: "#fff" }} />}
             </section>
@@ -1732,10 +1801,10 @@ export default function VendorDashboard() {
               <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: ".8rem", lineHeight: 1.45 }}>Manage the password and 4-digit PIN used to protect your vendor workspace.</p>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "10px" }}>
-              <button type="button" onClick={sendPasswordChangeEmail} disabled={saving} style={{ padding: "11px 12px", border: "1px solid #166534", borderRadius: "9px", background: "#fff", color: "#166534", fontWeight: 800, cursor: saving ? "wait" : "pointer" }}>
+              <button className="vendor-settings-action" type="button" onClick={sendPasswordChangeEmail} disabled={saving} style={{ "--vendor-settings-action-bg": settingsButtonColors[2], padding: "11px 12px", border: "1px solid #166534", borderRadius: "9px", background: "#fff", color: "#166534", fontWeight: 800, cursor: saving ? "wait" : "pointer" }}>
                 <i className="fa-solid fa-envelope" aria-hidden="true" /> Change password
               </button>
-              <button type="button" onClick={startPinChange} disabled={saving} style={{ padding: "11px 12px", border: "1px solid #0f766e", borderRadius: "9px", background: "#fff", color: "#0f766e", fontWeight: 800, cursor: saving ? "wait" : "pointer" }}>
+              <button className="vendor-settings-action" type="button" onClick={startPinChange} disabled={saving} style={{ "--vendor-settings-action-bg": settingsButtonColors[3], padding: "11px 12px", border: "1px solid #0f766e", borderRadius: "9px", background: "#fff", color: "#0f766e", fontWeight: 800, cursor: saving ? "wait" : "pointer" }}>
                 <i className="fa-solid fa-key" aria-hidden="true" /> Change PIN
               </button>
             </div>
@@ -1802,7 +1871,7 @@ export default function VendorDashboard() {
               }
               style={fieldStyle}
             />
-            <button type="button" onClick={verifyBankAccount} disabled={saving} style={{ width: "100%", border: 0, borderRadius: "9px", padding: "11px 12px", background: "#0f766e", color: "#fff", fontWeight: 800, cursor: saving ? "wait" : "pointer" }}>Verify account name</button>
+            <button className="vendor-settings-action" type="button" onClick={verifyBankAccount} disabled={saving} style={{ "--vendor-settings-action-bg": settingsButtonColors[4], width: "100%", border: 0, borderRadius: "9px", padding: "11px 12px", background: "#0f766e", color: "#fff", fontWeight: 800, cursor: saving ? "wait" : "pointer" }}>Verify account name</button>
             <select
               required
               value={profileForm.payoutBankCode}
@@ -1840,15 +1909,17 @@ export default function VendorDashboard() {
           <section style={{ display: "grid", gap: "8px", padding: "14px", border: "1px solid #dbe7df", borderRadius: "12px", background: "#f8fffb" }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
               <div><strong>Payout accounts</strong><p style={{ margin: "4px 0 0", color: "#64748b", fontSize: ".8rem" }}>Select the account PAZ should use for your payouts.</p></div>
-              <button type="button" onClick={() => setProfileForm({ ...profileForm, selectedPayoutAccountId: `new-${Date.now()}`, payoutName: "", payoutAccount: "", payoutBank: "", payoutBankCode: "", payoutCurrency: "NGN", verifiedAccountName: "" })} style={{ border: "1px solid #0f766e", borderRadius: "8px", background: "#fff", color: "#0f766e", padding: "8px 10px", fontWeight: 800 }}>Add another account</button>
+              <button className="vendor-settings-action" type="button" onClick={() => setProfileForm({ ...profileForm, selectedPayoutAccountId: `new-${Date.now()}`, payoutName: "", payoutAccount: "", payoutBank: "", payoutBankCode: "", payoutCurrency: "NGN", verifiedAccountName: "" })} style={{ "--vendor-settings-action-bg": settingsButtonColors[5], border: "1px solid #0f766e", borderRadius: "8px", background: "#fff", color: "#0f766e", padding: "8px 10px", fontWeight: 800 }}>Add another account</button>
             </div>
-            {(profileForm.payoutAccounts || []).map((account) => (
-              <button key={account.id} type="button" onClick={() => setProfileForm({ ...profileForm, selectedPayoutAccountId: account.id, payoutName: account.accountName || "", payoutAccount: account.accountNumber || "", payoutBank: account.bankName || "", payoutBankCode: banks.find(([name]) => name === account.bankName)?.[1] || "", payoutCurrency: account.currency || "NGN", verifiedAccountName: account.verified ? account.accountName || "verified" : "" })} style={{ display: "flex", justifyContent: "space-between", gap: "10px", textAlign: "left", padding: "10px 12px", border: "1px solid", borderColor: profileForm.selectedPayoutAccountId === account.id ? "#0f766e" : "#cbd5e1", borderRadius: "9px", background: profileForm.selectedPayoutAccountId === account.id ? "#ecfdf5" : "#fff", color: "#334155" }}><span><strong>{account.accountName || "Account holder"}</strong><br /><small>{account.bankName || "Bank"} · {account.accountNumber || "Account number"} · {account.currency || "NGN"}</small></span><span>{profileForm.selectedPayoutAccountId === account.id ? "Selected for payout" : "Use this account"}</span></button>
+            {(profileForm.payoutAccounts || []).map((account, index) => (
+              <button className="vendor-settings-action" key={account.id} type="button" onClick={() => setProfileForm({ ...profileForm, selectedPayoutAccountId: account.id, payoutName: account.accountName || "", payoutAccount: account.accountNumber || "", payoutBank: account.bankName || "", payoutBankCode: banks.find(([name]) => name === account.bankName)?.[1] || "", payoutCurrency: account.currency || "NGN", verifiedAccountName: account.verified ? account.accountName || "verified" : "" })} style={{ "--vendor-settings-action-bg": settingsButtonColors[index % settingsButtonColors.length], display: "flex", justifyContent: "space-between", gap: "10px", textAlign: "left", padding: "10px 12px", border: "1px solid", borderColor: profileForm.selectedPayoutAccountId === account.id ? "#0f766e" : "#cbd5e1", borderRadius: "9px", background: profileForm.selectedPayoutAccountId === account.id ? "#ecfdf5" : "#fff", color: "#334155" }}><span><strong>{account.accountName || "Account holder"}</strong><br /><small>{account.bankName || "Bank"} · {account.accountNumber || "Account number"} · {account.currency || "NGN"}</small></span><span>{profileForm.selectedPayoutAccountId === account.id ? "Selected for payout" : "Use this account"}</span></button>
             ))}
           </section>
           <button
+            className="vendor-settings-action"
             disabled={saving}
             style={{
+              "--vendor-settings-action-bg": settingsButtonColors[0],
               width: "fit-content",
               padding: "11px 16px",
               border: 0,
