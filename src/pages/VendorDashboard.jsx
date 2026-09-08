@@ -130,6 +130,43 @@ const clearCredentialLockout = (key) => {
 };
 const productReviewColumns = "id,vendor_id,title,price,currency,status,name_verified,description_verified,cover_verified,attachment_verified,updated_at";
 const vendorProfileColumns = "id,company_name,logo_url,contact_email,id_type,id_document_path,status,payout_account_name,payout_account_number,payout_bank_name,payout_currency,rejection_reason,approved_at,approved_by,created_at,updated_at,phone,username,payout_accounts,selected_payout_account_id,vendor_terms_version,vendor_terms_accepted_at";
+const vendorTourSteps = [
+  {
+    eyebrow: "START HERE",
+    title: "Set up your vendor account",
+    text: "Begin in Settings. Add your business phone, logo, identity document, bank details, and payout currency, then save your verification details for admin review.",
+    actionLabel: "Open Settings",
+    action: "settings",
+  },
+  {
+    eyebrow: "SETTINGS",
+    title: "Complete verification and payouts",
+    text: "Upload your identity document and verify your payout account name. Your products and ads become available after the admin approves your vendor account.",
+    actionLabel: "Keep Settings open",
+    action: "settings",
+  },
+  {
+    eyebrow: "SHOP",
+    title: "Add your first product",
+    text: "Open Products to add a title, description, price, cover image, and downloadable PDF or ZIP file. Submit the product when everything is ready.",
+    actionLabel: "Open Products",
+    action: "products",
+  },
+  {
+    eyebrow: "PROMOTION",
+    title: "Submit an advert",
+    text: "Use Ads to add a headline and product link. Every advert is reviewed by the main admin before it appears on the promotional board.",
+    actionLabel: "Open Ads",
+    action: "ads",
+  },
+  {
+    eyebrow: "TRACK YOUR SHOP",
+    title: "Watch your approval and publishing status",
+    text: "Return to Products to see whether a product is awaiting review, approved, rejected, or published in the shop. You can also refresh each product status there.",
+    actionLabel: "View product status",
+    action: "products",
+  },
+];
 
 export default function VendorDashboard() {
   const navigate = useNavigate();
@@ -195,6 +232,8 @@ export default function VendorDashboard() {
   const [idDocumentPreviewUrl, setIdDocumentPreviewUrl] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [vendorTourStep, setVendorTourStep] = useState(0);
+  const [vendorTourOpen, setVendorTourOpen] = useState(false);
   const [pinMode, setPinMode] = useState(null);
   const [vendorPin, setVendorPin] = useState("");
   const [vendorPinConfirm, setVendorPinConfirm] = useState("");
@@ -215,6 +254,33 @@ export default function VendorDashboard() {
     window.requestAnimationFrame(() => {
       dashboardContentRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
+  };
+  const closeVendorTour = () => {
+    setVendorTourOpen(false);
+    if (session?.user?.id) {
+      try {
+        window.localStorage.setItem(`paz-vendor-tour-complete:${session.user.id}`, "1");
+      } catch {
+        // The tour can still be dismissed for the current session if storage is unavailable.
+      }
+    }
+  };
+  const runVendorTourAction = (action) => {
+    if (action === "settings") {
+      setSettingsOpen(true);
+      setMobileMenuOpen(false);
+      return;
+    }
+    focusVendorSection(action);
+  };
+  const advanceVendorTour = () => {
+    const nextStep = vendorTourStep + 1;
+    if (nextStep >= vendorTourSteps.length) {
+      closeVendorTour();
+      return;
+    }
+    setVendorTourStep(nextStep);
+    runVendorTourAction(vendorTourSteps[nextStep].action);
   };
   const [passwordResetMode, setPasswordResetMode] = useState(() =>
     new URLSearchParams(window.location.search).get("reset") === "1",
@@ -717,6 +783,17 @@ export default function VendorDashboard() {
       activityEvents.forEach((eventName) => window.removeEventListener(eventName, resetInactivityTimer));
     };
   }, [session?.user?.id, pinMode]);
+
+  useEffect(() => {
+    if (!session?.user?.id || !profile?.id || pinMode || loading) return;
+    try {
+      if (window.localStorage.getItem(`paz-vendor-tour-complete:${session.user.id}`) === "1") return;
+    } catch {
+      // Show the tour when storage is unavailable; it can still be skipped for this session.
+    }
+    setVendorTourStep(0);
+    setVendorTourOpen(true);
+  }, [loading, pinMode, profile?.id, session?.user?.id]);
 
   useEffect(() => {
     if (!session?.user?.id) return undefined;
@@ -1779,6 +1856,28 @@ export default function VendorDashboard() {
           .vendor-dashboard-mobile-menu button:last-child{color:#b91c1c;background:#fff7f7}
         }
       `}</style>
+      {vendorTourOpen && (
+        <div role="dialog" aria-modal="true" aria-labelledby="vendor-tour-title" style={{ position: "fixed", inset: 0, zIndex: 30000, display: "grid", placeItems: "center", padding: "20px", background: "rgba(15, 23, 42, .58)" }}>
+          <section style={{ width: "min(520px, 100%)", maxHeight: "min(720px, calc(100vh - 40px))", overflow: "auto", padding: "clamp(24px, 5vw, 36px)", borderRadius: "20px", background: "#fff", color: "#102a20", boxShadow: "0 28px 90px rgba(15, 23, 42, .3)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "14px" }}>
+              <p style={{ margin: 0, color: "#15803d", fontSize: ".7rem", fontWeight: 900, letterSpacing: ".15em" }}>{vendorTourSteps[vendorTourStep].eyebrow}</p>
+              <span style={{ color: "#64748b", fontSize: ".78rem", fontWeight: 800 }}>{vendorTourStep + 1} of {vendorTourSteps.length}</span>
+            </div>
+            <h2 id="vendor-tour-title" style={{ margin: "10px 0 10px", color: "#102a20", fontSize: "clamp(1.45rem, 4vw, 1.9rem)" }}>{vendorTourSteps[vendorTourStep].title}</h2>
+            <p style={{ margin: 0, color: "#526b61", lineHeight: 1.65 }}>{vendorTourSteps[vendorTourStep].text}</p>
+            <div style={{ display: "grid", gridTemplateColumns: `repeat(${vendorTourSteps.length}, 1fr)`, gap: "5px", marginTop: "22px" }} aria-hidden="true">
+              {vendorTourSteps.map((step, index) => <span key={step.title} style={{ height: "4px", borderRadius: "99px", background: index <= vendorTourStep ? "#166534" : "#dbe7df" }} />)}
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "10px", flexWrap: "wrap", marginTop: "24px" }}>
+              <button type="button" onClick={closeVendorTour} style={{ border: 0, background: "transparent", color: "#64748b", fontWeight: 800, cursor: "pointer" }}>Skip tour</button>
+              <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                <button type="button" onClick={() => runVendorTourAction(vendorTourSteps[vendorTourStep].action)} style={{ border: "1px solid #166534", borderRadius: "9px", padding: "10px 13px", background: "#fff", color: "#166534", fontWeight: 800, cursor: "pointer" }}>{vendorTourSteps[vendorTourStep].actionLabel}</button>
+                <button type="button" onClick={advanceVendorTour} style={{ border: 0, borderRadius: "9px", padding: "10px 15px", background: "#166534", color: "#fff", fontWeight: 800, cursor: "pointer" }}>{vendorTourStep === vendorTourSteps.length - 1 ? "Finish tour" : "Next"} <i className="fa-solid fa-arrow-right" aria-hidden="true" /></button>
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
       <div style={{ maxWidth: "1180px", margin: "0 auto" }}>
         <header
           className="vendor-dashboard-header"
