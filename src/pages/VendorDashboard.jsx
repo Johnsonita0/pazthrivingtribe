@@ -357,6 +357,15 @@ export default function VendorDashboard() {
     }
   };
 
+  const signOutVendor = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    setPinMode(null);
+    setVendorPin("");
+    setVendorPinConfirm("");
+    navigate("/vendor");
+  };
+
   const sendPasswordChangeEmail = async () => {
     setSaving(true);
     try {
@@ -1231,6 +1240,14 @@ export default function VendorDashboard() {
             style={{ padding: "14px 16px", border: 0, borderRadius: "12px", background: "#166534", color: "#fff", fontWeight: 850, fontSize: ".95rem", cursor: saving ? "wait" : "pointer", opacity: saving ? .65 : 1, boxShadow: "0 10px 20px rgba(22, 101, 52, .2)" }}
           >
             {saving ? "Opening dashboard..." : pinMode === "setup" ? "Save PIN and open dashboard" : "Open dashboard"}
+          </button>
+          <button
+            type="button"
+            onClick={signOutVendor}
+            disabled={saving}
+            style={{ padding: "10px 16px", border: "1px solid #cbd5e1", borderRadius: "10px", background: "transparent", color: "#334155", fontWeight: 800, fontSize: ".88rem", cursor: saving ? "not-allowed" : "pointer", opacity: saving ? .6 : 1 }}
+          >
+            <i className="fa-solid fa-right-from-bracket" aria-hidden="true" /> Log out
           </button>
         </form>
       </main>
