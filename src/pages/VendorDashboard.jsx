@@ -86,6 +86,12 @@ const userFacingError = (error, fallback) => {
   if (/jwt|token|session|unauthorized|401/i.test(message)) return "Your vendor session needs to be refreshed. Please sign in again.";
   return message && !/^typeerror:/i.test(message) ? message : fallback;
 };
+const getMailProviderUrl = (email) => {
+  const normalizedEmail = String(email || "").trim().toLowerCase();
+  if (normalizedEmail.endsWith("@gmail.com")) return "https://mail.google.com/mail/u/0/#search/PAZ%20vendor%20account";
+  if (normalizedEmail.endsWith("@yahoo.com") || normalizedEmail.endsWith("@yahoomail.com")) return "https://mail.yahoo.com/";
+  return `mailto:${encodeURIComponent(normalizedEmail)}`;
+};
 const credentialLockoutMaxAttempts = 5;
 const credentialLockoutDurationMs = 10 * 60 * 1000;
 const credentialLockoutStoragePrefix = "paz-vendor-lockout:";
@@ -135,6 +141,7 @@ export default function VendorDashboard() {
   const [tab, setTab] = useState("products");
   const [authMode, setAuthMode] = useState("sign-in");
   const [authForm, setAuthForm] = useState({ email: "", password: "" });
+  const [signupConfirmationEmail, setSignupConfirmationEmail] = useState("");
   const [signupPasswordConfirm, setSignupPasswordConfirm] = useState("");
   const [profileForm, setProfileForm] = useState({
     username: "",
@@ -912,6 +919,7 @@ export default function VendorDashboard() {
               "Account creation is taking too long. Check your connection and try again.",
             );
       if (result.error) throw result.error;
+      if (authMode === "sign-up") setVendorTheme("light");
       if (result.data?.session) {
         if (authMode === "sign-in") clearCredentialFailure(passwordLockoutKey);
         setSession(result.data.session);
@@ -942,10 +950,7 @@ export default function VendorDashboard() {
         );
       } else {
         setAuthMode("sign-in");
-        setNotice({
-          type: "success",
-          text: "PAZ vendor account started. Check your email for the PAZ confirmation link, then return here, sign in, and upload your identity document to submit your vendor profile.",
-        });
+        setSignupConfirmationEmail(authForm.email.trim().toLowerCase());
       }
     } catch (error) {
       if (authMode === "sign-in") registerCredentialFailure(passwordLockoutKey, "Password sign-in");
@@ -1287,6 +1292,53 @@ export default function VendorDashboard() {
     "--entry-accent-alt": entryPalette.accentAlt,
     "--entry-input": entryPalette.input,
   };
+
+  const openConfirmationEmail = () => {
+    const emailUrl = getMailProviderUrl(signupConfirmationEmail);
+    if (emailUrl.startsWith("mailto:")) {
+      window.location.href = emailUrl;
+      return;
+    }
+    window.open(emailUrl, "_blank", "noopener,noreferrer");
+  };
+
+  if (signupConfirmationEmail && !session)
+    return (
+      <main
+        className="vendor-entry-theme vendor-entry-theme-light"
+        style={{
+          ...entryThemeStyle,
+          minHeight: "100vh",
+          display: "grid",
+          placeItems: "center",
+          padding: "24px",
+          background: vendorEntryPalettes.light.bg,
+        }}
+      >
+        <style>{vendorEntryThemeCss}</style>
+        <section
+          className="vendor-entry-panel"
+          aria-labelledby="vendor-confirmation-title"
+          style={{
+            width: "min(520px, 100%)",
+            padding: "clamp(26px, 6vw, 44px)",
+            borderRadius: "22px",
+            textAlign: "center",
+          }}
+        >
+          <div style={{ width: "72px", height: "72px", display: "grid", placeItems: "center", margin: "0 auto 18px", borderRadius: "22px", background: "#dcfce7", color: "#166534", fontSize: "2rem" }} aria-hidden="true">
+            <i className="fa-solid fa-envelope-open-text" />
+          </div>
+          <p style={{ margin: 0, color: "#15803d", fontSize: ".72rem", fontWeight: 900, letterSpacing: ".16em", textTransform: "uppercase" }}>PAZ vendor onboarding</p>
+          <h1 id="vendor-confirmation-title" style={{ margin: "8px 0 12px", color: "#102a20", fontSize: "clamp(1.7rem, 5vw, 2.35rem)" }}>Check your email to activate your account</h1>
+          <p style={{ margin: 0, color: "#526b61", lineHeight: 1.65 }}>We sent a confirmation link to <strong style={{ color: "#166534", overflowWrap: "anywhere" }}>{signupConfirmationEmail}</strong>. Open the message and confirm your email before signing in.</p>
+          <button type="button" onClick={openConfirmationEmail} style={{ width: "100%", marginTop: "24px", padding: "13px 16px", border: 0, borderRadius: "10px", background: "#166534", color: "#fff", fontWeight: 800, cursor: "pointer" }}>
+            <i className="fa-solid fa-arrow-up-right-from-square" aria-hidden="true" /> {signupConfirmationEmail.endsWith("@gmail.com") ? "Open Gmail" : signupConfirmationEmail.endsWith("@yahoo.com") || signupConfirmationEmail.endsWith("@yahoomail.com") ? "Open Yahoo Mail" : "Open email app"}
+          </button>
+          <button type="button" onClick={() => setSignupConfirmationEmail("")} style={{ marginTop: "14px", border: 0, background: "transparent", color: "#166534", fontWeight: 800, cursor: "pointer" }}>Return to sign in</button>
+        </section>
+      </main>
+    );
 
   if (passwordResetMode)
     return (
