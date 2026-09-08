@@ -640,8 +640,14 @@ export default function App() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
       setSession(currentSession);
-      if (!currentSession) setIsAdmin(false);
-      setLoading(false);
+      if (!currentSession) {
+        setIsAdmin(false);
+        setAdminAccessLoading(false);
+        setLoading(false);
+        return;
+      }
+
+      void verifyAdminAccess(currentSession).finally(() => setLoading(false));
     });
 
     fetchDynamicWebsiteContent();

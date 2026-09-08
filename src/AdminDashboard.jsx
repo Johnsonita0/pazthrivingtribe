@@ -1844,7 +1844,11 @@ export default function AdminDashboard(props) {
     return <Navigate to="/admin" replace />;
   }
 
-  if (mode === "login" && !session) {
+  if (mode === "login" && session && adminAccessLoading) {
+    return <div className="app-preloader-overlay" role="status" aria-busy="true"><div className="app-preloader-box">Checking admin access...</div></div>;
+  }
+
+  if (mode === "login" && (!session || !isAdmin)) {
     return (
       <div
         style={{
