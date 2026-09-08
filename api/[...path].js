@@ -1,4 +1,5 @@
 import adminAuthHandler from '../server-handlers/admin-auth.js';
+import adminAccessHandler from '../server-handlers/admin-access.js';
 import adminHealthHandler from '../server-handlers/admin-health.js';
 import adminUpdateHandler from '../server-handlers/admin-update.js';
 import completeShopPaymentHandler from '../server-handlers/complete-shop-payment.js';
@@ -20,6 +21,7 @@ import vendorPinChangedEmailHandler from '../server-handlers/vendor-pin-changed-
 
 const handlers = {
   '/admin-auth': adminAuthHandler,
+  '/admin-access': adminAccessHandler,
   '/admin-health': adminHealthHandler,
   '/admin-update': adminUpdateHandler,
   '/complete-shop-payment': completeShopPaymentHandler,

@@ -68,6 +68,8 @@ export default function App() {
 
   // --- Auth & System Loading States ---
   const [session, setSession] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminAccessLoading, setAdminAccessLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
@@ -77,6 +79,29 @@ export default function App() {
   const isFeedbackRoute = location.pathname === '/feedback';
   const isStoreRoute = ['/store', '/shop'].includes(location.pathname) || location.pathname.startsWith('/store/') || location.pathname.startsWith('/shop/');
   const isShopMenuActive = isStoreRoute;
+
+  const verifyAdminAccess = async (currentSession) => {
+    if (!currentSession?.access_token) {
+      setIsAdmin(false);
+      return false;
+    }
+    setAdminAccessLoading(true);
+    try {
+      const response = await fetch('/api/admin-access', {
+        headers: { Authorization: `Bearer ${currentSession.access_token}` },
+      });
+      const payload = await response.json().catch(() => ({}));
+      const authorized = response.ok && payload.isAdmin === true;
+      setIsAdmin(authorized);
+      return authorized;
+    } catch (error) {
+      console.error('Admin access check failed:', error);
+      setIsAdmin(false);
+      return false;
+    } finally {
+      setAdminAccessLoading(false);
+    }
+  };
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -607,13 +632,15 @@ export default function App() {
       setShowCookieBanner(true);
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
+      if (session) await verifyAdminAccess(session);
       setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
       setSession(currentSession);
+      if (!currentSession) setIsAdmin(false);
       setLoading(false);
     });
 
@@ -1107,6 +1134,14 @@ export default function App() {
     }
 
     if (data?.session) {
+      const authorized = await verifyAdminAccess(data.session);
+      if (!authorized) {
+        await supabase.auth.signOut();
+        setSession(null);
+        setAuthError('This account is not authorized for the admin dashboard.');
+        setLoading(false);
+        return;
+      }
       setSession(data.session);
       navigate('/dashboard');
     }
@@ -4115,6 +4150,8 @@ export default function App() {
               <AdminDashboard
                 mode="login"
                 session={session}
+                isAdmin={isAdmin}
+                adminAccessLoading={adminAccessLoading}
                 loading={loading}
                 authError={authError}
                 email={email}
@@ -4214,6 +4251,8 @@ export default function App() {
               <AdminDashboard
                 mode="dashboard"
                 session={session}
+                isAdmin={isAdmin}
+                adminAccessLoading={adminAccessLoading}
                 loading={loading}
                 authError={authError}
                 email={email}

@@ -109,6 +109,8 @@ export default function AdminDashboard(props) {
   const {
     mode = "login",
     session,
+    isAdmin = false,
+    adminAccessLoading = false,
     loading = false,
     authError,
     cmsErrorMessage,
@@ -1830,11 +1832,15 @@ export default function AdminDashboard(props) {
     background: "#f9fafb",
   };
 
-  if (mode === "login" && session) {
+  if (mode === "login" && session && isAdmin) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  if (mode === "dashboard" && !session) {
+  if (mode === "dashboard" && adminAccessLoading) {
+    return <div className="app-preloader-overlay" role="status" aria-busy="true"><div className="app-preloader-box">Checking admin access...</div></div>;
+  }
+
+  if (mode === "dashboard" && (!session || !isAdmin)) {
     return <Navigate to="/admin" replace />;
   }
 
