@@ -168,6 +168,12 @@ export default function VendorDashboard() {
       return "light";
     }
   });
+  const [monitorColors] = useState(() => [
+    { background: "#0f766e", text: "#ffffff", label: "#ccfbf1" },
+    { background: "#b45309", text: "#ffffff", label: "#fef3c7" },
+    { background: "#be185d", text: "#ffffff", label: "#fce7f3" },
+    { background: "#2563eb", text: "#ffffff", label: "#dbeafe" },
+  ].sort(() => Math.random() - 0.5));
   const accountCurrency = profileForm.payoutCurrency || "NGN";
 
   useEffect(() => {
@@ -1454,13 +1460,63 @@ export default function VendorDashboard() {
       <style>{`
         .vendor-dashboard-theme{--vendor-bg:#f1f5f3;--vendor-surface:#fff;--vendor-soft:#f8fffb;--vendor-text:#0f172a;--vendor-muted:#64748b;--vendor-border:#dbe7df;--vendor-accent:#166534;--vendor-accent-soft:#ecfdf5;--vendor-input:#fff;--vendor-monitor:#166534;--vendor-monitor-text:#fff;color:var(--vendor-text);background:var(--vendor-bg)!important;transition:background .2s ease,color .2s ease}
         .vendor-dashboard-theme-dark{--vendor-bg:#111820;--vendor-surface:#1b2731;--vendor-soft:#22333f;--vendor-text:#f8fafc;--vendor-muted:#c5d0d8;--vendor-border:#415563;--vendor-accent:#8be9b0;--vendor-accent-soft:#234b3b;--vendor-input:#22333f;--vendor-monitor:#202d38;--vendor-monitor-text:#f8fafc}
+        .vendor-dashboard-theme-dark{color-scheme:dark}
+        .vendor-dashboard-theme-dark :is(h1,h2,h3,h4,h5,h6,p,span,strong,small,label,button,a,li,dt,dd){color:var(--vendor-text)!important}
+        .vendor-dashboard-theme-dark :is(input,textarea,select){background:var(--vendor-input)!important;color:var(--vendor-text)!important;border-color:var(--vendor-border)!important;caret-color:var(--vendor-text)}
+        .vendor-dashboard-theme-dark :is(form,section,article,[style*="background: #fff"],[style*="background: \"#fff\""],[style*="background: #f8fffb"],[style*="background: \"#f8fffb\""],[style*="background: #ecfdf5"],[style*="background: #f0fdf4"]){background:var(--vendor-surface)!important;border-color:var(--vendor-border)!important}
+        .vendor-dashboard-theme-dark :is(button,.vendor-theme-choice,.vendor-settings-button,.vendor-signout-button){background:var(--vendor-surface)!important;color:var(--vendor-text)!important;border-color:var(--vendor-border)!important}
+        .vendor-dashboard-theme-dark :is(button[style*="background: #166534"],button[style*="background: \"#166534\""],button[style*="background: linear-gradient"]){background:#263743!important;color:#f8fafc!important;border-color:#5b7484!important}
+        .vendor-dashboard-theme-dark .vendor-monitor-card{background:var(--vendor-monitor-card-bg,var(--vendor-monitor))!important;color:var(--vendor-monitor-card-text,#fff)!important;border-color:rgba(255,255,255,.22)!important;box-shadow:0 12px 24px rgba(0,0,0,.22)}
+        .vendor-dashboard-theme-dark .vendor-monitor-card div{color:var(--vendor-monitor-card-label,var(--vendor-monitor-card-text,#fff))!important}
+        .vendor-dashboard-theme-dark .vendor-monitor-card strong{color:var(--vendor-monitor-card-text,#fff)!important}
+        .vendor-dashboard-theme-sage :is(form,section,article,[style*="background: #fff"],[style*="background: \"#fff\""]){background:var(--vendor-surface)!important;color:var(--vendor-text)!important;border-color:var(--vendor-border)!important}
+        .vendor-dashboard-theme-coral :is(form,section,article,[style*="background: #fff"],[style*="background: \"#fff\""]){background:var(--vendor-surface)!important;color:var(--vendor-text)!important;border-color:var(--vendor-border)!important}
+        .vendor-dashboard-theme-gold :is(form,section,article,[style*="background: #fff"],[style*="background: \"#fff\""]){background:var(--vendor-surface)!important;color:var(--vendor-text)!important;border-color:var(--vendor-border)!important}
         .vendor-dashboard-theme-sage{--vendor-bg:#e7f4ed;--vendor-surface:#fbfffc;--vendor-soft:#effaf3;--vendor-text:#16352b;--vendor-muted:#527066;--vendor-border:#b9dac8;--vendor-accent:#0f766e;--vendor-accent-soft:#dff8ef;--vendor-input:#fff}
         .vendor-dashboard-theme-coral{--vendor-bg:#fff1ec;--vendor-surface:#fffdfc;--vendor-soft:#fff7f3;--vendor-text:#42251f;--vendor-muted:#86645d;--vendor-border:#f2c8bb;--vendor-accent:#c2412d;--vendor-accent-soft:#ffe4dc;--vendor-input:#fff}
         .vendor-dashboard-theme-gold{--vendor-bg:#fff8e7;--vendor-surface:#fffefa;--vendor-soft:#fffaf0;--vendor-text:#3f3217;--vendor-muted:#806d43;--vendor-border:#ead79f;--vendor-accent:#a16207;--vendor-accent-soft:#fff1c7;--vendor-input:#fff}
         .vendor-dashboard-theme>div>header h1,.vendor-dashboard-theme h2,.vendor-dashboard-theme h3,.vendor-dashboard-theme strong{color:var(--vendor-text)}
         .vendor-dashboard-theme p,.vendor-dashboard-theme small,.vendor-dashboard-theme label,.vendor-dashboard-theme [style*="color: #64748b"],.vendor-dashboard-theme [style*="color: \"#64748b\""],.vendor-dashboard-theme [style*="color: #475569"]{color:var(--vendor-muted)!important}
-        .vendor-dashboard-theme .vendor-monitor-card{background:var(--vendor-monitor)!important;color:var(--vendor-monitor-text)!important}
-        .vendor-dashboard-theme .vendor-monitor-card div,.vendor-dashboard-theme .vendor-monitor-card strong{color:var(--vendor-monitor-text)!important}
+        .vendor-dashboard-theme .vendor-monitor-card{background:var(--vendor-monitor-card-bg,var(--vendor-monitor))!important;color:var(--vendor-monitor-card-text,var(--vendor-monitor-text))!important}
+        .vendor-dashboard-theme .vendor-monitor-card div{color:var(--vendor-monitor-card-label,var(--vendor-monitor-card-text,var(--vendor-monitor-text)))!important}
+        .vendor-dashboard-theme .vendor-monitor-card strong{color:var(--vendor-monitor-card-text,var(--vendor-monitor-text))!important}
+        .vendor-upload-card{display:grid;gap:4px;align-content:center;min-height:58px;padding:8px;box-sizing:border-box;border:1px dashed var(--vendor-border);border-radius:10px;background:var(--vendor-soft);color:var(--vendor-text);cursor:copy;text-align:center;transition:border-color 160ms ease,background 160ms ease,box-shadow 160ms ease}
+        .vendor-upload-card:hover,.vendor-upload-card:focus-within{border-color:var(--vendor-accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--vendor-accent) 18%,transparent)}
+        .vendor-upload-card strong,.vendor-upload-card span{color:var(--vendor-text)!important;overflow-wrap:anywhere}
+        .vendor-upload-card span{font-size:.72rem;line-height:1.35}
+        .vendor-upload-card input{display:none}
+        .vendor-upload-card img{width:52px;height:52px;object-fit:cover;border-radius:8px;justify-self:center;border:1px solid var(--vendor-border)}
+        .vendor-dashboard-theme-dark .vendor-product-review-card{background:#1b2b36!important;border-color:#617987!important;box-shadow:0 10px 22px rgba(0,0,0,.18)}
+        .vendor-dashboard-theme-dark .vendor-product-review-card .vendor-product-review-meta{color:#dbeafe!important}
+        .vendor-dashboard-theme-dark .vendor-product-review-card .vendor-product-review-file{color:#9cc4df!important}
+        .vendor-dashboard-theme-dark .vendor-product-review-card .vendor-product-review-status{color:#f8fafc!important;font-weight:800}
+        .vendor-dashboard-theme-dark .vendor-product-review-actions button{color:#fff!important;border-color:transparent!important;box-shadow:0 4px 10px rgba(0,0,0,.18)}
+        .vendor-dashboard-theme-dark .vendor-product-review-actions button:nth-child(1){background:#0f766e!important}
+        .vendor-dashboard-theme-dark .vendor-product-review-actions button:nth-child(2){background:#2563eb!important}
+        .vendor-dashboard-theme-dark .vendor-product-review-actions button:nth-child(3){background:#b45309!important}
+        .vendor-dashboard-theme-dark .vendor-product-review-actions button:nth-child(4){background:#be185d!important}
+        .vendor-dashboard-theme-dark .vendor-product-review-card .vendor-product-refresh{background:#334155!important;color:#bae6fd!important;border-color:#7dd3fc!important}
+        .vendor-dashboard-theme-dark .vendor-product-manager-panel{background:#172833!important;border-color:#527182!important}
+        .vendor-dashboard-theme-dark .vendor-product-manager-panel h2{color:#f8fafc!important}
+        .vendor-dashboard-theme-dark .vendor-product-manager-panel input,.vendor-dashboard-theme-dark .vendor-product-manager-panel textarea,.vendor-dashboard-theme-dark .vendor-product-manager-panel select{background:#223946!important;color:#f8fafc!important;border-color:#5b7c8c!important}
+        .vendor-dashboard-theme-dark .vendor-product-manager-panel input::placeholder,.vendor-dashboard-theme-dark .vendor-product-manager-panel textarea::placeholder{color:#a9c0cc!important;opacity:1}
+        .vendor-dashboard-theme-dark .vendor-product-manager-panel label{color:#d7e8ef!important}
+        .vendor-dashboard-theme-dark .vendor-product-manager-panel .vendor-product-currency{background:#294052!important;color:#bae6fd!important;border-color:#38bdf8!important}
+        .vendor-dashboard-theme-dark .vendor-product-manager-panel .vendor-product-free-label{color:#fde68a!important}
+        .vendor-dashboard-theme-dark .vendor-product-manager-panel .vendor-product-upload{background:#203744!important;color:#e0f2fe!important;border-color:#38bdf8!important}
+        .vendor-dashboard-theme-dark .vendor-product-manager-panel .vendor-product-upload:hover{background:#294b5b!important;border-color:#fbbf24!important}
+        .vendor-dashboard-theme-dark .vendor-product-manager-panel .vendor-product-publish{background:#c2410c!important;color:#fff!important;border-color:#fb923c!important;box-shadow:0 9px 18px rgba(194,65,12,.28)!important}
+        .vendor-dashboard-theme-dark .vendor-product-manager-panel .vendor-product-cancel{background:#334155!important;color:#f8fafc!important;border-color:#94a3b8!important}
+        .vendor-dashboard-theme-dark .vendor-product-count-badge{background:#075985!important;color:#e0f2fe!important;border-color:#38bdf8!important;box-shadow:0 4px 12px rgba(14,116,144,.24)}
+        .vendor-dashboard-theme-dark .vendor-section-tabs button{border-color:#607887!important;color:#e2e8f0!important}
+        .vendor-dashboard-theme-dark .vendor-section-tabs button:nth-child(1){background:#0f766e!important}
+        .vendor-dashboard-theme-dark .vendor-section-tabs button:nth-child(2){background:#2563eb!important}
+        .vendor-dashboard-theme-dark .vendor-section-tabs button:nth-child(3){background:#b45309!important}
+        .vendor-dashboard-theme-dark .vendor-section-tabs button:nth-child(4){background:#be185d!important}
+        .vendor-dashboard-theme-dark .vendor-section-tabs button[style*="background: #166534"]{color:#fff!important}
+        .vendor-dashboard-theme-dark .vendor-dashboard-header-actions button{background:#334155!important;color:#f8fafc!important;border-color:#71879a!important}
+        .vendor-dashboard-theme-dark .vendor-dashboard-header-actions button:hover:not(:disabled),.vendor-dashboard-theme-dark .vendor-product-review-actions button:hover:not(:disabled){filter:brightness(1.14);transform:translateY(-1px)}
+        .vendor-dashboard-theme-dark button:disabled{filter:saturate(.7);opacity:.7}
         .vendor-dashboard-theme form,.vendor-dashboard-theme section[style*="background: #fff"],.vendor-dashboard-theme section[style*="background: \"#fff\""],.vendor-dashboard-theme [style*="background: #fff"],.vendor-dashboard-theme [style*="background: #f8fffb"],.vendor-dashboard-theme [style*="background: \"#f8fffb\""]{background:var(--vendor-surface)!important;border-color:var(--vendor-border)!important;color:var(--vendor-text)!important}
         .vendor-dashboard-theme input,.vendor-dashboard-theme textarea,.vendor-dashboard-theme select{background:var(--vendor-input)!important;color:var(--vendor-text)!important;border-color:var(--vendor-border)!important}
         .vendor-dashboard-theme button{color:var(--vendor-text)}
@@ -1582,7 +1638,7 @@ export default function VendorDashboard() {
               "earnings",
             ],
             ["Ads", ads.length, "ads"],
-          ].map(([label, value, targetTab]) => (
+          ].map(([label, value, targetTab], index) => (
             <button
               className="vendor-monitor-card"
               key={label}
@@ -1599,6 +1655,9 @@ export default function VendorDashboard() {
                 color: "#fff",
                 cursor: "pointer",
                 font: "inherit",
+                "--vendor-monitor-card-bg": monitorColors[index % monitorColors.length].background,
+                "--vendor-monitor-card-text": monitorColors[index % monitorColors.length].text,
+                "--vendor-monitor-card-label": monitorColors[index % monitorColors.length].label,
               }}
             >
               <div style={{ fontSize: ".75rem", opacity: 0.8 }}>{label}</div>
@@ -1692,7 +1751,7 @@ export default function VendorDashboard() {
             <input required placeholder="Business name (locked)" value={profileForm.companyName} readOnly style={{ ...fieldStyle, background: "#f1f5f9", color: "#475569" }} />
             <input required type="email" placeholder="Email (locked)" value={profile?.contact_email || session.user.email || ""} readOnly style={{ ...fieldStyle, background: "#f1f5f9", color: "#475569" }} />
             <input placeholder="Phone number" value={profileForm.phone} onChange={(event) => setProfileForm({ ...profileForm, phone: event.target.value })} style={fieldStyle} />
-            <label onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }} onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file?.type.startsWith("image/")) setProfileForm({ ...profileForm, logoFile: file }); }} style={{ display: "grid", gap: "7px", alignContent: "center", minHeight: "142px", padding: "12px", border: "1px dashed #86efac", borderRadius: "10px", background: "#f0fdf4", color: "#166534", textAlign: "center", cursor: "copy" }}>
+            <label className="vendor-upload-card" onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }} onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file?.type.startsWith("image/")) setProfileForm({ ...profileForm, logoFile: file }); }} style={{ minHeight: "142px", padding: "12px" }}>
               {logoDisplayUrl ? <img src={logoDisplayUrl} alt="Business logo thumbnail" style={{ width: "64px", height: "64px", objectFit: "cover", borderRadius: "12px", justifySelf: "center", border: "1px solid #bbf7d0" }} /> : <strong>Drag business logo here</strong>}
               <strong style={{ fontSize: ".82rem", wordBreak: "break-word" }}>{profileForm.logoFile?.name || (profileForm.logoUrl ? "Current logo" : "Drag or choose a logo")}</strong>
               <span style={{ fontSize: ".72rem", color: "#4d7c5c" }}>{profileForm.logoFile ? `${Math.ceil(profileForm.logoFile.size / 1024)} KB · ready to upload` : profileForm.logoUrl ? "Stored logo preview" : "PNG, JPG, or WebP"}</span>
@@ -1710,7 +1769,7 @@ export default function VendorDashboard() {
               <option>Driver's licence</option>
               <option>Business registration</option>
             </select>
-            <label onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }} onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file?.type.startsWith("image/") || file?.type === "application/pdf") setProfileForm({ ...profileForm, idDocument: file }); }} style={{ display: "grid", gap: "7px", alignContent: "center", minHeight: "142px", padding: "12px", border: "1px dashed #93c5fd", borderRadius: "10px", background: "#eff6ff", color: "#1d4ed8", textAlign: "center", cursor: "copy" }}>
+            <label className="vendor-upload-card" onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }} onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file?.type.startsWith("image/") || file?.type === "application/pdf") setProfileForm({ ...profileForm, idDocument: file }); }} style={{ minHeight: "142px", padding: "12px" }}>
               {identityImageDisplayUrl ? <img src={identityImageDisplayUrl} alt="Identity document thumbnail" style={{ width: "64px", height: "64px", objectFit: "cover", borderRadius: "10px", justifySelf: "center", border: "1px solid #bfdbfe" }} /> : <span style={{ fontSize: "2rem" }} aria-hidden="true">📄</span>}
               <strong style={{ fontSize: ".82rem", wordBreak: "break-word" }}>{profileForm.idDocument?.name || (profile?.id_document_path ? profile.id_document_path.split("/").pop() : "Drag or choose ID")}</strong>
               <span style={{ fontSize: ".72rem", color: "#416db1" }}>{profileForm.idDocument ? `${Math.ceil(profileForm.idDocument.size / 1024)} KB · ready to upload` : profile?.id_document_path ? "Stored document · preview available" : "Image or PDF"}</span>
@@ -1803,7 +1862,7 @@ export default function VendorDashboard() {
           </button>
         </form>}
         {!settingsOpen && <div ref={dashboardContentRef}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "8px", marginTop: "22px" }}>
+        <div className="vendor-section-tabs" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "8px", marginTop: "22px" }}>
           {["products", "sales", "earnings", "ads"].map((sectionTab) => (
             <button
               key={sectionTab}
@@ -1825,6 +1884,7 @@ export default function VendorDashboard() {
         </div>
         {tab === "products" ? (
           <section
+            className="vendor-product-manager-panel"
             style={{
               marginTop: "14px",
               background: "#fff",
@@ -1834,7 +1894,7 @@ export default function VendorDashboard() {
               boxShadow: "0 12px 28px rgba(15, 23, 42, .06)",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "18px" }}><div><p style={{ margin: 0, color: "#f59e0b", textTransform: "uppercase", letterSpacing: ".12em", fontSize: ".7rem", fontWeight: 800 }}>Storefront</p><h2 style={{ margin: "6px 0 0", color: "#111827", fontSize: "1.35rem" }}>Product manager</h2></div><span style={{ background: "#fff7ed", color: "#b45309", border: "1px solid #fed7aa", borderRadius: "999px", padding: "7px 11px", fontSize: ".74rem", fontWeight: 800 }}>{products.length} products</span></div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "18px" }}><div><p style={{ margin: 0, color: "#f59e0b", textTransform: "uppercase", letterSpacing: ".12em", fontSize: ".7rem", fontWeight: 800 }}>Storefront</p><h2 style={{ margin: "6px 0 0", color: "#111827", fontSize: "1.35rem" }}>Product manager</h2></div><span className="vendor-product-count-badge" style={{ background: "#fff7ed", color: "#b45309", border: "1px solid #fed7aa", borderRadius: "999px", padding: "7px 11px", fontSize: ".74rem", fontWeight: 800 }}>{products.length} products</span></div>
             {profile?.status === "approved" ? (
               <form
                 onSubmit={publishProduct}
@@ -1884,7 +1944,7 @@ export default function VendorDashboard() {
                     style={{ ...productFieldStyle, width: "100%" }}
                   />
                 </div>
-                <div style={{ ...productFieldStyle, gridColumn: "2", gridRow: "3", display: "flex", alignItems: "center", color: "#475569", background: "#f8fafc", fontWeight: 800 }}>
+                <div className="vendor-product-currency" style={{ ...productFieldStyle, gridColumn: "2", gridRow: "3", display: "flex", alignItems: "center", color: "#475569", background: "#f8fafc", fontWeight: 800 }}>
                   Product currency: {accountCurrency}
                 </div>
                 <select
@@ -1899,7 +1959,7 @@ export default function VendorDashboard() {
                 >
                   {["Ebook", "Planner", "Guide", "Workbook", "Journal", "Course", "Audio", "Bundle"].map((category) => <option key={category}>{category}</option>)}
                 </select>
-                <label style={{ display: "flex", alignItems: "center", gap: "7px", color: "#334155", fontWeight: 700, fontSize: ".7rem", gridColumn: "1 / -1", gridRow: "4" }}>
+                <label className="vendor-product-free-label" style={{ display: "flex", alignItems: "center", gap: "7px", color: "#334155", fontWeight: 700, fontSize: ".7rem", gridColumn: "1 / -1", gridRow: "4" }}>
                   <input type="checkbox" checked={productForm.isFree} onChange={(event) => setProductForm({ ...productForm, isFree: event.target.checked, price: event.target.checked ? "0" : (Number(productForm.price) > 0 ? productForm.price : "1") })} />
                   Free product (email delivery without Paystack)
                 </label>
@@ -1912,7 +1972,7 @@ export default function VendorDashboard() {
                 </div>
                 <label style={{ display: "grid", gap: "4px", color: "#475569", fontSize: ".68rem", fontWeight: 700, gridColumn: "1", gridRow: "6" }}>
                   Cover image
-                  <span onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }} onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file) uploadCover({ target: { files: [file] } }); }} style={{ display: "grid", placeItems: "center", gap: "4px", minHeight: "38px", padding: "6px 8px", border: "1px dashed #cbd5e1", borderRadius: "9px", background: "#f8fafc", color: "#475569", cursor: "copy", textAlign: "center", fontSize: ".72rem" }}>
+                  <span className="vendor-upload-card vendor-product-upload" onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }} onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file) uploadCover({ target: { files: [file] } }); }}>
                     {coverPreviewUrl || (productForm.cover && productForm.cover !== "/logo/logomain.png") ? <img src={coverPreviewUrl || productForm.cover} alt="Product cover preview" style={{ width: "42px", height: "42px", objectFit: "cover", borderRadius: "7px" }} /> : null}
                     <strong>{coverFile?.name || (productForm.cover && productForm.cover !== "/logo/logomain.png" ? "Current cover image" : "Drag image here or click to choose")}</strong>
                     <input type="file" accept="image/*" onChange={uploadCover} style={{ display: "none" }} />
@@ -1922,7 +1982,8 @@ export default function VendorDashboard() {
                   aria-label="Product file"
                   onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }}
                   onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file) { setProductFile(file); uploadProduct({ target: { files: [file] } }); } }}
-                  style={{ display: "grid", gap: "4px", alignContent: "center", minHeight: "38px", marginTop: "16px", padding: "6px 8px", border: "1px dashed #cbd5e1", borderRadius: "9px", background: "#f8fafc", color: "#475569", textAlign: "center", cursor: "copy", gridColumn: "2", gridRow: "3", fontSize: ".72rem" }}
+                  className="vendor-upload-card vendor-product-upload"
+                  style={{ marginTop: "16px", gridColumn: "2", gridRow: "3" }}
                 >
                   {productFilePreviewUrl && productFile?.type.startsWith("image/") ? <img src={productFilePreviewUrl} alt="Product file thumbnail" style={{ width: "42px", height: "42px", objectFit: "cover", borderRadius: "7px", justifySelf: "center" }} /> : null}
                   <strong>{productFile?.name || (productForm.fileUrl ? productForm.fileUrl.split("/").pop() : "Drag PDF or ZIP here, or click to choose")}</strong>
@@ -1930,6 +1991,7 @@ export default function VendorDashboard() {
                   <input type="file" accept=".pdf,.zip" required={!editingProductId && !productForm.fileUrl} onChange={uploadProduct} style={{ display: "none" }} />
                 </label>
                 <button
+                  className="vendor-product-publish"
                   disabled={saving}
                   style={{
                     padding: "11px",
@@ -1945,7 +2007,7 @@ export default function VendorDashboard() {
                 >
                   {editingProductId ? "Save product changes" : "Publish product"}
                 </button>
-                {editingProductId && <button type="button" onClick={() => { setEditingProductId(null); setProductFile(null); setCoverFile(null); setProductForm({ title: "", description: "", price: "", currency: "NGN", category: "Ebook", fileUrl: "", cover: "/logo/logomain.png", isFree: false, stockCount: "1", inStock: true }); }} style={{ padding: "11px", border: "1px solid #cbd5e1", borderRadius: "9px", background: "#fff", color: "#334155", fontWeight: 800 }}>Cancel edit</button>}
+                {editingProductId && <button className="vendor-product-cancel" type="button" onClick={() => { setEditingProductId(null); setProductFile(null); setCoverFile(null); setProductForm({ title: "", description: "", price: "", currency: "NGN", category: "Ebook", fileUrl: "", cover: "/logo/logomain.png", isFree: false, stockCount: "1", inStock: true }); }} style={{ padding: "11px", border: "1px solid #cbd5e1", borderRadius: "9px", background: "#fff", color: "#334155", fontWeight: 800 }}>Cancel edit</button>}
               </form>
             ) : (
               <p
@@ -1964,6 +2026,7 @@ export default function VendorDashboard() {
               {products.length ? products.map((product) => (
                 <div
                   key={product.id}
+                  className="vendor-product-review-card"
                   style={{
                     display: "grid",
                     gap: "8px",
@@ -1977,10 +2040,10 @@ export default function VendorDashboard() {
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start", flexWrap: "wrap" }}>
-                    <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}><img src={product.cover || "/logo/logomain.png"} alt="" style={{ width: "58px", height: "58px", objectFit: "cover", borderRadius: "9px", border: "1px solid #e2e8f0" }} /><div style={{ minWidth: 0, flex: 1 }}><div style={{ display: "flex", alignItems: "center", gap: "7px" }}><strong>{product.title}</strong><button type="button" onClick={() => refreshProductStatus(product.id)} disabled={refreshingProductId === product.id} aria-label={`Refresh ${product.title} verification status`} title="Refresh this product verification status" style={{ display: "inline-grid", placeItems: "center", width: "27px", height: "27px", flex: "0 0 27px", border: "1px solid #0f766e", borderRadius: "50%", background: "#fff", color: "#0f766e", fontSize: "1rem", fontWeight: 900, cursor: refreshingProductId === product.id ? "wait" : "pointer", opacity: refreshingProductId === product.id ? .6 : 1 }}>{refreshingProductId === product.id ? "..." : "↻"}</button></div><div style={{ color: "#64748b", fontSize: ".82rem", marginTop: "3px" }}>{product.is_free ? "Free" : `${product.currency} ${product.price}`} · {product.category || "Product"}</div><div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}><span style={{ color: product.in_stock === false ? "#b91c1c" : "#166534", fontSize: ".8rem", fontWeight: 800 }}>{product.in_stock === false ? "Sold out" : `Available · ${product.stock_count ?? 0} in stock`}</span><span style={{ color: product.status === "published" ? "#166534" : product.status === "rejected" ? "#b91c1c" : product.status === "approved" ? "#0369a1" : "#b45309", fontSize: ".8rem", fontWeight: 800 }}>· {product.status === "published" ? "Published in shop" : product.status === "approved" ? "Admin approved · awaiting publish" : product.status === "rejected" ? "Rejected by admin" : "Awaiting admin review"}</span><span style={{ color: product.name_verified ? "#166534" : "#64748b", fontSize: ".8rem", fontWeight: 800 }}>· Name {product.name_verified ? "verified" : "not verified yet"}</span><span style={{ color: product.description_verified ? "#166534" : "#64748b", fontSize: ".8rem", fontWeight: 800 }}>· Description {product.description_verified ? "verified" : "not verified yet"}</span><span style={{ color: product.cover_verified ? "#166534" : "#64748b", fontSize: ".8rem", fontWeight: 800 }}>· Cover {product.cover_verified ? "verified" : "not verified yet"}</span><span style={{ color: product.attachment_verified ? "#166534" : "#64748b", fontSize: ".8rem", fontWeight: 800 }}>· Attachment {product.attachment_verified ? "verified" : "not verified yet"}</span></div></div></div>
-                    <div style={{ display: "flex", gap: "7px", flexWrap: "wrap" }}><button type="button" disabled={saving} onClick={() => toggleProductStock(product)} style={{ border: "1px solid #cbd5e1", borderRadius: "8px", padding: "8px 10px", background: "#f8fafc", color: "#334155", fontWeight: 800 }}>{product.in_stock === false ? "Mark available" : "Mark sold out"}</button><button type="button" onClick={() => editProduct(product)} style={{ border: "1px solid #cbd5e1", borderRadius: "8px", padding: "8px 10px", background: "#fff", color: "#334155", fontWeight: 800 }}>Edit</button><button type="button" onClick={() => copyProductLink(product)} style={{ border: "1px solid #86efac", borderRadius: "8px", padding: "8px 10px", background: "#f0fdf4", color: "#166534", fontWeight: 800 }}>Copy link</button><button type="button" disabled={saving} onClick={() => deleteProduct(product)} style={{ border: "1px solid #fecaca", borderRadius: "8px", padding: "8px 10px", background: "#fef2f2", color: "#b91c1c", fontWeight: 800 }}>Delete</button></div>
+                    <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}><img src={product.cover || "/logo/logomain.png"} alt="" style={{ width: "58px", height: "58px", objectFit: "cover", borderRadius: "9px", border: "1px solid #e2e8f0" }} /><div style={{ minWidth: 0, flex: 1 }}><div style={{ display: "flex", alignItems: "center", gap: "7px" }}><strong>{product.title}</strong><button className="vendor-product-refresh" type="button" onClick={() => refreshProductStatus(product.id)} disabled={refreshingProductId === product.id} aria-label={`Refresh ${product.title} verification status`} title="Refresh this product verification status" style={{ display: "inline-grid", placeItems: "center", width: "27px", height: "27px", flex: "0 0 27px", border: "1px solid #0f766e", borderRadius: "50%", background: "#fff", color: "#0f766e", fontSize: "1rem", fontWeight: 900, cursor: refreshingProductId === product.id ? "wait" : "pointer", opacity: refreshingProductId === product.id ? .6 : 1 }}>{refreshingProductId === product.id ? "..." : "↻"}</button></div><div className="vendor-product-review-meta" style={{ color: "#64748b", fontSize: ".82rem", marginTop: "3px" }}>{product.is_free ? "Free" : `${product.currency} ${product.price}`} · {product.category || "Product"}</div><div className="vendor-product-review-status" style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}><span style={{ color: product.in_stock === false ? "#b91c1c" : "#166534", fontSize: ".8rem", fontWeight: 800 }}>{product.in_stock === false ? "Sold out" : `Available · ${product.stock_count ?? 0} in stock`}</span><span style={{ color: product.status === "published" ? "#166534" : product.status === "rejected" ? "#b91c1c" : product.status === "approved" ? "#0369a1" : "#b45309", fontSize: ".8rem", fontWeight: 800 }}>· {product.status === "published" ? "Published in shop" : product.status === "approved" ? "Admin approved · awaiting publish" : product.status === "rejected" ? "Rejected by admin" : "Awaiting admin review"}</span><span style={{ color: product.name_verified ? "#166534" : "#64748b", fontSize: ".8rem", fontWeight: 800 }}>· Name {product.name_verified ? "verified" : "not verified yet"}</span><span style={{ color: product.description_verified ? "#166534" : "#64748b", fontSize: ".8rem", fontWeight: 800 }}>· Description {product.description_verified ? "verified" : "not verified yet"}</span><span style={{ color: product.cover_verified ? "#166534" : "#64748b", fontSize: ".8rem", fontWeight: 800 }}>· Cover {product.cover_verified ? "verified" : "not verified yet"}</span><span style={{ color: product.attachment_verified ? "#166534" : "#64748b", fontSize: ".8rem", fontWeight: 800 }}>· Attachment {product.attachment_verified ? "verified" : "not verified yet"}</span></div></div></div>
+                    <div className="vendor-product-review-actions" style={{ display: "flex", gap: "7px", flexWrap: "wrap" }}><button type="button" disabled={saving} onClick={() => toggleProductStock(product)} style={{ border: "1px solid #cbd5e1", borderRadius: "8px", padding: "8px 10px", background: "#f8fafc", color: "#334155", fontWeight: 800 }}>{product.in_stock === false ? "Mark available" : "Mark sold out"}</button><button type="button" onClick={() => editProduct(product)} style={{ border: "1px solid #cbd5e1", borderRadius: "8px", padding: "8px 10px", background: "#fff", color: "#334155", fontWeight: 800 }}>Edit</button><button type="button" onClick={() => copyProductLink(product)} style={{ border: "1px solid #86efac", borderRadius: "8px", padding: "8px 10px", background: "#f0fdf4", color: "#166534", fontWeight: 800 }}>Copy link</button><button type="button" disabled={saving} onClick={() => deleteProduct(product)} style={{ border: "1px solid #fecaca", borderRadius: "8px", padding: "8px 10px", background: "#fef2f2", color: "#b91c1c", fontWeight: 800 }}>Delete</button></div>
                   </div>
-                  {product.file_url && <div style={{ color: "#64748b", fontSize: ".78rem", overflowWrap: "anywhere" }}>File: {product.file_url.split("/").pop()}</div>}
+                  {product.file_url && <div className="vendor-product-review-file" style={{ color: "#64748b", fontSize: ".78rem", overflowWrap: "anywhere" }}>File: {product.file_url.split("/").pop()}</div>}
                 </div>
               )) : <p style={{ color: "#64748b" }}>No products posted yet.</p>}
             </div>
