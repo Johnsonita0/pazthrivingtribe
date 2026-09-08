@@ -258,6 +258,13 @@ export default function VendorDashboard() {
   const closeVendorTour = () => {
     setVendorTourOpen(false);
   };
+  const hasVendorSetupMilestone = (vendor, values = profileForm) => Boolean(
+    vendor?.id_document_path
+    || values?.idDocument
+    || (String(vendor?.payout_account_name || values?.payoutName || "").trim()
+      && String(vendor?.payout_account_number || values?.payoutAccount || "").trim()
+      && String(vendor?.payout_bank_name || values?.payoutBank || "").trim()),
+  );
   const completeVendorTour = () => {
     setVendorTourOpen(false);
     if (session?.user?.id) {
@@ -789,6 +796,10 @@ export default function VendorDashboard() {
 
   useEffect(() => {
     if (!session?.user?.id || !profile?.id || pinMode || loading) return;
+    if (hasVendorSetupMilestone(profile)) {
+      completeVendorTour();
+      return;
+    }
     try {
       if (window.localStorage.getItem(`paz-vendor-tour-complete:${session.user.id}`) === "1") return;
     } catch {
@@ -797,7 +808,7 @@ export default function VendorDashboard() {
     setVendorTourStep(0);
     setVendorTourOpen(true);
     setSettingsOpen(true);
-  }, [loading, pinMode, profile?.id, session?.user?.id]);
+  }, [loading, pinMode, profile, session?.user?.id]);
 
   useEffect(() => {
     if (!session?.user?.id) return undefined;
@@ -1107,7 +1118,7 @@ export default function VendorDashboard() {
         type: "success",
         text: isNewVendorProfile ? "Verification details sent to the main admin." : "Your vendor profile was updated.",
       });
-      completeVendorTour();
+      if (hasVendorSetupMilestone(data, values)) completeVendorTour();
     } catch (error) {
       setNotice({ type: "error", text: error.message });
     } finally {
