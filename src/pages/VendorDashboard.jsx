@@ -1527,6 +1527,16 @@ export default function VendorDashboard() {
                 />
               ))}
             </div>
+            {pinMode === "unlock" && (
+              <button
+                type="button"
+                onClick={startPinChange}
+                disabled={saving}
+                style={{ justifySelf: "center", border: 0, background: "transparent", color: "#166534", fontWeight: 800, cursor: saving ? "wait" : "pointer", textDecoration: "underline", textUnderlineOffset: "3px" }}
+              >
+                {saving ? "Sending reset link..." : "Forgot PIN? Email me a reset link"}
+              </button>
+            )}
             {pinMode === "setup" && (
               <>
                 <p style={{ margin: "4px 0 0", color: "#385449", fontSize: ".78rem", fontWeight: 800, letterSpacing: ".08em", textTransform: "uppercase" }}>Confirm PIN</p>
