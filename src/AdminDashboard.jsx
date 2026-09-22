@@ -156,6 +156,7 @@ export default function AdminDashboard(props) {
     handleStartEditTestimonial,
     handleCancelEditTestimonial,
     handleDeleteTestimonial,
+    socialNewsFeed = [],
     socialEditTarget,
     setSocialEditTarget,
     socialPreviewTitle,
@@ -173,6 +174,9 @@ export default function AdminDashboard(props) {
     socialMetadataLoading,
     fetchSocialUrlMetadata,
     handleUpdateSocialPreview,
+    saveYoutubeVideo,
+    setYoutubeVideoPublished,
+    deleteYoutubeVideo,
     clientActivityLog = [],
     clientActivityLoading = false,
     contactMessages = [],
@@ -229,6 +233,10 @@ export default function AdminDashboard(props) {
   const [selectedRowIds, setSelectedRowIds] = useState([]);
   const [viewingRow, setViewingRow] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [youtubeActionError, setYoutubeActionError] = useState("");
+  const [youtubePendingAction, setYoutubePendingAction] = useState("");
+  const [youtubeEditingId, setYoutubeEditingId] = useState(null);
+  const [youtubeEditDraft, setYoutubeEditDraft] = useState({ title: "", summary: "", url: "" });
   const [postingToSlider, setPostingToSlider] = useState(false);
   const [testimonialConfirmation, setTestimonialConfirmation] = useState(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
@@ -1832,6 +1840,21 @@ export default function AdminDashboard(props) {
     background: "#f9fafb",
   };
 
+  const getYoutubeVideoId = (url) => {
+    if (!url) return "";
+    try {
+      const parsed = new URL(url);
+      const hostname = parsed.hostname.replace(/^www\./, "");
+      if (hostname === "youtu.be") return parsed.pathname.slice(1).split("/")[0];
+      if (hostname === "youtube.com" || hostname === "m.youtube.com") {
+        return parsed.searchParams.get("v") || parsed.pathname.match(/\/(?:shorts|embed)\/([^/]+)/)?.[1] || "";
+      }
+    } catch (error) {
+      return "";
+    }
+    return "";
+  };
+
   if (mode === "login" && session && isAdmin) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -2176,6 +2199,12 @@ export default function AdminDashboard(props) {
         bookings.filter(
           (booking) => booking.paymentStatus || booking.payment_status,
         ).length,
+    },
+    {
+      id: "youtube",
+      label: "YouTube",
+      color: "#dc2626",
+      value: socialNewsFeed.filter((item) => item.platform === "YouTube").length,
     },
   ];
 
@@ -2588,6 +2617,53 @@ export default function AdminDashboard(props) {
           .stat-card{width:100%;min-width:0;border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;justify-content:center;align-items:center;color:#fff;text-align:center;box-sizing:border-box}
           .stat-card .label{font-weight:700;font-size:0.95rem;letter-spacing:0.04em;text-transform:uppercase;opacity:0.95}
           .stat-card .value{font-weight:900;font-size:2.4rem;margin-top:6px}
+          .youtube-monitor-card{margin-top:22px;padding:24px;background:#fff;border:1px solid #dbe3ea;border-radius:18px;box-shadow:0 12px 28px rgba(15,23,42,.07)}
+          .youtube-monitor-card-header{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding-bottom:18px;margin-bottom:18px;border-bottom:1px solid #edf1f4}
+          .youtube-monitor-eyebrow{display:inline-flex;align-items:center;gap:7px;color:#dc2626;font-size:.7rem;font-weight:850;letter-spacing:.11em;text-transform:uppercase}
+          .youtube-monitor-card h2{margin:7px 0 5px;color:#111827;font-size:1.5rem;line-height:1.15;letter-spacing:-.02em}
+          .youtube-monitor-card-header p{margin:0;color:#64748b;font-size:.9rem;line-height:1.5}
+          .youtube-monitor-status{display:inline-flex;align-items:center;gap:7px;padding:8px 11px;border:1px solid #bbf7d0;border-radius:999px;background:#f0fdf4;color:#166534;font-size:.72rem;font-weight:850;white-space:nowrap}
+          .youtube-monitor-form{display:grid;grid-template-columns:minmax(180px,.85fr) minmax(240px,1.15fr) minmax(260px,1.4fr);gap:14px;align-items:start;padding:18px;border:1px solid #e8edf1;border-radius:14px;background:#f8fafc}
+          .youtube-monitor-form label{display:grid;gap:7px;color:#334155;font-size:.75rem;font-weight:850;letter-spacing:.01em}
+          .youtube-monitor-form input,.youtube-monitor-form textarea{width:100%!important;min-width:0;box-sizing:border-box;border:1px solid #cbd5e1!important;border-radius:10px!important;padding:12px 13px!important;background:#fff!important;color:#0f172a!important;font-family:inherit!important;font-size:.9rem!important;line-height:1.35;outline:none;box-shadow:0 1px 2px rgba(15,23,42,.04);transition:border-color .2s,box-shadow .2s,background .2s}
+          .youtube-monitor-form input{min-height:46px!important}
+          .youtube-monitor-form textarea{min-height:92px!important;resize:vertical}
+          .youtube-monitor-form input::placeholder,.youtube-monitor-form textarea::placeholder{color:#94a3b8;opacity:1}
+          .youtube-monitor-form input:hover,.youtube-monitor-form textarea:hover{border-color:#94a3b8!important}
+          .youtube-monitor-form input:focus,.youtube-monitor-form textarea:focus{border-color:#dc2626!important;background:#fff!important;box-shadow:0 0 0 3px rgba(239,68,68,.13),0 2px 5px rgba(15,23,42,.06)}
+          .youtube-monitor-actions{grid-column:1/-1;display:flex;justify-content:flex-end;gap:9px;flex-wrap:wrap;padding-top:2px}
+          .youtube-monitor-actions button{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:0;border-radius:9px;padding:10px 14px;font:inherit;font-size:.82rem;font-weight:850;cursor:pointer;transition:transform .2s,box-shadow .2s,background .2s}
+          .youtube-monitor-actions button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 5px 12px rgba(15,23,42,.12)}
+          .youtube-monitor-secondary-button{background:#fff;color:#991b1b;border:1px solid #fecaca!important}
+          .youtube-monitor-save-button{background:#dc2626;color:#fff}
+          .youtube-monitor-actions button:disabled{cursor:wait;opacity:.6}
+          .youtube-monitor-error{display:flex;align-items:flex-start;gap:7px;margin:12px 0 0;padding:10px 12px;border:1px solid #fecaca;border-radius:10px;background:#fff1f2;color:#991b1b;font-size:.82rem;line-height:1.45}
+          .youtube-saved-list{margin-top:24px;border-top:1px solid #edf1f4;padding-top:20px}
+          .youtube-saved-list-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+          .youtube-saved-list-heading h3{margin:0;color:#111827;font-size:1rem}
+          .youtube-saved-list-heading span{color:#991b1b;font-size:.76rem;font-weight:800}
+          .youtube-saved-items{display:grid;gap:10px}
+          .youtube-saved-item{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:15px 16px;border:1px solid #e5ebef;border-radius:12px;background:#fff;transition:border-color .2s,box-shadow .2s}
+          .youtube-saved-item:hover{border-color:#fca5a5;box-shadow:0 7px 16px rgba(15,23,42,.06)}
+          .youtube-saved-item-thumbnail{position:relative;width:132px;aspect-ratio:16/9;flex:0 0 132px;display:grid;place-items:center;overflow:hidden;border-radius:9px;background:#fee2e2;color:#dc2626}
+          .youtube-saved-item-thumbnail img{width:100%;height:100%;display:block;object-fit:cover}
+          .youtube-thumbnail-play{position:absolute;left:50%;top:50%;display:grid;place-items:center;width:30px;height:22px;border-radius:7px;background:#dc2626;color:#fff;transform:translate(-50%,-50%);font-size:.65rem;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+          .youtube-saved-item-copy{min-width:0}
+          .youtube-inline-edit-form{display:grid;gap:9px;width:100%}
+          .youtube-inline-edit-form label{display:grid;gap:5px;color:#334155;font-size:.72rem;font-weight:850}
+          .youtube-inline-edit-form input,.youtube-inline-edit-form textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:9px 10px;background:#fff;color:#0f172a;font:inherit;font-size:.82rem;outline:none}
+          .youtube-inline-edit-form input:focus,.youtube-inline-edit-form textarea:focus{border-color:#dc2626;box-shadow:0 0 0 3px rgba(239,68,68,.12)}
+          .youtube-edit-button{background:#f1f5f9;color:#334155}
+          .youtube-saved-item-title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+          .youtube-saved-item h4{margin:0;color:#1f2937;font-size:.94rem;line-height:1.3}
+          .youtube-saved-item p{margin:5px 0;color:#64748b;font-size:.82rem;line-height:1.45}
+          .youtube-saved-item a{display:inline-flex;align-items:center;gap:5px;color:#b91c1c;font-size:.76rem;font-weight:800;text-decoration:none}
+          .youtube-published-badge,.youtube-draft-badge{padding:3px 7px;border-radius:999px;font-size:.66rem;font-weight:800}
+          .youtube-published-badge{background:#dcfce7;color:#166534}.youtube-draft-badge{background:#fef3c7;color:#92400e}
+          .youtube-saved-item-actions{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end;flex-shrink:0}
+          .youtube-saved-item-actions button{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:9px;padding:9px 10px;font:inherit;font-size:.76rem;font-weight:800;cursor:pointer;white-space:nowrap}
+          .youtube-publish-button{background:#166534;color:#fff}.youtube-unpublish-button{background:#fef3c7;color:#92400e}.youtube-delete-button{background:#fee2e2;color:#991b1b}
+          .youtube-empty-state{margin:0;color:#64748b;font-size:.85rem}
           .dashboard-actions-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:20px}
           .dashboard-filters{display:flex;gap:8px;align-items:center;margin-left:8px;flex-wrap:wrap}
           .dashboard-table-wrap{overflow-x:auto;margin-top:18px;-webkit-overflow-scrolling:touch;width:100%;border-radius:14px}
@@ -2655,6 +2731,7 @@ export default function AdminDashboard(props) {
           @media(max-width:640px){.view-modal-content{padding:0!important;max-height:92vh!important}.response-letterhead{align-items:flex-start!important;padding:.8rem 1rem!important}.response-letterhead h3{font-size:1.1rem!important}.response-letterhead-meta{grid-template-columns:1fr!important;margin:1rem 1rem 0!important;line-height:1.7}.response-details-grid{grid-template-columns:1fr!important;padding:1rem!important}.response-details-grid>div{gap:.35rem!important}.response-details-grid label{font-size:.68rem!important}}
           @media(max-width:720px){.order-review-columns{grid-template-columns:1fr!important;gap:12px!important}.delivery-item-upload{padding:10px!important}.delivery-item-upload input{font-size:.76rem}}
           @media print{@page{size:A4 portrait;margin:12mm}body *{visibility:hidden!important}.view-modal-overlay,.view-modal-overlay *{visibility:visible!important}.view-modal-overlay{position:static!important;background:transparent!important;padding:0!important}.printable-response-card{position:absolute!important;inset:0!important;width:100%!important;max-width:none!important;max-height:none!important;overflow:visible!important;padding:0!important;border:0!important;box-shadow:none!important;border-radius:0!important}.printable-response-card button,.printable-response-card i{display:none!important}.response-letterhead{border-bottom:2px solid #e88767!important}.response-details-grid{gap:6px!important;padding:10px 0!important}.response-detail-row{font-size:9pt!important;break-inside:avoid}.response-detail-label{font-size:7pt!important;padding:5px 7px!important}.response-detail-row>div{padding:5px 7px!important}}
+          @media(max-width:640px){.youtube-monitor-card{padding:15px;margin-top:14px;border-radius:14px}.youtube-monitor-card-header{display:grid;gap:12px;margin-bottom:14px;padding-bottom:14px}.youtube-monitor-card h2{font-size:1.3rem}.youtube-monitor-card-header p{font-size:.82rem}.youtube-monitor-status{justify-self:start}.youtube-monitor-form{grid-template-columns:1fr;gap:11px;padding:13px;border-radius:11px}.youtube-monitor-actions{grid-column:auto;display:grid;grid-template-columns:1fr 1fr;gap:8px}.youtube-monitor-actions button{min-width:0;padding:10px 8px;font-size:.75rem}.youtube-saved-list{margin-top:18px;padding-top:16px}.youtube-saved-item{display:grid;gap:12px;padding:13px}.youtube-saved-item-thumbnail{width:100%;max-width:none;flex-basis:auto}.youtube-saved-item-actions{justify-content:stretch}.youtube-saved-item-actions button{flex:1 1 0}.youtube-saved-item h4{font-size:.88rem}.youtube-saved-item p{font-size:.78rem}}
           @media(min-width:900px){.stat-card{flex:1 1 calc(25% - 16px)}.stat-card .value{font-size:3rem}}
           @media(max-width:640px){.stat-card{min-width:0!important;width:100%;min-height:98px;padding:10px 4px}.stat-card .value{font-size:1.9rem}.dashboard-actions-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-items:center;width:100%}.dashboard-filters{grid-column:1/-1;margin-left:0;flex-wrap:nowrap;overflow-x:auto;max-width:100%;padding-bottom:2px}.dashboard-filters label{flex:0 0 auto}.dashboard-filters select{min-width:100px!important;width:100px}.dashboard-filters .dashboard-action-button{flex:0 0 46px}.table th,.table td{padding:10px}.table{min-width:1200px;width:100%;overflow-x:auto}.table th:last-child{position:relative;background:#f8fafc;border-left:1px solid #e5e7eb;text-align:center;max-width:none;min-width:120px}.table td:last-child{position:relative;background:#fff;border-left:1px solid #f3f4f6;text-align:center}.table tbody tr:hover td:last-child{background:#fff}.admin-toast{right:12px;left:12px;bottom:max(12px,env(safe-area-inset-bottom));width:auto;max-width:none;max-height:calc(100dvh - 24px - env(safe-area-inset-bottom));z-index:21000}.commerce-panel-shell{padding:14px 12px!important;width:100% !important;max-width:100% !important}.commerce-tab-row{padding-bottom:6px;width:100%}.commerce-tab-row button{flex:1 1 0;min-width:90px}.commerce-input-grid{grid-template-columns:1fr!important;gap:10px!important;minmax:0!important}}
           @media(max-width:720px){.commerce-product-list{grid-template-columns:1fr;gap:12px}.commerce-product-card{grid-template-columns:96px minmax(0,1fr);align-items:start;min-height:0;padding:12px}.commerce-product-media{width:96px;height:96px}.commerce-product-actions{grid-column:1/-1;display:flex;flex-wrap:wrap;width:100%;gap:8px}.commerce-product-actions button{flex:1 1 120px;width:auto;min-width:0;padding:9px 10px!important}.commerce-product-meta{width:100%}.commerce-product-desc{display:block;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.commerce-product-title{white-space:normal!important;line-height:1.35;font-size:0.96rem}.commerce-product-badges{margin-bottom:6px}.commerce-product-meta > div:last-child{gap:4px!important}}
@@ -2703,6 +2780,287 @@ export default function AdminDashboard(props) {
             </button>
           ))}
         </div>
+
+        {activeDashboardView === "youtube" && (
+          <section
+            className="youtube-monitor-card"
+            aria-labelledby="youtube-monitor-card-title"
+          >
+          <div className="youtube-monitor-card-header">
+            <div>
+              <span className="youtube-monitor-eyebrow">
+                <i className="fa-brands fa-youtube" aria-hidden="true"></i>
+                YouTube monitor
+              </span>
+              <h2 id="youtube-monitor-card-title">
+                YouTube
+              </h2>
+              <p>
+                Manage the videos displayed in Teachable Moments with Coach Roseline.
+              </p>
+            </div>
+            <span className="youtube-monitor-status">
+              <i className="fa-solid fa-circle-check" aria-hidden="true"></i>
+              Live section
+            </span>
+          </div>
+
+          <form
+            className="youtube-monitor-form"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              if (youtubePendingAction) return;
+              setYoutubeActionError("");
+              setYoutubePendingAction("save");
+              try {
+                await saveYoutubeVideo({
+                  title: socialPreviewTitle,
+                  description: socialPreviewSummary,
+                  targetUrl: socialPreviewUrl,
+                });
+                showAdminToast("success", "Video saved", "The YouTube video was added to your saved list.");
+                setSocialPreviewTitle("");
+                setSocialPreviewSummary("");
+                setSocialPreviewUrl("");
+              } catch (error) {
+                setYoutubeActionError(error?.message || "The video could not be saved.");
+                showAdminToast("error", "Save failed", error?.message || "The YouTube video could not be saved.");
+                console.error("Failed saving YouTube video:", error);
+              } finally {
+                setYoutubePendingAction("");
+              }
+            }}
+          >
+            <label>
+              Video title
+              <input
+                value={socialPreviewTitle}
+                onChange={(event) => setSocialPreviewTitle(event.target.value)}
+                placeholder="Teachable Moments with Coach Roseline"
+              />
+            </label>
+            <label>
+              YouTube watch link
+              <input
+                type="url"
+                value={socialPreviewUrl}
+                onChange={(event) => setSocialPreviewUrl(event.target.value)}
+                placeholder="https://www.youtube.com/watch?v=..."
+                required
+              />
+            </label>
+            <label>
+              Description
+              <textarea
+                value={socialPreviewSummary}
+                onChange={(event) => setSocialPreviewSummary(event.target.value)}
+                placeholder="Describe what viewers will learn in this video."
+                rows={3}
+              />
+            </label>
+            <div className="youtube-monitor-actions">
+              <button
+                type="button"
+                className="youtube-monitor-secondary-button"
+                onClick={() => {
+                  if (youtubePendingAction) return;
+                  setSocialEditTarget("YouTube");
+                  setYoutubeActionError("");
+                  setYoutubePendingAction("metadata");
+                  fetchSocialUrlMetadata()
+                    .then(() => showAdminToast("success", "Metadata loaded", "Review the video details before saving."))
+                    .catch((error) => {
+                      setYoutubeActionError(error?.message || "Metadata could not be loaded.");
+                      showAdminToast("error", "Metadata failed", error?.message || "YouTube metadata could not be loaded.");
+                    })
+                    .finally(() => setYoutubePendingAction(""));
+                }}
+                disabled={socialMetadataLoading || Boolean(youtubePendingAction)}
+              >
+                <i className="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i>
+                {youtubePendingAction === "metadata" ? "Loading..." : "Load metadata"}
+              </button>
+              <button type="submit" className="youtube-monitor-save-button" disabled={Boolean(youtubePendingAction)}>
+                <i className="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+                {youtubePendingAction === "save" ? "Saving..." : "Save video"}
+              </button>
+            </div>
+          </form>
+          {youtubeActionError && (
+            <p className="youtube-monitor-error" role="alert">
+              <i className="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+              {youtubeActionError}
+            </p>
+          )}
+
+          <div className="youtube-saved-list">
+            <div className="youtube-saved-list-heading">
+              <h3>Saved videos</h3>
+              <span>{socialNewsFeed.filter((item) => item.platform === "YouTube").length} saved</span>
+            </div>
+            {socialNewsFeed.filter((item) => item.platform === "YouTube").length === 0 ? (
+              <p className="youtube-empty-state">No saved videos yet.</p>
+            ) : (
+              <div className="youtube-saved-items">
+                {socialNewsFeed
+                  .filter((item) => item.platform === "YouTube")
+                  .map((video) => (
+                    <article className="youtube-saved-item" key={video.id || video.targetUrl}>
+                      <div className="youtube-saved-item-thumbnail">
+                        {getYoutubeVideoId(video.targetUrl) ? (
+                          <img
+                            src={`https://i.ytimg.com/vi/${getYoutubeVideoId(video.targetUrl)}/mqdefault.jpg`}
+                            alt=""
+                            loading="lazy"
+                          />
+                        ) : (
+                          <i className="fa-brands fa-youtube" aria-hidden="true"></i>
+                        )}
+                        <span className="youtube-thumbnail-play" aria-hidden="true">
+                          <i className="fa-solid fa-play"></i>
+                        </span>
+                      </div>
+                      <div className="youtube-saved-item-copy">
+                        {youtubeEditingId === video.id && (
+                          <div className="youtube-inline-edit-form">
+                            <label>
+                              Video title
+                              <input value={youtubeEditDraft.title} onChange={(event) => setYoutubeEditDraft((draft) => ({ ...draft, title: event.target.value }))} />
+                            </label>
+                            <label>
+                              YouTube link
+                              <input type="url" value={youtubeEditDraft.url} onChange={(event) => setYoutubeEditDraft((draft) => ({ ...draft, url: event.target.value }))} required />
+                            </label>
+                            <label>
+                              Description
+                              <textarea value={youtubeEditDraft.summary} onChange={(event) => setYoutubeEditDraft((draft) => ({ ...draft, summary: event.target.value }))} rows={3} />
+                            </label>
+                          </div>
+                        )}
+                        {youtubeEditingId !== video.id && (
+                          <>
+                            <div className="youtube-saved-item-title-row">
+                              <h4>{video.title || "Untitled video"}</h4>
+                              <span className={video.published ? "youtube-published-badge" : "youtube-draft-badge"}>
+                                {video.published ? "Published" : "Unpublished"}
+                              </span>
+                            </div>
+                            <p>{video.summary || "No description added."}</p>
+                            <a href={video.targetUrl} target="_blank" rel="noreferrer">
+                              <i className="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+                              Open YouTube link
+                            </a>
+                          </>
+                        )}
+                      </div>
+                      <div className="youtube-saved-item-actions">
+                        {youtubeEditingId === video.id ? (
+                          <>
+                            <button
+                              type="button"
+                              className="youtube-publish-button"
+                              disabled={Boolean(youtubePendingAction)}
+                              onClick={async () => {
+                                if (youtubePendingAction) return;
+                                setYoutubeActionError("");
+                                setYoutubePendingAction(`${video.id}:save`);
+                                try {
+                                  await saveYoutubeVideo({ id: video.id, title: youtubeEditDraft.title, description: youtubeEditDraft.summary, targetUrl: youtubeEditDraft.url });
+                                  showAdminToast("success", "Video updated", "The saved YouTube video was updated.");
+                                  setYoutubeEditingId(null);
+                                  setYoutubeEditDraft({ title: "", summary: "", url: "" });
+                                } catch (error) {
+                                  setYoutubeActionError(error?.message || "The video could not be updated.");
+                                  showAdminToast("error", "Update failed", error?.message || "The YouTube video could not be updated.");
+                                } finally {
+                                  setYoutubePendingAction("");
+                                }
+                              }}
+                            >
+                              <i className="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+                              {youtubePendingAction === `${video.id}:save` ? "Saving..." : "Save changes"}
+                            </button>
+                            <button type="button" className="youtube-monitor-secondary-button" onClick={() => setYoutubeEditingId(null)} disabled={Boolean(youtubePendingAction)}>
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                          type="button"
+                          className="youtube-edit-button"
+                          onClick={() => {
+                            if (!video.id) {
+                              setYoutubeActionError("Refresh the dashboard before editing this saved video.");
+                              return;
+                            }
+                            setYoutubeEditingId(video.id);
+                            setYoutubeEditDraft({ title: video.title || "", summary: video.summary || "", url: video.targetUrl || "" });
+                            setYoutubeActionError("");
+                          }}
+                          disabled={Boolean(youtubePendingAction)}
+                        >
+                          <i className="fa-solid fa-pen" aria-hidden="true"></i>
+                          Edit
+                          </button>
+                        )}
+                        {youtubeEditingId !== video.id && <>
+                        <button
+                          type="button"
+                          className={video.published ? "youtube-unpublish-button" : "youtube-publish-button"}
+                          onClick={async () => {
+                            const actionKey = `${video.id || video.targetUrl}:publish`;
+                            if (youtubePendingAction) return;
+                            try {
+                              setYoutubeActionError("");
+                              setYoutubePendingAction(actionKey);
+                              await setYoutubeVideoPublished(video, !video.published);
+                              showAdminToast("success", video.published ? "Video unpublished" : "Video published", video.published ? "The video was removed from the public YouTube section." : "The video is now live in the public YouTube section.");
+                            } catch (error) {
+                              setYoutubeActionError(error?.message || "The publish status could not be updated.");
+                              showAdminToast("error", "Publish update failed", error?.message || "The video status could not be updated.");
+                              console.error("Failed updating YouTube publish status:", error);
+                            } finally {
+                              setYoutubePendingAction("");
+                            }
+                          }}
+                          disabled={Boolean(youtubePendingAction)}
+                        >
+                          <i className={`fa-solid ${video.published ? "fa-eye-slash" : "fa-bullhorn"}`} aria-hidden="true"></i>
+                          {youtubePendingAction === `${video.id || video.targetUrl}:publish` ? "Updating..." : video.published ? "Unpublish" : "Publish"}
+                        </button>
+                        <button
+                          type="button"
+                          className="youtube-delete-button"
+                          onClick={async () => {
+                            if (!window.confirm("Delete this saved YouTube video?")) return;
+                            if (youtubePendingAction) return;
+                            try {
+                              setYoutubeActionError("");
+                              setYoutubePendingAction(`${video.id || video.targetUrl}:delete`);
+                              await deleteYoutubeVideo(video);
+                              showAdminToast("success", "Video deleted", "The saved YouTube video was removed.");
+                            } catch (error) {
+                              setYoutubeActionError(error?.message || "The video could not be deleted.");
+                              showAdminToast("error", "Delete failed", error?.message || "The YouTube video could not be deleted.");
+                              console.error("Failed deleting YouTube video:", error);
+                            } finally {
+                              setYoutubePendingAction("");
+                            }
+                          }}
+                          disabled={Boolean(youtubePendingAction)}
+                        >
+                          <i className="fa-solid fa-trash" aria-hidden="true"></i>
+                          {youtubePendingAction === `${video.id || video.targetUrl}:delete` ? "Deleting..." : "Delete"}
+                        </button>
+                        </>}
+                      </div>
+                    </article>
+                  ))}
+              </div>
+            )}
+          </div>
+          </section>
+        )}
 
         <div
           ref={dashboardContentRef}

@@ -909,12 +909,16 @@ create table if not exists tribe_social_feed (
   timestamp text,
   target_url text,
   embed_url text,
+  published boolean not null default false,
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now()
 );
 
-insert into tribe_social_feed (platform, icon, color, badge_text, title, summary, timestamp, target_url, embed_url)
-select 'YouTube', 'fa-brands fa-youtube', '#FF0000', 'Featured Masterclass Broadcast', 'Marriage Alignment Frameworks: Annual Summit Highlights', 'Watch the full 45-minute premium streaming segment breaking down advanced relationship intake assessments, milestone mapping, and interactive couple exercises.', 'Streamed 3 days ago', 'https://youtube.com/shorts/-vOSeWpU1Xs?feature=share', 'https://www.youtube.com/embed/-vOSeWpU1Xs'
+alter table if exists tribe_social_feed
+  add column if not exists published boolean not null default false;
+
+insert into tribe_social_feed (platform, icon, color, badge_text, title, summary, timestamp, target_url, embed_url, published)
+select 'YouTube', 'fa-brands fa-youtube', '#FF0000', 'Featured Masterclass Broadcast', 'Marriage Alignment Frameworks: Annual Summit Highlights', 'Watch the full 45-minute premium streaming segment breaking down advanced relationship intake assessments, milestone mapping, and interactive couple exercises.', 'Streamed 3 days ago', 'https://youtube.com/shorts/-vOSeWpU1Xs?feature=share', 'https://www.youtube.com/embed/-vOSeWpU1Xs', true
 where not exists (select 1 from tribe_social_feed where platform = 'YouTube');
 
 alter table if exists tribe_social_feed enable row level security;

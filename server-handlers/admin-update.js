@@ -351,7 +351,7 @@ export default async function handler(req, res) {
         if (!match) return jsonResponse(res, 400, { error: 'Missing match object for update' })
         result = await supabase.from(table).update(payload).match(match)
       } else if (action === 'insert') {
-        result = await supabase.from(table).insert(payload)
+        result = await supabase.from(table).insert(payload).select()
       } else if (action === 'select') {
         let query = supabase.from(table).select(columns)
         if (match && typeof match === 'object') {

@@ -8,6 +8,7 @@
 import http from 'http';
 import url from 'url';
 import adminAuthHandler from './server-handlers/admin-auth.js';
+import adminAccessHandler from './server-handlers/admin-access.js';
 import adminHealthHandler from './server-handlers/admin-health.js';
 import adminUpdateHandler from './server-handlers/admin-update.js';
 import fetchMetaHandler from './server-handlers/fetch-meta.js';
@@ -67,6 +68,11 @@ const server = http.createServer((req, res) => {
       if (pathname === '/api/admin-auth' && req.method === 'POST') {
         req.body = body ? JSON.parse(body) : {};
         await adminAuthHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/admin-access' && req.method === 'GET') {
+        await adminAccessHandler(req, res);
         return;
       }
 

@@ -449,6 +449,7 @@ export default function App() {
   const [socialPreviewEmbedUrl, setSocialPreviewEmbedUrl] = useState('https://www.youtube.com/embed/-vOSeWpU1Xs');
   const [socialMetadataLoading, setSocialMetadataLoading] = useState(false);
   const [youtubeEmbedUrl, setYoutubeEmbedUrl] = useState('https://www.youtube.com/embed/-vOSeWpU1Xs');
+  const [activeYoutubeIndex, setActiveYoutubeIndex] = useState(0);
 
   // --- State for Auto-Sliding Social Media News Updates Screen ---
   const [activeNewsIndex, setActiveNewsIndex] = useState(0);
@@ -483,6 +484,9 @@ export default function App() {
     //   targetUrl: "https://youtube.com/shorts/-vOSeWpU1Xs?feature=share"
     // }
   ]);
+
+  const youtubeVideos = socialNewsFeed.filter((item) => item.platform === 'YouTube' && item.published !== false && (item.embedUrl || item.targetUrl));
+  const activeYoutubeVideo = youtubeVideos[activeYoutubeIndex] || youtubeVideos[0];
 
         
 
@@ -1055,6 +1059,7 @@ export default function App() {
         const { data: socialFeedData, error: socialFeedError } = await supabase.from('tribe_social_feed').select('*');
         if (!socialFeedError && Array.isArray(socialFeedData) && socialFeedData.length > 0) {
           const socialRows = socialFeedData.map((row) => ({
+            id: row.id,
             platform: row.platform,
             icon: row.icon || (row.platform === 'Facebook' ? 'fa-brands fa-facebook' : row.platform === 'Instagram' ? 'fa-brands fa-instagram' : 'fa-brands fa-youtube'),
             color: row.color || '#000000',
@@ -1063,7 +1068,8 @@ export default function App() {
             summary: row.summary,
             timestamp: row.timestamp || row.updated_at || '',
             targetUrl: row.target_url,
-            embedUrl: row.embed_url
+            embedUrl: row.embed_url,
+            published: row.published !== false,
           }));
           setSocialNewsFeed(socialRows);
           const ytRow = socialRows.find((item) => item.platform === 'YouTube');
@@ -1213,16 +1219,20 @@ export default function App() {
 
   const normalizeYoutubeEmbed = (url) => {
     if (!url) return '';
-    let normalized = url.trim();
-    if (normalized.includes('youtu.be/')) {
-      normalized = normalized.replace('https://youtu.be/', 'https://www.youtube.com/embed/').split('?')[0];
-    } else if (normalized.includes('watch?v=')) {
-      normalized = normalized.replace('watch?v=', 'embed/').split('&')[0];
+    const value = url.trim();
+    try {
+      const parsed = new URL(value);
+      const hostname = parsed.hostname.replace(/^www\./, '');
+      let videoId = '';
+      if (hostname === 'youtu.be') videoId = parsed.pathname.slice(1);
+      if (hostname === 'youtube.com' || hostname === 'm.youtube.com') {
+        videoId = parsed.searchParams.get('v') || parsed.pathname.match(/\/shorts\/([^/]+)/)?.[1] || parsed.pathname.match(/\/embed\/([^/]+)/)?.[1] || '';
+      }
+      if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+    } catch (error) {
+      return value;
     }
-    if (!normalized.startsWith('https://www.youtube.com/embed/')) {
-      return url;
-    }
-    return normalized;
+    return value;
   };
 
   const handleUpdateContentCMS = async (e) => {
@@ -1491,6 +1501,13 @@ export default function App() {
         match: existingItem ? { platform: updatedItem.platform } : undefined
       };
 
+      setSocialNewsFeed((currentFeed) => {
+        const nextFeed = currentFeed.some((item) => item.platform === updatedItem.platform)
+          ? currentFeed.map((item) => item.platform === updatedItem.platform ? updatedItem : item)
+          : [...currentFeed, updatedItem];
+        return nextFeed;
+      });
+
       const res = await fetch('/api/admin-update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
@@ -1503,6 +1520,81 @@ export default function App() {
       console.error('Failed saving social preview via admin endpoint:', err);
       setCmsStatus(`Social preview updated locally; admin save failed: ${err?.message || err}`, true);
     }
+  };
+
+  const saveYoutubeVideo = async ({ id, title, description, targetUrl }) => {
+    const embedUrl = normalizeYoutubeEmbed(targetUrl);
+    const videoPayload = {
+      platform: 'YouTube',
+      icon: 'fa-brands fa-youtube',
+      color: '#FF0000',
+      badge_text: 'Teachable Moments',
+      title: title.trim(),
+      summary: description.trim(),
+      timestamp: new Date().toLocaleDateString(),
+      target_url: targetUrl.trim(),
+      embed_url: embedUrl,
+      ...(id ? {} : { published: false }),
+    };
+    const res = await fetch('/api/admin-update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+      body: JSON.stringify({
+        action: id ? 'update' : 'insert',
+        table: 'tribe_social_feed',
+        payload: id ? videoPayload : [videoPayload],
+        match: id ? { id } : undefined,
+      }),
+    });
+    const result = await parseAdminResponse(res);
+    if (!res.ok) throw new Error(result?.error || 'YouTube video could not be saved');
+    const saved = Array.isArray(result.data) ? result.data[0] : result.data;
+    const nextVideo = {
+      id: saved?.id || id,
+      platform: 'YouTube',
+      icon: 'fa-brands fa-youtube',
+      color: '#FF0000',
+      badgeText: 'Teachable Moments',
+      title: saved?.title || title.trim(),
+      summary: saved?.summary || description.trim(),
+      timestamp: saved?.timestamp || videoPayload.timestamp,
+      targetUrl: saved?.target_url || targetUrl.trim(),
+      embedUrl: saved?.embed_url || embedUrl,
+      published: saved?.published === true,
+    };
+    setSocialNewsFeed((current) => id
+      ? current.map((item) => item.id === id ? nextVideo : item)
+      : [nextVideo, ...current]);
+    setYoutubeEmbedUrl(nextVideo.embedUrl);
+    return nextVideo;
+  };
+
+  const setYoutubeVideoPublished = async (video, published) => {
+    if (!video?.id) {
+      throw new Error('This saved video has no database ID. Refresh the dashboard and try again.');
+    }
+    const res = await fetch('/api/admin-update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+      body: JSON.stringify({ action: 'update', table: 'tribe_social_feed', payload: { published }, match: { id: video.id } }),
+    });
+    const result = await parseAdminResponse(res);
+    if (!res.ok) throw new Error(result?.error || 'Video status could not be updated');
+    setSocialNewsFeed((current) => current.map((item) => item.id === video.id ? { ...item, published } : item));
+  };
+
+  const deleteYoutubeVideo = async (video) => {
+    if (!video?.id) {
+      throw new Error('This saved video has no database ID. Refresh the dashboard and try again.');
+    }
+    const res = await fetch('/api/admin-update', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+      body: JSON.stringify({ action: 'delete', table: 'tribe_social_feed', match: { id: video.id } }),
+    });
+    const result = await parseAdminResponse(res);
+    if (!res.ok) throw new Error(result?.error || 'Video could not be deleted');
+    setSocialNewsFeed((current) => current.filter((item) => item.id !== video.id));
   };
 
   const handleCreateProgram = async (e) => {
@@ -2839,6 +2931,21 @@ export default function App() {
           width: 100% !important; background-color: var(--bg-main); border-bottom: 1px solid var(--border-color);
           padding: 5rem 4rem; box-sizing: border-box; display: grid; grid-template-columns: 1fr 1.5fr; gap: 3rem; align-items: center; z-index: 3;
         }
+        .teachable-moments-section { width: 100%; padding: 4.5rem 4rem; box-sizing: border-box; background: var(--bg-main); border-bottom: 1px solid var(--border-color); }
+        .founder-video-feature { width: 100%; max-width: 1180px; margin: 0 auto; padding: 2rem; border: 1px solid var(--border-color); border-radius: 16px; background: var(--bg-card); box-sizing: border-box; }
+        .founder-video-heading { display: flex; justify-content: space-between; align-items: flex-end; gap: 1.5rem; margin-bottom: 1.5rem; }
+        .founder-video-eyebrow { display: inline-flex; align-items: center; gap: 0.45rem; color: #e11d48; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+        .founder-video-heading h2 { margin: 0.45rem 0 0.5rem; color: var(--text-primary); font-size: 2rem; line-height: 1.15; }
+        .founder-video-heading p { max-width: 700px; margin: 0; color: var(--text-muted); line-height: 1.6; }
+        .founder-video-playlist-note { display: inline-block; margin-top: 0.65rem; color: var(--brand-green); font-size: 0.82rem; font-weight: 800; }
+        .founder-video-controls { display: flex; align-items: center; gap: 0.8rem; color: var(--text-muted); font-weight: 700; white-space: nowrap; }
+        .founder-video-controls button { width: 2.3rem; height: 2.3rem; border: 1px solid var(--border-color); border-radius: 50%; background: var(--bg-main); color: var(--text-primary); cursor: pointer; }
+        .founder-video-controls button:hover:not(:disabled) { border-color: var(--brand-green); color: var(--brand-green); }
+        .founder-video-controls button:disabled { cursor: not-allowed; opacity: 0.45; }
+        .founder-video-embed-wrap { width: 100%; aspect-ratio: 16 / 7; min-height: 280px; overflow: hidden; border-radius: 12px; background: #000; }
+        .founder-video-embed-wrap iframe { width: 100%; height: 100%; min-height: 280px; border: 0; display: block; }
+        .founder-video-empty-state { width: 100%; height: 100%; min-height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.75rem; color: #fff; font-size: 1rem; text-align: center; }
+        .founder-video-empty-state i { color: #ef4444; font-size: 2.5rem; }
         .founder-portrait-frame { width: 100%; height: 520px; border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-lg); border: 1px solid var(--border-color); position: relative; display: block; }
         .founder-img { width: 100%; height: 100%; object-fit: cover; display: block; }
         @media (max-width: 768px) { .founder-portrait-frame { height: 400px; } }
@@ -3423,7 +3530,12 @@ export default function App() {
           .nav-navigation-links.mobile-open { display: flex; }
           .public-navbar { padding: 1rem 1.5rem; }
           .synchronized-promo-banner { grid-template-columns: 1fr; padding: 3rem 1.5rem; gap: 2.5rem; }
+          .teachable-moments-section { padding: 3rem 1.5rem; }
           .founder-executive-suite { grid-template-columns: 1fr; padding: 4rem 1.5rem; gap: 3rem; }
+          .founder-video-feature { padding: 1.25rem; }
+          .founder-video-heading { align-items: flex-start; flex-direction: column; }
+          .founder-video-heading h2 { font-size: 1.55rem; }
+          .founder-video-embed-wrap, .founder-video-embed-wrap iframe { min-height: 220px; }
           .founder-portrait-frame { height: 400px; }
           .marquee-statements-section { padding: 4rem 1.5rem; }
           .social-news-stream-section { padding: 4rem 1.5rem; }
@@ -3467,6 +3579,16 @@ export default function App() {
           .intake-form-wrapper { padding: 2.5rem 1.5rem; }
         }
         @media (max-width: 640px) {
+          .teachable-moments-section { padding: 2.5rem 0.75rem; }
+          .teachable-moments-section .founder-video-feature { padding: 1rem; border-radius: 12px; }
+          .teachable-moments-section .founder-video-heading { gap: 1rem; margin-bottom: 1rem; }
+          .teachable-moments-section .founder-video-eyebrow { font-size: 0.7rem; letter-spacing: 0.06em; }
+          .teachable-moments-section .founder-video-heading h2 { font-size: 1.35rem; line-height: 1.2; margin: 0.35rem 0 0.5rem; }
+          .teachable-moments-section .founder-video-heading p { font-size: 0.92rem; line-height: 1.55; }
+          .teachable-moments-section .founder-video-controls { align-self: stretch; justify-content: space-between; gap: 0.65rem; }
+          .teachable-moments-section .founder-video-controls button { width: 2.1rem; height: 2.1rem; }
+          .teachable-moments-section .founder-video-embed-wrap { aspect-ratio: 16 / 9; min-height: 0; border-radius: 10px; }
+          .teachable-moments-section .founder-video-embed-wrap iframe, .teachable-moments-section .founder-video-empty-state { min-height: 0; }
           .portal-workspace-body-content { padding: 1rem; }
           .dashboard-tab-buttons { padding: 0.4rem 0.6rem; gap: 0.3rem; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
           .dashboard-tab-button { padding: 0.45rem 0.45rem; font-size: 0.7rem; min-height: 30px; width: 100%; min-width: 0; text-align: center; }
@@ -3815,6 +3937,58 @@ export default function App() {
                         <p>{item.text}</p>
                       </article>
                     ))}
+                  </div>
+                </section>
+
+                <section className="teachable-moments-section">
+                  <div className="founder-video-feature">
+                    <div className="founder-video-heading">
+                      <div>
+                        <span className="founder-video-eyebrow"><i className="fa-brands fa-youtube"></i> Teachable Moments</span>
+                        <h2>{activeYoutubeVideo?.title || 'Teachable Moments with Coach Roseline'}</h2>
+                        <p>{activeYoutubeVideo?.summary || 'Watch the latest message from Coach Roseline.'}</p>
+                        {youtubeVideos.length > 1 && (
+                          <span className="founder-video-playlist-note">{youtubeVideos.length} published moments in the playlist</span>
+                        )}
+                      </div>
+                      <div className="founder-video-controls" aria-label="Teachable Moments videos">
+                        <button
+                          type="button"
+                          onClick={() => setActiveYoutubeIndex((current) => current > 0 ? current - 1 : youtubeVideos.length - 1)}
+                          disabled={youtubeVideos.length < 2}
+                          aria-label="Previous Teachable Moments video"
+                          title="Previous video"
+                        >
+                          <i className="fa-solid fa-chevron-left"></i>
+                        </button>
+                        <span>{youtubeVideos.length ? `${activeYoutubeIndex + 1} / ${youtubeVideos.length}` : '1 / 1'}</span>
+                        <button
+                          type="button"
+                          onClick={() => setActiveYoutubeIndex((current) => youtubeVideos.length ? (current + 1) % youtubeVideos.length : 0)}
+                          disabled={youtubeVideos.length < 2}
+                          aria-label="Next Teachable Moments video"
+                          title="Next video"
+                        >
+                          <i className="fa-solid fa-chevron-right"></i>
+                        </button>
+                      </div>
+                    </div>
+                    <div className="founder-video-embed-wrap">
+                      {activeYoutubeVideo?.embedUrl ? (
+                        <iframe
+                          key={activeYoutubeVideo.embedUrl}
+                          src={activeYoutubeVideo.embedUrl}
+                          title={activeYoutubeVideo.title || 'Teachable Moments with Coach Roseline'}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                        ></iframe>
+                      ) : (
+                        <div className="founder-video-empty-state">
+                          <i className="fa-brands fa-youtube" aria-hidden="true"></i>
+                          <span>The next Teachable Moment will appear here.</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </section>
 
@@ -4196,6 +4370,9 @@ export default function App() {
                 socialMetadataLoading={socialMetadataLoading}
                 fetchSocialUrlMetadata={fetchSocialUrlMetadata}
                 handleUpdateSocialPreview={handleUpdateSocialPreview}
+                saveYoutubeVideo={saveYoutubeVideo}
+                setYoutubeVideoPublished={setYoutubeVideoPublished}
+                deleteYoutubeVideo={deleteYoutubeVideo}
                 privacyContent={privacyContent}
                 setPrivacyContent={setPrivacyContent}
                 termsContent={termsContent}
@@ -4299,6 +4476,9 @@ export default function App() {
                 socialMetadataLoading={socialMetadataLoading}
                 fetchSocialUrlMetadata={fetchSocialUrlMetadata}
                 handleUpdateSocialPreview={handleUpdateSocialPreview}
+                saveYoutubeVideo={saveYoutubeVideo}
+                setYoutubeVideoPublished={setYoutubeVideoPublished}
+                deleteYoutubeVideo={deleteYoutubeVideo}
                 privacyContent={privacyContent}
                 setPrivacyContent={setPrivacyContent}
                 termsContent={termsContent}
