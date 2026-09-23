@@ -105,8 +105,12 @@ export default function App() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
     const frameId = window.requestAnimationFrame(() => {
       window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
     });
     return () => window.cancelAnimationFrame(frameId);
   }, [location.pathname, location.search, location.hash, location.key]);
@@ -770,6 +774,18 @@ export default function App() {
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleRouteTopNavigation = () => {
+    setNavOpen(false);
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    });
   };
 
   const acceptCookieConsent = () => {
@@ -4132,7 +4148,7 @@ export default function App() {
                   <p className="section-subtext">Choose the area that fits your current season and discover a tailored path for growth, mentoring, and support.</p>
 
                   <div className="services-routing-grid">
-                    <Link to="/care-counseling" className="service-gateway-card">
+                    <Link to="/care-counseling" className="service-gateway-card" onClick={handleRouteTopNavigation}>
                       <div>
                         <div className="gateway-icon-wrap"><i className="fa-solid fa-hand-holding-heart"></i></div>
                         <h3>Talk & Thrive</h3>
@@ -4141,7 +4157,7 @@ export default function App() {
                       <div className="gateway-footer-action">Read more<i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
 
-                    <Link to="/services/children" className="service-gateway-card">
+                    <Link to="/services/children" className="service-gateway-card" onClick={handleRouteTopNavigation}>
                       <div>
                         <div className="gateway-icon-wrap"><i className="fa-solid fa-child-reaching"></i></div>
                         <h3>{services.children.title}</h3>
@@ -4150,7 +4166,7 @@ export default function App() {
                       <div className="gateway-footer-action">Read more <i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
 
-                    <Link to="/services/family" className="service-gateway-card">
+                    <Link to="/services/family" className="service-gateway-card" onClick={handleRouteTopNavigation}>
                       <div>
                         <div className="gateway-icon-wrap"><i className="fa-solid fa-people-roof"></i></div>
                         <h3>{services.family.title}</h3>
@@ -4159,7 +4175,7 @@ export default function App() {
                       <div className="gateway-footer-action">Read more<i className="fa-solid fa-arrow-trend-up"></i></div>
                     </Link>
 
-                    <Link to="/services/marriage" className="service-gateway-card">
+                    <Link to="/services/marriage" className="service-gateway-card" onClick={handleRouteTopNavigation}>
                       <div>
                         <div className="gateway-icon-wrap"><i className="fa-solid fa-heart-crack"></i></div>
                         <h3>{services.marriage.title}</h3>
