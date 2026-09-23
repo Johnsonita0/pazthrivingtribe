@@ -105,7 +105,11 @@ export default function App() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-  }, [location.pathname]);
+    const frameId = window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    });
+    return () => window.cancelAnimationFrame(frameId);
+  }, [location.pathname, location.search, location.hash, location.key]);
 
   useEffect(() => {
     if (isAdminRoute) return;
