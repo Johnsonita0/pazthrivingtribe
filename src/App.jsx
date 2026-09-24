@@ -460,6 +460,19 @@ export default function App() {
   const [socialMetadataLoading, setSocialMetadataLoading] = useState(false);
   const [youtubeEmbedUrl, setYoutubeEmbedUrl] = useState('https://www.youtube.com/embed/-vOSeWpU1Xs');
   const [activeYoutubeIndex, setActiveYoutubeIndex] = useState(0);
+  const defaultYoutubeVideo = {
+    id: 'default-teachable-moment',
+    platform: 'YouTube',
+    icon: 'fa-brands fa-youtube',
+    color: '#FF0000',
+    badgeText: 'Teachable Moments',
+    title: 'Teachable Moments with Coach Roseline',
+    summary: 'Watch the latest message from Coach Roseline.',
+    timestamp: 'Featured video',
+    targetUrl: 'https://youtube.com/shorts/-vOSeWpU1Xs?feature=share',
+    embedUrl: 'https://www.youtube.com/embed/-vOSeWpU1Xs',
+    published: true,
+  };
 
   // --- State for Auto-Sliding Social Media News Updates Screen ---
   const [activeNewsIndex, setActiveNewsIndex] = useState(0);
@@ -495,7 +508,14 @@ export default function App() {
     // }
   ]);
 
-  const youtubeVideos = socialNewsFeed.filter((item) => item.platform === 'YouTube' && item.published !== false && (item.embedUrl || item.targetUrl));
+  const publishedYoutubeVideos = socialNewsFeed
+    .filter((item) => item.platform === 'YouTube' && item.published !== false && (item.embedUrl || item.targetUrl))
+    .sort((left, right) => {
+      const leftDate = new Date(left.publishedAt || left.updatedAt || left.createdAt || 0).getTime();
+      const rightDate = new Date(right.publishedAt || right.updatedAt || right.createdAt || 0).getTime();
+      return rightDate - leftDate;
+    });
+  const youtubeVideos = publishedYoutubeVideos.length > 0 ? publishedYoutubeVideos : [defaultYoutubeVideo];
   const activeYoutubeVideo = youtubeVideos[activeYoutubeIndex] || youtubeVideos[0];
 
         
@@ -1089,6 +1109,9 @@ export default function App() {
             title: row.title,
             summary: row.summary,
             timestamp: row.timestamp || row.updated_at || '',
+            createdAt: row.created_at || null,
+            updatedAt: row.updated_at || null,
+            publishedAt: row.published_at || null,
             targetUrl: row.target_url,
             embedUrl: row.embed_url,
             published: row.published !== false,
@@ -1547,6 +1570,9 @@ export default function App() {
       title: saved?.title || title.trim(),
       summary: saved?.summary || description.trim(),
       timestamp: saved?.timestamp || videoPayload.timestamp,
+      createdAt: saved?.created_at || new Date().toISOString(),
+      updatedAt: saved?.updated_at || new Date().toISOString(),
+      publishedAt: saved?.published_at || null,
       targetUrl: saved?.target_url || targetUrl.trim(),
       embedUrl: saved?.embed_url || embedUrl,
       published: saved?.published === true,
