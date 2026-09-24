@@ -37,7 +37,7 @@ export function buildPazEmailTemplate({
         <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#edf4ef;padding:24px 12px;border-collapse:collapse;">
           <tr>
             <td align="center" style="text-align:center;">
-              <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:640px;width:100%;background:#ffffff;border-collapse:separate;border-spacing:0;border-radius:18px;overflow:hidden;">
+              <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" width="100%" style="width:100%;max-width:640px;margin:0 auto;background:#ffffff;border-collapse:separate;border-spacing:0;border-radius:18px;overflow:hidden;">
                 <tr>
                   <td align="center" style="padding:24px 20px;background:linear-gradient(135deg,#0b2f2a 0%,#123d35 52%,#1c5c4a 100%);text-align:center;">
                     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;border-collapse:separate;border-spacing:0;">
