@@ -1,4 +1,5 @@
 import { sendResendEmail } from './lib/resend.js';
+import { buildPazEmailTemplate } from './lib/paz-email-template.js';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const adminEmails = () => [...new Set([globalThis.process?.env?.ADMIN_EMAILS, globalThis.process?.env?.VITE_ADMIN_EMAILS, 'pazthrivingtribe@gmail.com']
@@ -25,10 +26,21 @@ export default async function handler(req, res) {
     .map(([label, value]) => `<p><strong>${escapeHtml(label)}:</strong> ${escapeHtml(value)}</p>`)
     .join('');
   try {
+    const emailHtml = buildPazEmailTemplate({
+      title,
+      eyebrow: 'Portal activity alert',
+      intro: 'Hello PAZ team,',
+      accentText: 'A new activity was submitted on the PAZ website.',
+      bodyHtml: `<p><strong>Activity:</strong> ${escapeHtml(type)}</p>${detailRows}`,
+      ctaLabel: 'Open admin dashboard',
+      ctaUrl: `${globalThis.process?.env?.VITE_APP_URL || 'https://pazthrivingtribe.org'}/admin`,
+      showSecondaryCta: false,
+      footerNote: 'Internal activity notification for PAZ Thriving Tribe.'
+    });
     await sendResendEmail({
       to: adminEmails(),
       subject: `PAZ activity: ${title}`,
-      html: `<p>A new activity was submitted on the PAZ website.</p><p><strong>Activity:</strong> ${escapeHtml(type)}</p>${detailRows}`,
+      html: emailHtml,
       text: `A new PAZ website activity was submitted.\n\nActivity: ${type}\n${Object.entries(details).map(([label, value]) => `${label}: ${value}`).join('\n')}`,
       from: globalThis.process?.env?.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.org'
     });

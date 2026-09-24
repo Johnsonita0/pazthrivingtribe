@@ -1,3 +1,5 @@
+import { buildPazEmailTemplate } from './paz-email-template.js';
+
 function normalizeRecipients(recipients) {
   const list = (Array.isArray(recipients) ? recipients : [recipients])
     .filter(Boolean)
@@ -27,6 +29,8 @@ export async function sendResendEmail({
   if (!recipients.length) {
     throw new Error('No valid recipients available after filtering blocked addresses.');
   }
+
+  const brandedHtml = ensureBrandedHtml({ html, subject, text });
 
   const normalizedAttachments = await Promise.all((attachments || []).map(async (attachment) => {
     if (!attachment) return null;
@@ -80,8 +84,8 @@ export async function sendResendEmail({
       from: `${name} <${from}>`,
       to: recipients,
       subject,
-      html: html || undefined,
-      text: text || (html ? stripHtml(html) : undefined),
+      html: brandedHtml || undefined,
+      text: text || (brandedHtml ? stripHtml(brandedHtml) : undefined),
       ...(replyTo ? { reply_to: replyTo } : {}),
       ...(normalizedAttachments.length ? { attachments: normalizedAttachments.filter(Boolean) } : {})
     })
@@ -98,6 +102,24 @@ export async function sendResendEmail({
   }
 
   return responseBody;
+}
+
+function ensureBrandedHtml({ html, subject, text }) {
+  if (!html) return '';
+  const source = String(html);
+  if (source.includes('max-width:640px') && source.includes('PAZ Thriving Tribe')) return source;
+
+  return buildPazEmailTemplate({
+    title: subject || 'PAZ Thriving Tribe notification',
+    eyebrow: 'PAZ Thriving Tribe',
+    intro: 'Hello,',
+    accentText: '',
+    bodyHtml: source,
+    ctaLabel: 'Visit the PAZ website',
+    ctaUrl: process.env.VITE_APP_URL || 'https://pazthrivingtribe.org',
+    showSecondaryCta: false,
+    footerNote: text ? 'This message was sent by PAZ Thriving Tribe.' : 'We are here to help your growth journey.'
+  });
 }
 
 function stripHtml(value) {

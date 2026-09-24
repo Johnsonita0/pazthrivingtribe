@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { sendResendEmail } from './lib/resend.js';
+import { buildPazEmailTemplate } from './lib/paz-email-template.js';
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const admins = () => [...new Set([globalThis.process?.env?.ADMIN_EMAILS, globalThis.process?.env?.VITE_ADMIN_EMAILS, 'pazthrivingtribe@gmail.com']
@@ -32,10 +33,21 @@ export default async function handler(req, res) {
     }).select('id,author,text,origin,status,created_at').single();
     if (error) throw error;
 
+    const emailHtml = buildPazEmailTemplate({
+      title: 'New testimonial awaiting approval',
+      eyebrow: 'Admin review required',
+      intro: 'Hello PAZ team,',
+      accentText: 'A new testimonial was submitted and is waiting for your review.',
+      bodyHtml: `<p><strong>Author:</strong> ${escapeHtml(author)}</p><p><strong>Origin:</strong> ${escapeHtml(origin)}</p><div style="margin:14px 0;padding:14px 16px;background:#ffffff;border-left:4px solid #d4a848;border-radius:8px;"><em>${escapeHtml(text).replace(/\n/g, '<br>')}</em></div><p>Please review it in the admin dashboard. It will remain hidden from the public slider until you click <strong>Post to slider</strong>.</p>`,
+      ctaLabel: 'Review testimonial',
+      ctaUrl: `${globalThis.process?.env?.VITE_APP_URL || 'https://pazthrivingtribe.org'}/admin`,
+      showSecondaryCta: false,
+      footerNote: 'Internal admin notification for PAZ Thriving Tribe.'
+    });
     await sendResendEmail({
       to: admins(),
       subject: 'New testimonial awaiting approval',
-      html: `<p>A new testimonial was submitted and is waiting for admin approval.</p><p><strong>Author:</strong> ${escapeHtml(author)}</p><p><strong>Origin:</strong> ${escapeHtml(origin)}</p><blockquote>${escapeHtml(text).replace(/\n/g, '<br>')}</blockquote><p>Open the admin dashboard and use the Post to slider action only after review.</p>`,
+      html: emailHtml,
       text: `New testimonial awaiting approval\n\nAuthor: ${author}\nOrigin: ${origin}\n\n${text}\n\nReview it in the admin dashboard before posting it to the slider.`,
       from: globalThis.process?.env?.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.org'
     });
