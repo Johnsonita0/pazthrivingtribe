@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import { getCountries, getCountryCallingCode, isValidPhoneNumber, parsePhoneNumberFromString } from 'libphonenumber-js';
 import { supabase } from '../supabaseClient';
+import { notifyAdminActivity } from '../utils/notifyAdminActivity';
 
 const isStorefrontProduct = (product) =>
   product.status === 'published' ||
@@ -697,6 +698,12 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
       products: current.products.map((product) => product.id === selectedProduct.id ? { ...product, rating: average, reviews: updatedReviews.length } : product),
     }));
     setRatingForm({ reviewerName: '', reviewerEmail: '', rating: 0, comment: '' });
+    void notifyAdminActivity('Product rating', 'New product rating submitted', {
+      product: selectedProduct.title,
+      reviewer: data.reviewer_name,
+      rating: data.rating,
+      comment: data.comment || 'No comment'
+    });
     setToast({ message: 'Thank you. Your product rating has been added.', type: 'success' });
     window.setTimeout(() => setToast(null), 3000);
   };

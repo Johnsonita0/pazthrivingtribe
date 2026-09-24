@@ -135,6 +135,8 @@ create table if not exists store_products (
 
 alter table if exists tribe_bookings add column if not exists payment_reference text;
 alter table if exists tribe_bookings add column if not exists payment_status text;
+alter table if exists tribe_testimonials add column if not exists status text not null default 'published';
+update tribe_testimonials set status = 'published' where status is null;
 
 -- Keep existing projects compatible when this setup script is run after the table exists.
 alter table if exists store_products add column if not exists title text;

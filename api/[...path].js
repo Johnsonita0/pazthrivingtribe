@@ -19,6 +19,7 @@ import storeProductsPublicHandler from '../server-handlers/store-products-public
 import vendorPasswordResetEmailHandler from '../server-handlers/vendor-password-reset-email.js';
 import vendorPinChangedEmailHandler from '../server-handlers/vendor-pin-changed-email.js';
 import activityNotificationHandler from '../server-handlers/activity-notification.js';
+import testimonialSubmissionHandler from '../server-handlers/testimonial-submission.js';
 
 const handlers = {
   '/admin-auth': adminAuthHandler,
@@ -35,6 +36,7 @@ const handlers = {
   '/vendor-password-reset-email': vendorPasswordResetEmailHandler,
   '/vendor-pin-changed-email': vendorPinChangedEmailHandler,
   '/activity-notification': activityNotificationHandler,
+  '/testimonial-submission': testimonialSubmissionHandler,
   '/currency-rates': currencyRatesHandler,
   '/fetch-meta': fetchMetaHandler,
   '/paystack-webhook': paystackWebhookHandler,

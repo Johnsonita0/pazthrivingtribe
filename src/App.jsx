@@ -1139,7 +1139,7 @@ export default function App() {
 
   const fetchTestimonials = async () => {
     try {
-      const { data, error } = await supabase.from('tribe_testimonials').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('tribe_testimonials').select('*').eq('status', 'published').order('created_at', { ascending: false });
       if (error) throw error;
       if (Array.isArray(data)) {
         setPromoSlides(data.map((item) => ({
@@ -1320,7 +1320,7 @@ export default function App() {
           const res = await fetch('/api/admin-update', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
-            body: JSON.stringify({ action: 'update', table: 'tribe_testimonials', payload: { author: payload.title, origin: payload.origin, text: payload.text }, match: { id: target.id } })
+            body: JSON.stringify({ action: 'update', table: 'tribe_testimonials', payload: { author: payload.title, origin: payload.origin, text: payload.text, status: 'published' }, match: { id: target.id } })
           });
           const jr = await parseAdminResponse(res);
           if (!res.ok) throw new Error(jr?.error || 'Admin endpoint failed');
@@ -1339,7 +1339,7 @@ export default function App() {
           const res = await fetch('/api/admin-update', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
-            body: JSON.stringify({ action: 'insert', table: 'tribe_testimonials', payload: [{ author: payload.title, origin: payload.origin, text: payload.text }] })
+            body: JSON.stringify({ action: 'insert', table: 'tribe_testimonials', payload: [{ author: payload.title, origin: payload.origin, text: payload.text, status: 'published' }] })
           });
           const jr = await parseAdminResponse(res);
           if (!res.ok) throw new Error(jr?.error || 'Admin endpoint failed');
@@ -1359,7 +1359,7 @@ export default function App() {
         const res = await fetch('/api/admin-update', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
-          body: JSON.stringify({ action: 'insert', table: 'tribe_testimonials', payload: [{ author: payload.title, origin: payload.origin, text: payload.text }] })
+          body: JSON.stringify({ action: 'insert', table: 'tribe_testimonials', payload: [{ author: payload.title, origin: payload.origin, text: payload.text, status: 'published' }] })
         });
         const jr = await parseAdminResponse(res);
         if (!res.ok) throw new Error(jr?.error || 'Admin endpoint failed');
@@ -1389,57 +1389,24 @@ export default function App() {
       return;
     }
 
-    const nextSlide = {
-      id: `local-${Date.now()}`,
-      title: name,
-      text: message,
-      origin: testimonialSubmission.origin.trim() || 'Parent',
-      image: '/logo/logomain.png',
-      imageType: 'logo'
-    };
-
     setTestimonialSubmitting(true);
-    // Add to local state immediately for UI feedback
-    setPromoSlides((prev) => [nextSlide, ...prev]);
-    setCurrentPromoSlide(0);
-    setTestimonialSubmission({ name: '', origin: '', message: '' });
-    setTestimonialSubmitStatus('');
-
-    // Persist to database
     try {
-      const res = await fetch('/api/admin-update', {
+      const res = await fetch('/api/testimonial-submission', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session?.access_token || ''}`
-        },
-        body: JSON.stringify({
-          action: 'insert',
-          table: 'tribe_testimonials',
-          payload: [{ author: name, origin: testimonialSubmission.origin.trim() || 'Parent', text: message }]
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, message, origin: testimonialSubmission.origin.trim() || 'Parent' })
       });
       const jr = await parseAdminResponse(res);
-      if (!res.ok) throw new Error(jr?.error || 'Failed to save testimonial');
-
-      // Update with the database-assigned ID if available
-      const created = Array.isArray(jr.data) ? jr.data[0] : jr.data;
-      if (created?.id) {
-        setPromoSlides((prev) => {
-          const updated = [...prev];
-          if (updated[0]?.id === nextSlide.id) {
-            updated[0] = { ...updated[0], id: created.id };
-          }
-          return updated;
-        });
-      }
-
-      setToastMessage('Thank you for sharing your story with our community. We appreciate your support.');
+      if (!res.ok) throw new Error(jr?.error || 'Failed to submit testimonial');
+      setTestimonialSubmission({ name: '', origin: '', message: '' });
+      setTestimonialSubmitStatus('Thank you. Your testimonial was sent for admin review and is not public yet.');
+      void notifyAdminActivity('Testimonial submission', 'New testimonial submitted for review', { name, origin: testimonialSubmission.origin.trim() || 'Parent', message });
+      setToastMessage('Thank you. Your testimonial has been sent for admin review.');
       setToastType('success');
     } catch (err) {
       console.error('Failed saving testimonial to database:', err);
-      setToastMessage('Thank you for your submission. Your story will be reviewed and added shortly.');
-      setToastType('success');
+      setToastMessage(err.message || 'Your testimonial could not be submitted.');
+      setToastType('error');
     } finally {
       setTestimonialSubmitting(false);
     }

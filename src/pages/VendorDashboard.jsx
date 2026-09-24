@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import { notifyAdminActivity } from "../utils/notifyAdminActivity";
 import { jsPDF } from "jspdf";
 
 const vendorDraftKey = "paz-vendor-registration-draft";
@@ -1270,6 +1271,11 @@ export default function VendorDashboard() {
         inStock: true,
       });
       setNotice({ type: "success", text: editingProductId ? "Product updated." : "Product published to the shop." });
+      void notifyAdminActivity("Vendor product submission", editingProductId ? "Vendor product updated" : "New vendor product awaiting review", {
+        vendor: profile.company_name,
+        product: data.title,
+        status: data.status
+      });
       setEditingProductId(null);
       setProductFile(null);
       setCoverFile(null);
@@ -1309,6 +1315,11 @@ export default function VendorDashboard() {
       setNotice({
         type: "success",
         text: "Ad sent to the admin dashboard for approval.",
+      });
+      void notifyAdminActivity("Vendor advertisement", "New vendor advertisement awaiting review", {
+        vendor: profile.company_name,
+        headline: data.headline,
+        productUrl: data.product_url
       });
     }
   };

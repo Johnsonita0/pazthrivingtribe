@@ -361,6 +361,7 @@ export default function AdminDashboard(props) {
                   ? "Parent Feedback"
                   : newSlide.origin,
               text: newSlide.text,
+              status: "published",
               image_type: "logo",
             },
           ],

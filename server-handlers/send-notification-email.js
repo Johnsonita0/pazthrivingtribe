@@ -224,6 +224,15 @@ export default async function handler(req, res) {
       console.log(`✓ Admin order notification sent to: ${adminRecipients.join(', ')}`);
       console.log(`✓ Customer order confirmation sent to: ${customerRecipients.join(', ')}`);
     } else {
+      if (adminRecipients.length) {
+        await sendResendEmail({
+          to: adminRecipients,
+          subject: `New notification request — ${service}`,
+          html: `<p>A visitor requested an email notification from the PAZ portal.</p><p><strong>Email:</strong> ${cleanEmail}</p><p><strong>Service:</strong> ${String(service).replace(/</g, '&lt;').replace(/>/g, '&gt;')}</p>`,
+          text: `New PAZ notification request. Email: ${cleanEmail}. Service: ${service}`,
+          from: process.env.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.org'
+        });
+      }
       await sendResendEmail({
         to: cleanEmail,
         subject: orderReceiptSubject,
