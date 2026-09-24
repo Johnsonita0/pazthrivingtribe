@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import { supabase } from '../supabaseClient';
+import { notifyAdminActivity } from '../utils/notifyAdminActivity';
 import CustomDropdown from '../components/CustomDropdown';
 import './feedback.css';
 
@@ -187,6 +188,7 @@ export default function FeedbackPage() {
         testimonial: form.testimonial.trim()
       }]);
       if (error) throw error;
+      void notifyAdminActivity('Parent feedback', 'New parent feedback submitted', form);
       setSubmitted(true);
     } catch (error) {
       console.error('Feedback submission failed:', error);

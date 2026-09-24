@@ -16,6 +16,7 @@ import VendorDashboard from './pages/VendorDashboard';
 import CustomerSupportChat from './components/CustomerSupportChat';
 import PaystackCallbackPage from './pages/PaystackCallbackPage';
 import CustomDropdown from './components/CustomDropdown';
+import { notifyAdminActivity } from './utils/notifyAdminActivity';
 
 const whatsappTips = [
   'Need help today?',
@@ -225,7 +226,7 @@ export default function App() {
   const [parentFeedback, setParentFeedback] = useState([]);
   const [contactSubmitting, setContactSubmitting] = useState(false);
 
-  const handleContactFormSubmit = (event) => {
+  const handleContactFormSubmit = async (event) => {
     event.preventDefault();
     if (contactSubmitting) return;
     setContactSubmitting(true);
@@ -238,6 +239,7 @@ export default function App() {
       createdAt: new Date().toISOString()
     };
     setContactMessages((prev) => [trimmedMessage, ...prev]);
+    void notifyAdminActivity('Contact message', 'New contact message', trimmedMessage);
     setContactForm({ name: '', email: '', subject: '', message: '' });
     setToastMessage('Your message has been received and will be reviewed by the team shortly.');
     setToastType('success');
@@ -1768,6 +1770,7 @@ export default function App() {
         payment_status: newApplicant.paymentStatus || 'pending'
       }]);//.select();
       if (error) throw error; 
+      void notifyAdminActivity('Applicant intake', 'New service applicant', newApplicant);
     } catch (err) { 
       console.error('Server down at the moment try again later:', err);
       console.log('Applicant captured locally; Supabase insert unavailable.');

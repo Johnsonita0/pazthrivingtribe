@@ -21,7 +21,8 @@ export default async function handler(req, res) {
     const { data: vendor } = await supabase.from('vendor_profiles').select('company_name,contact_email').eq('id', user.id).maybeSingle();
     const senderEmail = String(user.email || '').toLowerCase();
     const recipients = [...new Set([...adminEmails(), vendor?.contact_email].filter(Boolean))];
-    await supabase.from('vendor_support_messages').insert({ vendor_id: user.id, sender_email: senderEmail, message, status: 'open' });
+    const { error: insertError } = await supabase.from('vendor_support_messages').insert({ vendor_id: user.id, sender_email: senderEmail, message, status: 'open' });
+    if (insertError) throw insertError;
     await sendResendEmail({ to: recipients, subject: `Vendor support message${vendor?.company_name ? ` from ${vendor.company_name}` : ''}`, html: `<p>A new vendor support message requires attention.</p><p><strong>Vendor:</strong> ${vendor?.company_name || 'Unregistered vendor'}</p><p><strong>Email:</strong> ${senderEmail}</p><p><strong>Message:</strong><br>${message.replace(/\n/g, '<br>')}</p>`, text: `Vendor support message from ${vendor?.company_name || senderEmail}: ${message}`, from: process.env.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.org' });
     return json(res, 200, { ok: true });
   } catch (error) {

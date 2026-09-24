@@ -15,7 +15,8 @@ export default async function handler(req, res) {
   if (!url || !key || !process.env.RESEND_API_KEY) return json(res, 500, { error: 'Support notifications are not configured.' });
   try {
     const supabase = createClient(url, key);
-    await supabase.from('customer_support_messages').insert({ sender_name: name, sender_email: email, message, status: 'open' });
+    const { error: insertError } = await supabase.from('customer_support_messages').insert({ sender_name: name, sender_email: email, message, status: 'open' });
+    if (insertError) throw insertError;
     await sendResendEmail({ to: adminEmails(), subject: `Customer care message from ${name}`, html: `<p>A customer sent a new support message.</p><p><strong>Name:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p><p><strong>Message:</strong><br>${message.replace(/\n/g, '<br>')}</p>`, text: `Customer care message from ${name} (${email}): ${message}`, from: process.env.RESEND_FROM_EMAIL || 'notifications@pazthrivingtribe.org' });
     return json(res, 200, { ok: true });
   } catch (error) {

@@ -25,6 +25,7 @@ import customerSupportHandler from './server-handlers/customer-support.js';
 import resolveBankAccountHandler from './server-handlers/resolve-bank-account.js';
 import storeProductsPublicHandler from './server-handlers/store-products-public.js';
 import vendorPinChangedEmailHandler from './server-handlers/vendor-pin-changed-email.js';
+import activityNotificationHandler from './server-handlers/activity-notification.js';
 
 try {
   process.loadEnvFile?.('.env');
@@ -102,6 +103,12 @@ const server = http.createServer((req, res) => {
       if (pathname === '/api/customer-support' && req.method === 'POST') {
         req.body = body ? JSON.parse(body) : {};
         await customerSupportHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/activity-notification' && req.method === 'POST') {
+        req.body = body ? JSON.parse(body) : {};
+        await activityNotificationHandler(req, res);
         return;
       }
 

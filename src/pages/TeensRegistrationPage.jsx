@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
+import { notifyAdminActivity } from '../utils/notifyAdminActivity';
 import CustomDropdown from '../components/CustomDropdown';
 import '../css/teens-registration.css';
 
@@ -517,6 +518,13 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
           }
 
           setLastSubmittedEmail(formData.email);
+          void notifyAdminActivity('Teens registration', 'New teens registration submitted', {
+            name: formData.contactName,
+            email: formData.email,
+            registrationType: formData.registrationType,
+            childrenCount: formData.children.length,
+            paymentReference: paymentReference || 'pending'
+          });
           setConfirmationEmailSent(emailSent);
           setSubmitted(true);
           setFormData(initialForm);

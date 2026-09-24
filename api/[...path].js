@@ -18,6 +18,7 @@ import resolveBankAccountHandler from '../server-handlers/resolve-bank-account.j
 import storeProductsPublicHandler from '../server-handlers/store-products-public.js';
 import vendorPasswordResetEmailHandler from '../server-handlers/vendor-password-reset-email.js';
 import vendorPinChangedEmailHandler from '../server-handlers/vendor-pin-changed-email.js';
+import activityNotificationHandler from '../server-handlers/activity-notification.js';
 
 const handlers = {
   '/admin-auth': adminAuthHandler,
@@ -33,6 +34,7 @@ const handlers = {
   '/store-products-public': storeProductsPublicHandler,
   '/vendor-password-reset-email': vendorPasswordResetEmailHandler,
   '/vendor-pin-changed-email': vendorPinChangedEmailHandler,
+  '/activity-notification': activityNotificationHandler,
   '/currency-rates': currencyRatesHandler,
   '/fetch-meta': fetchMetaHandler,
   '/paystack-webhook': paystackWebhookHandler,
