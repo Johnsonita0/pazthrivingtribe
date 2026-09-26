@@ -2167,6 +2167,10 @@ export default function App() {
           color: #3c7757 !important;
         }
 
+        .independence-day-theme .shop-product-search-input {
+          border: 3px solid #008751 !important;
+        }
+
         .independence-day-theme :is([class*="card"], [class*="panel"], [class*="tile"], [class*="surface"]):not(.hero-copy-card) {
           background-color: #ffffff !important;
           border-color: #b9dfc9 !important;

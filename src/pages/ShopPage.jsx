@@ -1505,13 +1505,15 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
             {/* Search Bar */}
             <div style={{ display: 'flex', alignItems: 'center', background: '#fff', borderRadius: '4px', overflow: 'hidden' }}>
               <input
+                className="shop-product-search-input"
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search Paz products..."
                 style={{
                   flex: 1,
-                  border: 'none',
+                  border: '3px solid #008751',
+                  borderRadius: '4px',
                   outline: 'none',
                   padding: '10px 14px',
                   fontSize: '14px',
