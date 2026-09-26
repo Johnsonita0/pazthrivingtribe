@@ -40,6 +40,167 @@ const whatsappTips = [
   'Need a warm welcome today?'
 ];
 
+const legalDocuments = {
+  privacy: {
+    id: 'paz-privacy-policy',
+    title: 'Privacy Policy',
+    introduction: 'This policy explains how Paz Thriving Tribe handles information when you visit our site, contact us, register for a service, book a session, or shop with us.',
+    sections: [
+      {
+        title: 'Information you provide',
+        paragraphs: [
+          'We may collect the details you submit, such as your name, email address, phone number, age range, booking or registration information, messages, and order details. Please share only information relevant to your request.',
+          'Payment card details are handled by the payment provider shown at checkout. We receive the transaction status and reference needed to manage your order, not your full card credentials.'
+        ]
+      },
+      {
+        title: 'How we use information',
+        paragraphs: ['We use information to respond to enquiries, arrange coaching and mentoring services, manage applications and orders, provide support, maintain site security, and improve our services. We do not sell personal information.']
+      },
+      {
+        title: 'Confidentiality and young people',
+        paragraphs: ['Coaching and counselling enquiries are handled with care and shared only where needed to deliver the requested service, with your permission, or where disclosure is required for safeguarding or by law. For children and teenagers, a parent or guardian may need to participate in registration and service decisions.']
+      },
+      {
+        title: 'Service providers and links',
+        paragraphs: ['We may use trusted providers for hosting, secure data storage, communications, and payment processing. They receive only the information needed to perform those services and are subject to their own privacy terms. Links to other organisations are governed by those organisations’ policies.']
+      },
+      {
+        title: 'Cookies and device information',
+        paragraphs: ['The site may use essential browser storage and technical information to remember preferences, keep services working, protect against misuse, and understand basic site performance. You can manage cookies through your browser settings; some site functions may then be limited.']
+      },
+      {
+        title: 'Storage, security, and your choices',
+        paragraphs: ['We keep information only as long as reasonably needed for the service, operational records, safety, and legal obligations. We use reasonable safeguards, but no internet transmission or storage method can be guaranteed completely secure.', 'You may ask to access, correct, or delete information you provided, subject to legal and operational requirements. Contact us at pazthrivingtribe@gmail.com and tell us how we can help.']
+      },
+      {
+        title: 'Updates',
+        paragraphs: ['We may update this policy when our services or obligations change. The current version will be published on this page.']
+      }
+    ]
+  },
+  terms: {
+    id: 'paz-system-terms',
+    title: 'System Terms',
+    introduction: 'These terms apply when you use the Paz Thriving Tribe website, request a service, book a session, create an account, or place an order.',
+    sections: [
+      {
+        title: 'Using the site',
+        paragraphs: ['Please provide accurate information, keep account credentials private, and use the site lawfully. You are responsible for activity carried out through an account you control. We may restrict access where needed to protect people, services, or site security.']
+      },
+      {
+        title: 'Coaching, counselling, and mentoring',
+        paragraphs: ['Services are arranged according to the description and details confirmed with you. Progress and outcomes vary by person and are not guaranteed. Unless a specific clinical service is expressly agreed with a suitably qualified provider, site information and coaching are not a substitute for medical, mental-health, legal, or emergency care. If someone is in immediate danger, contact local emergency services.']
+      },
+      {
+        title: 'Children and teenagers',
+        paragraphs: ['A parent or legal guardian must be involved where required for a person under 18 to register, book, consent, or make payment. We may request guardian details to support safe and appropriate service delivery.']
+      },
+      {
+        title: 'Bookings, fees, and changes',
+        paragraphs: ['Any fee, payment schedule, cancellation window, or rescheduling condition shown during booking or confirmed directly with you forms part of that booking. Please contact us promptly if you need to change an appointment. If a service cannot be provided as agreed, contact us so we can discuss an appropriate resolution.']
+      },
+      {
+        title: 'Shop orders and digital items',
+        paragraphs: ['Prices, descriptions, availability, and delivery or access details are shown with the relevant product. An order is subject to confirmation and successful payment where applicable. Digital materials are for personal use unless a separate licence says otherwise; do not copy, redistribute, or resell them without permission.']
+      },
+      {
+        title: 'Content and third-party services',
+        paragraphs: ['Website text, branding, and original materials belong to Paz Thriving Tribe or their respective owners. Payment, communication, and linked services may be supplied by third parties and are also subject to those providers’ terms.']
+      },
+      {
+        title: 'Availability and responsibility',
+        paragraphs: ['We work to keep the site accurate and available, but features may change or be temporarily unavailable. To the extent permitted by applicable law, the site is provided without a guarantee that every service will be uninterrupted or suitable for every purpose. Nothing in these terms limits rights that cannot legally be limited.']
+      },
+      {
+        title: 'Questions or updates',
+        paragraphs: ['For questions about these terms or a booking or order, contact pazthrivingtribe@gmail.com. We may revise these terms and will publish the current version on this page.']
+      }
+    ]
+  }
+};
+
+function LegalDocumentModal({ policy, onClose }) {
+  const panelRef = useRef(null);
+
+  useEffect(() => {
+    const previousFocus = document.activeElement;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    panelRef.current?.querySelector('button')?.focus();
+
+    const handleKeyDown = (event) => {
+      if (event.key !== 'Tab' || !panelRef.current) return;
+
+      const focusable = [...panelRef.current.querySelectorAll('button, a[href], [tabindex]:not([tabindex="-1"])')]
+        .filter((element) => !element.disabled);
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', handleKeyDown);
+      if (previousFocus instanceof HTMLElement) previousFocus.focus();
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="legal-modal-overlay"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose(null);
+      }}
+    >
+      <section
+        ref={panelRef}
+        className="legal-modal-panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={`${policy.id}-title`}
+        aria-describedby={`${policy.id}-intro`}
+        onKeyDown={(event) => {
+          if (event.key === 'Escape') {
+            event.stopPropagation();
+            onClose(null);
+          }
+        }}
+      >
+        <header className="legal-modal-header">
+          <div>
+            <span className="legal-modal-eyebrow">PAZ THRIVING TRIBE</span>
+            <h2 id={`${policy.id}-title`}>{policy.title}</h2>
+            <p id={`${policy.id}-intro`}>{policy.introduction}</p>
+          </div>
+          <button type="button" className="legal-modal-dismiss" aria-label="Close policy" onClick={() => onClose(null)}>
+            <i className="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        </header>
+        <div className="legal-modal-body">
+          {policy.sections.map((section) => (
+            <section className="legal-modal-section" key={section.title}>
+              <h3>{section.title}</h3>
+              {section.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+            </section>
+          ))}
+        </div>
+        <footer className="legal-modal-footer">
+          <span>Questions? pazthrivingtribe@gmail.com</span>
+          <button type="button" onClick={() => onClose(null)}>Close</button>
+        </footer>
+      </section>
+    </div>
+  );
+}
+
 function AdminTabBar({ selectedTab, onChangeTab }) {
   const adminTabs = [
     { id: 'content', label: 'Page Content' },
@@ -76,6 +237,7 @@ export default function App() {
   const [whatsappTipIndex, setWhatsappTipIndex] = useState(0);
   const [showWhatsappTip, setShowWhatsappTip] = useState(true);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [activeLegalPolicy, setActiveLegalPolicy] = useState(null);
   const [heroPopupMode, setHeroPopupMode] = useState(null); // 'register' | 'booking' | null
   const [cookieConsentAccepted, setCookieConsentAccepted] = useState(false);
   const [showCookieBanner, setShowCookieBanner] = useState(false);
@@ -3863,6 +4025,123 @@ export default function App() {
         .footer-bottom-copyright-strip p { font-size: 0.9rem; color: var(--text-muted); margin: 0; }
         .footer-regulatory-tags { display: flex; gap: 1.5rem; }
 
+        .legal-modal-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 30000;
+          display: grid;
+          place-items: center;
+          padding: 1rem;
+          background: rgba(9, 25, 17, 0.66);
+          backdrop-filter: blur(3px);
+        }
+        .legal-modal-panel {
+          display: flex;
+          flex-direction: column;
+          width: min(760px, 100%);
+          max-height: min(88svh, 900px);
+          overflow: hidden;
+          border: 1px solid var(--border-color);
+          border-radius: 10px;
+          background: #ffffff;
+          color: #25352d;
+          box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+        }
+        .legal-modal-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 1rem;
+          padding: 1.5rem 1.6rem 1.2rem;
+          border-bottom: 1px solid #d9e8df;
+          background: #ffffff;
+        }
+        .legal-modal-eyebrow {
+          color: #008751;
+          font-size: 0.72rem;
+          font-weight: 800;
+          text-transform: uppercase;
+        }
+        .legal-modal-header h2 {
+          margin: 0.35rem 0;
+          color: #174a30;
+          font-size: 1.65rem;
+          line-height: 1.2;
+        }
+        .legal-modal-header p {
+          max-width: 62ch;
+          margin: 0;
+          color: #52665a;
+          font-size: 0.93rem;
+          line-height: 1.55;
+        }
+        .legal-modal-dismiss {
+          flex: 0 0 40px;
+          width: 40px;
+          height: 40px;
+          display: grid;
+          place-items: center;
+          border: 1px solid #b9dfc9;
+          border-radius: 50%;
+          background: #008751;
+          color: #ffffff;
+          cursor: pointer;
+        }
+        .legal-modal-body {
+          min-height: 0;
+          overflow-y: auto;
+          padding: 0.25rem 1.6rem;
+          overscroll-behavior: contain;
+        }
+        .legal-modal-section {
+          padding: 1rem 0;
+          border-bottom: 1px solid #e4eee8;
+        }
+        .legal-modal-section:last-child { border-bottom: 0; }
+        .legal-modal-section h3 {
+          margin: 0 0 0.45rem;
+          color: #174a30;
+          font-size: 1rem;
+        }
+        .legal-modal-section p {
+          margin: 0 0 0.55rem;
+          color: #42554a;
+          font-size: 0.9rem;
+          line-height: 1.65;
+        }
+        .legal-modal-section p:last-child { margin-bottom: 0; }
+        .legal-modal-footer {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 1rem;
+          padding: 0.9rem 1.6rem;
+          border-top: 1px solid #d9e8df;
+          background: #f7fbf8;
+          color: #52665a;
+          font-size: 0.82rem;
+        }
+        .legal-modal-footer button {
+          padding: 0.6rem 1rem;
+          border: 1px solid #006b40;
+          border-radius: 5px;
+          background: #008751;
+          color: #ffffff;
+          font-weight: 700;
+          cursor: pointer;
+        }
+        @media (max-width: 600px) {
+          .legal-modal-overlay { padding: 0.5rem; }
+          .legal-modal-panel { max-height: 90svh; }
+          .legal-modal-header { padding: 1rem 1rem 0.85rem; }
+          .legal-modal-header h2 { font-size: 1.35rem; }
+          .legal-modal-header p { font-size: 0.86rem; }
+          .legal-modal-body { padding: 0 1rem; }
+          .legal-modal-section { padding: 0.85rem 0; }
+          .legal-modal-section p { font-size: 0.86rem; }
+          .legal-modal-footer { align-items: flex-start; padding: 0.8rem 1rem; }
+        }
+
         /* Secure Dashboard Context Panels */
         .portal-workspace-grid { display: grid; grid-template-columns: 300px 1fr; height: 100vh; background-color: var(--bg-main); width: 100% !important; }
         .portal-sidebar-panel { background-color: var(--bg-card); border-right: 1px solid var(--border-color); padding: 2rem 1.5rem; display: flex; flex-direction: column; gap: 1.5rem; overflow-y: auto; }
@@ -5172,11 +5451,14 @@ export default function App() {
           <div className="footer-bottom-copyright-strip">
             <p>&copy; 2026 Paz Thriving Tribe.</p>
             <div className="footer-regulatory-tags">
-              <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Privacy</span>
-              <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>System Terms</span>
+              <button type="button" className="footer-nav-anchor" onClick={() => setActiveLegalPolicy('privacy')}>Privacy</button>
+              <button type="button" className="footer-nav-anchor" onClick={() => setActiveLegalPolicy('terms')}>System Terms</button>
             </div>
           </div>
         </footer>
+        )}
+        {activeLegalPolicy && (
+          <LegalDocumentModal policy={legalDocuments[activeLegalPolicy]} onClose={setActiveLegalPolicy} />
         )}
       </div>
     </>
