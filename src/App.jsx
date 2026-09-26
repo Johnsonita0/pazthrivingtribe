@@ -916,7 +916,10 @@ export default function App() {
   }, []);
 
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const scrollTarget = document.body.scrollTop > document.documentElement.scrollTop
+      ? document.body
+      : document.documentElement;
+    scrollTarget.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
   };
 
   const handleRouteTopNavigation = () => {
@@ -4065,8 +4068,18 @@ export default function App() {
           .platform-badge-nav { width: 100%; justify-content: center; }
           .social-news-broadcast-anchor-card { padding: 1.35rem; }
           .workspace-fluid-footer { padding: 3rem 1rem 1.5rem; margin-top: 3rem; }
-          .footer-bottom-copyright-strip { align-items: flex-start; }
-          .footer-regulatory-tags { flex-wrap: wrap; gap: 0.8rem; }
+          .workspace-fluid-footer,
+          .footer-columns-container,
+          .footer-brand-column,
+          .footer-links-column,
+          .footer-interactive-links { align-items: center; text-align: center; }
+          .footer-columns-container { justify-items: center; }
+          .footer-brand-logo-row { justify-content: center; }
+          .footer-social-links { justify-content: center; }
+          .footer-interactive-links { width: 100%; }
+          .footer-nav-anchor { text-align: center; }
+          .footer-bottom-copyright-strip { align-items: center; text-align: center; }
+          .footer-regulatory-tags { flex-wrap: wrap; justify-content: center; gap: 0.8rem; }
           .portal-workspace-header { flex-direction: column; align-items: flex-start; }
           .portal-workspace-body-content { padding: 1rem; }
           .dashboard-editor-card { padding: 1.25rem; }
