@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 450" fill="none">
+  <defs>
+    <clipPath id="flag-shape">
+      <path d="M52 62 670 20v348L52 410V62Z"/>
+    </clipPath>
+    <linearGradient id="cloth-shade" x1="58" y1="44" x2="640" y2="365" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fff" stop-opacity=".18"/>
+      <stop offset=".5" stop-color="#001b0f" stop-opacity=".1"/>
+      <stop offset="1" stop-color="#fff" stop-opacity=".16"/>
+    </linearGradient>
+  </defs>
+  <path d="M46 42v378" stroke="#e9ecea" stroke-width="12" stroke-linecap="round"/>
+  <g clip-path="url(#flag-shape)">
+    <path fill="#008751" d="M0 0h720v450H0z"/>
+    <path fill="#fff" d="M240 0h240v450H240z"/>
+    <path fill="url(#cloth-shade)" d="M0 0h720v450H0z"/>
+    <path d="M70 112c177-37 368-39 626-67M70 266c192-39 386-41 626-68" stroke="#fff" stroke-opacity=".11" stroke-width="12"/>
+    <path d="M70 188c174-34 369-37 626-65M70 340c196-34 390-39 626-66" stroke="#00391f" stroke-opacity=".1" stroke-width="10"/>
+  </g>
+</svg>

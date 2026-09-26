@@ -17,6 +17,19 @@ import CustomerSupportChat from './components/CustomerSupportChat';
 import PaystackCallbackPage from './pages/PaystackCallbackPage';
 import CustomDropdown from './components/CustomDropdown';
 import { notifyAdminActivity } from './utils/notifyAdminActivity';
+import { getIndependenceDaySlides } from './utils/independenceDaySlides';
+import confetti from 'canvas-confetti';
+
+const getNigeriaDateInfo = () => {
+  const dateParts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Africa/Lagos',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric'
+  }).formatToParts(new Date());
+  const dateInfo = Object.fromEntries(dateParts.map(({ type, value }) => [type, Number(value)]));
+  return { year: dateInfo.year, month: dateInfo.month, day: dateInfo.day };
+};
 
 const whatsappTips = [
   'Need help today?',
@@ -57,6 +70,8 @@ function AdminTabBar({ selectedTab, onChangeTab }) {
 // MAIN UNIFIED APPLICATION WITH DEDICATED SERVICE PAGES & INTAKE FORMS
 // =========================================================================
 export default function App() {
+  const [nigeriaDate, setNigeriaDate] = useState(getNigeriaDateInfo);
+  const independenceAnniversary = nigeriaDate.year - 1960;
   const [navOpen, setNavOpen] = useState(false);
   const [whatsappTipIndex, setWhatsappTipIndex] = useState(0);
   const [showWhatsappTip, setShowWhatsappTip] = useState(true);
@@ -74,12 +89,101 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
+  const isIndependencePreview = new URLSearchParams(location.search).get('independencePreview') === '1';
+  const isIndependenceDay = (nigeriaDate.month === 10 && nigeriaDate.day === 1) || isIndependencePreview;
+  const withIndependencePreview = (path) => isIndependencePreview
+    ? `${path}${path.includes('?') ? '&' : '?'}independencePreview=1`
+    : path;
+  const independenceNavStyle = isIndependenceDay
+    ? { background: '#008751', borderColor: '#006b40', color: '#ffffff', transition: 'none' }
+    : undefined;
   const isRegistrationRoute = ['/teens_reg', '/teens-reg'].includes(location.pathname);
   const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/dashboard');
   const isVendorRoute = location.pathname === '/vendor';
   const isFeedbackRoute = location.pathname === '/feedback';
   const isStoreRoute = ['/store', '/shop'].includes(location.pathname) || location.pathname.startsWith('/store/') || location.pathname.startsWith('/shop/');
   const isShopMenuActive = isStoreRoute;
+
+  useEffect(() => {
+    const dateRefresh = window.setInterval(() => {
+      const nextDate = getNigeriaDateInfo();
+      setNigeriaDate((currentDate) => (
+        currentDate.year === nextDate.year && currentDate.month === nextDate.month && currentDate.day === nextDate.day
+          ? currentDate
+          : nextDate
+      ));
+    }, 15000);
+    return () => window.clearInterval(dateRefresh);
+  }, []);
+
+  useEffect(() => {
+    if (!isIndependenceDay || initialLoading || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+
+    const flagShape = confetti.shapeFromText({ text: '🇳🇬', scalar: 1.5 });
+    const anniversaryShape = confetti.shapeFromText({ text: `9JA@${independenceAnniversary}`, scalar: 1.8 });
+    const launchRegularFireworks = () => {
+      const origin = { x: 0.12 + Math.random() * 0.76, y: 0.5 + Math.random() * 0.2 };
+      confetti({
+        particleCount: 36,
+        spread: 360,
+        startVelocity: 34,
+        gravity: 0.8,
+        ticks: 150,
+        origin,
+        colors: ['#008751', '#ffffff'],
+        shapes: [flagShape],
+        scalar: 1.4,
+        disableForReducedMotion: true
+      });
+      confetti({
+        particleCount: 1,
+        spread: 70,
+        startVelocity: 26,
+        gravity: 0.8,
+        ticks: 150,
+        origin: { x: origin.x, y: Math.max(0.25, origin.y - 0.18) },
+        colors: ['#008751', '#ffffff'],
+        shapes: [anniversaryShape],
+        scalar: 1.25,
+        flat: true,
+        disableForReducedMotion: true
+      });
+    };
+
+    const launchOpeningFireworks = () => {
+      [0.18, 0.5, 0.82].forEach((x, index) => {
+        confetti({
+          particleCount: 48,
+          spread: 360,
+          startVelocity: 48,
+          gravity: 0.72,
+          ticks: 190,
+          origin: { x, y: index === 1 ? 0.42 : 0.54 },
+          colors: ['#008751', '#ffffff'],
+          shapes: [flagShape],
+          scalar: 1.7,
+          disableForReducedMotion: true
+        });
+      });
+      confetti({
+        particleCount: 2,
+        spread: 100,
+        startVelocity: 32,
+        gravity: 0.7,
+        ticks: 190,
+        origin: { x: 0.5, y: 0.34 },
+        colors: ['#008751', '#ffffff'],
+        shapes: [anniversaryShape],
+        scalar: 1.55,
+        flat: true,
+        disableForReducedMotion: true
+      });
+    };
+
+    launchOpeningFireworks();
+    const fireworksInterval = window.setInterval(launchRegularFireworks, 8000);
+    return () => window.clearInterval(fireworksInterval);
+  }, [isIndependenceDay, initialLoading, independenceAnniversary]);
 
   const verifyAdminAccess = async (currentSession) => {
     if (!currentSession?.access_token) {
@@ -329,7 +433,15 @@ export default function App() {
     }
   ];
 
-  const homeSlides = [
+  const homeSlides = isIndependenceDay ? getIndependenceDaySlides(independenceAnniversary).map((slide) => ({
+    title: slide.title,
+    subtitle: slide.tagline,
+    eyebrow: slide.eyebrow,
+    image: slide.image,
+    imageAlt: slide.imageAlt,
+    slideClassName: 'hero-independence-day-bg',
+    independenceDay: true
+  })) : [
     {
       title: "Paz Thriving Tribe",
       subtitle: "Coaching, Mentoring and Counselling Organization.",
@@ -704,9 +816,9 @@ export default function App() {
   }, [initialLoading]);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setInitialLoading(false), 4200);
+    const timer = window.setTimeout(() => setInitialLoading(false), isIndependenceDay ? 5000 : 4200);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [isIndependenceDay]);
 
   // --- Auto-Slide Interval Loops on homepage bannerHeroSlider---
 
@@ -786,12 +898,21 @@ export default function App() {
 
   useEffect(() => {
     const handleScroll = () => {
-      setShowScrollTop(window.scrollY > 280);
+      const scrollTop = Math.max(window.scrollY, document.documentElement.scrollTop, document.body.scrollTop);
+      setShowScrollTop(scrollTop > 0);
     };
 
     handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    document.addEventListener('scroll', handleScroll, { capture: true, passive: true });
+    document.body.addEventListener('scroll', handleScroll, { passive: true });
+    document.documentElement.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('scroll', handleScroll, true);
+      document.body.removeEventListener('scroll', handleScroll);
+      document.documentElement.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   const scrollToTop = () => {
@@ -1797,6 +1918,227 @@ export default function App() {
           --shadow-lg: 0 12px 34px rgba(17, 98, 70, 0.12);
         }
 
+        html:has(.independence-day-theme),
+        body:has(.independence-day-theme) {
+          background: #ffffff !important;
+          color: #075b35 !important;
+        }
+
+        .independence-day-theme {
+          --logo-bg: #ffffff;
+          --logo-surface: #ffffff;
+          --logo-surface-soft: #f1faf5;
+          --logo-border: #b9dfc9;
+          --logo-text: #075b35;
+          --logo-text-soft: #3c7757;
+          --logo-green: #008751;
+          --logo-green-deep: #006b40;
+          --bg-main: #ffffff;
+          --bg-card: #ffffff;
+          --bg-nav: rgba(255, 255, 255, 0.97);
+          --bg-input: #f5fbf7;
+          --border-color: #b9dfc9;
+          --text-primary: #075b35;
+          --text-muted: #3c7757;
+          --brand-green: #008751;
+          --brand-green-hover: #006b40;
+          --brand-blue: #008751;
+          --accent-green: #008751;
+          --brand-peach: #008751;
+          --brand-gold: #d9f0e2;
+          --brand-teal: #008751;
+          color: #075b35;
+          background: #ffffff;
+        }
+
+        .independence-day-theme :is(h1, h2, h3, h4, h5, h6, p, li, label, a, small, strong) {
+          color: #075b35;
+        }
+
+        .independence-day-theme button,
+        .independence-day-theme [role="button"] {
+          background: #008751 !important;
+          border-color: #008751 !important;
+          color: #ffffff !important;
+        }
+
+        .independence-day-theme :is(button, [role="button"]) *,
+        .independence-day-theme :is(.nav-shop-link, .nav-cta-link, .nav-navigation-links .nav-link-item, .floating-action-trigger) * {
+          color: #ffffff !important;
+        }
+
+        .independence-day-theme .workspace-fluid-footer {
+          background: #008751 !important;
+          border-color: rgba(255, 255, 255, 0.55) !important;
+          color: #ffffff !important;
+        }
+
+        .independence-day-theme .workspace-fluid-footer :is(h1, h2, h3, h4, h5, h6, p, a, span, strong, small, i) {
+          color: #ffffff !important;
+        }
+
+        .independence-day-theme .workspace-fluid-footer .footer-columns-container {
+          border-bottom-color: rgba(255, 255, 255, 0.5) !important;
+        }
+
+        .independence-day-theme .workspace-fluid-footer .footer-vector-badge,
+        .independence-day-theme .workspace-fluid-footer .footer-social-icon {
+          background: #ffffff !important;
+          border-color: #ffffff !important;
+          color: #008751 !important;
+        }
+
+        .independence-day-theme .workspace-fluid-footer .footer-social-icon :is(i, span) {
+          color: #008751 !important;
+        }
+
+        .independence-day-theme :is(input, textarea, select) {
+          background-color: #f5fbf7 !important;
+          border-color: #b9dfc9 !important;
+          color: #075b35 !important;
+        }
+
+        .independence-day-theme :is(input, textarea, select)::placeholder {
+          color: #3c7757 !important;
+        }
+
+        .independence-day-theme :is([class*="card"], [class*="panel"], [class*="tile"], [class*="surface"]):not(.hero-copy-card) {
+          background-color: #ffffff !important;
+          border-color: #b9dfc9 !important;
+        }
+
+        .independence-day-theme .public-navbar {
+          background: rgba(255, 255, 255, 0.97) !important;
+          border-bottom-color: #b9dfc9 !important;
+        }
+
+        .independence-day-theme .public-navbar :is(.nav-shop-link, .nav-cta-link, .nav-menu-toggle, .nav-navigation-links .nav-link-item) {
+          background: #008751 !important;
+          border: 1px solid #006b40 !important;
+          color: #ffffff !important;
+        }
+
+        .independence-day-theme .public-navbar .nav-shop-link.active {
+          background: #008751 !important;
+          border-color: #006b40 !important;
+          color: #ffffff !important;
+        }
+
+        .independence-day-theme .public-navbar .nav-logo-brand-zone {
+          background: transparent !important;
+          color: #075b35 !important;
+        }
+
+        .independence-day-theme .floating-action-trigger,
+        .independence-day-theme .scroll-to-top-btn {
+          background-color: #008751 !important;
+          border: 2px solid #ffffff !important;
+          color: #ffffff !important;
+          outline: 1px solid #ffffff;
+          outline-offset: 2px;
+        }
+
+        .independence-day-theme .public-website-container > div,
+        .independence-day-theme .shop-page-shell > div {
+          background: #ffffff !important;
+          color: #075b35 !important;
+        }
+
+        .independence-day-theme .shop-page-shell > div > header {
+          background: #f1faf5 !important;
+          border-bottom: 1px solid #b9dfc9 !important;
+          color: #075b35 !important;
+        }
+
+        .independence-day-theme .store-page-canvas {
+          background: #ffffff !important;
+        }
+
+        .independence-day-theme .shop-promotional-board :is(span, strong) {
+          color: #ffffff !important;
+        }
+
+        .independence-day-theme :is(.store-hero-title, .store-hero-text, .store-hero-kicker, .store-hero-subline) {
+          color: #ffffff !important;
+        }
+
+        .independence-day-theme .independence-story-carousel .independence-story-copy :is(h1, h2, h3, h4, h5, h6, p, span, strong, a) {
+          color: #ffffff !important;
+        }
+
+        .independence-day-theme .hero-independence-day-bg::before {
+          background: linear-gradient(90deg, rgba(0, 70, 40, 0.72), rgba(0, 135, 81, 0.38), rgba(0, 70, 40, 0.72));
+        }
+
+        .independence-day-theme .hero-independence-day-bg + .hero-overlay .hero-copy-card h1,
+        .independence-day-theme .hero-independence-day-bg + .hero-overlay .hero-copy-card p {
+          color: #ffffff !important;
+        }
+
+        .hero-independence-day-kicker {
+          display: block;
+          margin-bottom: 0.9rem;
+          color: #d8f3e2;
+          font-size: 0.8rem;
+          font-weight: 900;
+          text-transform: uppercase;
+        }
+
+        .independence-day-ribbon {
+          position: fixed;
+          z-index: 1100;
+          top: 78px;
+          left: 50%;
+          transform: translateX(-50%);
+          max-width: calc(100vw - 24px);
+          padding: 0.55rem 0.9rem;
+          border: 1px solid #b9dfc9;
+          border-radius: 999px;
+          background: #ffffff;
+          color: #075b35;
+          box-shadow: 0 5px 18px rgba(0, 80, 45, 0.16);
+          font-size: 0.9rem;
+          font-weight: 800;
+          text-align: center;
+          white-space: nowrap;
+          pointer-events: none;
+        }
+
+        @media (max-width: 520px) {
+          .independence-day-ribbon { top: 70px; font-size: 0.75rem; }
+        }
+
+        .independence-day-flag-flight-layer {
+          position: fixed;
+          z-index: 1005;
+          inset: 0;
+          overflow: hidden;
+          pointer-events: none;
+        }
+
+        .independence-day-flag-flight {
+          position: absolute;
+          left: -90px;
+          width: clamp(40px, 5vw, 66px);
+          height: auto;
+          filter: drop-shadow(0 4px 6px rgba(0, 45, 25, 0.24));
+          animation: independenceFlagFly 21s linear infinite;
+          animation-delay: var(--flag-delay);
+        }
+
+        .independence-day-flag-flight:nth-child(1) { top: 19%; --flag-delay: -2s; }
+        .independence-day-flag-flight:nth-child(2) { top: 43%; --flag-delay: -9s; width: clamp(34px, 4vw, 54px); }
+        .independence-day-flag-flight:nth-child(3) { top: 70%; --flag-delay: -15s; width: clamp(38px, 4.5vw, 60px); }
+
+        @keyframes independenceFlagFly {
+          from { transform: translateX(0) rotate(-8deg); }
+          to { transform: translateX(calc(100vw + 180px)) rotate(8deg); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .independence-day-flag-flight-layer { display: none; }
+        }
+
         html, body, #root, .full-view-app-root-override {
           margin: 0 !important;
           padding: 0 !important;
@@ -1840,6 +2182,78 @@ export default function App() {
           box-shadow: 0 20px 40px rgba(0,0,0,0.2);
           animation: app-logo-spin 0.95s linear infinite;
           background: transparent;
+        }
+
+        .independence-day-preloader {
+          background: #ffffff;
+          color: #075b35;
+        }
+
+        .independence-day-preloader .app-preloader-box {
+          background: #ffffff;
+          border-color: #b9dfc9;
+          box-shadow: 0 18px 48px rgba(0, 80, 45, 0.12);
+        }
+
+        .independence-day-preloader-flag {
+          width: min(190px, 52vw);
+          height: 132px;
+          position: relative;
+          display: flex;
+          align-items: stretch;
+          perspective: 520px;
+          filter: drop-shadow(0 12px 18px rgba(0, 65, 35, 0.18));
+        }
+
+        .independence-day-preloader-flag::before {
+          content: '';
+          position: absolute;
+          z-index: 2;
+          top: -4px;
+          bottom: -4px;
+          left: 0;
+          width: 5px;
+          border-radius: 4px;
+          background: linear-gradient(90deg, #a7b5ae, #f7faf8 55%, #7f8c85);
+        }
+
+        .independence-day-preloader-cloth {
+          position: absolute;
+          inset: 8px 0 8px 5px;
+          display: flex;
+          overflow: hidden;
+          transform-style: preserve-3d;
+          clip-path: polygon(0 0, 100% 4%, 100% 96%, 0 100%);
+        }
+
+        .independence-day-preloader-cloth-segment {
+          position: relative;
+          flex: 1 1 0;
+          min-width: 0;
+          background-image: linear-gradient(90deg, #008751 0 33.333%, #ffffff 33.333% 66.666%, #008751 66.666% 100%);
+          background-size: 1200% 100%;
+          background-position-x: var(--segment-position);
+          transform-origin: left center;
+          animation: independenceFlagClothWave 1.55s ease-in-out infinite;
+          animation-delay: var(--wave-delay);
+        }
+
+        .independence-day-preloader-cloth-segment::after {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(90deg, rgba(255,255,255,0.18), transparent 45%, rgba(0,33,18,0.25));
+          pointer-events: none;
+        }
+
+        @keyframes independenceFlagClothWave {
+          0%, 100% { transform: rotateY(0deg) skewY(0deg) translateY(0); filter: brightness(1); }
+          50% { transform: rotateY(-12deg) skewY(-3deg) translateY(2px); filter: brightness(0.78); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .independence-day-preloader-flag { animation: none; }
+          .independence-day-preloader-cloth-segment { animation: none; }
         }
 
         /* keep spinner CSS in case we want it later */
@@ -3703,14 +4117,27 @@ export default function App() {
       `}</style>
 
       {initialLoading && (
-        <div className="app-preloader-overlay" role="alert" aria-busy="true">
+        <div className={`app-preloader-overlay ${isIndependenceDay ? 'independence-day-preloader' : ''}`} role="alert" aria-busy="true">
           <div className="app-preloader-box">
-            <img
-              src="/logo/logomain.png"
-              alt="Paz Thriving Tribe logo"
-              className="app-preloader-logo"
-            />
-            <p style={{ margin: 0, fontSize: '0.95rem', lineHeight: '1.6' }}>Preparing your Paz Thriving Tribe experience...</p>
+            {isIndependenceDay ? (
+              <div className="independence-day-preloader-flag" role="img" aria-label="Nigerian flag waving">
+                <div className="independence-day-preloader-cloth">
+                  {Array.from({ length: 12 }, (_, index) => (
+                    <span
+                      key={index}
+                      className="independence-day-preloader-cloth-segment"
+                      style={{
+                        '--segment-position': `${(index / 11) * 100}%`,
+                        '--wave-delay': `${-index * 0.075}s`
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <img src="/logo/logomain.png" alt="Paz Thriving Tribe logo" className="app-preloader-logo" />
+            )}
+            <p style={{ margin: 0, fontSize: '0.95rem', lineHeight: '1.6' }}>{isIndependenceDay ? `Celebrating Nigeria · 9JA@${independenceAnniversary}` : 'Preparing your Paz Thriving Tribe experience...'}</p>
           </div>
         </div>
       )}
@@ -3748,7 +4175,17 @@ export default function App() {
         </div>
       )}
 
-      <div className={`full-view-app-root-override ${isVendorRoute ? 'vendor-route-root' : ''}`}>
+      <div className={`full-view-app-root-override ${isVendorRoute ? 'vendor-route-root' : ''} ${isIndependenceDay ? 'independence-day-theme' : ''}`}>
+        {isIndependenceDay && (
+          <>
+            <div className="independence-day-ribbon" role="status" aria-live="polite">
+              🇳🇬 NIGERIA INDEPENDENCE DAY · NAIJA @{independenceAnniversary} 🇳🇬
+            </div>
+            <div className="independence-day-flag-flight-layer" aria-hidden="true">
+              {[0, 1, 2].map((flag) => <img key={flag} className="independence-day-flag-flight" src="/image/nigeria-independence-flag.svg" alt="" />)}
+            </div>
+          </>
+        )}
         <button
           type="button"
           className={`scroll-to-top-btn ${showScrollTop ? 'visible' : ''}`}
@@ -3779,40 +4216,40 @@ export default function App() {
         {/* STICKY HEADER NAVIGATION BAR (shared across site and admin pages on mobile) */}
         {!initialLoading && !isVendorRoute && (
           <header className="public-navbar">
-          <Link to="/" className="nav-logo-brand-zone" onClick={() => { setNavOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+          <Link to={withIndependencePreview('/')} className="nav-logo-brand-zone" onClick={() => { setNavOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
             <img src="/logo/logomain.png" alt="Paz Thriving Tribe logo" className="nav-logo-img" />
             <div className="nav-brand-name">Paz Thriving Tribe</div>
           </Link>
           <div className="nav-right-cluster">
             {!isAdminRoute && (
-              <Link to="/store" className={`nav-shop-link ${isShopMenuActive ? 'active' : ''}`} onClick={() => setNavOpen(false)}>
+              <Link to={withIndependencePreview('/store')} className={`nav-shop-link ${isShopMenuActive ? 'active' : ''}`} style={independenceNavStyle} onClick={() => setNavOpen(false)}>
                 <i className="fa-solid fa-bag-shopping"></i> Shop
               </Link>
             )}
             {!isAdminRoute && (
               <div className="nav-cta-group">
-                <Link to="/teens_reg" className="nav-cta-link" onClick={() => setNavOpen(false)}>
+                <Link to="/teens_reg" className="nav-cta-link" style={independenceNavStyle} onClick={() => setNavOpen(false)}>
                   <i className="fa-solid fa-user-plus" aria-hidden="true"></i>
                   <span>Apply</span>
                 </Link>
-                <Link to="/vendor" className="nav-cta-link vendor-nav-link" onClick={() => setNavOpen(false)} aria-label="Register as a vendor" title="Register as a vendor">
+                <Link to={withIndependencePreview('/vendor')} className="nav-cta-link vendor-nav-link" style={independenceNavStyle} onClick={() => setNavOpen(false)} aria-label="Register as a vendor" title="Register as a vendor">
                   <i className="fa-solid fa-store" aria-hidden="true"></i>
                   <span>Vendor</span>
                 </Link>
-                <Link to="/book-session" className="nav-cta-link secondary" onClick={() => setNavOpen(false)}>
+                <Link to="/book-session" className="nav-cta-link secondary" style={independenceNavStyle} onClick={() => setNavOpen(false)}>
                   <i className="fa-solid fa-calendar-check" aria-hidden="true"></i>
                   <span>Book</span>
                 </Link>
               </div>
             )}
-            <button className="nav-menu-toggle" onClick={() => setNavOpen((current) => !current)} aria-label="Toggle navigation menu">
+            <button className="nav-menu-toggle" style={independenceNavStyle} onClick={() => setNavOpen((current) => !current)} aria-label="Toggle navigation menu">
               <i className={navOpen ? 'fa-solid fa-xmark' : 'fa-solid fa-bars'}></i>
             </button>
           </div>
           <nav className={`nav-navigation-links ${navOpen ? 'mobile-open' : ''}`}>
             {!isAdminRoute && (
               <>
-                <Link to="/" className="nav-link-item" onClick={() => { setNavOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+                <Link to={withIndependencePreview('/')} className="nav-link-item" style={independenceNavStyle} onClick={() => { setNavOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
                   <i className="fa-solid fa-house"></i> Home
                 </Link>
                 <Link to="/care-counseling" className="nav-link-item" onClick={() => setNavOpen(false)}>
@@ -3858,11 +4295,13 @@ export default function App() {
               <div className="public-website-container">
                 <section className="hero-section">
                   {(() => {
-                    const currentSlide = homeSlides[currentHomeSlide];
+                    const currentSlide = homeSlides[currentHomeSlide] || homeSlides[0];
                     return (
                       <>
                         <div
                           className={`hero-slide-bg ${currentSlide.imageType === 'contain' ? 'hero-bg-contain' : ''} ${currentSlide.imageType === 'bottom' ? 'hero-slide-bottom' : ''} ${currentSlide.slideClassName || ''}`}
+                          role={currentSlide.independenceDay ? 'img' : undefined}
+                          aria-label={currentSlide.independenceDay ? currentSlide.imageAlt : undefined}
                           style={{
                             backgroundImage: currentSlide.imageType === 'contain' ? 'none' : `url(${currentSlide.image})`,
                             backgroundSize: currentSlide.imageType === 'logo' ? 'contain' : 'cover',
@@ -3880,13 +4319,16 @@ export default function App() {
                         {currentSlide.imageType !== 'contain' && (
                           <div className="hero-overlay" key={currentHomeSlide}>
                             <div className="hero-copy-card">
+                              {currentSlide.independenceDay && <span className="hero-independence-day-kicker">{currentSlide.eyebrow} · NAIJA @{independenceAnniversary}</span>}
                               <h1>{currentSlide.title}</h1>
                               <p>{currentSlide.subtitle}</p>
                               <div className="hero-action-row">
                                 <button
                                   className="hero-scroll-btn"
                                   onClick={() => {
-                                    const actionPath = currentSlide.title === 'Structured Teens Development Program'
+                                    const actionPath = currentSlide.independenceDay
+                                      ? (isIndependencePreview ? '/store?independencePreview=1' : '/store')
+                                      : currentSlide.title === 'Structured Teens Development Program'
                                       ? '/teens_reg'
                                       : currentSlide.title === 'Share Your Feedback'
                                         ? '/feedback'
@@ -3894,8 +4336,8 @@ export default function App() {
                                     navigate(actionPath);
                                   }}
                                 >
-                                  {currentSlide.title === 'Structured Teens Development Program' ? 'Apply Now' : currentSlide.title === 'Share Your Feedback' ? 'Take the Survey' : ((currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? 'Book Now' : 'Register Now')}
-                                  <i className={currentSlide.title === 'Structured Teens Development Program' ? 'fa-solid fa-pen-to-square' : currentSlide.title === 'Share Your Feedback' ? 'fa-solid fa-comment-dots' : ((currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? 'fa-solid fa-calendar-check' : 'fa-solid fa-user-plus')}></i>
+                                  {currentSlide.independenceDay ? 'Explore the story' : currentSlide.title === 'Structured Teens Development Program' ? 'Apply Now' : currentSlide.title === 'Share Your Feedback' ? 'Take the Survey' : ((currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? 'Book Now' : 'Register Now')}
+                                  <i className={currentSlide.independenceDay ? 'fa-solid fa-arrow-right' : currentSlide.title === 'Structured Teens Development Program' ? 'fa-solid fa-pen-to-square' : currentSlide.title === 'Share Your Feedback' ? 'fa-solid fa-comment-dots' : ((currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? 'fa-solid fa-calendar-check' : 'fa-solid fa-user-plus')}></i>
                                 </button>
                               </div>
                             </div>
@@ -4329,9 +4771,9 @@ export default function App() {
           <Route path="/teens-reg" element={<TeensRegistrationPage paystackPublicKey={paystackPublicKey} />} />
           <Route path="/book-session" element={<BookSessionPage paystackPublicKey={paystackPublicKey} />} />
           <Route path="/feedback" element={<FeedbackPage />} />
-          <Route path="/store" element={<div className="public-website-container"><StorePage /></div>} />
-          <Route path="/shop" element={<div className="public-website-container shop-page-shell" style={{ paddingTop: '72px' }}><ShopPage onOrderSubmitted={setShopOrders} paystackPublicKey={paystackPublicKey} storeProducts={storeProducts} storeBankAccount={storeBankAccount} /></div>} />
-          <Route path="/shop/:productName" element={<div className="public-website-container shop-page-shell" style={{ paddingTop: '72px' }}><ShopPage onOrderSubmitted={setShopOrders} paystackPublicKey={paystackPublicKey} storeProducts={storeProducts} storeBankAccount={storeBankAccount} /></div>} />
+          <Route path="/store" element={<div className="public-website-container"><StorePage isIndependenceDay={isIndependenceDay} independenceAnniversary={independenceAnniversary} isIndependencePreview={isIndependencePreview} /></div>} />
+          <Route path="/shop" element={<div className="public-website-container shop-page-shell" style={{ paddingTop: '72px' }}><ShopPage onOrderSubmitted={setShopOrders} paystackPublicKey={paystackPublicKey} storeProducts={storeProducts} storeBankAccount={storeBankAccount} isIndependenceDay={isIndependenceDay} independenceAnniversary={independenceAnniversary} isIndependencePreview={isIndependencePreview} /></div>} />
+          <Route path="/shop/:productName" element={<div className="public-website-container shop-page-shell" style={{ paddingTop: '72px' }}><ShopPage onOrderSubmitted={setShopOrders} paystackPublicKey={paystackPublicKey} storeProducts={storeProducts} storeBankAccount={storeBankAccount} isIndependenceDay={isIndependenceDay} independenceAnniversary={independenceAnniversary} isIndependencePreview={isIndependencePreview} /></div>} />
           <Route path="/vendor" element={<><VendorDashboard /><CustomerSupportChat /></>} />
           <Route path="/payment/callback" element={<PaystackCallbackPage />} />
           <Route path="/care-counseling" element={<CareCounselingPage />} />

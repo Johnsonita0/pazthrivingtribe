@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
+import { getIndependenceDaySlides } from '../utils/independenceDaySlides';
 
 const isStorefrontProduct = (product) =>
   product.status === 'published' ||
@@ -144,13 +145,17 @@ const readStoreData = () => {
   }
 };
 
-export default function StorePage() {
+export default function StorePage({ isIndependenceDay = false, independenceAnniversary = 66, isIndependencePreview = false }) {
   const navigate = useNavigate();
   const [storeData, setStoreData] = useState(readStoreData);
   const [cart, setCart] = useState([]);
   const [activeProductIndex, setActiveProductIndex] = useState(0);
+  const [activeIndependenceSlideIndex, setActiveIndependenceSlideIndex] = useState(0);
   const [cartOpen, setCartOpen] = useState(false);
   const [isSmallScreen, setIsSmallScreen] = useState(() => window.innerWidth <= 768);
+  const independenceSlides = getIndependenceDaySlides(independenceAnniversary);
+  const independenceSlideCount = independenceSlides.length;
+  const activeIndependenceSlide = independenceSlides[activeIndependenceSlideIndex % independenceSlideCount];
 
   useEffect(() => {
     let active = true;
@@ -191,6 +196,14 @@ export default function StorePage() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  useEffect(() => {
+    if (!isIndependenceDay) return undefined;
+    const timer = window.setInterval(() => {
+      setActiveIndependenceSlideIndex((current) => (current + 1) % independenceSlideCount);
+    }, 9000);
+    return () => window.clearInterval(timer);
+  }, [independenceSlideCount, isIndependenceDay]);
 
   useEffect(() => {
     if (!recentProducts.length) return undefined;
@@ -764,13 +777,67 @@ export default function StorePage() {
         }
       `}</style>
 
-      <div style={{
+      <div className="store-page-canvas" style={{
         background: 'linear-gradient(135deg, #0f2d2a 0%, #163f3b 32%, #1f766a 100%)',
         minHeight: '100vh',
         padding: '0 0 32px',
         position: 'relative',
         overflowX: 'hidden'
       }}>
+        {isIndependenceDay && activeIndependenceSlide && (
+          <>
+            <style>{`
+              .independence-story-shell { max-width: 1360px; margin: 0 auto 1.5rem; padding: 0 24px; position: relative; z-index: 3; }
+              .independence-story-carousel { min-height: 290px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 0.8fr); gap: 2rem; align-items: center; padding: 1.5rem 2rem; overflow: hidden; border: 1px solid #b9dfc9; border-radius: 10px; background: linear-gradient(115deg, #004b2c, #008751 70%, #006b40); color: #fff; box-shadow: 0 16px 34px rgba(0, 77, 44, 0.2); }
+              .independence-story-copy { min-width: 0; animation: storeHeroFade 0.45s ease-out; }
+              .independence-story-eyebrow { margin: 0 0 0.75rem; color: #ffffff !important; font-size: 0.76rem; font-weight: 900; text-transform: uppercase; }
+              .independence-story-copy h2 { margin: 0 0 0.8rem; color: #fff !important; font-size: 2rem; line-height: 1.1; letter-spacing: 0; }
+              .independence-story-copy > p:not(.independence-story-eyebrow) { max-width: 58ch; margin: 0; color: #f1faf5 !important; font-size: 1rem; line-height: 1.55; }
+              .independence-day-theme .independence-story-carousel .independence-story-copy :is(h2, p, span, strong, a) { color: #ffffff !important; }
+              .independence-story-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; margin-top: 1.25rem; }
+              .independence-story-arrow { width: 38px; height: 38px; display: inline-grid; place-items: center; border: 1px solid #b9dfc9; border-radius: 50%; }
+              .independence-story-dots { display: flex; align-items: center; gap: 0.4rem; }
+              .independence-story-dot { width: 12px; height: 12px; padding: 0; border: 1px solid #d8f3e2 !important; border-radius: 50%; }
+              .independence-story-cta { min-height: 38px; margin-left: 0.4rem; padding: 0.55rem 0.85rem; border-radius: 5px; font-weight: 800; }
+              .independence-story-art { min-width: 0; height: 232px; display: grid; place-items: center; overflow: hidden; padding: 0.65rem; border-radius: 6px; background: #fff; }
+              .independence-story-art img { display: block; width: 100%; height: 100%; object-fit: cover; }
+              .independence-story-art img.is-contain { object-fit: contain; }
+              @media (max-width: 760px) {
+                .independence-story-shell { padding: 0 12px; margin-bottom: 1rem; }
+                .independence-story-carousel { grid-template-columns: 1fr; gap: 1rem; min-height: 0; padding: 1.15rem; }
+                .independence-story-copy h2 { font-size: 1.55rem; }
+                .independence-story-copy > p:not(.independence-story-eyebrow) { font-size: 0.92rem; }
+                .independence-story-art { height: 175px; }
+              }
+            `}</style>
+            <div className="independence-story-shell">
+              <section className="independence-story-carousel" aria-roledescription="carousel" aria-label="Nigeria Independence Day history">
+                <div className="independence-story-copy" key={activeIndependenceSlide.id} aria-live="polite">
+                  <p className="independence-story-eyebrow">{activeIndependenceSlide.eyebrow} · NAIJA @{independenceAnniversary}</p>
+                  <h2>{activeIndependenceSlide.title}</h2>
+                  <p>{activeIndependenceSlide.tagline}</p>
+                  <div className="independence-story-actions">
+                    <button type="button" className="independence-story-arrow" aria-label="Previous history slide" onClick={() => setActiveIndependenceSlideIndex((current) => (current - 1 + independenceSlideCount) % independenceSlideCount)}>
+                      <i className="fa-solid fa-chevron-left" aria-hidden="true"></i>
+                    </button>
+                    <div className="independence-story-dots" aria-label="Choose a history slide">
+                      {independenceSlides.map((slide, index) => (
+                        <button key={slide.id} type="button" className="independence-story-dot" aria-label={`Show ${slide.title}`} aria-current={index === activeIndependenceSlideIndex ? 'true' : undefined} style={{ outline: index === activeIndependenceSlideIndex ? '2px solid #fff' : 'none' }} onClick={() => setActiveIndependenceSlideIndex(index)} />
+                      ))}
+                    </div>
+                    <button type="button" className="independence-story-arrow" aria-label="Next history slide" onClick={() => setActiveIndependenceSlideIndex((current) => (current + 1) % independenceSlideCount)}>
+                      <i className="fa-solid fa-chevron-right" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" className="independence-story-cta" onClick={() => navigate(isIndependencePreview ? '/shop?independencePreview=1' : '/shop')}>Explore the shop</button>
+                  </div>
+                </div>
+                <div className="independence-story-art">
+                  <img key={activeIndependenceSlide.id} className={activeIndependenceSlide.imageFit === 'contain' ? 'is-contain' : ''} src={activeIndependenceSlide.image} alt={activeIndependenceSlide.imageAlt} />
+                </div>
+              </section>
+            </div>
+          </>
+        )}
         {cartOpen && (
           <>
             <div
