@@ -62,7 +62,12 @@ export default async function handler(req, res) {
   const title = product?.title || 'Paz Thriving Tribe';
   const description = product?.description || 'Digital resources from Paz Thriving Tribe.';
   const cover = coverUrl(product?.cover || product?.cover_url || product?.cover_image || product?.image || product?.image_url || product?.imageUrl);
-  const browserUrl = `https://pazthrivingtribe.org/shop?product=${encodeURIComponent(requestedSlug)}`;
+  const browserProductUrl = new URL('https://pazthrivingtribe.org/shop');
+  browserProductUrl.searchParams.set('product', requestedSlug);
+  if (req.query?.independencePreview === '1') {
+    browserProductUrl.searchParams.set('independencePreview', '1');
+  }
+  const browserUrl = browserProductUrl.toString();
   const canonicalUrl = `https://pazthrivingtribe.org/shop/${encodeURIComponent(requestedSlug)}`;
 
   const userAgent = req.headers?.['user-agent'] || req.headers?.['User-Agent'] || '';

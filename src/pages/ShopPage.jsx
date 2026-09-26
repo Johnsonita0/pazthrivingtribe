@@ -553,6 +553,11 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const sharedProductSlug = searchParams.get('product');
   const resolvedProductName = productName || sharedProductSlug;
   const isProductPage = Boolean(resolvedProductName);
+  const shopUrl = isIndependencePreview ? '/shop?independencePreview=1' : '/shop';
+  const productUrl = (product) => {
+    const path = `/shop/${productSlug(product)}`;
+    return isIndependencePreview ? `${path}?independencePreview=1` : path;
+  };
   const [storeData, setStoreData] = useState(readStoreData);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
@@ -1086,7 +1091,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     setCartOpen(true);
     if (!isProductPage) {
       setSelectedProduct(null);
-      navigate('/shop');
+      navigate(shopUrl);
     }
   };
 
@@ -1824,7 +1829,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                 minWidth: 0
               }}>
                 {visibleProducts.map((product) => (
-                  <div key={product.id} onClick={() => navigate(`/shop/${productSlug(product)}`)} style={{
+                  <div key={product.id} onClick={() => navigate(productUrl(product))} style={{
                     background: '#fff',
                     border: '1px solid #ddd',
                     borderRadius: '12px',
@@ -2151,7 +2156,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
               <div style={{ color: '#f97316', fontSize: '0.75rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>Product page</div>
               <h1 style={{ margin: '10px 0', color: '#111827', fontSize: '1.5rem' }}>{storeData.products?.length ? 'Product not found' : 'Loading product...'}</h1>
               <p style={{ margin: '0 0 22px', color: '#64748b', lineHeight: 1.6 }}>{storeData.products?.length ? 'This product link may be outdated or the product is no longer available.' : 'The product details are loading. Please wait a moment.'}</p>
-              <button type="button" onClick={() => navigate('/shop')} style={{ border: 'none', borderRadius: '9px', padding: '11px 18px', background: '#166534', color: '#fff', fontWeight: 800, cursor: 'pointer' }}>Return to shop</button>
+              <button type="button" onClick={() => navigate(shopUrl)} style={{ border: 'none', borderRadius: '9px', padding: '11px 18px', background: '#166534', color: '#fff', fontWeight: 800, cursor: 'pointer' }}>Return to shop</button>
             </section>
           </main>
         )}
@@ -2159,7 +2164,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
         {selectedProduct && isProductPage && (
           <div
             role="presentation"
-            onClick={() => { setSelectedProduct(null); navigate('/shop'); }}
+            onClick={() => { setSelectedProduct(null); navigate(shopUrl); }}
             style={isProductPage ? { position: 'relative', zIndex: 1, display: 'block', padding: isSmallScreen ? '24px 12px 48px' : '36px 20px 64px', background: '#f8fafc' } : { position: 'fixed', inset: 0, zIndex: 260, display: 'grid', placeItems: 'start center', padding: isSmallScreen ? '78px 12px 12px' : '88px 20px 16px', background: 'rgba(15, 23, 42, 0.55)', backdropFilter: 'blur(4px)', overflow: 'hidden' }}
           >
             <div
@@ -2174,7 +2179,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                   <div style={{ color: '#f97316', fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '6px' }}>{selectedProduct.category || 'Product'}</div>
                   <h2 id="product-details-title" style={{ margin: 0, color: '#111827', fontSize: isSmallScreen ? '1.3rem' : '1.7rem', lineHeight: 1.2 }}>{selectedProduct.title}</h2>
                 </div>
-                <button type="button" onClick={() => { setSelectedProduct(null); navigate('/shop'); }} aria-label={isProductPage ? 'Return to shop' : 'Close product details'} style={{ width: '34px', height: '34px', border: '1px solid #d1d5db', borderRadius: '50%', background: '#fff', color: '#334155', fontSize: '1.2rem', cursor: 'pointer', flexShrink: 0 }}>{isProductPage ? '←' : '×'}</button>
+                <button type="button" onClick={() => { setSelectedProduct(null); navigate(shopUrl); }} aria-label={isProductPage ? 'Return to shop' : 'Close product details'} style={{ width: '34px', height: '34px', border: '1px solid #d1d5db', borderRadius: '50%', background: '#fff', color: '#334155', fontSize: '1.2rem', cursor: 'pointer', flexShrink: 0 }}>{isProductPage ? '←' : '×'}</button>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: isSmallScreen ? '1fr' : '140px minmax(0, 1fr)', gap: isSmallScreen ? '8px' : '16px', alignItems: 'start' }}>
@@ -2253,8 +2258,8 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px', flexWrap: 'wrap' }}>
-                {!isProductPage && <button type="button" onClick={() => { setSelectedProduct(null); navigate('/shop'); }} style={{ border: '1px solid #cbd5e1', borderRadius: '9px', padding: '11px 18px', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer', flex: isSmallScreen ? '1 1 120px' : '0 0 auto' }}>Close</button>}
-                {isProductPage && <button type="button" onClick={() => { setSelectedProduct(null); navigate('/shop'); }} style={{ border: '1px solid #f97316', borderRadius: '9px', padding: '11px 18px', background: '#fff7ed', color: '#c2410c', fontWeight: 800, cursor: 'pointer', flex: isSmallScreen ? '1 1 120px' : '0 0 auto' }}>Shop more</button>}
+                {!isProductPage && <button type="button" onClick={() => { setSelectedProduct(null); navigate(shopUrl); }} style={{ border: '1px solid #cbd5e1', borderRadius: '9px', padding: '11px 18px', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer', flex: isSmallScreen ? '1 1 120px' : '0 0 auto' }}>Close</button>}
+                {isProductPage && <button type="button" onClick={() => { setSelectedProduct(null); navigate(shopUrl); }} style={{ border: '1px solid #f97316', borderRadius: '9px', padding: '11px 18px', background: '#fff7ed', color: '#c2410c', fontWeight: 800, cursor: 'pointer', flex: isSmallScreen ? '1 1 120px' : '0 0 auto' }}>Shop more</button>}
                 {!isProductPage && <button type="button" onClick={(event) => { addToCart(selectedProduct, event); setSelectedProduct(null); }} disabled={selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0} style={{ border: 'none', borderRadius: '9px', padding: '11px 18px', background: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? '#e5e7eb' : '#f97316', color: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? '#64748b' : '#fff', fontWeight: 800, cursor: 'pointer', flex: isSmallScreen ? '1 1 160px' : '0 0 auto' }}>{selectedProduct.isFree ? 'Request product' : 'Add to cart'}</button>}
                 {isProductPage && <button type="button" onClick={() => checkoutProduct(selectedProduct)} disabled={selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0} style={{ border: 'none', borderRadius: '9px', padding: '11px 18px', background: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? '#e5e7eb' : '#166534', color: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? '#64748b' : '#fff', fontWeight: 800, cursor: 'pointer', flex: isSmallScreen ? '1 1 160px' : '0 0 auto' }}><i className="fa-solid fa-lock" aria-hidden="true" /> Checkout</button>}
               </div>
@@ -2361,7 +2366,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                     onClick={() => {
                       setCartOpen(false);
                       setSelectedProduct(null);
-                      navigate('/shop');
+                      navigate(shopUrl);
                     }}
                     title="Shop more products"
                     style={{ flex: 1, background: '#fff7ed', border: '1px solid #fdba74', borderRadius: '8px', padding: '9px 10px', cursor: 'pointer', fontSize: '12px', fontWeight: 800, color: '#c2410c' }}
