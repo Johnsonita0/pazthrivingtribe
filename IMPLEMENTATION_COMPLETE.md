@@ -121,6 +121,7 @@ Your email `danieludauk234@gmail.com` was successfully submitted! The feature is
 5. Watch the console on this screen - you'll see:
    ```
    ✓ [DEV API] Email subscription recorded: [your-email] for service: [service-name]
+6. let the admin dashboard postGrest functions on the serveless server.path_get   
    ```
 
 ## 📊 How It Works

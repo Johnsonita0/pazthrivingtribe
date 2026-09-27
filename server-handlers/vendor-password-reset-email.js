@@ -66,6 +66,6 @@ export default async function handler(req, res) {
     return json(res, 200, { ok: true });
   } catch (error) {
     console.error('Vendor password reset email failed:', error);
-    return json(res, 500, { error: error.message || 'The password reset email could not be sent.' });
+    return json(res, 500, { error: error.message || 'The password reset email could not be sent. kindly contact admin' });
   }
 }

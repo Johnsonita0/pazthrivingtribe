@@ -38,6 +38,7 @@ The "Get Notified" feature allows clients to subscribe to email notifications fo
 - Uses Resend service (https://resend.com)
 - Perfect for Vercel deployments
 - More professional email delivery
+- Handles sent| end posting 
 
 ## Setup Instructions
 
