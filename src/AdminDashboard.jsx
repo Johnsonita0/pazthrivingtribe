@@ -1245,13 +1245,16 @@ export default function AdminDashboard(props) {
     const version = product?.updatedAt || product?.updated_at || product?.cover || product?.cover_url || product?.id || "1";
     const productLink = new URL(`/shop/${slug}`, window.location.origin);
     productLink.searchParams.set("v", String(version));
+    productLink.searchParams.set("share", `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
     return productLink.toString();
   };
 
   const copyPublishedProductLink = async () => {
     if (!publishedProductLink) return;
     try {
-      await navigator.clipboard.writeText(publishedProductLink);
+      const freshLink = new URL(publishedProductLink, window.location.origin);
+      freshLink.searchParams.set("share", `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+      await navigator.clipboard.writeText(freshLink.toString());
       showAdminToast(
         "success",
         "Link copied",

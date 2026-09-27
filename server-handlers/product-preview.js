@@ -72,19 +72,23 @@ export default async function handler(req, res) {
   const title = product?.title || 'Paz Thriving Tribe';
   const description = product?.description || 'Digital resources from Paz Thriving Tribe.';
   const cover = coverUrl(product?.cover || product?.cover_url || product?.cover_image || product?.image || product?.image_url || product?.imageUrl);
-  const previewVersion = String(req.query?.v || product?.updated_at || product?.cover || product?.id || '1').trim().slice(0, 240);
+  const previewVersion = [
+    String(req.query?.v || product?.updated_at || product?.cover || product?.id || '1').trim(),
+    String(req.query?.share || '').trim(),
+  ].filter(Boolean).join('-').slice(0, 320);
   const previewCover = addPreviewVersion(cover, previewVersion);
-  const browserProductUrl = new URL('https://pazthrivingtribe.org/shop');
+  const browserProductUrl = new URL('https://www.pazthrivingtribe.org/shop');
   browserProductUrl.searchParams.set('product', requestedSlug);
   if (req.query?.independencePreview === '1') {
     browserProductUrl.searchParams.set('independencePreview', '1');
   }
   const browserUrl = browserProductUrl.toString();
-  const canonicalUrl = new URL(`https://pazthrivingtribe.org/shop/${encodeURIComponent(requestedSlug)}`);
+  const canonicalUrl = new URL(`https://www.pazthrivingtribe.org/shop/${encodeURIComponent(requestedSlug)}`);
   canonicalUrl.searchParams.set('v', previewVersion);
+  if (req.query?.share) canonicalUrl.searchParams.set('share', String(req.query.share).slice(0, 80));
 
   const userAgent = req.headers?.['user-agent'] || req.headers?.['User-Agent'] || '';
-  if (isInAppBrowser(userAgent) || !isSocialCrawler(userAgent)) {
+  if (isInAppBrowser(userAgent) || (!isSocialCrawler(userAgent) && !req.query?.share)) {
     return redirectToProduct(res, browserUrl);
   }
 

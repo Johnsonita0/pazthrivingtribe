@@ -1247,6 +1247,7 @@ export default function VendorDashboard() {
     const version = product?.updated_at || product?.cover || product?.id || "1";
     const productLink = new URL(`/shop/${slug}`, window.location.origin);
     productLink.searchParams.set("v", String(version));
+    productLink.searchParams.set("share", `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
     try {
       await navigator.clipboard.writeText(productLink.toString());
       setNotice({ type: "success", text: "Product link copied and ready to share." });
