@@ -1242,7 +1242,10 @@ export default function AdminDashboard(props) {
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-|-$/g, ""),
     );
-    return `${window.location.origin}/shop/${slug}`;
+    const version = product?.updatedAt || product?.updated_at || product?.cover || product?.cover_url || product?.id || "1";
+    const productLink = new URL(`/shop/${slug}`, window.location.origin);
+    productLink.searchParams.set("v", String(version));
+    return productLink.toString();
   };
 
   const copyPublishedProductLink = async () => {
@@ -1350,6 +1353,7 @@ export default function AdminDashboard(props) {
       status: product.status || "published",
       published_at: product.publishedAt || product.published_at || new Date().toISOString(),
       published_by: product.publishedBy || product.published_by || session?.user?.id || null,
+      updated_at: product.updatedAt || product.updated_at || new Date().toISOString(),
       rating: Number(product.rating || 0),
       reviews: Number(product.reviews || 0),
       prime: Boolean(product.prime || false),
@@ -1603,6 +1607,7 @@ export default function AdminDashboard(props) {
       status: "published",
       publishedAt: new Date().toISOString(),
       publishedBy: session?.user?.id || null,
+      updatedAt: new Date().toISOString(),
     };
 
     if (editingStoreProductId) {

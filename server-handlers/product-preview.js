@@ -28,6 +28,16 @@ const coverUrl = (cover) => {
   return `https://pazthrivingtribe.org/${value.replace(/^\/+/, '')}`;
 };
 
+const addPreviewVersion = (value, version) => {
+  try {
+    const url = new URL(value);
+    url.searchParams.set('v', version);
+    return url.toString();
+  } catch {
+    return value;
+  }
+};
+
 const sendHtml = (res, html) => {
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -55,25 +65,28 @@ export default async function handler(req, res) {
 
   if (supabaseUrl && serviceRoleKey && requestedSlug) {
     const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
-    const { data } = await supabase.from('store_products').select('id,title,description,cover').limit(200);
+    const { data } = await supabase.from('store_products').select('id,title,description,cover,updated_at').order('updated_at', { ascending: false }).limit(500);
     product = (data || []).find((item) => slugify(item.title || item.id) === requestedSlug || String(item.id || '').toLowerCase() === requestedSlug) || null;
   }
 
   const title = product?.title || 'Paz Thriving Tribe';
   const description = product?.description || 'Digital resources from Paz Thriving Tribe.';
   const cover = coverUrl(product?.cover || product?.cover_url || product?.cover_image || product?.image || product?.image_url || product?.imageUrl);
+  const previewVersion = String(req.query?.v || product?.updated_at || product?.cover || product?.id || '1').trim().slice(0, 240);
+  const previewCover = addPreviewVersion(cover, previewVersion);
   const browserProductUrl = new URL('https://pazthrivingtribe.org/shop');
   browserProductUrl.searchParams.set('product', requestedSlug);
   if (req.query?.independencePreview === '1') {
     browserProductUrl.searchParams.set('independencePreview', '1');
   }
   const browserUrl = browserProductUrl.toString();
-  const canonicalUrl = `https://pazthrivingtribe.org/shop/${encodeURIComponent(requestedSlug)}`;
+  const canonicalUrl = new URL(`https://pazthrivingtribe.org/shop/${encodeURIComponent(requestedSlug)}`);
+  canonicalUrl.searchParams.set('v', previewVersion);
 
   const userAgent = req.headers?.['user-agent'] || req.headers?.['User-Agent'] || '';
   if (isInAppBrowser(userAgent) || !isSocialCrawler(userAgent)) {
     return redirectToProduct(res, browserUrl);
   }
 
-  sendHtml(res, `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><meta name="description" content="${escapeHtml(description)}"><meta property="og:type" content="product"><meta property="og:title" content="${escapeHtml(title)}"><meta property="og:description" content="${escapeHtml(description)}"><meta property="og:image" content="${escapeHtml(cover)}"><meta property="og:url" content="${escapeHtml(canonicalUrl)}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escapeHtml(title)}"><meta name="twitter:description" content="${escapeHtml(description)}"><meta name="twitter:image" content="${escapeHtml(cover)}"><meta http-equiv="refresh" content="0;url=${escapeHtml(browserUrl)}"></head><body><p>Opening ${escapeHtml(title)}...</p><p><a href="${escapeHtml(browserUrl)}">Continue to product</a></p></body></html>`);
+  sendHtml(res, `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><meta name="description" content="${escapeHtml(description)}"><meta property="og:type" content="product"><meta property="og:title" content="${escapeHtml(title)}"><meta property="og:description" content="${escapeHtml(description)}"><meta property="og:image" content="${escapeHtml(previewCover)}"><meta property="og:image:secure_url" content="${escapeHtml(previewCover)}"><meta property="og:image:alt" content="${escapeHtml(title)} cover"><meta property="og:url" content="${escapeHtml(canonicalUrl.toString())}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escapeHtml(title)}"><meta name="twitter:description" content="${escapeHtml(description)}"><meta name="twitter:image" content="${escapeHtml(previewCover)}"><meta name="twitter:image:alt" content="${escapeHtml(title)} cover"><meta http-equiv="refresh" content="0;url=${escapeHtml(browserUrl)}"></head><body><p>Opening ${escapeHtml(title)}...</p><p><a href="${escapeHtml(browserUrl)}">Continue to product</a></p></body></html>`);
 }

@@ -1244,9 +1244,11 @@ export default function VendorDashboard() {
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-|-$/g, ""),
     );
-    const productLink = `${window.location.origin}/shop/${slug}`;
+    const version = product?.updated_at || product?.cover || product?.id || "1";
+    const productLink = new URL(`/shop/${slug}`, window.location.origin);
+    productLink.searchParams.set("v", String(version));
     try {
-      await navigator.clipboard.writeText(productLink);
+      await navigator.clipboard.writeText(productLink.toString());
       setNotice({ type: "success", text: "Product link copied and ready to share." });
     } catch {
       setNotice({ type: "error", text: "Copy failed. Select the product link manually from the shop." });
