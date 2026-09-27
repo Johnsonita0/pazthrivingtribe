@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState, useMemo } from "react";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 import CustomDropdown from "./components/CustomDropdown";
+import DateTimePicker from "./components/DateTimePicker";
+import { toDateTimeLocalValue, toIsoDateTime } from "./utils/productAvailability";
 
 const formatName = (value) =>
   typeof value === "string"
@@ -218,7 +220,12 @@ export default function AdminDashboard(props) {
     cover: "/logo/logomain.png",
     inStock: true,
     stockCount: "",
+    releaseEnabled: false,
+    releaseAt: "",
+    closeAt: "",
+    allowAfterClose: false,
   });
+  const [releaseSettingsOpen, setReleaseSettingsOpen] = useState(false);
   const [productFileUploading, setProductFileUploading] = useState(false);
   const [coverFileUploading, setCoverFileUploading] = useState(false);
   const [productFileName, setProductFileName] = useState("");
@@ -1284,7 +1291,12 @@ export default function AdminDashboard(props) {
       cover: "/logo/logomain.png",
       inStock: true,
       stockCount: "",
+      releaseEnabled: false,
+      releaseAt: "",
+      closeAt: "",
+      allowAfterClose: false,
     });
+    setReleaseSettingsOpen(false);
     setProductFileName("");
     setCoverFileName("");
     setEditingStoreProductId(null);
@@ -1303,6 +1315,10 @@ export default function AdminDashboard(props) {
     cover: product.cover || product.cover_url || "/logo/logomain.png",
     inStock: (product.inStock ?? product.in_stock ?? true) !== false,
     stockCount: Number(product.stockCount ?? product.stock_count ?? 0),
+    releaseEnabled: Boolean(product.releaseEnabled ?? product.release_enabled ?? false),
+    releaseAt: product.releaseAt ?? product.release_at ?? null,
+    closeAt: product.closeAt ?? product.close_at ?? null,
+    allowAfterClose: Boolean(product.allowAfterClose ?? product.allow_after_close ?? false),
   });
 
   const persistStoreProductToSupabase = async (
@@ -1325,6 +1341,10 @@ export default function AdminDashboard(props) {
       cover: product.cover || "/logo/logomain.png",
       in_stock: product.inStock !== false,
       stock_count: Number(product.stockCount || 0),
+      release_enabled: Boolean(product.releaseEnabled),
+      release_at: product.releaseAt || null,
+      close_at: product.closeAt || null,
+      allow_after_close: Boolean(product.allowAfterClose),
       rating: Number(product.rating || 0),
       reviews: Number(product.reviews || 0),
       prime: Boolean(product.prime || false),
@@ -1537,6 +1557,14 @@ export default function AdminDashboard(props) {
       );
       return;
     }
+    if (storeProductForm.releaseEnabled && !storeProductForm.releaseAt) {
+      showAdminToast("warning", "Release date required", "Choose the date and time when this product should become available.");
+      return;
+    }
+    if (storeProductForm.releaseEnabled && storeProductForm.closeAt && new Date(storeProductForm.closeAt) <= new Date(storeProductForm.releaseAt)) {
+      showAdminToast("warning", "Invalid close date", "The close date and time must be after the release date and time.");
+      return;
+    }
     if (!editingStoreProductId && !storeProductForm.fileUrl.trim()) {
       showAdminToast(
         "warning",
@@ -1563,6 +1591,10 @@ export default function AdminDashboard(props) {
           ? parsedStockCount
           : 1
         : 0,
+      releaseEnabled: Boolean(storeProductForm.releaseEnabled),
+      releaseAt: storeProductForm.releaseEnabled ? toIsoDateTime(storeProductForm.releaseAt) : null,
+      closeAt: storeProductForm.releaseEnabled ? toIsoDateTime(storeProductForm.closeAt) : null,
+      allowAfterClose: Boolean(storeProductForm.releaseEnabled && storeProductForm.allowAfterClose),
     };
 
     if (editingStoreProductId) {
@@ -1651,7 +1683,12 @@ export default function AdminDashboard(props) {
         normalizedProduct.stockCount > 0
           ? normalizedProduct.stockCount
           : "",
+      releaseEnabled: normalizedProduct.releaseEnabled,
+      releaseAt: toDateTimeLocalValue(normalizedProduct.releaseAt),
+      closeAt: toDateTimeLocalValue(normalizedProduct.closeAt),
+      allowAfterClose: normalizedProduct.allowAfterClose,
     });
+    setReleaseSettingsOpen(false);
     setProductFileName(getStoredFileName(normalizedProduct.fileUrl));
     setCoverFileName(getStoredFileName(normalizedProduct.cover));
     window.requestAnimationFrame(() => {
@@ -3761,6 +3798,48 @@ export default function AdminDashboard(props) {
                           />
                           Free product (email delivery without Paystack)
                         </label>
+                        <button
+                          type="button"
+                          aria-expanded={releaseSettingsOpen}
+                          onClick={() => setReleaseSettingsOpen((open) => !open)}
+                          style={{ justifySelf: "start", border: "1px solid #cbd5e1", borderRadius: "8px", background: "#fff", color: "#334155", padding: "9px 12px", fontWeight: 800, cursor: "pointer" }}
+                        >
+                          <i className={`fa-solid ${releaseSettingsOpen ? "fa-chevron-up" : "fa-chevron-down"}`} aria-hidden="true" /> {releaseSettingsOpen ? "Hide release settings" : "Release settings"}
+                        </button>
+                        {releaseSettingsOpen && (
+                          <div role="group" aria-label="Product release schedule" style={{ gridColumn: "1 / -1", overflow: "hidden", border: "1px solid #b9d7c6", borderRadius: "9px", background: "#fff" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap", padding: "12px 14px", background: "#123c32", color: "#fff" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                <i className="fa-regular fa-calendar-check" aria-hidden="true" style={{ fontSize: "1.1rem", color: "#a7f3d0" }} />
+                                <div><div style={{ color: "#fff", fontSize: ".78rem", fontWeight: 900, letterSpacing: ".1em", textTransform: "uppercase" }}>Launch window</div><div style={{ marginTop: "2px", color: "#d1e7dc", fontSize: ".76rem" }}>Dates use your local time</div></div>
+                              </div>
+                              <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", color: "#fff", fontSize: ".82rem", fontWeight: 800, cursor: "pointer" }}>
+                                <input type="checkbox" checked={storeProductForm.releaseEnabled} onChange={(event) => setStoreProductForm((current) => ({ ...current, releaseEnabled: event.target.checked }))} style={{ accentColor: "#34d399" }} />
+                                Schedule active
+                              </label>
+                            </div>
+                            <div style={{ display: "grid", gap: "13px", padding: "14px" }}>
+                              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "12px" }}>
+                                <div style={{ display: "grid", gap: "6px", color: "#334155", fontSize: ".78rem", fontWeight: 800 }}>
+                                  <span><i className="fa-solid fa-unlock-keyhole" aria-hidden="true" style={{ marginRight: "6px", color: "#15803d" }} />Available from</span>
+                                  <DateTimePicker ariaLabel="Release date and time" required={storeProductForm.releaseEnabled} disabled={!storeProductForm.releaseEnabled} value={storeProductForm.releaseAt} onChange={(releaseAt) => setStoreProductForm((current) => ({ ...current, releaseAt }))} />
+                                </div>
+                                <div style={{ display: "grid", gap: "6px", color: "#334155", fontSize: ".78rem", fontWeight: 800 }}>
+                                  <span><i className="fa-solid fa-lock" aria-hidden="true" style={{ marginRight: "6px", color: "#b45309" }} />Close after (optional)</span>
+                                  <DateTimePicker ariaLabel="Close date and time" allowClear disabled={!storeProductForm.releaseEnabled} value={storeProductForm.closeAt} onChange={(closeAt) => setStoreProductForm((current) => ({ ...current, closeAt }))} />
+                                </div>
+                              </div>
+                              <label style={{ display: "flex", alignItems: "flex-start", gap: "8px", color: "#334155", fontWeight: 700, fontSize: ".8rem" }}>
+                                <input type="checkbox" checked={storeProductForm.allowAfterClose} disabled={!storeProductForm.releaseEnabled} onChange={(event) => setStoreProductForm((current) => ({ ...current, allowAfterClose: event.target.checked }))} />
+                                Keep this product available after the close date
+                              </label>
+                              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "10px", paddingTop: "11px", borderTop: "1px solid #e2e8f0", color: "#64748b", fontSize: ".75rem", lineHeight: 1.45 }}>
+                                <div><strong style={{ color: "#166534" }}>Before release</strong><br />Shoppers see “Available on the scheduled date and time.”</div>
+                                <div><strong style={{ color: "#9a3412" }}>After close</strong><br />Shoppers see “This product is no longer available.” unless continued access is enabled.</div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                         <div
                           className="commerce-form-grid"
                           style={{
@@ -3913,8 +3992,8 @@ export default function AdminDashboard(props) {
                               }}
                             >
                               {editingStoreProductId
-                                ? "Update product"
-                                : "Add product"}
+                                ? "Save product and settings"
+                                : "Add product and settings"}
                             </button>
                             {editingStoreProductId && (
                               <button

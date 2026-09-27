@@ -118,6 +118,10 @@ create table if not exists store_products (
   reviews integer default 0,
   in_stock boolean default true,
   stock_count integer default 0,
+  release_enabled boolean not null default false,
+  release_at timestamptz,
+  close_at timestamptz,
+  allow_after_close boolean not null default false,
   prime boolean default false,
   status text not null default 'in_review' check (status in ('pending', 'in_review', 'approved', 'rejected', 'published')),
   name_verified boolean not null default false,
@@ -151,6 +155,10 @@ alter table if exists store_products add column if not exists rating numeric(3,2
 alter table if exists store_products add column if not exists reviews integer default 0;
 alter table if exists store_products add column if not exists in_stock boolean default true;
 alter table if exists store_products add column if not exists stock_count integer default 0;
+alter table if exists store_products add column if not exists release_enabled boolean not null default false;
+alter table if exists store_products add column if not exists release_at timestamptz;
+alter table if exists store_products add column if not exists close_at timestamptz;
+alter table if exists store_products add column if not exists allow_after_close boolean not null default false;
 alter table if exists store_products add column if not exists prime boolean default false;
 alter table if exists store_products add column if not exists status text not null default 'approved';
 alter table if exists store_products add column if not exists name_verified boolean not null default false;

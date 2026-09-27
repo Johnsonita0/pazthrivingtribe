@@ -5,6 +5,7 @@ import { getCountries, getCountryCallingCode, isValidPhoneNumber, parsePhoneNumb
 import { supabase } from '../supabaseClient';
 import { notifyAdminActivity } from '../utils/notifyAdminActivity';
 import { getIndependenceDaySlides } from '../utils/independenceDaySlides';
+import { getProductAvailability } from '../utils/productAvailability';
 
 const isStorefrontProduct = (product) =>
   product.status === 'published' ||
@@ -490,6 +491,10 @@ const normalizeProduct = (product = {}) => ({
   reviews: Number(product.reviews ?? 0),
   vendorId: product.vendor_id || product.vendorId || null,
   vendorName: product.vendor_name || product.vendorName || '',
+  releaseEnabled: Boolean(product.release_enabled ?? product.releaseEnabled ?? false),
+  releaseAt: product.release_at || product.releaseAt || null,
+  closeAt: product.close_at || product.closeAt || null,
+  allowAfterClose: Boolean(product.allow_after_close ?? product.allowAfterClose ?? false),
   prime: Boolean(product.prime ?? false),
   createdAt: product.created_at || product.createdAt || null
 });
@@ -562,6 +567,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [cart, setCart] = useState([]);
+  const [availabilityNow, setAvailabilityNow] = useState(() => Date.now());
   const [priceRange, setPriceRange] = useState([0, 50000]);
   const [minRating, setMinRating] = useState(0);
   const [sortBy, setSortBy] = useState('relevant');
@@ -601,6 +607,10 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const [paymentProofSaving, setPaymentProofSaving] = useState(false);
   const [paystackReady, setPaystackReady] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  useEffect(() => {
+    const intervalId = window.setInterval(() => setAvailabilityNow(Date.now()), 15000);
+    return () => window.clearInterval(intervalId);
+  }, []);
   const productNgnPrice = (product) => product.isFree ? 0 : Number(product.price || 0) * (currencyRatesToNgn[product.currency || 'NGN'] || 1);
   const calculatorRate = currencyRatesToNgn[calculatorCurrency] || 1;
   const calculatorAmount = selectedProduct?.isFree ? 0 : selectedProduct ? productNgnPrice(selectedProduct) / calculatorRate : 0;
@@ -970,6 +980,12 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
 
   const addToCart = (product, event) => {
     event?.stopPropagation?.();
+    const availability = getProductAvailability(product, Date.now());
+    if (!availability.available) {
+      setToast({ message: availability.message, type: 'error' });
+      setTimeout(() => setToast(null), 3500);
+      return;
+    }
     if (product.inStock === false || Number(product.stockCount || 0) <= 0) {
       setToast({ message: `${product.title} is currently out of stock.`, type: 'error' });
       setTimeout(() => setToast(null), 3000);
@@ -1075,6 +1091,12 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   };
 
   const checkoutProduct = (product) => {
+    const availability = getProductAvailability(product, Date.now());
+    if (!availability.available) {
+      setToast({ message: availability.message, type: 'error' });
+      setTimeout(() => setToast(null), 3500);
+      return;
+    }
     if (product.inStock === false || Number(product.stockCount || 0) <= 0) return;
     const existingPaidCurrency = cart.find((item) => !item.isFree)?.currency;
     if (existingPaidCurrency && !product.isFree && existingPaidCurrency !== (product.currency || 'NGN')) {
@@ -1132,6 +1154,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     [cart]
   );
   const cartIsFree = cart.length > 0 && cart.every((item) => item.isFree);
+  const cartUnavailableItems = cart.filter((item) => !getProductAvailability(item, availabilityNow).available);
 
   useEffect(() => {
     if (!submittedOrder || !paymentProof || typeof onOrderSubmitted !== 'function') return undefined;
@@ -1324,6 +1347,16 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     const parsedPhone = parsePhoneNumberFromString(localDigits, selectedCountry.code);
     const internationalPhone = parsedPhone?.number || '';
     if (!cart.length || paymentLoading) return;
+    const blockedItem = cart.find((item) => {
+      const currentProduct = storeData.products.find((product) => String(product.id) === String(item.id)) || item;
+      return !getProductAvailability(currentProduct, Date.now()).available;
+    });
+    if (blockedItem) {
+      const currentProduct = storeData.products.find((product) => String(product.id) === String(blockedItem.id)) || blockedItem;
+      setToast({ message: `${currentProduct.title}: ${getProductAvailability(currentProduct, Date.now()).message}`, type: 'error' });
+      setTimeout(() => setToast(null), 5000);
+      return;
+    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
       setToast({ message: 'Please enter a valid email address for payment and delivery.', type: 'error' });
       setTimeout(() => setToast(null), 3500);
@@ -1951,6 +1984,11 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                             ? `Only ${product.stockCount} left`
                             : 'In stock'}
                       </div>
+                      {!getProductAvailability(product, availabilityNow).available && (
+                        <div style={{ marginBottom: '8px', color: '#9a3412', fontSize: '11px', lineHeight: 1.4, fontWeight: 700 }}>
+                          {getProductAvailability(product, availabilityNow).message}
+                        </div>
+                      )}
 
                       {/* Price - Bold & Prominent */}
                       <div style={{
@@ -1971,17 +2009,17 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                         event.stopPropagation();
                         addToCart(product, event);
                       }}
-                      disabled={product.inStock === false || Number(product.stockCount || 0) <= 0}
+                      disabled={product.inStock === false || Number(product.stockCount || 0) <= 0 || !getProductAvailability(product, availabilityNow).available}
                       style={{
                         width: '100%',
-                        background: product.inStock === false || Number(product.stockCount || 0) <= 0 ? '#e5e7eb' : 'linear-gradient(135deg, #FF9900 0%, #FF8C00 100%)',
+                        background: product.inStock === false || Number(product.stockCount || 0) <= 0 || !getProductAvailability(product, availabilityNow).available ? '#e5e7eb' : 'linear-gradient(135deg, #FF9900 0%, #FF8C00 100%)',
                         border: 'none',
                         borderRadius: '0',
                         padding: isVerySmallScreen ? '8px 6px' : isSmallScreen ? '9px 8px' : '10px 12px',
                         fontWeight: '600',
-                        cursor: product.inStock === false || Number(product.stockCount || 0) <= 0 ? 'not-allowed' : 'pointer',
+                        cursor: product.inStock === false || Number(product.stockCount || 0) <= 0 || !getProductAvailability(product, availabilityNow).available ? 'not-allowed' : 'pointer',
                         fontSize: isVerySmallScreen ? '10px' : isSmallScreen ? '11px' : '13px',
-                        color: product.inStock === false || Number(product.stockCount || 0) <= 0 ? '#6b7280' : '#111',
+                        color: product.inStock === false || Number(product.stockCount || 0) <= 0 || !getProductAvailability(product, availabilityNow).available ? '#6b7280' : '#111',
                         transition: 'all 0.2s ease',
                         display: 'flex',
                         alignItems: 'center',
@@ -2001,7 +2039,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                       }}
                     >
                       <i className="fa-solid fa-cart-plus" style={{ fontSize: '14px' }}></i>
-                      <span>{product.inStock === false || Number(product.stockCount || 0) <= 0 ? 'Sold out' : 'Add to Cart'}</span>
+                      <span>{product.inStock === false || Number(product.stockCount || 0) <= 0 ? 'Sold out' : !getProductAvailability(product, availabilityNow).available ? 'Unavailable' : 'Add to Cart'}</span>
                     </button>
                   </div>
                 ))}
@@ -2225,6 +2263,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                     <span>{'★'.repeat(Math.round(selectedProduct.rating || 0)) || 'No rating'}{selectedProduct.reviews ? ` (${selectedProduct.reviews} reviews)` : ''}</span>
                     <span>{selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? 'Out of stock' : `${selectedProduct.stockCount} available`}</span>
                   </div>
+                  {!getProductAvailability(selectedProduct, availabilityNow).available && <div role="status" style={{ marginBottom: '10px', padding: '10px 12px', border: '1px solid #fed7aa', borderRadius: '8px', background: '#fff7ed', color: '#9a3412', fontSize: '.84rem', lineHeight: 1.45, fontWeight: 700 }}>{getProductAvailability(selectedProduct, availabilityNow).message}</div>}
 
                   {!selectedProduct.isFree && <div style={{ padding: '14px', border: '1px solid #fed7aa', borderRadius: '12px', background: '#fffaf5' }}>
                     <div style={{ color: '#9a3412', fontWeight: 800, marginBottom: '10px' }}>Currency calculator</div>
@@ -2262,8 +2301,8 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px', flexWrap: 'wrap' }}>
                 {!isProductPage && <button type="button" onClick={() => { setSelectedProduct(null); navigate(shopUrl); }} style={{ border: '1px solid #cbd5e1', borderRadius: '9px', padding: '11px 18px', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer', flex: isSmallScreen ? '1 1 120px' : '0 0 auto' }}>Close</button>}
                 {isProductPage && <button type="button" onClick={() => { setSelectedProduct(null); navigate(shopUrl); }} style={{ border: '1px solid #f97316', borderRadius: '9px', padding: '11px 18px', background: '#fff7ed', color: '#c2410c', fontWeight: 800, cursor: 'pointer', flex: isSmallScreen ? '1 1 120px' : '0 0 auto' }}>Shop more</button>}
-                {!isProductPage && <button type="button" onClick={(event) => { addToCart(selectedProduct, event); setSelectedProduct(null); }} disabled={selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0} style={{ border: 'none', borderRadius: '9px', padding: '11px 18px', background: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? '#e5e7eb' : '#f97316', color: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? '#64748b' : '#fff', fontWeight: 800, cursor: 'pointer', flex: isSmallScreen ? '1 1 160px' : '0 0 auto' }}>{selectedProduct.isFree ? 'Request product' : 'Add to cart'}</button>}
-                {isProductPage && <button type="button" onClick={() => checkoutProduct(selectedProduct)} disabled={selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0} style={{ border: 'none', borderRadius: '9px', padding: '11px 18px', background: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? '#e5e7eb' : '#166534', color: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? '#64748b' : '#fff', fontWeight: 800, cursor: 'pointer', flex: isSmallScreen ? '1 1 160px' : '0 0 auto' }}><i className="fa-solid fa-lock" aria-hidden="true" /> Checkout</button>}
+                {!isProductPage && <button type="button" onClick={(event) => { addToCart(selectedProduct, event); setSelectedProduct(null); }} disabled={selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 || !getProductAvailability(selectedProduct, availabilityNow).available} style={{ border: 'none', borderRadius: '9px', padding: '11px 18px', background: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 || !getProductAvailability(selectedProduct, availabilityNow).available ? '#e5e7eb' : '#f97316', color: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 || !getProductAvailability(selectedProduct, availabilityNow).available ? '#64748b' : '#fff', fontWeight: 800, cursor: 'pointer', flex: isSmallScreen ? '1 1 160px' : '0 0 auto' }}>{selectedProduct.isFree ? 'Request product' : 'Add to cart'}</button>}
+                {isProductPage && <button type="button" onClick={() => checkoutProduct(selectedProduct)} disabled={selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 || !getProductAvailability(selectedProduct, availabilityNow).available} style={{ border: 'none', borderRadius: '9px', padding: '11px 18px', background: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 || !getProductAvailability(selectedProduct, availabilityNow).available ? '#e5e7eb' : '#166534', color: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 || !getProductAvailability(selectedProduct, availabilityNow).available ? '#64748b' : '#fff', fontWeight: 800, cursor: 'pointer', flex: isSmallScreen ? '1 1 160px' : '0 0 auto' }}><i className="fa-solid fa-lock" aria-hidden="true" /> Checkout</button>}
               </div>
             </div>
           </div>
@@ -2418,6 +2457,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                   <span>Subtotal:</span>
                   <span>{money(subtotal, cartCurrency)}</span>
                 </div>
+                {cartUnavailableItems.length > 0 && <div role="alert" style={{ display: 'grid', gap: '5px', marginBottom: '12px', padding: '10px 12px', border: '1px solid #fed7aa', borderRadius: '8px', background: '#fff7ed', color: '#9a3412', fontSize: '.82rem', lineHeight: 1.45 }}>{cartUnavailableItems.map((item) => <div key={item.id}><strong>{item.title}:</strong> {getProductAvailability(item, availabilityNow).message}</div>)}</div>}
 
                 <form onSubmit={handleCheckout} style={{ display: 'grid', gap: '10px' }}>
                   <input
@@ -2461,23 +2501,23 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
 
                   <button
                     type="submit"
-                    disabled={paymentLoading || (!cartIsFree && !paystackReady)}
+                    disabled={paymentLoading || (!cartIsFree && !paystackReady) || cartUnavailableItems.length > 0}
                     aria-busy={paymentLoading}
                     style={{
-                      background: paymentLoading || (!cartIsFree && !paystackReady) ? '#d1d5db' : 'linear-gradient(135deg, #FF9900, #FF8A00)',
+                      background: paymentLoading || (!cartIsFree && !paystackReady) || cartUnavailableItems.length > 0 ? '#d1d5db' : 'linear-gradient(135deg, #FF9900, #FF8A00)',
                       border: 'none',
                       borderRadius: '10px',
                       padding: '12px 14px',
                       fontWeight: '800',
-                      cursor: paymentLoading || (!cartIsFree && !paystackReady) ? 'wait' : 'pointer',
-                      color: paymentLoading || (!cartIsFree && !paystackReady) ? '#6b7280' : '#111',
+                      cursor: cartUnavailableItems.length > 0 ? 'not-allowed' : paymentLoading || (!cartIsFree && !paystackReady) ? 'wait' : 'pointer',
+                      color: paymentLoading || (!cartIsFree && !paystackReady) || cartUnavailableItems.length > 0 ? '#6b7280' : '#111',
                       fontSize: '14px',
                       marginTop: '6px',
                       boxShadow: '0 10px 18px rgba(255, 153, 0, 0.24)'
                     }}
                   >
-                    <i className={`fa-solid ${paymentLoading || (!cartIsFree && !paystackReady) ? 'fa-spinner fa-spin' : cartIsFree ? 'fa-envelope' : 'fa-lock'}`} aria-hidden="true" />
-                    {paymentLoading ? (cartIsFree ? 'Sending free product...' : 'Opening secure payment...') : cartIsFree ? 'Request free product' : paystackReady ? 'Pay with Paystack' : 'Loading Paystack...'}
+                    <i className={`fa-solid ${paymentLoading || (!cartIsFree && !paystackReady) ? 'fa-spinner fa-spin' : cartUnavailableItems.length > 0 ? 'fa-circle-exclamation' : cartIsFree ? 'fa-envelope' : 'fa-lock'}`} aria-hidden="true" />
+                    {paymentLoading ? (cartIsFree ? 'Sending free product...' : 'Opening secure payment...') : cartUnavailableItems.length > 0 ? 'Unavailable product in cart' : cartIsFree ? 'Request free product' : paystackReady ? 'Pay with Paystack' : 'Loading Paystack...'}
                   </button>
                 </form>
               </div>

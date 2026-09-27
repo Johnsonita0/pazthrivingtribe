@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import DateTimePicker from "../components/DateTimePicker";
 import { notifyAdminActivity } from "../utils/notifyAdminActivity";
+import { toDateTimeLocalValue, toIsoDateTime } from "../utils/productAvailability";
 import { jsPDF } from "jspdf";
 
 const vendorDraftKey = "paz-vendor-registration-draft";
@@ -209,7 +211,12 @@ export default function VendorDashboard() {
     isFree: false,
     stockCount: "1",
     inStock: true,
+    releaseEnabled: false,
+    releaseAt: "",
+    closeAt: "",
+    allowAfterClose: false,
   });
+  const [releaseSettingsOpen, setReleaseSettingsOpen] = useState(false);
   const [productFile, setProductFile] = useState(null);
   const [productFilePreviewUrl, setProductFilePreviewUrl] = useState("");
   const [coverFile, setCoverFile] = useState(null);
@@ -982,6 +989,26 @@ export default function VendorDashboard() {
     }
     setSaving(true);
     try {
+      const signInEmail = authForm.email.trim().toLowerCase();
+      if (authMode === "sign-in") {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signInEmail)) {
+          setNotice({ type: "error", text: "Enter a valid vendor email address." });
+          return;
+        }
+        const { data: emailStatus, error: emailCheckError } = await supabase.rpc("check_vendor_identity_availability", {
+          p_username: "",
+          p_email: signInEmail,
+          p_company_name: "",
+        });
+        if (emailCheckError) {
+          setNotice({ type: "error", text: "We could not verify this email with the PAZ Shop vendor list. Please try again." });
+          return;
+        }
+        if (!emailStatus?.email_taken) {
+          setNotice({ type: "error", text: "This email is not registered with PAZ Shop. Check the address or create a vendor account." });
+          return;
+        }
+      }
       if (authMode === "sign-up") {
         if (!(await checkVendorAvailability())) {
           setSaving(false);
@@ -1000,7 +1027,7 @@ export default function VendorDashboard() {
       const result =
         authMode === "sign-in"
           ? await withTimeout(
-              supabase.auth.signInWithPassword(authForm),
+              supabase.auth.signInWithPassword({ ...authForm, email: signInEmail }),
               "Sign-in is taking too long. Check your connection and try again.",
             )
           : await withTimeout(
@@ -1046,8 +1073,15 @@ export default function VendorDashboard() {
         setSignupConfirmationEmail(authForm.email.trim().toLowerCase());
       }
     } catch (error) {
-      if (authMode === "sign-in") registerCredentialFailure(passwordLockoutKey, "Password sign-in");
-      else setNotice({ type: "error", text: error.message || "Your vendor account could not be created." });
+      if (authMode === "sign-in") {
+        if (error?.code === "email_not_confirmed") {
+          setNotice({ type: "error", text: "This vendor email is not verified yet. Check your inbox for its confirmation link." });
+        } else if (error?.code === "invalid_credentials" || /invalid login credentials/i.test(error?.message || "")) {
+          registerCredentialFailure(passwordLockoutKey, "password");
+        } else {
+          setNotice({ type: "error", text: error.message || "Vendor sign-in could not be completed. Please try again." });
+        }
+      } else setNotice({ type: "error", text: error.message || "Your vendor account could not be created." });
     } finally {
       setSaving(false);
     }
@@ -1194,7 +1228,8 @@ export default function VendorDashboard() {
 
   const editProduct = (product) => {
     setEditingProductId(product.id);
-    setProductForm({ title: product.title || "", description: product.description || "", price: product.price || "", currency: accountCurrency, category: product.category || "Ebook", fileUrl: product.file_url || "", cover: product.cover || "/logo/logomain.png", isFree: Boolean(product.is_free), stockCount: String(product.stock_count ?? 1), inStock: product.in_stock !== false });
+    setProductForm({ title: product.title || "", description: product.description || "", price: product.price || "", currency: accountCurrency, category: product.category || "Ebook", fileUrl: product.file_url || "", cover: product.cover || "/logo/logomain.png", isFree: Boolean(product.is_free), stockCount: String(product.stock_count ?? 1), inStock: product.in_stock !== false, releaseEnabled: Boolean(product.release_enabled), releaseAt: toDateTimeLocalValue(product.release_at), closeAt: toDateTimeLocalValue(product.close_at), allowAfterClose: Boolean(product.allow_after_close) });
+    setReleaseSettingsOpen(false);
     setProductFile(null);
     setCoverFile(null);
     window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
@@ -1219,6 +1254,14 @@ export default function VendorDashboard() {
 
   const publishProduct = async (event) => {
     event.preventDefault();
+    if (productForm.releaseEnabled && !productForm.releaseAt) {
+      setNotice({ type: "error", text: "Choose the release date and time before saving scheduled settings." });
+      return;
+    }
+    if (productForm.releaseEnabled && productForm.closeAt && new Date(productForm.closeAt) <= new Date(productForm.releaseAt)) {
+      setNotice({ type: "error", text: "The close date and time must be after the release date and time." });
+      return;
+    }
     if (profile?.status !== "approved") {
       setNotice({
         type: "error",
@@ -1248,6 +1291,10 @@ export default function VendorDashboard() {
         published_at: null,
         in_stock: productForm.inStock !== false,
         stock_count: Math.max(Number(productForm.stockCount || 0), 0),
+        release_enabled: Boolean(productForm.releaseEnabled),
+        release_at: productForm.releaseEnabled ? toIsoDateTime(productForm.releaseAt) : null,
+        close_at: productForm.releaseEnabled ? toIsoDateTime(productForm.closeAt) : null,
+        allow_after_close: Boolean(productForm.releaseEnabled && productForm.allowAfterClose),
         updated_at: new Date().toISOString(),
       };
     const query = editingProductId
@@ -1269,7 +1316,12 @@ export default function VendorDashboard() {
         isFree: false,
         stockCount: "1",
         inStock: true,
+        releaseEnabled: false,
+        releaseAt: "",
+        closeAt: "",
+        allowAfterClose: false,
       });
+      setReleaseSettingsOpen(false);
       setNotice({ type: "success", text: editingProductId ? "Product updated." : "Product published to the shop." });
       void notifyAdminActivity("Vendor product submission", editingProductId ? "Vendor product updated" : "New vendor product awaiting review", {
         vendor: profile.company_name,
@@ -2334,14 +2386,51 @@ export default function VendorDashboard() {
                   <input type="checkbox" checked={productForm.isFree} onChange={(event) => setProductForm({ ...productForm, isFree: event.target.checked, price: event.target.checked ? "0" : (Number(productForm.price) > 0 ? productForm.price : "1") })} />
                   Free product (email delivery without Paystack)
                 </label>
-                <select value={productForm.inStock ? "available" : "out-of-stock"} onChange={(event) => setProductForm({ ...productForm, inStock: event.target.value === "available" })} aria-label="Stock status" style={{ ...productFieldStyle, gridColumn: "1", gridRow: "5" }}>
+                <button type="button" aria-expanded={releaseSettingsOpen} onClick={() => setReleaseSettingsOpen((open) => !open)} style={{ ...productFieldStyle, width: "fit-content", gridColumn: "1 / -1", gridRow: "5", background: "#fff", color: "#334155", fontWeight: 800, cursor: "pointer" }}>
+                  <i className={`fa-solid ${releaseSettingsOpen ? "fa-chevron-up" : "fa-chevron-down"}`} aria-hidden="true" /> {releaseSettingsOpen ? "Hide release settings" : "Release settings"}
+                </button>
+                {releaseSettingsOpen && (
+                  <div role="group" aria-label="Product release schedule" style={{ overflow: "hidden", border: "1px solid #b9d7c6", borderRadius: "9px", background: "#fff", gridColumn: "1 / -1", gridRow: "6" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap", padding: "12px 14px", background: "#123c32", color: "#fff" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <i className="fa-regular fa-calendar-check" aria-hidden="true" style={{ fontSize: "1.1rem", color: "#a7f3d0" }} />
+                        <div><div style={{ color: "#fff", fontSize: ".78rem", fontWeight: 900, letterSpacing: ".1em", textTransform: "uppercase" }}>Launch window</div><div style={{ marginTop: "2px", color: "#d1e7dc", fontSize: ".76rem" }}>Dates use your local time</div></div>
+                      </div>
+                      <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", color: "#fff", fontSize: ".82rem", fontWeight: 800, cursor: "pointer" }}>
+                        <input type="checkbox" checked={productForm.releaseEnabled} onChange={(event) => setProductForm((current) => ({ ...current, releaseEnabled: event.target.checked }))} style={{ accentColor: "#34d399" }} />
+                        Schedule active
+                      </label>
+                    </div>
+                    <div style={{ display: "grid", gap: "13px", padding: "14px" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "10px" }}>
+                        <div style={{ display: "grid", gap: "6px", color: "#334155", fontSize: ".76rem", fontWeight: 800 }}>
+                          <span><i className="fa-solid fa-unlock-keyhole" aria-hidden="true" style={{ marginRight: "6px", color: "#15803d" }} />Available from</span>
+                          <DateTimePicker ariaLabel="Release date and time" required={productForm.releaseEnabled} disabled={!productForm.releaseEnabled} value={productForm.releaseAt} onChange={(releaseAt) => setProductForm((current) => ({ ...current, releaseAt }))} />
+                        </div>
+                        <div style={{ display: "grid", gap: "6px", color: "#334155", fontSize: ".76rem", fontWeight: 800 }}>
+                          <span><i className="fa-solid fa-lock" aria-hidden="true" style={{ marginRight: "6px", color: "#b45309" }} />Close after (optional)</span>
+                          <DateTimePicker ariaLabel="Close date and time" allowClear disabled={!productForm.releaseEnabled} value={productForm.closeAt} onChange={(closeAt) => setProductForm((current) => ({ ...current, closeAt }))} />
+                        </div>
+                      </div>
+                      <label style={{ display: "flex", alignItems: "flex-start", gap: "8px", color: "#334155", fontWeight: 700, fontSize: ".78rem" }}>
+                        <input type="checkbox" checked={productForm.allowAfterClose} disabled={!productForm.releaseEnabled} onChange={(event) => setProductForm((current) => ({ ...current, allowAfterClose: event.target.checked }))} />
+                        Keep this product available after the close date
+                      </label>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "10px", paddingTop: "11px", borderTop: "1px solid #e2e8f0", color: "#64748b", fontSize: ".72rem", lineHeight: 1.45 }}>
+                        <div><strong style={{ color: "#166534" }}>Before release</strong><br />Shoppers see “Available on the scheduled date and time.”</div>
+                        <div><strong style={{ color: "#9a3412" }}>After close</strong><br />Shoppers see “This product is no longer available.” unless continued access is enabled.</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <select value={productForm.inStock ? "available" : "out-of-stock"} onChange={(event) => setProductForm({ ...productForm, inStock: event.target.value === "available" })} aria-label="Stock status" style={{ ...productFieldStyle, gridColumn: "1", gridRow: "7" }}>
                   <option value="available">Available</option>
                   <option value="out-of-stock">Out of stock</option>
                 </select>
-                <div style={{ display: "grid", gap: "8px", gridColumn: "2", gridRow: "5" }}>
+                <div style={{ display: "grid", gap: "8px", gridColumn: "2", gridRow: "7" }}>
                   <input type="number" min="0" value={productForm.stockCount} onChange={(event) => setProductForm({ ...productForm, stockCount: event.target.value })} placeholder="Stock count" style={productFieldStyle} />
                 </div>
-                <label style={{ display: "grid", gap: "4px", color: "#475569", fontSize: ".68rem", fontWeight: 700, gridColumn: "1", gridRow: "6" }}>
+                <label style={{ display: "grid", gap: "4px", color: "#475569", fontSize: ".68rem", fontWeight: 700, gridColumn: "1", gridRow: "8" }}>
                   Cover image
                   <span className="vendor-upload-card vendor-product-upload" onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }} onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file) uploadCover({ target: { files: [file] } }); }}>
                     {coverPreviewUrl || (productForm.cover && productForm.cover !== "/logo/logomain.png") ? <img src={coverPreviewUrl || productForm.cover} alt="Product cover preview" style={{ width: "42px", height: "42px", objectFit: "cover", borderRadius: "7px" }} /> : null}
@@ -2372,13 +2461,13 @@ export default function VendorDashboard() {
                     color: "#fff",
                     fontWeight: 800,
                     gridColumn: "2",
-                    gridRow: "6",
+                    gridRow: "8",
                     boxShadow: "0 8px 16px rgba(245, 158, 11, .2)",
                   }}
                 >
-                  {editingProductId ? "Save product changes" : "Publish product"}
+                  {editingProductId ? "Save product and settings" : "Publish product and settings"}
                 </button>
-                {editingProductId && <button className="vendor-product-cancel" type="button" onClick={() => { setEditingProductId(null); setProductFile(null); setCoverFile(null); setProductForm({ title: "", description: "", price: "", currency: "NGN", category: "Ebook", fileUrl: "", cover: "/logo/logomain.png", isFree: false, stockCount: "1", inStock: true }); }} style={{ padding: "11px", border: "1px solid #cbd5e1", borderRadius: "9px", background: "#fff", color: "#334155", fontWeight: 800 }}>Cancel edit</button>}
+                {editingProductId && <button className="vendor-product-cancel" type="button" onClick={() => { setEditingProductId(null); setProductFile(null); setCoverFile(null); setReleaseSettingsOpen(false); setProductForm({ title: "", description: "", price: "", currency: "NGN", category: "Ebook", fileUrl: "", cover: "/logo/logomain.png", isFree: false, stockCount: "1", inStock: true, releaseEnabled: false, releaseAt: "", closeAt: "", allowAfterClose: false }); }} style={{ padding: "11px", border: "1px solid #cbd5e1", borderRadius: "9px", background: "#fff", color: "#334155", fontWeight: 800, gridColumn: "2", gridRow: "9" }}>Cancel edit</button>}
               </form>
             ) : (
               <p

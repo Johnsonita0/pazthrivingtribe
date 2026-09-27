@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { sendResendEmail } from './lib/resend.js';
 import { buildPazEmailTemplate } from './lib/paz-email-template.js';
+import { getProductAvailability } from '../src/utils/productAvailability.js';
 
 function sendJson(res, statusCode, payload) {
   if (typeof res.status === 'function') return res.status(statusCode).json(payload);
@@ -35,6 +36,66 @@ function getAdminEmails() {
     .flatMap((value) => String(value || '').split(','))
     .map((value) => value.trim().toLowerCase())
     .filter((value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)))];
+}
+
+export function isNigeriaIndependenceDay(date = new Date()) {
+  const dateParts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Africa/Lagos',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric'
+  }).formatToParts(date);
+  const dateInfo = Object.fromEntries(dateParts.map(({ type, value }) => [type, Number(value)]));
+  return dateInfo.month === 10 && dateInfo.day === 1;
+}
+
+export function buildCustomerProductEmail({
+  customerName,
+  orderNumber,
+  itemSummary,
+  isFreeOrder = false,
+  date = new Date(),
+  preview = false
+}) {
+  const isIndependenceOrder = isNigeriaIndependenceDay(date);
+  const subject = isIndependenceOrder
+    ? `Happy Independence Day! Your PAZ products are ready — #${orderNumber}`
+    : `Your PAZ products are ready — #${orderNumber}`;
+  const previewNotice = preview
+    ? '<p><strong>Test preview only:</strong> no payment was taken and no product file is attached.</p>'
+    : '';
+  const publicSiteUrl = String(process.env.VITE_APP_URL || 'https://pazthrivingtribe.org').replace(/\/+$/, '');
+  const nigeriaYear = Number(new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Africa/Lagos',
+    year: 'numeric'
+  }).format(date));
+  const independenceBanner = isIndependenceOrder
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 18px;border-collapse:separate;border-spacing:0;"><tr><td align="center" style="padding:12px;background:#eaf7ee;border:1px solid #b9dfc9;border-radius:12px;text-align:center;"><img src="${publicSiteUrl}/image/nigeria-independence-email.gif" alt="A waving Nigerian flag beneath bursting fireworks" width="640" style="display:block;width:100%;max-width:640px;height:auto;border:0;border-radius:8px;" /><div style="margin-top:12px;color:#006b40;font-size:15px;line-height:1.4;font-weight:900;">HAPPY INDEPENDENCE DAY, NIGERIA!</div><div style="margin-top:4px;color:#397252;font-size:12px;line-height:1.5;font-weight:700;">9JA@${nigeriaYear - 1960} · OCTOBER 1</div></td></tr></table>`
+    : '';
+  const html = buildPazEmailTemplate({
+    title: subject,
+    eyebrow: isIndependenceOrder ? 'Nigeria Independence Day' : isFreeOrder ? 'Free product delivery' : 'Payment confirmed',
+    intro: `Hi ${customerName},`,
+    accentText: preview
+      ? 'This is a preview of the October 1 purchase email.'
+      : isIndependenceOrder
+        ? `Happy Independence Day! Your ${isFreeOrder ? 'requested product is' : 'purchased products are'} attached to this email.`
+        : isFreeOrder ? 'Your requested free product is attached to this email.' : 'Your payment was successful and your purchased files are attached to this email.',
+    bodyHtml: `${previewNotice}${independenceBanner}${isIndependenceOrder ? '<p>Wishing you and your loved ones a joyful Independence Day celebration. Thank you for choosing PAZ Thriving Tribe.</p>' : ''}<p><strong>${preview ? 'Sample purchase email.' : isFreeOrder ? 'Free product request confirmed.' : 'Payment confirmed.'}</strong></p><p>${preview ? 'This sample shows the customer message and order details only; no payment or product delivery occurred.' : 'Your digital products are attached below.'}</p><p><strong>Order number:</strong> ${orderNumber}</p><p><strong>Order items:</strong><br>${itemSummary.replace(/\n/g, '<br')}</p>`,
+    productName: 'PAZ digital products',
+    ctaLabel: 'Visit PAZ Thriving Tribe',
+    ctaUrl: process.env.VITE_APP_URL || 'https://pazthrivingtribe.org',
+    footerNote: preview
+      ? 'Test preview only. No order was created or payment collected.'
+      : isIndependenceOrder
+        ? 'With warm Independence Day wishes, PAZ Thriving Tribe.'
+        : 'Thank you for choosing PAZ Thriving Tribe.'
+  });
+  const text = preview
+    ? `TEST PREVIEW ONLY. No payment or delivery occurred. ${isIndependenceOrder ? 'Happy Independence Day from PAZ Thriving Tribe! ' : ''}Sample order ${orderNumber}: ${itemSummary}`
+    : `${isIndependenceOrder ? 'Happy Independence Day from PAZ Thriving Tribe! ' : ''}${isFreeOrder ? 'Your requested free PAZ products' : 'Payment confirmed. Your selected PAZ products'} are attached to this email. Order: ${orderNumber}`;
+
+  return { subject, html, text };
 }
 
 export default async function handler(req, res) {
@@ -80,7 +141,7 @@ export default async function handler(req, res) {
     const productIds = [...new Set(items.map((item) => String(item.id || '').trim()).filter(Boolean))];
     const { data: products, error: productsError } = await supabase
       .from('store_products')
-      .select('id,title,price,currency,file_url,is_free,status')
+      .select('id,title,price,currency,file_url,is_free,status,vendor_id,release_enabled,release_at,close_at,allow_after_close')
       .in('id', productIds);
 
     if (productsError) throw productsError;
@@ -103,6 +164,20 @@ export default async function handler(req, res) {
 
     if (normalizedItems.some((item) => !item.product)) {
       return sendJson(res, 400, { error: 'One or more purchased products are no longer available.' });
+    }
+
+    const transactionCreatedAt = transaction?.created_at ? new Date(transaction.created_at) : null;
+    const checkoutTime = transactionCreatedAt && !Number.isNaN(transactionCreatedAt.getTime())
+      ? transactionCreatedAt
+      : new Date();
+    const unavailableScheduledItem = normalizedItems.find(({ product }) =>
+      !getProductAvailability(product, checkoutTime).available,
+    );
+    if (unavailableScheduledItem) {
+      const availability = getProductAvailability(unavailableScheduledItem.product, checkoutTime);
+      return sendJson(res, 400, {
+        error: `${unavailableScheduledItem.product.title || 'This product'}: ${availability.message}`,
+      });
     }
 
     if (isFreeOrder && normalizedItems.some((item) => !item.product.is_free)) {
@@ -199,7 +274,8 @@ export default async function handler(req, res) {
 
     const itemSummary = normalizedItems.map(({ product, quantity }) => `• ${product.title} x${quantity}`).join('\n');
     const customerName = String(body.customerName || 'Customer').trim();
-    const subject = `Your PAZ products are ready — #${orderNumber}`;
+    const customerEmail = buildCustomerProductEmail({ customerName, orderNumber, itemSummary, isFreeOrder });
+    const { subject, html, text } = customerEmail;
     const adminRecipients = getAdminEmails();
     const adminSubject = isFreeOrder ? `Free product requested — ${orderNumber}` : `Payment received — ${orderNumber}`;
     const adminHtml = buildPazEmailTemplate({
@@ -216,24 +292,12 @@ export default async function handler(req, res) {
       secondaryCtaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/dashboard?view=payment-history&reference=${encodeURIComponent(reference)}`,
       footerNote: 'Internal payment notification for PAZ Thriving Tribe.'
     });
-    const html = buildPazEmailTemplate({
-      title: subject,
-      eyebrow: isFreeOrder ? 'Free product delivery' : 'Payment confirmed',
-      intro: `Hi ${customerName},`,
-      accentText: isFreeOrder ? 'Your requested free product is attached to this email.' : 'Your payment was successful and your purchased files are attached to this email.',
-      bodyHtml: `<p><strong>${isFreeOrder ? 'Free product request confirmed.' : 'Payment confirmed.'}</strong></p><p>Your digital products are attached below.</p><p><strong>Order number:</strong> ${orderNumber}</p><p><strong>Order items:</strong><br>${itemSummary.replace(/\n/g, '<br>')}</p>`,
-      productName: 'PAZ digital products',
-      ctaLabel: 'Visit PAZ Thriving Tribe',
-      ctaUrl: process.env.VITE_APP_URL || 'https://pazthrivingtribe.org',
-      footerNote: 'Thank you for choosing PAZ Thriving Tribe.'
-    });
-
     await Promise.all([
       sendResendEmail({
         to: email,
         subject,
         html,
-        text: `${isFreeOrder ? 'Your requested free PAZ products' : 'Payment confirmed. Your selected PAZ products'} are attached to this email. Order: ${orderNumber}`,
+        text,
         attachments
       }),
       ...adminRecipients.map((recipient) => sendResendEmail({
