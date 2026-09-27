@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { supabase } from "./supabaseClient";
+import ProductCover, { resolveProductCover } from './components/ProductCover';
 import CustomDropdown from "./components/CustomDropdown";
 import DateTimePicker from "./components/DateTimePicker";
 import ProductDescriptionAssist from "./components/ProductDescriptionAssist";
@@ -219,7 +220,7 @@ export default function AdminDashboard(props) {
     isFree: false,
     category: "Ebook",
     fileUrl: "",
-    cover: "/logo/logomain.png",
+    cover: "",
     inStock: true,
     stockCount: "",
     releaseEnabled: false,
@@ -1296,7 +1297,7 @@ export default function AdminDashboard(props) {
       isFree: false,
       category: "Ebook",
       fileUrl: "",
-      cover: "/logo/logomain.png",
+      cover: "",
       inStock: true,
       stockCount: "",
       releaseEnabled: false,
@@ -1320,7 +1321,7 @@ export default function AdminDashboard(props) {
     isFree: Boolean(product.isFree ?? product.is_free ?? false),
     category: product.category || "Ebook",
     fileUrl: product.fileUrl || product.file_url || "",
-    cover: product.cover || product.cover_url || "/logo/logomain.png",
+    cover: product.cover || product.cover_url || "",
     inStock: (product.inStock ?? product.in_stock ?? true) !== false,
     stockCount: Number(product.stockCount ?? product.stock_count ?? 0),
     releaseEnabled: Boolean(product.releaseEnabled ?? product.release_enabled ?? false),
@@ -1346,7 +1347,7 @@ export default function AdminDashboard(props) {
       is_free: Boolean(product.isFree),
       category: product.category || "Ebook",
       file_url: product.fileUrl || "",
-      cover: product.cover || "/logo/logomain.png",
+      cover: product.cover || "",
       in_stock: product.inStock !== false,
       stock_count: Number(product.stockCount || 0),
       release_enabled: Boolean(product.releaseEnabled),
@@ -1596,7 +1597,7 @@ export default function AdminDashboard(props) {
       isFree: Boolean(storeProductForm.isFree),
       category: storeProductForm.category || "Ebook",
       fileUrl: storeProductForm.fileUrl.trim() || "",
-      cover: storeProductForm.cover.trim() || "/logo/logomain.png",
+      cover: storeProductForm.cover.trim() || "",
       inStock: normalizedInStock,
       stockCount: normalizedInStock
         ? Number.isFinite(parsedStockCount) && parsedStockCount >= 0
@@ -1760,7 +1761,7 @@ export default function AdminDashboard(props) {
     const updated = payload.data || { ...product, status, ...verification };
     setStoreProducts((current) => current.map((item) => item.id === product.id ? { ...item, ...updated } : item));
     setSelectedVendor((current) => current?.id === selectedVendor?.id ? { ...current, products: (current.products || []).map((item) => item.id === product.id ? { ...item, ...updated } : item) } : current);
-    setProductReviewModal((current) => current?.id === product.id ? { ...current, ...updated } : current);
+    setProductReviewModal((current) => current?.id === product.id ? { ...current, ...updated, cover: resolveProductCover(updated) } : current);
     showAdminToast(payload.schemaWarning ? "info" : "success", "Product review updated", payload.schemaWarning || `${product.title} is now ${status}.`);
   };
 
@@ -1778,12 +1779,12 @@ export default function AdminDashboard(props) {
     }
     const updated = payload.data || { ...product, status: "in_review", name_verified: false, description_verified: false, cover_verified: false, attachment_verified: false, amount_verified: false };
     setSelectedVendor((current) => current?.id === selectedVendor?.id ? { ...current, products: (current.products || []).map((item) => item.id === product.id ? { ...item, ...updated } : item) } : current);
-    setProductReviewModal((current) => current?.id === product.id ? { ...current, ...updated } : current);
+    setProductReviewModal((current) => current?.id === product.id ? { ...current, ...updated, cover: resolveProductCover(updated) } : current);
     showAdminToast("success", "Vendor notified", `${product.title} was sent back for review.`);
   };
 
   const openProductReview = async (product) => {
-    setProductReviewModal({ ...product, filePreviewUrl: "", filePreviewLoading: Boolean(product.file_url) });
+    setProductReviewModal({ ...product, cover: resolveProductCover(product), filePreviewUrl: "", filePreviewLoading: Boolean(product.file_url) });
     if (!product.file_url) {
       setProductReviewModal((current) => current ? { ...current, filePreviewLoading: false, filePreviewError: "This product has no book attachment." } : current);
       return;
@@ -4308,12 +4309,7 @@ export default function AdminDashboard(props) {
                                   className="commerce-product-card"
                                 >
                                   <div className="commerce-product-media">
-                                    <img
-                                      src={
-                                        product.cover || "/logo/logomain.png"
-                                      }
-                                      alt={product.title}
-                                    />
+                                    <ProductCover product={product} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                   </div>
                                   <div className="commerce-product-meta">
                                     <div

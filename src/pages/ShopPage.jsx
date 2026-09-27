@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import { getCountries, getCountryCallingCode, isValidPhoneNumber, parsePhoneNumberFromString } from 'libphonenumber-js';
 import { supabase } from '../supabaseClient';
+import ProductCover, { resolveProductCover } from '../components/ProductCover';
 import { notifyAdminActivity } from '../utils/notifyAdminActivity';
 import { getIndependenceDaySlides } from '../utils/independenceDaySlides';
 import { getProductAvailability } from '../utils/productAvailability';
@@ -483,7 +484,7 @@ const normalizeProduct = (product = {}) => ({
   currency: String(product.currency || 'NGN').toUpperCase(),
   isFree: Boolean(product.is_free ?? product.isFree ?? false),
   category: product.category || 'Ebook',
-  cover: product.cover || product.cover_url || product.cover_image || product.image || product.image_url || product.imageUrl || '/logo/logomain.png',
+  cover: product.cover || product.cover_url || product.cover_image || product.image || product.image_url || product.imageUrl || '',
   fileUrl: product.file_url || product.fileUrl || '',
   inStock: product.in_stock ?? product.inStock ?? true,
   stockCount: Number(product.stock_count ?? product.stockCount ?? 0),
@@ -498,19 +499,6 @@ const normalizeProduct = (product = {}) => ({
   prime: Boolean(product.prime ?? false),
   createdAt: product.created_at || product.createdAt || null
 });
-
-const productCoverUrl = (product) => {
-  const cover = String(product?.cover || product?.cover_url || product?.cover_image || product?.image || product?.image_url || product?.imageUrl || '').trim();
-  if (!cover) return '/logo/logomain.png';
-  if (/^(https?:|data:|blob:)/i.test(cover)) return cover;
-  const supabaseUrl = String(import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '');
-  if (cover.startsWith('/storage/v1/object/public/')) return `${supabaseUrl}${cover}`;
-  const storagePath = cover.replace(/^\/+/, '');
-  if (supabaseUrl && storagePath.startsWith('products/')) {
-    return `${supabaseUrl}/storage/v1/object/public/prof-upload/${storagePath.split('/').map(encodeURIComponent).join('/')}`;
-  }
-  return `/${cover.replace(/^\/+/, '')}`;
-};
 
 const isNewProduct = (product) => {
   const createdAt = Date.parse(product?.createdAt || product?.created_at || '');
@@ -639,7 +627,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
       return productSlug(product).toLowerCase() === productKey || String(product.id || '').trim().toLowerCase() === productKey;
     })
     : null;
-  const activePromotionalCover = activePromotionalItem?.image || (activePromotionalProduct ? productCoverUrl(activePromotionalProduct) : '');
+  const activePromotionalCover = activePromotionalItem?.image || (activePromotionalProduct ? resolveProductCover(activePromotionalProduct) : '');
 
   useEffect(() => {
     let active = true;
@@ -1899,7 +1887,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                       justifyContent: 'center',
                       position: 'relative'
                     }}>
-                      <img src={productCoverUrl(product)} alt={product.title} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/logo/logomain.png'; }} style={{
+                      <ProductCover product={product} style={{
                         width: '100%',
                         height: '100%',
                         objectFit: 'cover'
@@ -2224,7 +2212,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
 
               <div style={{ display: 'grid', gridTemplateColumns: isSmallScreen ? '1fr' : '140px minmax(0, 1fr)', gap: isSmallScreen ? '8px' : '16px', alignItems: 'start' }}>
                 <div style={{ width: '100%', maxWidth: isSmallScreen ? '140px' : 'none', justifySelf: isSmallScreen ? 'center' : 'stretch' }}>
-                  <img src={productCoverUrl(selectedProduct)} alt={selectedProduct.title} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/logo/logomain.png'; }} style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'cover', borderRadius: '14px', border: '1px solid #e5e7eb', boxShadow: '0 8px 18px rgba(15, 23, 42, 0.08)' }} />
+                  <ProductCover product={selectedProduct} style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'cover', borderRadius: '14px', border: '1px solid #e5e7eb', boxShadow: '0 8px 18px rgba(15, 23, 42, 0.08)' }} />
                   <div style={{ display: 'grid', gap: '4px', marginTop: '8px', padding: '9px 10px', borderRadius: '11px', background: '#f8fafc', border: '1px solid #e2e8f0', color: '#475569', fontSize: '0.7rem', lineHeight: 1.35 }}>
                     <span><strong style={{ color: '#334155' }}>Category:</strong> {selectedProduct.category || 'Product'}</span>
                     <span><strong style={{ color: '#334155' }}>Delivery:</strong> Email attachment</span>
@@ -2434,7 +2422,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                   {cart.map((item) => (
                     <div key={item.id} style={{ borderBottom: '1px solid #e0e0e0', paddingBottom: '16px' }}>
                       <div style={{ display: 'flex', gap: '12px', marginBottom: '8px' }}>
-                        <img src={productCoverUrl(item)} alt={item.title} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/logo/logomain.png'; }} style={{ width: '60px', height: '60px', borderRadius: '4px', objectFit: 'cover' }} />
+                        <ProductCover product={item} style={{ width: '60px', height: '60px', borderRadius: '4px', objectFit: 'cover' }} />
                         <div style={{ flex: 1 }}>
                           <h4 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: 'bold' }}>{item.title}</h4>
                           <div style={{ color: '#666', fontSize: '12px' }}>Qty: {item.quantity}</div>
@@ -2691,12 +2679,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
               opacity: flight.opacity ?? 1
             }}
           >
-            <img
-              src={productCoverUrl(flight.product)}
-              onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/logo/logomain.png'; }}
-              alt=""
-              style={{ width: '100%', height: '100%', borderRadius: '12px', objectFit: 'cover' }}
-            />
+            <ProductCover product={flight.product} style={{ width: '100%', height: '100%', borderRadius: '12px', objectFit: 'cover' }} />
           </div>
         ))}
 

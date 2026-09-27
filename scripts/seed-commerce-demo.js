@@ -21,10 +21,10 @@ if (!supabaseUrl || !insertKey) {
 }
 
 const products = [
-  { title: 'Confidence for Teens', description: 'Digital guide', price: 5500, category: 'Ebook', cover: '/logo/logomain.png', file_url: '', rating: 4.9, reviews: 28, in_stock: true, stock_count: 245, prime: true },
-  { title: 'Thriving Parent Guide', description: 'Practical guide for parents', price: 7000, category: 'Guide', cover: '/logo/logo2.jpeg', file_url: '', rating: 4.8, reviews: 19, in_stock: true, stock_count: 156, prime: true },
-  { title: 'Purpose Planner Workbook', description: 'Goal-setting workbook', price: 4500, category: 'Workbook', cover: '/logo/logo2.jpeg', file_url: '', rating: 4.7, reviews: 33, in_stock: true, stock_count: 312, prime: false },
-  { title: 'Family Routine Kit', description: 'Routine planner', price: 6200, category: 'Planner', cover: '/logo/logomain.png', file_url: '', rating: 4.9, reviews: 22, in_stock: true, stock_count: 120, prime: true }
+  { title: 'Confidence for Teens', description: 'Digital guide', price: 5500, category: 'Ebook', cover: '', file_url: '', rating: 4.9, reviews: 28, in_stock: true, stock_count: 245, prime: true },
+  { title: 'Thriving Parent Guide', description: 'Practical guide for parents', price: 7000, category: 'Guide', cover: '', file_url: '', rating: 4.8, reviews: 19, in_stock: true, stock_count: 156, prime: true },
+  { title: 'Purpose Planner Workbook', description: 'Goal-setting workbook', price: 4500, category: 'Workbook', cover: '', file_url: '', rating: 4.7, reviews: 33, in_stock: true, stock_count: 312, prime: false },
+  { title: 'Family Routine Kit', description: 'Routine planner', price: 6200, category: 'Planner', cover: '', file_url: '', rating: 4.9, reviews: 22, in_stock: true, stock_count: 120, prime: true }
 ];
 
 const bankAccount = {

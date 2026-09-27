@@ -2,6 +2,7 @@
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { getIndependenceDaySlides } from '../utils/independenceDaySlides';
+import ProductCover, { resolveProductCover } from '../components/ProductCover';
 
 const isStorefrontProduct = (product) =>
   product.status === 'published' ||
@@ -124,7 +125,7 @@ const normalizeProduct = (product = {}) => ({
   currency: product.currency || 'NGN',
   isFree: Boolean(product.is_free ?? product.isFree ?? false),
   category: product.category || 'Ebook',
-  cover: product.cover || product.image || product.image_url || '/logo/logomain.png',
+  cover: product.cover || product.cover_url || product.cover_image || product.image || product.image_url || product.imageUrl || '',
   fileUrl: product.file_url || product.fileUrl || '',
   inStock: product.in_stock ?? product.inStock ?? true,
   stockCount: Number(product.stock_count ?? product.stockCount ?? 0),
@@ -919,7 +920,7 @@ export default function StorePage({ isIndependenceDay = false, independenceAnniv
                     {cart.map((item) => (
                       <div key={item.id} style={{ borderBottom: '1px solid #e0e0e0', paddingBottom: '16px' }}>
                         <div style={{ display: 'flex', gap: '12px', marginBottom: '8px' }}>
-                          <img src={item.cover} alt={item.title} style={{ width: '60px', height: '60px', borderRadius: '4px', objectFit: 'cover' }} />
+                          <ProductCover product={item} style={{ width: '60px', height: '60px', borderRadius: '4px', objectFit: 'cover' }} />
                           <div style={{ flex: 1 }}>
                             <h4 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: 'bold', color: '#111' }}>{item.title}</h4>
                             <div style={{ color: '#666', fontSize: '12px' }}>Qty: {item.quantity}</div>
@@ -982,7 +983,7 @@ export default function StorePage({ isIndependenceDay = false, independenceAnniv
             <div
               className="store-hero-bg"
               style={{
-                backgroundImage: `url(${activeProduct.cover})`
+                backgroundImage: resolveProductCover(activeProduct) ? `url("${resolveProductCover(activeProduct)}")` : 'none'
               }}
             />
 
@@ -1016,7 +1017,7 @@ export default function StorePage({ isIndependenceDay = false, independenceAnniv
                   </div>
 
                   <div className="store-hero-product-body">
-                    <img src={activeProduct.cover} alt={activeProduct.title} className="store-hero-image" />
+                    <ProductCover product={activeProduct} className="store-hero-image" />
                     <div>
                       <h2 className="store-hero-product-name">{activeProduct.title}</h2>
                       <p className="store-hero-product-description">{activeProduct.description}</p>
