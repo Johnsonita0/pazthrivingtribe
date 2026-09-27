@@ -5,6 +5,11 @@ const pad = (value) => String(value).padStart(2, '0');
 
 const parseValue = (value) => {
   if (!value) return null;
+  const localValue = String(value).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+  if (localValue) {
+    const [, year, month, day, hour, minute] = localValue.map(Number);
+    return new Date(year, month - 1, day, hour, minute);
+  }
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date;
 };
@@ -93,7 +98,12 @@ export default function DateTimePicker({ value, onChange, disabled = false, requ
   const firstOfMonth = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1);
   const calendarStart = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1 - ((firstOfMonth.getDay() + 6) % 7));
   const calendarDays = Array.from({ length: 42 }, (_, index) => new Date(calendarStart.getFullYear(), calendarStart.getMonth(), calendarStart.getDate() + index));
-  const now = new Date();
+  const nowParts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Lagos', year: 'numeric', month: 'numeric', day: 'numeric' })
+      .formatToParts(new Date())
+      .map(({ type, value }) => [type, value]),
+  );
+  const now = new Date(Number(nowParts.year), Number(nowParts.month) - 1, Number(nowParts.day));
   const dateComplete = Boolean(draftDate);
   const timeComplete = hourSelected && minuteSelected;
   const draftTime = new Date(2000, 0, 1, draftHour, draftMinute).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
@@ -124,7 +134,7 @@ export default function DateTimePicker({ value, onChange, disabled = false, requ
         <div role="presentation" style={{ position: 'fixed', inset: 0, zIndex: 50000, display: 'grid', placeItems: 'center', overflowY: 'auto', overscrollBehavior: 'contain', padding: '12px', boxSizing: 'border-box', background: 'rgba(10, 24, 20, .68)' }}>
           <section role="dialog" aria-modal="true" aria-label={ariaLabel} style={{ width: 'min(440px, 100%)', maxHeight: 'calc(100dvh - 24px)', overflowY: 'auto', overscrollBehavior: 'contain', padding: '16px', border: '1px solid #bfd8cb', borderRadius: '14px', background: '#fff', color: '#17212b', boxShadow: '0 26px 80px rgba(0, 0, 0, .34)', boxSizing: 'border-box' }}>
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px', marginBottom: '14px' }}>
-              <div><div style={{ color: '#166534', fontSize: '.68rem', fontWeight: 900, letterSpacing: '.12em', textTransform: 'uppercase' }}>{required ? 'Required schedule' : 'Optional close date'}</div><h2 style={{ margin: '4px 0 0', fontSize: '1.18rem', lineHeight: 1.25 }}>Set date and time</h2><div style={{ marginTop: '4px', color: '#64748b', fontSize: '.76rem' }}>Local time · selection is saved when complete</div></div>
+              <div><div style={{ color: '#166534', fontSize: '.68rem', fontWeight: 900, letterSpacing: '.12em', textTransform: 'uppercase' }}>{required ? 'Required schedule' : 'Optional close date'}</div><h2 style={{ margin: '4px 0 0', fontSize: '1.18rem', lineHeight: 1.25 }}>Set date and time</h2><div style={{ marginTop: '4px', color: '#64748b', fontSize: '.76rem' }}>West Africa Time (WAT) · saved when complete</div></div>
               <div aria-hidden="true" style={{ display: 'grid', placeItems: 'center', width: '38px', height: '38px', flex: '0 0 38px', borderRadius: '10px', background: '#e8f5ed', color: '#166534' }}><i className="fa-regular fa-calendar-check" /></div>
             </header>
 

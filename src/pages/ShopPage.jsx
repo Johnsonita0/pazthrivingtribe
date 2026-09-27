@@ -983,7 +983,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     const availability = getProductAvailability(product, Date.now());
     if (!availability.available) {
       setToast({ message: availability.message, type: 'error' });
-      setTimeout(() => setToast(null), 3500);
+      setTimeout(() => setToast(null), 8000);
       return;
     }
     if (product.inStock === false || Number(product.stockCount || 0) <= 0) {
@@ -1094,7 +1094,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     const availability = getProductAvailability(product, Date.now());
     if (!availability.available) {
       setToast({ message: availability.message, type: 'error' });
-      setTimeout(() => setToast(null), 3500);
+      setTimeout(() => setToast(null), 8000);
       return;
     }
     if (product.inStock === false || Number(product.stockCount || 0) <= 0) return;
@@ -1354,7 +1354,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     if (blockedItem) {
       const currentProduct = storeData.products.find((product) => String(product.id) === String(blockedItem.id)) || blockedItem;
       setToast({ message: `${currentProduct.title}: ${getProductAvailability(currentProduct, Date.now()).message}`, type: 'error' });
-      setTimeout(() => setToast(null), 5000);
+      setTimeout(() => setToast(null), 8000);
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import DateTimePicker from "../components/DateTimePicker";
+import ProductDescriptionAssist from "../components/ProductDescriptionAssist";
 import { notifyAdminActivity } from "../utils/notifyAdminActivity";
 import { toDateTimeLocalValue, toIsoDateTime } from "../utils/productAvailability";
 import { jsPDF } from "jspdf";
@@ -1229,7 +1230,7 @@ export default function VendorDashboard() {
   const editProduct = (product) => {
     setEditingProductId(product.id);
     setProductForm({ title: product.title || "", description: product.description || "", price: product.price || "", currency: accountCurrency, category: product.category || "Ebook", fileUrl: product.file_url || "", cover: product.cover || "/logo/logomain.png", isFree: Boolean(product.is_free), stockCount: String(product.stock_count ?? 1), inStock: product.in_stock !== false, releaseEnabled: Boolean(product.release_enabled), releaseAt: toDateTimeLocalValue(product.release_at), closeAt: toDateTimeLocalValue(product.close_at), allowAfterClose: Boolean(product.allow_after_close) });
-    setReleaseSettingsOpen(false);
+    setReleaseSettingsOpen(Boolean(product.release_enabled));
     setProductFile(null);
     setCoverFile(null);
     window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
@@ -2335,18 +2336,27 @@ export default function VendorDashboard() {
                   }
                   style={{ ...productFieldStyle, gridColumn: "1", gridRow: "1" }}
                 />
-                <textarea
-                  required
-                  placeholder="Description"
-                  value={productForm.description}
-                  onChange={(event) =>
-                    setProductForm({
-                      ...productForm,
-                      description: event.target.value,
-                    })
-                  }
-                  style={{ ...productFieldStyle, minHeight: "58px", gridColumn: "1 / -1", gridRow: "2", resize: "vertical" }}
-                />
+                <div style={{ display: "grid", gap: "8px", gridColumn: "1 / -1", gridRow: "2" }}>
+                  <textarea
+                    required
+                    placeholder="Description"
+                    value={productForm.description}
+                    onChange={(event) =>
+                      setProductForm({
+                        ...productForm,
+                        description: event.target.value,
+                      })
+                    }
+                    style={{ ...productFieldStyle, minHeight: "58px", resize: "vertical" }}
+                  />
+                  <ProductDescriptionAssist
+                    productTitle={productForm.title}
+                    category={productForm.category}
+                    currentDescription={productForm.description}
+                    accessToken={session?.access_token || session?.accessToken || ""}
+                    onUseDraft={(description) => setProductForm((current) => ({ ...current, description }))}
+                  />
+                </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "7px", gridColumn: "1", gridRow: "3" }}>
                   <span aria-hidden="true" style={{ display: "grid", placeItems: "center", minWidth: "42px", height: "32px", color: "#475569", fontWeight: 800, fontSize: ".78rem" }}>{accountCurrency}</span>
                   <input
@@ -2394,7 +2404,7 @@ export default function VendorDashboard() {
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap", padding: "12px 14px", background: "#123c32", color: "#fff" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                         <i className="fa-regular fa-calendar-check" aria-hidden="true" style={{ fontSize: "1.1rem", color: "#a7f3d0" }} />
-                        <div><div style={{ color: "#fff", fontSize: ".78rem", fontWeight: 900, letterSpacing: ".1em", textTransform: "uppercase" }}>Launch window</div><div style={{ marginTop: "2px", color: "#d1e7dc", fontSize: ".76rem" }}>Dates use your local time</div></div>
+                        <div><div style={{ color: "#fff", fontSize: ".78rem", fontWeight: 900, letterSpacing: ".1em", textTransform: "uppercase" }}>Launch window</div><div style={{ marginTop: "2px", color: "#d1e7dc", fontSize: ".76rem" }}>West Africa Time (WAT)</div></div>
                       </div>
                       <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", color: "#fff", fontSize: ".82rem", fontWeight: 800, cursor: "pointer" }}>
                         <input type="checkbox" checked={productForm.releaseEnabled} onChange={(event) => setProductForm((current) => ({ ...current, releaseEnabled: event.target.checked }))} style={{ accentColor: "#34d399" }} />

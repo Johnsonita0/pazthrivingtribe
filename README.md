@@ -26,8 +26,11 @@ Required environment variables in production:
 - `SUPABASE_URL` — the same Supabase project URL for server-side admin APIs
 - `SUPABASE_SERVICE_ROLE_KEY` — secret Supabase service role key used by `/api/admin-update`
 - `ADMIN_EMAILS` — comma-separated list of allowed admin emails (fallback)
+- `OPENAI_API_KEY` — server-only key used by `/api/generate-product-description`
+- `OPENAI_MODEL` — optional model override; defaults to `gpt-4o-mini`
 
 If you deploy to Vercel, add the `SUPABASE_*` variables in the project dashboard under Environment Variables. Do not use `VITE_SUPABASE_ANON_KEY` as the service role key.
+Add `OPENAI_API_KEY` to the local `.env` file for development and to the Vercel Production environment for the deployed AI description helper. Never expose it through a `VITE_` variable.
 
 Alternate fix: if Vercel does not expose `SUPABASE_SERVICE_ROLE_KEY` to the function, also add `VITE_SUPABASE_SERVICE_ROLE_KEY` with the same service role key value. The admin endpoint will accept either variable name at runtime.
 
