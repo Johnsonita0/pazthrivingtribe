@@ -3,6 +3,14 @@
     {
       "source": "/shop",
       "has": [
+        { "type": "query", "key": "product", "value": "(?<product>.*)" },
+        { "type": "header", "key": "user-agent", "value": "(?i).*(facebookexternalhit|facebot|whatsapp|twitterbot|linkedinbot|pinterest|slackbot|discordbot|telegrambot).*" }
+      ],
+      "destination": "/api/product-preview/:product"
+    },
+    {
+      "source": "/shop",
+      "has": [
         { "type": "query", "key": "product", "value": "(?<product>.*)" }
       ],
       "missing": [
