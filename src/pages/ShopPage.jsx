@@ -629,8 +629,8 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const bookHasStock = Boolean(bookProduct && bookProduct.inStock !== false && Number(bookProduct.stockCount) > 0);
   const bookProductKey = promotionalProductKey(independenceBookPromotion.url);
   const regularPromotionalItems = [
-    ...(availableRegularPromotions.length ? availableRegularPromotions : fallbackPromotions),
-    ...(bookHasStock ? [independenceBookPromotion] : [])
+    ...(bookHasStock ? [independenceBookPromotion] : []),
+    ...(availableRegularPromotions.length ? availableRegularPromotions : fallbackPromotions)
   ].filter((item) => item?.isBookReleaseAd || promotionalProductKey(item?.url) !== bookProductKey);
   const independencePromotionalItems = isIndependenceDay
     ? getIndependenceDaySlides(independenceAnniversary).map((slide) => ({
@@ -692,7 +692,6 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
       });
       return () => window.cancelAnimationFrame(frame);
     }
-    return undefined;
   }, [resolvedProductName, storeData.products]);
 
   useEffect(() => {
