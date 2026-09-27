@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import sharp from 'sharp';
 
 const escapeHtml = (value) => String(value || '')
   .replace(/&/g, '&amp;')
@@ -85,6 +84,7 @@ export default async function handler(req, res) {
     }
 
     try {
+      const { default: sharp } = await import('sharp');
       const coverUrl = new URL(cover);
       const supabaseHost = supabaseUrl ? new URL(supabaseUrl).hostname : '';
       const allowedHosts = new Set(['pazthrivingtribe.org', 'www.pazthrivingtribe.org', supabaseHost]);
