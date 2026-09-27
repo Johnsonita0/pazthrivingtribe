@@ -623,10 +623,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
       isIndependenceDay: true
     }))
     : [];
-  const activePromotionalItems = [
-    independenceBookPromotion,
-    ...(isIndependenceDay ? independencePromotionalItems : regularPromotionalItems)
-  ];
+  const activePromotionalItems = isIndependenceDay ? independencePromotionalItems : regularPromotionalItems;
   const activePromotionalIndex = activePromotionalSlide % activePromotionalItems.length;
   const activePromotionalItem = activePromotionalItems[activePromotionalIndex];
   const promotionalSlideCount = activePromotionalItems.length;
@@ -637,6 +634,11 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     })
     : null;
   const activePromotionalCover = activePromotionalItem?.image || (activePromotionalProduct ? resolveProductCover(activePromotionalProduct) : '');
+  const featuredBookKey = promotionalProductKey(independenceBookPromotion.url);
+  const featuredBookProduct = storeData.products.map(normalizeProduct).find((product) =>
+    productSlug(product).toLowerCase() === featuredBookKey || String(product.id || '').trim().toLowerCase() === featuredBookKey
+  );
+  const featuredBookCover = featuredBookProduct ? resolveProductCover(featuredBookProduct) : '';
 
   useEffect(() => {
     let active = true;
@@ -1501,17 +1503,29 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
 
   return (
     <div style={{ minHeight: '100vh', background: '#ffffff', color: '#1b1b1b', fontFamily: "'Amazon Ember', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
-      <div className="shop-promotional-board" style={{ minHeight: activePromotionalItem.isFeaturedBook ? (isSmallScreen ? '320px' : '290px') : activePromotionalItem.isIndependenceDay ? '230px' : '220px', backgroundColor: '#145c3a', backgroundImage: activePromotionalItem.isFeaturedBook ? 'linear-gradient(120deg, #104b34, #147a4a 58%, #0b3d31)' : activePromotionalCover ? `linear-gradient(90deg, rgba(0, 74, 42, 0.92), rgba(0, 111, 62, 0.72) 54%, rgba(0, 58, 36, 0.35)), url("${activePromotionalCover}")` : 'linear-gradient(90deg, #0f766e, #166534 52%, #0f172a)', backgroundSize: 'cover', backgroundPosition: `center, ${activePromotionalItem.imagePosition || 'center'}`, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px 16px', boxSizing: 'border-box' }}>
-        <div style={{ width: 'min(1400px, 100%)', display: 'flex', flexWrap: isSmallScreen ? 'wrap' : 'nowrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-          <div key={activePromotionalIndex} style={{ minWidth: 0, flex: '1 1 320px', animation: 'fadeIn 0.35s ease-out' }}>
-            <span style={{ display: 'block', fontSize: '10px', fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#d8f3e2' }}>{activePromotionalItem.eyebrow}</span>
-            <strong style={{ display: 'block', marginTop: '4px', fontSize: isSmallScreen ? '19px' : '26px', lineHeight: 1.2, whiteSpace: activePromotionalItem.isIndependenceDay || activePromotionalItem.isFeaturedBook ? 'normal' : 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#ffffff' }}>{activePromotionalItem.title}</strong>
-            {activePromotionalItem.description && <span style={{ display: 'block', marginTop: '6px', maxWidth: '820px', fontSize: isSmallScreen ? '12px' : '14px', lineHeight: 1.45, color: '#f1faf5' }}>{activePromotionalItem.description}</span>}
+      <div className="shop-promotional-board" style={{ minHeight: isSmallScreen ? '400px' : '340px', backgroundColor: '#145c3a', backgroundImage: activePromotionalCover ? `linear-gradient(90deg, rgba(0, 74, 42, 0.92), rgba(0, 111, 62, 0.72) 54%, rgba(0, 58, 36, 0.35)), url("${activePromotionalCover}")` : 'linear-gradient(90deg, #0f766e, #166534 52%, #0f172a)', backgroundSize: 'cover', backgroundPosition: `center, ${activePromotionalItem.imagePosition || 'center'}`, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px 16px', boxSizing: 'border-box' }}>
+        <div style={{ width: 'min(1400px, 100%)', display: 'grid', gridTemplateColumns: isSmallScreen ? 'minmax(0, 1fr)' : 'minmax(0, 1fr) minmax(300px, 340px)', alignItems: 'center', gap: '16px' }}>
+          <div style={{ minWidth: 0, animation: 'fadeIn 0.35s ease-out' }}>
+            <div key={activePromotionalIndex}>
+              <span style={{ display: 'block', fontSize: '10px', fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#d8f3e2' }}>{activePromotionalItem.eyebrow}</span>
+              <strong style={{ display: 'block', marginTop: '4px', fontSize: isSmallScreen ? '19px' : '26px', lineHeight: 1.2, whiteSpace: activePromotionalItem.isIndependenceDay ? 'normal' : 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#ffffff' }}>{activePromotionalItem.title}</strong>
+              {activePromotionalItem.description && <span style={{ display: 'block', marginTop: '6px', maxWidth: '820px', fontSize: isSmallScreen ? '12px' : '14px', lineHeight: 1.45, color: '#f1faf5' }}>{activePromotionalItem.description}</span>}
+              <button type="button" onClick={() => navigate(activePromotionalItem.url)} style={{ marginTop: '12px', border: '1px solid #bbf7d0', borderRadius: '7px', padding: '8px 12px', background: '#f0fdf4', color: '#166534', fontSize: '11px', fontWeight: 900, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                {activePromotionalItem.action}
+              </button>
+            </div>
           </div>
-          <button type="button" onClick={() => navigate(activePromotionalItem.url)} style={{ flexShrink: 0, border: '1px solid #bbf7d0', borderRadius: '7px', padding: '7px 11px', background: '#f0fdf4', color: '#166534', fontSize: '11px', fontWeight: 900, cursor: 'pointer', whiteSpace: 'nowrap' }}>
-            {activePromotionalItem.action}
-          </button>
-          {activePromotionalItem.isFeaturedBook && activePromotionalCover && <img src={activePromotionalCover} alt="I Fainted… But I Didn’t Quit! book cover" style={{ display: 'block', width: 'auto', height: isSmallScreen ? '190px' : '250px', maxWidth: isSmallScreen ? '38vw' : '190px', flex: '0 0 auto', objectFit: 'contain', objectPosition: 'center', border: '1px solid rgba(255,255,255,.6)', borderRadius: '4px', background: '#fff', boxShadow: '0 8px 22px rgba(0,0,0,.24)' }} />}
+          <div style={{ display: 'flex', minWidth: 0, alignItems: 'center', gap: '14px', padding: '12px', border: '1px solid rgba(255,255,255,.22)', borderRadius: '8px', background: 'rgba(5, 32, 21, .76)', boxShadow: '0 8px 24px rgba(0,0,0,.16)' }}>
+            {featuredBookCover && <img src={featuredBookCover} alt="I Fainted… But I Didn’t Quit! book cover" style={{ display: 'block', width: 'auto', height: isSmallScreen ? '180px' : '260px', maxWidth: isSmallScreen ? '38vw' : '170px', flex: '0 0 auto', objectFit: 'contain', objectPosition: 'center', border: '1px solid rgba(255,255,255,.6)', borderRadius: '4px', background: '#fff', boxShadow: '0 8px 22px rgba(0,0,0,.24)' }} />}
+            <div style={{ minWidth: 0 }}>
+              <span style={{ display: 'block', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', color: '#bdebd0' }}>Independence Day · 1 October</span>
+              <strong style={{ display: 'block', marginTop: '5px', fontSize: isSmallScreen ? '16px' : '19px', lineHeight: 1.2, color: '#fff' }}>{independenceBookPromotion.title}</strong>
+              <span style={{ display: 'block', marginTop: '7px', fontSize: '12px', lineHeight: 1.35, color: '#eef8f1' }}>Official release: 1 October 2026</span>
+              <button type="button" onClick={() => navigate(independenceBookPromotion.url)} style={{ marginTop: '10px', border: '1px solid #bbf7d0', borderRadius: '7px', padding: '8px 11px', background: '#f0fdf4', color: '#166534', fontSize: '11px', fontWeight: 900, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                See the book
+              </button>
+            </div>
+          </div>
         </div>
       </div>
       {/* Amazon-style Header */}
