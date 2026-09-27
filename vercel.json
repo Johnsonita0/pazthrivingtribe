@@ -3,12 +3,12 @@
     {
       "source": "/shop",
       "has": [
-        { "type": "query", "key": "product" }
+        { "type": "query", "key": "product", "value": "(?<product>.*)" }
       ],
       "missing": [
         { "type": "query", "key": "app" }
       ],
-      "destination": "/api/product-preview"
+      "destination": "/api/product-preview/:product"
     },
     { "source": "/shop/:productName+", "destination": "/api/product-preview/:productName+" },
     { "source": "/((?!api(?:/|$)|webhook$).*)", "destination": "/index.html" }
