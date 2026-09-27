@@ -24,6 +24,7 @@ import vendorSupportHandler from './server-handlers/vendor-support.js';
 import customerSupportHandler from './server-handlers/customer-support.js';
 import resolveBankAccountHandler from './server-handlers/resolve-bank-account.js';
 import storeProductsPublicHandler from './server-handlers/store-products-public.js';
+import productPreviewHandler from './server-handlers/product-preview.js';
 import vendorPinChangedEmailHandler from './server-handlers/vendor-pin-changed-email.js';
 import activityNotificationHandler from './server-handlers/activity-notification.js';
 import testimonialSubmissionHandler from './server-handlers/testimonial-submission.js';
@@ -134,6 +135,16 @@ const server = http.createServer((req, res) => {
 
       if (pathname === '/api/store-products-public' && req.method === 'GET') {
         await storeProductsPublicHandler(req, res);
+        return;
+      }
+
+      if (pathname.startsWith('/api/product-preview') && req.method === 'GET') {
+        const pathSlug = pathname.slice('/api/product-preview/'.length).split('/')[0];
+        req.query = {
+          ...parsedUrl.query,
+          slug: parsedUrl.query.slug || pathSlug || parsedUrl.query.product || '',
+        };
+        await productPreviewHandler(req, res);
         return;
       }
 

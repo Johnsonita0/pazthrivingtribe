@@ -58,7 +58,7 @@ const isSocialCrawler = (userAgent = '') => /facebookexternalhit|facebot|whatsap
 const isInAppBrowser = (userAgent = '') => /fb_iab|fbav|fban|messenger|instagram/i.test(userAgent);
 
 export default async function handler(req, res) {
-  const requestedSlug = slugify(req.query?.slug || '');
+  const requestedSlug = slugify(req.query?.slug || req.query?.product || '');
   let product = null;
   const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
@@ -79,6 +79,9 @@ export default async function handler(req, res) {
   const previewCover = addPreviewVersion(cover, previewVersion);
   const browserProductUrl = new URL('https://www.pazthrivingtribe.org/shop');
   browserProductUrl.searchParams.set('product', requestedSlug);
+  browserProductUrl.searchParams.set('app', '1');
+  if (req.query?.v) browserProductUrl.searchParams.set('v', String(req.query.v).slice(0, 240));
+  if (req.query?.share) browserProductUrl.searchParams.set('share', String(req.query.share).slice(0, 80));
   if (req.query?.independencePreview === '1') {
     browserProductUrl.searchParams.set('independencePreview', '1');
   }

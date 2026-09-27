@@ -1,5 +1,16 @@
 {
   "rewrites": [
+    {
+      "source": "/shop",
+      "has": [
+        { "type": "query", "key": "product" },
+        { "type": "header", "key": "user-agent", "value": "([Ff]acebookexternalhit|[Ff]acebot|[Ww]hats[Aa]pp|[Tt]witterbot|[Ll]inked[Ii]n[Bb]ot|[Pp]interest|[Ss]lackbot|[Dd]iscordbot|[Tt]elegrambot)" }
+      ],
+      "missing": [
+        { "type": "query", "key": "app" }
+      ],
+      "destination": "/api/product-preview"
+    },
     { "source": "/shop/:productName+", "destination": "/api/product-preview/:productName+" },
     { "source": "/((?!api(?:/|$)|webhook$).*)", "destination": "/index.html" }
   ]
