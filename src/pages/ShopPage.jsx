@@ -9,6 +9,7 @@ import { getIndependenceDaySlides } from '../utils/independenceDaySlides';
 import { getProductAvailability } from '../utils/productAvailability';
 
 const isStorefrontProduct = (product) =>
+  product.status === 'published' ||
   (!product.vendor_id && product.status === 'approved');
 
 const defaultBankAccount = {
