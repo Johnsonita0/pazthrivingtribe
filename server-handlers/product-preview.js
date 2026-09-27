@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import sharp from 'sharp';
 
 const escapeHtml = (value) => String(value || '')
   .replace(/&/g, '&amp;')
@@ -75,13 +76,66 @@ export default async function handler(req, res) {
   const title = product?.title || 'Paz Thriving Tribe';
   const description = product?.description || 'Digital resources from Paz Thriving Tribe.';
   const cover = coverUrl(productCover(product));
+  if (req.query?.image === '1') {
+    if (!cover) {
+      res.statusCode = 404;
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.end('Product cover unavailable');
+      return;
+    }
+
+    try {
+      const coverUrl = new URL(cover);
+      const supabaseHost = supabaseUrl ? new URL(supabaseUrl).hostname : '';
+      const allowedHosts = new Set(['pazthrivingtribe.org', 'www.pazthrivingtribe.org', supabaseHost]);
+      if (coverUrl.protocol !== 'https:' || !allowedHosts.has(coverUrl.hostname)) {
+        throw new Error('Cover host is not allowed');
+      }
+
+      const coverResponse = await fetch(cover, { redirect: 'error', signal: AbortSignal.timeout(8000) });
+      if (!coverResponse.ok) throw new Error(`Cover request failed: ${coverResponse.status}`);
+      if (!coverResponse.headers.get('content-type')?.startsWith('image/')) {
+        throw new Error('Cover response is not an image');
+      }
+      const contentLength = Number(coverResponse.headers.get('content-length') || 0);
+      if (contentLength > 15_000_000) throw new Error('Cover image is too large');
+      const source = Buffer.from(await coverResponse.arrayBuffer());
+      const fittedCover = await sharp(source)
+        .rotate()
+        .resize(1080, 1080, { fit: 'contain', background: '#ffffff' })
+        .png()
+        .toBuffer();
+      const image = await sharp({
+        create: { width: 1200, height: 1200, channels: 3, background: '#ffffff' },
+      })
+        .composite([{ input: fittedCover, gravity: 'center' }])
+        .jpeg({ quality: 90, progressive: true })
+        .toBuffer();
+
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'image/jpeg');
+      res.setHeader('Content-Length', String(image.length));
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      res.end(image);
+    } catch (error) {
+      console.error('Product share image generation failed:', error);
+      res.statusCode = 502;
+      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.end('Product cover could not be rendered');
+    }
+    return;
+  }
+
   const previewVersion = [
     String(req.query?.v || product?.updated_at || product?.cover || product?.id || '1').trim(),
     String(req.query?.share || '').trim(),
   ].filter(Boolean).join('-').slice(0, 320);
-  const previewCover = addPreviewVersion(cover, previewVersion);
+  const previewImageUrl = cover
+    ? `https://www.pazthrivingtribe.org/api/product-preview/${encodeURIComponent(requestedSlug)}?image=1`
+    : '';
+  const previewCover = previewImageUrl ? addPreviewVersion(previewImageUrl, previewVersion) : '';
   const previewImageTags = previewCover
-    ? `<meta property="og:image" content="${escapeHtml(previewCover)}"><meta property="og:image:secure_url" content="${escapeHtml(previewCover)}"><meta property="og:image:alt" content="${escapeHtml(title)} cover"><meta name="twitter:image" content="${escapeHtml(previewCover)}"><meta name="twitter:image:alt" content="${escapeHtml(title)} cover">`
+    ? `<meta property="og:image" content="${escapeHtml(previewCover)}"><meta property="og:image:secure_url" content="${escapeHtml(previewCover)}"><meta property="og:image:type" content="image/jpeg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="1200"><meta property="og:image:alt" content="${escapeHtml(title)} full cover"><meta name="twitter:image" content="${escapeHtml(previewCover)}"><meta name="twitter:image:alt" content="${escapeHtml(title)} full cover">`
     : '';
   const browserProductUrl = new URL('https://www.pazthrivingtribe.org/shop');
   browserProductUrl.searchParams.set('product', requestedSlug);
