@@ -3,8 +3,7 @@
     {
       "source": "/shop",
       "has": [
-        { "type": "query", "key": "product" },
-        { "type": "header", "key": "user-agent", "value": "([Ff]acebookexternalhit|[Ff]acebot|[Ww]hats[Aa]pp|[Tt]witterbot|[Ll]inked[Ii]n[Bb]ot|[Pp]interest|[Ss]lackbot|[Dd]iscordbot|[Tt]elegrambot)" }
+        { "type": "query", "key": "product" }
       ],
       "missing": [
         { "type": "query", "key": "app" }
