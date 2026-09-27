@@ -1901,6 +1901,153 @@ export default function AdminDashboard(props) {
     return "";
   };
 
+  const workspaceDraftStorageKey = session?.user?.id
+    ? `paz-admin-workspace-draft-v1:${session.user.id}`
+    : "";
+  const workspaceDraft = {
+    version: 1,
+    dashboard: {
+      activeDashboardView,
+      commerceSubTab,
+      paymentHistoryTab,
+      tableFilters,
+      selectedRowIds,
+      storeProductForm,
+      editingStoreProductId,
+      releaseSettingsOpen,
+      productFileName,
+      coverFileName,
+      vendorTab,
+      vendorSearch,
+      adminAdForm,
+      supportReplyDrafts,
+      youtubeEditingId,
+      youtubeEditDraft,
+    },
+    app: {
+      selectedAdminTab: props.selectedAdminTab,
+      editTarget: props.editTarget,
+      formTitle: props.formTitle,
+      formSubtitle: props.formSubtitle,
+      formDesc: props.formDesc,
+      formMetric: props.formMetric,
+      socialEditTarget: props.socialEditTarget,
+      socialPreviewTitle: props.socialPreviewTitle,
+      socialPreviewSummary: props.socialPreviewSummary,
+      socialPreviewBadgeText: props.socialPreviewBadgeText,
+      socialPreviewTimestamp: props.socialPreviewTimestamp,
+      socialPreviewUrl: props.socialPreviewUrl,
+      socialPreviewEmbedUrl: props.socialPreviewEmbedUrl,
+      privacyContent: props.privacyContent,
+      termsContent: props.termsContent,
+      faqContent: props.faqContent,
+      testimonialAuthor: props.testimonialAuthor,
+      testimonialOrigin: props.testimonialOrigin,
+      testimonialText: props.testimonialText,
+      testimonialEditIndex: props.testimonialEditIndex,
+      programForm: props.programForm,
+      tempMonthlyFee: props.tempMonthlyFee,
+    },
+  };
+  const serializedWorkspaceDraft = JSON.stringify(workspaceDraft);
+
+  useEffect(() => {
+    if (mode !== "dashboard" || loading || !isAdmin || !workspaceDraftStorageKey || workspaceDraftLoadedFor === workspaceDraftStorageKey) return;
+    try {
+      const saved = JSON.parse(window.sessionStorage.getItem(workspaceDraftStorageKey) || "null");
+      if (saved?.version === 1) {
+        const dashboard = saved.dashboard || {};
+        const app = saved.app || {};
+        const restoreValue = (source, key, setter) => {
+          if (Object.prototype.hasOwnProperty.call(source, key) && typeof setter === "function") setter(source[key]);
+        };
+
+        if (typeof dashboard.activeDashboardView === "string") setActiveDashboardView(dashboard.activeDashboardView);
+        if (typeof dashboard.commerceSubTab === "string") setCommerceSubTab(dashboard.commerceSubTab);
+        if (typeof dashboard.paymentHistoryTab === "string") setPaymentHistoryTab(dashboard.paymentHistoryTab);
+        if (dashboard.tableFilters && typeof dashboard.tableFilters === "object") setTableFilters(dashboard.tableFilters);
+        if (Array.isArray(dashboard.selectedRowIds)) setSelectedRowIds(dashboard.selectedRowIds);
+        if (dashboard.storeProductForm && typeof dashboard.storeProductForm === "object") setStoreProductForm((current) => ({ ...current, ...dashboard.storeProductForm }));
+        if (dashboard.editingStoreProductId === null || typeof dashboard.editingStoreProductId === "string") setEditingStoreProductId(dashboard.editingStoreProductId);
+        if (typeof dashboard.releaseSettingsOpen === "boolean") setReleaseSettingsOpen(dashboard.releaseSettingsOpen);
+        if (typeof dashboard.productFileName === "string") setProductFileName(dashboard.productFileName);
+        if (typeof dashboard.coverFileName === "string") setCoverFileName(dashboard.coverFileName);
+        if (typeof dashboard.vendorTab === "string") setVendorTab(dashboard.vendorTab);
+        if (typeof dashboard.vendorSearch === "string") setVendorSearch(dashboard.vendorSearch);
+        if (dashboard.adminAdForm && typeof dashboard.adminAdForm === "object") setAdminAdForm((current) => ({ ...current, ...dashboard.adminAdForm }));
+        if (dashboard.supportReplyDrafts && typeof dashboard.supportReplyDrafts === "object") setSupportReplyDrafts(dashboard.supportReplyDrafts);
+        if (typeof dashboard.youtubeEditingId === "string" || dashboard.youtubeEditingId === null) setYoutubeEditingId(dashboard.youtubeEditingId);
+        if (dashboard.youtubeEditDraft && typeof dashboard.youtubeEditDraft === "object") setYoutubeEditDraft((current) => ({ ...current, ...dashboard.youtubeEditDraft }));
+
+        restoreValue(app, "selectedAdminTab", props.setSelectedAdminTab);
+        restoreValue(app, "editTarget", props.setEditTarget);
+        restoreValue(app, "formTitle", props.setFormTitle);
+        restoreValue(app, "formSubtitle", props.setFormSubtitle);
+        restoreValue(app, "formDesc", props.setFormDesc);
+        restoreValue(app, "formMetric", props.setFormMetric);
+        restoreValue(app, "socialEditTarget", props.setSocialEditTarget);
+        restoreValue(app, "socialPreviewTitle", props.setSocialPreviewTitle);
+        restoreValue(app, "socialPreviewSummary", props.setSocialPreviewSummary);
+        restoreValue(app, "socialPreviewBadgeText", props.setSocialPreviewBadgeText);
+        restoreValue(app, "socialPreviewTimestamp", props.setSocialPreviewTimestamp);
+        restoreValue(app, "socialPreviewUrl", props.setSocialPreviewUrl);
+        restoreValue(app, "socialPreviewEmbedUrl", props.setSocialPreviewEmbedUrl);
+        restoreValue(app, "privacyContent", props.setPrivacyContent);
+        restoreValue(app, "termsContent", props.setTermsContent);
+        restoreValue(app, "faqContent", props.setFaqContent);
+        restoreValue(app, "testimonialAuthor", props.setTestimonialAuthor);
+        restoreValue(app, "testimonialOrigin", props.setTestimonialOrigin);
+        restoreValue(app, "testimonialText", props.setTestimonialText);
+        restoreValue(app, "testimonialEditIndex", props.setTestimonialEditIndex);
+        restoreValue(app, "programForm", props.setProgramForm);
+        restoreValue(app, "tempMonthlyFee", props.setTempMonthlyFee);
+      }
+    } catch {
+      window.sessionStorage.removeItem(workspaceDraftStorageKey);
+    }
+    setWorkspaceDraftLoadedFor(workspaceDraftStorageKey);
+  }, [mode, loading, isAdmin, workspaceDraftStorageKey, workspaceDraftLoadedFor, props]);
+
+  useEffect(() => {
+    if (mode !== "dashboard" || !isAdmin || !workspaceDraftStorageKey || workspaceDraftLoadedFor !== workspaceDraftStorageKey) return;
+    try {
+      window.sessionStorage.setItem(workspaceDraftStorageKey, serializedWorkspaceDraft);
+    } catch {
+    }
+  }, [mode, isAdmin, workspaceDraftStorageKey, workspaceDraftLoadedFor, serializedWorkspaceDraft]);
+
+  useEffect(() => {
+    if (!workspaceDraftStorageKey || workspaceDraftLoadedFor !== workspaceDraftStorageKey) return undefined;
+    const saveScrollPosition = () => {
+      try {
+        const saved = JSON.parse(window.sessionStorage.getItem(workspaceDraftStorageKey) || "{}");
+        saved.scrollY = window.scrollY;
+        window.sessionStorage.setItem(workspaceDraftStorageKey, JSON.stringify(saved));
+      } catch {
+      }
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") saveScrollPosition();
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", saveScrollPosition);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", saveScrollPosition);
+    };
+  }, [workspaceDraftStorageKey, workspaceDraftLoadedFor]);
+
+  useEffect(() => {
+    if (!loading && workspaceDraftStorageKey && workspaceDraftLoadedFor === workspaceDraftStorageKey) {
+      let savedScrollY = 0;
+      try {
+        savedScrollY = Number(JSON.parse(window.sessionStorage.getItem(workspaceDraftStorageKey) || "{}").scrollY) || 0;
+      } catch {
+      }
+      window.requestAnimationFrame(() => window.requestAnimationFrame(() => window.scrollTo({ top: savedScrollY, behavior: "auto" })));
+    }
+  }, [loading, workspaceDraftStorageKey, workspaceDraftLoadedFor]);
+
   if (mode === "login" && session && isAdmin) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -2539,153 +2686,6 @@ export default function AdminDashboard(props) {
     "feedback",
   ];
   const showDashboardTable = tableDashboardViews.includes(activeDashboardView);
-
-  const workspaceDraftStorageKey = session?.user?.id
-    ? `paz-admin-workspace-draft-v1:${session.user.id}`
-    : "";
-  const workspaceDraft = {
-    version: 1,
-    dashboard: {
-      activeDashboardView,
-      commerceSubTab,
-      paymentHistoryTab,
-      tableFilters,
-      selectedRowIds,
-      storeProductForm,
-      editingStoreProductId,
-      releaseSettingsOpen,
-      productFileName,
-      coverFileName,
-      vendorTab,
-      vendorSearch,
-      adminAdForm,
-      supportReplyDrafts,
-      youtubeEditingId,
-      youtubeEditDraft,
-    },
-    app: {
-      selectedAdminTab: props.selectedAdminTab,
-      editTarget: props.editTarget,
-      formTitle: props.formTitle,
-      formSubtitle: props.formSubtitle,
-      formDesc: props.formDesc,
-      formMetric: props.formMetric,
-      socialEditTarget: props.socialEditTarget,
-      socialPreviewTitle: props.socialPreviewTitle,
-      socialPreviewSummary: props.socialPreviewSummary,
-      socialPreviewBadgeText: props.socialPreviewBadgeText,
-      socialPreviewTimestamp: props.socialPreviewTimestamp,
-      socialPreviewUrl: props.socialPreviewUrl,
-      socialPreviewEmbedUrl: props.socialPreviewEmbedUrl,
-      privacyContent: props.privacyContent,
-      termsContent: props.termsContent,
-      faqContent: props.faqContent,
-      testimonialAuthor: props.testimonialAuthor,
-      testimonialOrigin: props.testimonialOrigin,
-      testimonialText: props.testimonialText,
-      testimonialEditIndex: props.testimonialEditIndex,
-      programForm: props.programForm,
-      tempMonthlyFee: props.tempMonthlyFee,
-    },
-  };
-  const serializedWorkspaceDraft = JSON.stringify(workspaceDraft);
-
-  useEffect(() => {
-    if (mode !== "dashboard" || loading || !isAdmin || !workspaceDraftStorageKey || workspaceDraftLoadedFor === workspaceDraftStorageKey) return;
-    try {
-      const saved = JSON.parse(window.sessionStorage.getItem(workspaceDraftStorageKey) || "null");
-      if (saved?.version === 1) {
-        const dashboard = saved.dashboard || {};
-        const app = saved.app || {};
-        const restoreValue = (source, key, setter) => {
-          if (Object.prototype.hasOwnProperty.call(source, key) && typeof setter === "function") setter(source[key]);
-        };
-
-        if (typeof dashboard.activeDashboardView === "string") setActiveDashboardView(dashboard.activeDashboardView);
-        if (typeof dashboard.commerceSubTab === "string") setCommerceSubTab(dashboard.commerceSubTab);
-        if (typeof dashboard.paymentHistoryTab === "string") setPaymentHistoryTab(dashboard.paymentHistoryTab);
-        if (dashboard.tableFilters && typeof dashboard.tableFilters === "object") setTableFilters(dashboard.tableFilters);
-        if (Array.isArray(dashboard.selectedRowIds)) setSelectedRowIds(dashboard.selectedRowIds);
-        if (dashboard.storeProductForm && typeof dashboard.storeProductForm === "object") setStoreProductForm((current) => ({ ...current, ...dashboard.storeProductForm }));
-        if (dashboard.editingStoreProductId === null || typeof dashboard.editingStoreProductId === "string") setEditingStoreProductId(dashboard.editingStoreProductId);
-        if (typeof dashboard.releaseSettingsOpen === "boolean") setReleaseSettingsOpen(dashboard.releaseSettingsOpen);
-        if (typeof dashboard.productFileName === "string") setProductFileName(dashboard.productFileName);
-        if (typeof dashboard.coverFileName === "string") setCoverFileName(dashboard.coverFileName);
-        if (typeof dashboard.vendorTab === "string") setVendorTab(dashboard.vendorTab);
-        if (typeof dashboard.vendorSearch === "string") setVendorSearch(dashboard.vendorSearch);
-        if (dashboard.adminAdForm && typeof dashboard.adminAdForm === "object") setAdminAdForm((current) => ({ ...current, ...dashboard.adminAdForm }));
-        if (dashboard.supportReplyDrafts && typeof dashboard.supportReplyDrafts === "object") setSupportReplyDrafts(dashboard.supportReplyDrafts);
-        if (typeof dashboard.youtubeEditingId === "string" || dashboard.youtubeEditingId === null) setYoutubeEditingId(dashboard.youtubeEditingId);
-        if (dashboard.youtubeEditDraft && typeof dashboard.youtubeEditDraft === "object") setYoutubeEditDraft((current) => ({ ...current, ...dashboard.youtubeEditDraft }));
-
-        restoreValue(app, "selectedAdminTab", props.setSelectedAdminTab);
-        restoreValue(app, "editTarget", props.setEditTarget);
-        restoreValue(app, "formTitle", props.setFormTitle);
-        restoreValue(app, "formSubtitle", props.setFormSubtitle);
-        restoreValue(app, "formDesc", props.setFormDesc);
-        restoreValue(app, "formMetric", props.setFormMetric);
-        restoreValue(app, "socialEditTarget", props.setSocialEditTarget);
-        restoreValue(app, "socialPreviewTitle", props.setSocialPreviewTitle);
-        restoreValue(app, "socialPreviewSummary", props.setSocialPreviewSummary);
-        restoreValue(app, "socialPreviewBadgeText", props.setSocialPreviewBadgeText);
-        restoreValue(app, "socialPreviewTimestamp", props.setSocialPreviewTimestamp);
-        restoreValue(app, "socialPreviewUrl", props.setSocialPreviewUrl);
-        restoreValue(app, "socialPreviewEmbedUrl", props.setSocialPreviewEmbedUrl);
-        restoreValue(app, "privacyContent", props.setPrivacyContent);
-        restoreValue(app, "termsContent", props.setTermsContent);
-        restoreValue(app, "faqContent", props.setFaqContent);
-        restoreValue(app, "testimonialAuthor", props.setTestimonialAuthor);
-        restoreValue(app, "testimonialOrigin", props.setTestimonialOrigin);
-        restoreValue(app, "testimonialText", props.setTestimonialText);
-        restoreValue(app, "testimonialEditIndex", props.setTestimonialEditIndex);
-        restoreValue(app, "programForm", props.setProgramForm);
-        restoreValue(app, "tempMonthlyFee", props.setTempMonthlyFee);
-      }
-    } catch {
-      window.sessionStorage.removeItem(workspaceDraftStorageKey);
-    }
-    setWorkspaceDraftLoadedFor(workspaceDraftStorageKey);
-  }, [mode, loading, isAdmin, workspaceDraftStorageKey, workspaceDraftLoadedFor, props]);
-
-  useEffect(() => {
-    if (mode !== "dashboard" || !isAdmin || !workspaceDraftStorageKey || workspaceDraftLoadedFor !== workspaceDraftStorageKey) return;
-    try {
-      window.sessionStorage.setItem(workspaceDraftStorageKey, serializedWorkspaceDraft);
-    } catch {
-    }
-  }, [mode, isAdmin, workspaceDraftStorageKey, workspaceDraftLoadedFor, serializedWorkspaceDraft]);
-
-  useEffect(() => {
-    if (!workspaceDraftStorageKey || workspaceDraftLoadedFor !== workspaceDraftStorageKey) return undefined;
-    const saveScrollPosition = () => {
-      try {
-        const saved = JSON.parse(window.sessionStorage.getItem(workspaceDraftStorageKey) || "{}");
-        saved.scrollY = window.scrollY;
-        window.sessionStorage.setItem(workspaceDraftStorageKey, JSON.stringify(saved));
-      } catch {
-      }
-    };
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden") saveScrollPosition();
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("pagehide", saveScrollPosition);
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("pagehide", saveScrollPosition);
-    };
-  }, [workspaceDraftStorageKey, workspaceDraftLoadedFor]);
-
-  useEffect(() => {
-    if (!loading && workspaceDraftStorageKey && workspaceDraftLoadedFor === workspaceDraftStorageKey) {
-      let savedScrollY = 0;
-      try {
-        savedScrollY = Number(JSON.parse(window.sessionStorage.getItem(workspaceDraftStorageKey) || "{}").scrollY) || 0;
-      } catch {
-      }
-      window.requestAnimationFrame(() => window.requestAnimationFrame(() => window.scrollTo({ top: savedScrollY, behavior: "auto" })));
-    }
-  }, [loading, workspaceDraftStorageKey, workspaceDraftLoadedFor]);
 
   const paymentProofPreview = getPaymentProofPreview(selectedOrder);
   const paymentHistoryRows = [
