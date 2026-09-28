@@ -1,10 +1,4 @@
 {
-  "crons": [
-    {
-      "path": "/api/release-notifications",
-      "schedule": "* * * * *"
-    }
-  ],
   "rewrites": [
     {
       "source": "/shop",

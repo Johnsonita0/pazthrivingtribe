@@ -44,7 +44,7 @@ The admin endpoint is available at `/api/admin-update`.
 
 Run the `product_release_notifications` table, RLS, and index statements from `supabase-admin-setup.sql` in the Supabase SQL Editor. This table is only accessible to the server-side service role.
 
-The release signup endpoint stores one opt-in per product and email. Vercel runs `/api/release-notifications` every minute and sends the product link when checkout opens, then 12 and 24 hours later. Add `CRON_SECRET`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `VITE_APP_URL` to the Vercel project environment. The Vercel plan must allow a one-minute cron frequency for these timings.
+The release signup endpoint stores one opt-in per product and email. Supabase Cron calls `/api/release-notifications` every minute and sends the product link when checkout opens, then 12 and 24 hours later. Add `CRON_SECRET`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `VITE_APP_URL` to the Vercel project environment. In Supabase Vault, create `paz_release_notification_url` with the production URL `https://pazthrivingtribe.org/api/release-notifications` and `paz_release_notification_secret` with the same value as Vercel's `CRON_SECRET`. Then run the updated SQL setup to install and schedule the job.
 
 After a successful checkout delivers the product file to the same email, the remaining release reminders are stopped.
 

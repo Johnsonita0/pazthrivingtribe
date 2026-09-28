@@ -232,12 +232,44 @@ create table if not exists product_release_notifications (
   unique (product_id, email)
 );
 
+create extension if not exists pg_cron;
+create extension if not exists pg_net;
+
 alter table if exists product_release_notifications enable row level security;
 revoke all on public.product_release_notifications from anon, authenticated;
 grant all on public.product_release_notifications to service_role;
 create index if not exists idx_product_release_notifications_due
   on product_release_notifications(status, next_notification_at)
   where status = 'active';
+
+select cron.unschedule(jobid)
+from cron.job
+where jobname = 'paz-release-notifications';
+
+select cron.schedule(
+  'paz-release-notifications',
+  '* * * * *',
+  $$
+    select net.http_get(
+      url := (
+        select decrypted_secret
+        from vault.decrypted_secrets
+        where name = 'paz_release_notification_url'
+        limit 1
+      ),
+      headers := jsonb_build_object(
+        'Authorization',
+        'Bearer ' || (
+          select decrypted_secret
+          from vault.decrypted_secrets
+          where name = 'paz_release_notification_secret'
+          limit 1
+        )
+      ),
+      timeout_milliseconds := 10000
+    );
+  $$
+);
 
 -- Vendor marketplace foundation. Vendors remain pending until a main admin approves
 -- their identity document and payout details.
