@@ -1161,6 +1161,10 @@ export default function App() {
       status: product.status || 'approved',
       vendor_id: product.vendor_id || product.vendorId || null,
       vendor_name: product.vendor_name || product.vendorName || '',
+      releaseEnabled: Boolean(product.release_enabled ?? product.releaseEnabled ?? false),
+      releaseAt: product.release_at || product.releaseAt || null,
+      closeAt: product.close_at || product.closeAt || null,
+      allowAfterClose: Boolean(product.allow_after_close ?? product.allowAfterClose ?? false),
       createdAt: product.created_at || product.createdAt || null,
       updatedAt: product.updated_at || product.updatedAt || null
     };

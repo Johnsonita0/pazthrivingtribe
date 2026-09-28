@@ -217,6 +217,28 @@ create table if not exists shop_order_items (
   created_at timestamptz default now()
 );
 
+create table if not exists product_release_notifications (
+  id uuid primary key default gen_random_uuid(),
+  product_id uuid not null references store_products(id) on delete cascade,
+  product_title text not null,
+  email text not null,
+  customer_name text not null,
+  phone text,
+  release_at timestamptz not null,
+  next_notification_at timestamptz,
+  notification_count integer not null default 0 check (notification_count between 0 and 3),
+  status text not null default 'active' check (status in ('active', 'purchased', 'completed')),
+  created_at timestamptz not null default now(),
+  unique (product_id, email)
+);
+
+alter table if exists product_release_notifications enable row level security;
+revoke all on public.product_release_notifications from anon, authenticated;
+grant all on public.product_release_notifications to service_role;
+create index if not exists idx_product_release_notifications_due
+  on product_release_notifications(status, next_notification_at)
+  where status = 'active';
+
 -- Vendor marketplace foundation. Vendors remain pending until a main admin approves
 -- their identity document and payout details.
 create table if not exists vendor_profiles (

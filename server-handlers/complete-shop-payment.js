@@ -309,6 +309,16 @@ export default async function handler(req, res) {
       }))
     ]);
 
+    const { error: fulfilledNotificationsError } = await supabase
+      .from('product_release_notifications')
+      .update({ status: 'purchased', next_notification_at: null })
+      .eq('email', email)
+      .eq('status', 'active')
+      .in('product_id', productIds);
+    if (fulfilledNotificationsError) {
+      console.warn('Could not stop release reminders after delivery:', fulfilledNotificationsError.message);
+    }
+
     return sendJson(res, 200, { success: true, orderNumber, attachmentCount: attachments.length });
   } catch (error) {
     console.error('Shop payment completion failed:', error);

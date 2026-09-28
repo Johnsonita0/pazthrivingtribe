@@ -602,6 +602,10 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const [paymentProofSaving, setPaymentProofSaving] = useState(false);
   const [paystackReady, setPaystackReady] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState(false);
+  const [releaseNotificationProduct, setReleaseNotificationProduct] = useState(null);
+  const [releaseNotificationSubmitting, setReleaseNotificationSubmitting] = useState(false);
+  const [releaseNotificationError, setReleaseNotificationError] = useState('');
+
   useEffect(() => {
     const intervalId = window.setInterval(() => setAvailabilityNow(Date.now()), 15000);
     return () => window.clearInterval(intervalId);
@@ -994,8 +998,13 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     event?.stopPropagation?.();
     const availability = getProductAvailability(product, Date.now());
     if (!availability.available) {
-      setToast({ message: availability.message, type: 'error' });
-      setTimeout(() => setToast(null), 8000);
+      if (availability.reason === 'not-released') {
+        setReleaseNotificationProduct(product);
+        setReleaseNotificationError('');
+      } else {
+        setToast({ message: availability.message, type: 'error' });
+        setTimeout(() => setToast(null), 8000);
+      }
       return;
     }
     if (product.inStock === false || Number(product.stockCount || 0) <= 0) {
@@ -1105,8 +1114,13 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const checkoutProduct = (product) => {
     const availability = getProductAvailability(product, Date.now());
     if (!availability.available) {
-      setToast({ message: availability.message, type: 'error' });
-      setTimeout(() => setToast(null), 8000);
+      if (availability.reason === 'not-released') {
+        setReleaseNotificationProduct(product);
+        setReleaseNotificationError('');
+      } else {
+        setToast({ message: availability.message, type: 'error' });
+        setTimeout(() => setToast(null), 8000);
+      }
       return;
     }
     if (product.inStock === false || Number(product.stockCount || 0) <= 0) return;
@@ -1126,6 +1140,35 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     if (!isProductPage) {
       setSelectedProduct(null);
       navigate(shopUrl);
+    }
+  };
+
+  const submitReleaseNotification = async (event) => {
+    event.preventDefault();
+    if (!releaseNotificationProduct || releaseNotificationSubmitting) return;
+    setReleaseNotificationSubmitting(true);
+    setReleaseNotificationError('');
+    try {
+      const country = phoneCountries.find((item) => item.code === checkoutForm.countryCode);
+      const response = await fetch('/api/product-release-notification', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          productId: releaseNotificationProduct.id,
+          name: checkoutForm.name,
+          email: checkoutForm.email,
+          phone: [country?.dialCode, checkoutForm.phoneNumber].filter(Boolean).join(' ')
+        })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || 'Your notification could not be activated. Please try again.');
+      setReleaseNotificationProduct(null);
+      setToast({ message: `We'll email you when ${releaseNotificationProduct.title} is available.`, type: 'success' });
+      window.setTimeout(() => setToast(null), 4500);
+    } catch (error) {
+      setReleaseNotificationError(error.message || 'Your notification could not be activated. Please try again.');
+    } finally {
+      setReleaseNotificationSubmitting(false);
     }
   };
 
@@ -1365,8 +1408,14 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     });
     if (blockedItem) {
       const currentProduct = storeData.products.find((product) => String(product.id) === String(blockedItem.id)) || blockedItem;
-      setToast({ message: `${currentProduct.title}: ${getProductAvailability(currentProduct, Date.now()).message}`, type: 'error' });
-      setTimeout(() => setToast(null), 8000);
+      const availability = getProductAvailability(currentProduct, Date.now());
+      if (availability.reason === 'not-released') {
+        setReleaseNotificationProduct(currentProduct);
+        setReleaseNotificationError('');
+      } else {
+        setToast({ message: `${currentProduct.title}: ${availability.message}`, type: 'error' });
+        setTimeout(() => setToast(null), 8000);
+      }
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
@@ -2019,17 +2068,17 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                         event.stopPropagation();
                         addToCart(product, event);
                       }}
-                      disabled={product.inStock === false || Number(product.stockCount || 0) <= 0 || !getProductAvailability(product, availabilityNow).available}
+                      disabled={product.inStock === false || Number(product.stockCount || 0) <= 0}
                       style={{
                         width: '100%',
-                        background: product.inStock === false || Number(product.stockCount || 0) <= 0 || !getProductAvailability(product, availabilityNow).available ? '#e5e7eb' : 'linear-gradient(135deg, #FF9900 0%, #FF8C00 100%)',
+                        background: product.inStock === false || Number(product.stockCount || 0) <= 0 ? '#e5e7eb' : 'linear-gradient(135deg, #FF9900 0%, #FF8C00 100%)',
                         border: 'none',
                         borderRadius: '0',
                         padding: isVerySmallScreen ? '8px 6px' : isSmallScreen ? '9px 8px' : '10px 12px',
                         fontWeight: '600',
-                        cursor: product.inStock === false || Number(product.stockCount || 0) <= 0 || !getProductAvailability(product, availabilityNow).available ? 'not-allowed' : 'pointer',
+                        cursor: product.inStock === false || Number(product.stockCount || 0) <= 0 ? 'not-allowed' : 'pointer',
                         fontSize: isVerySmallScreen ? '10px' : isSmallScreen ? '11px' : '13px',
-                        color: product.inStock === false || Number(product.stockCount || 0) <= 0 || !getProductAvailability(product, availabilityNow).available ? '#6b7280' : '#111',
+                        color: product.inStock === false || Number(product.stockCount || 0) <= 0 ? '#6b7280' : '#111',
                         transition: 'all 0.2s ease',
                         display: 'flex',
                         alignItems: 'center',
@@ -2048,8 +2097,8 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                         }
                       }}
                     >
-                      <i className="fa-solid fa-cart-plus" style={{ fontSize: '14px' }}></i>
-                      <span>{product.inStock === false || Number(product.stockCount || 0) <= 0 ? 'Sold out' : !getProductAvailability(product, availabilityNow).available ? 'Unavailable' : 'Add to Cart'}</span>
+                      <i className={`fa-solid ${getProductAvailability(product, availabilityNow).reason === 'not-released' ? 'fa-bell' : 'fa-cart-plus'}`} style={{ fontSize: '14px' }}></i>
+                      <span>{product.inStock === false || Number(product.stockCount || 0) <= 0 ? 'Sold out' : getProductAvailability(product, availabilityNow).reason === 'not-released' ? 'Notify me' : 'Add to Cart'}</span>
                     </button>
                   </div>
                 ))}
@@ -2311,8 +2360,8 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px', flexWrap: 'wrap' }}>
                 {!isProductPage && <button type="button" onClick={() => { setSelectedProduct(null); navigate(shopUrl); }} style={{ border: '1px solid #cbd5e1', borderRadius: '9px', padding: '11px 18px', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer', flex: isSmallScreen ? '1 1 120px' : '0 0 auto' }}>Close</button>}
                 {isProductPage && <button type="button" onClick={() => { setSelectedProduct(null); navigate(shopUrl); }} style={{ border: '1px solid #f97316', borderRadius: '9px', padding: '11px 18px', background: '#fff7ed', color: '#c2410c', fontWeight: 800, cursor: 'pointer', flex: isSmallScreen ? '1 1 120px' : '0 0 auto' }}>Shop more</button>}
-                {!isProductPage && <button type="button" onClick={(event) => { addToCart(selectedProduct, event); setSelectedProduct(null); }} disabled={selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 || !getProductAvailability(selectedProduct, availabilityNow).available} style={{ border: 'none', borderRadius: '9px', padding: '11px 18px', background: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 || !getProductAvailability(selectedProduct, availabilityNow).available ? '#e5e7eb' : '#f97316', color: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 || !getProductAvailability(selectedProduct, availabilityNow).available ? '#64748b' : '#fff', fontWeight: 800, cursor: 'pointer', flex: isSmallScreen ? '1 1 160px' : '0 0 auto' }}>{selectedProduct.isFree ? 'Request product' : 'Add to cart'}</button>}
-                {isProductPage && <button type="button" onClick={() => checkoutProduct(selectedProduct)} disabled={selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 || !getProductAvailability(selectedProduct, availabilityNow).available} style={{ border: 'none', borderRadius: '9px', padding: '11px 18px', background: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 || !getProductAvailability(selectedProduct, availabilityNow).available ? '#e5e7eb' : '#166534', color: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 || !getProductAvailability(selectedProduct, availabilityNow).available ? '#64748b' : '#fff', fontWeight: 800, cursor: 'pointer', flex: isSmallScreen ? '1 1 160px' : '0 0 auto' }}><i className="fa-solid fa-lock" aria-hidden="true" /> Checkout</button>}
+                {!isProductPage && <button type="button" onClick={(event) => { addToCart(selectedProduct, event); setSelectedProduct(null); }} disabled={selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0} style={{ border: 'none', borderRadius: '9px', padding: '11px 18px', background: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? '#e5e7eb' : '#f97316', color: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? '#64748b' : '#fff', fontWeight: 800, cursor: 'pointer', flex: isSmallScreen ? '1 1 160px' : '0 0 auto' }}>{getProductAvailability(selectedProduct, availabilityNow).reason === 'not-released' ? 'Activate release alert' : selectedProduct.isFree ? 'Request product' : 'Add to cart'}</button>}
+                {isProductPage && <button type="button" onClick={() => checkoutProduct(selectedProduct)} disabled={selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0} style={{ border: 'none', borderRadius: '9px', padding: '11px 18px', background: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? '#e5e7eb' : '#166534', color: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? '#64748b' : '#fff', fontWeight: 800, cursor: 'pointer', flex: isSmallScreen ? '1 1 160px' : '0 0 auto' }}><i className={`fa-solid ${getProductAvailability(selectedProduct, availabilityNow).reason === 'not-released' ? 'fa-bell' : 'fa-lock'}`} aria-hidden="true" /> {getProductAvailability(selectedProduct, availabilityNow).reason === 'not-released' ? 'Notify me' : 'Checkout'}</button>}
               </div>
             </div>
           </div>
@@ -2467,7 +2516,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                   <span>Subtotal:</span>
                   <span>{money(subtotal, cartCurrency)}</span>
                 </div>
-                {cartUnavailableItems.length > 0 && <div role="alert" style={{ display: 'grid', gap: '5px', marginBottom: '12px', padding: '10px 12px', border: '1px solid #fed7aa', borderRadius: '8px', background: '#fff7ed', color: '#9a3412', fontSize: '.82rem', lineHeight: 1.45 }}>{cartUnavailableItems.map((item) => <div key={item.id}><strong>{item.title}:</strong> {getProductAvailability(item, availabilityNow).message}</div>)}</div>}
+                {cartUnavailableItems.length > 0 && <div role="alert" style={{ display: 'grid', gap: '5px', marginBottom: '12px', padding: '10px 12px', border: '1px solid #fed7aa', borderRadius: '8px', background: '#fff7ed', color: '#9a3412', fontSize: '.82rem', lineHeight: 1.45 }}>{cartUnavailableItems.map((item) => <div key={item.id}><strong>{item.title}:</strong> {getProductAvailability(item, availabilityNow).message}{getProductAvailability(item, availabilityNow).reason === 'not-released' && <button type="button" onClick={() => { setReleaseNotificationProduct(item); setReleaseNotificationError(''); }} style={{ display: 'block', marginTop: '6px', padding: '6px 9px', border: '1px solid #166534', borderRadius: '6px', background: '#fff', color: '#166534', fontWeight: 700, cursor: 'pointer' }}>Activate availability email</button>}</div>)}</div>}
 
                 <form onSubmit={handleCheckout} style={{ display: 'grid', gap: '10px' }}>
                   <input
@@ -2653,6 +2702,27 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
             )}
             </div>
           </>
+        )}
+
+        {releaseNotificationProduct && (
+          <div role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setReleaseNotificationProduct(null); }} style={{ position: 'fixed', inset: 0, zIndex: 400, display: 'grid', placeItems: 'center', padding: '16px', background: 'rgba(17, 24, 39, 0.58)' }}>
+            <section role="dialog" aria-modal="true" aria-labelledby="release-notification-title" style={{ width: 'min(460px, 100%)', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', padding: isSmallScreen ? '22px 18px' : '28px', borderRadius: '10px', background: '#fff', boxShadow: '0 24px 70px rgba(0,0,0,.24)' }}>
+              <button type="button" aria-label="Close" onClick={() => setReleaseNotificationProduct(null)} style={{ float: 'right', border: 0, background: 'transparent', color: '#475569', fontSize: '22px', cursor: 'pointer' }}>×</button>
+              <p style={{ margin: '0 0 7px', color: '#166534', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase' }}>Release notification</p>
+              <h2 id="release-notification-title" style={{ margin: '0 28px 8px 0', color: '#17211b', fontSize: '22px', lineHeight: 1.2 }}>{releaseNotificationProduct.title}</h2>
+              <p style={{ margin: '0 0 18px', color: '#475569', fontSize: '14px', lineHeight: 1.5 }}>{getProductAvailability(releaseNotificationProduct, availabilityNow).message} Get an email when checkout opens.</p>
+              <form onSubmit={submitReleaseNotification} style={{ display: 'grid', gap: '11px' }}>
+                <input required autoComplete="name" placeholder="Full name" value={checkoutForm.name} onChange={(event) => setCheckoutForm((current) => ({ ...current, name: event.target.value }))} style={{ minWidth: 0, padding: '11px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', font: 'inherit' }} />
+                <input required type="email" autoComplete="email" placeholder="Email address" value={checkoutForm.email} onChange={(event) => setCheckoutForm((current) => ({ ...current, email: event.target.value }))} style={{ minWidth: 0, padding: '11px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', font: 'inherit' }} />
+                <input type="tel" autoComplete="tel-national" placeholder={`Phone (optional, ${phoneCountries.find((item) => item.code === checkoutForm.countryCode)?.dialCode || ''})`} value={checkoutForm.phoneNumber} onChange={(event) => setCheckoutForm((current) => ({ ...current, phoneNumber: event.target.value }))} style={{ minWidth: 0, padding: '11px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', font: 'inherit' }} />
+                {releaseNotificationError && <p role="alert" style={{ margin: 0, color: '#b42318', fontSize: '13px', lineHeight: 1.4 }}>{releaseNotificationError}</p>}
+                <div style={{ display: 'flex', gap: '9px', marginTop: '3px' }}>
+                  <button type="button" onClick={() => setReleaseNotificationProduct(null)} style={{ flex: 1, padding: '11px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer' }}>Not now</button>
+                  <button type="submit" disabled={releaseNotificationSubmitting} style={{ flex: 1.4, padding: '11px 12px', border: 0, borderRadius: '6px', background: releaseNotificationSubmitting ? '#94a3b8' : '#166534', color: '#fff', fontWeight: 800, cursor: releaseNotificationSubmitting ? 'wait' : 'pointer' }}>{releaseNotificationSubmitting ? 'Activating...' : 'Activate notification'}</button>
+                </div>
+              </form>
+            </section>
+          </div>
         )}
 
         {/* Toast Notification */}

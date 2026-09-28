@@ -21,6 +21,8 @@ import vendorPinChangedEmailHandler from '../server-handlers/vendor-pin-changed-
 import activityNotificationHandler from '../server-handlers/activity-notification.js';
 import testimonialSubmissionHandler from '../server-handlers/testimonial-submission.js';
 import generateProductDescriptionHandler from '../server-handlers/generate-product-description.js';
+import productReleaseNotificationHandler from '../server-handlers/product-release-notification.js';
+import releaseNotificationsHandler from '../server-handlers/release-notifications.js';
 
 const handlers = {
   '/admin-auth': adminAuthHandler,
@@ -28,6 +30,8 @@ const handlers = {
   '/admin-health': adminHealthHandler,
   '/admin-update': adminUpdateHandler,
   '/complete-shop-payment': completeShopPaymentHandler,
+  '/product-release-notification': productReleaseNotificationHandler,
+  '/release-notifications': releaseNotificationsHandler,
   '/complete-service-payment': completeServicePaymentHandler,
   '/product-preview': productPreviewHandler,
   '/vendor-support': vendorSupportHandler,

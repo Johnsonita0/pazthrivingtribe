@@ -166,6 +166,14 @@ When you deploy to Vercel:
 2. Vercel will automatically use the `/api` Vercel Functions
 3. Everything will work exactly as configured
 
+## 📚 Product Release Notifications
+
+- Run the `product_release_notifications` table, RLS, and index statements from `supabase-admin-setup.sql` in the Supabase SQL Editor.
+- Configure `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `CRON_SECRET`, and `VITE_APP_URL` for the API server.
+- A Vercel cron calls `/api/release-notifications` once per minute. It sends one email when checkout opens and reminders at +12 and +24 hours. The Vercel plan must support a one-minute cron schedule.
+- To test the runner manually, send a `GET` request to `/api/release-notifications` with `Authorization: Bearer <CRON_SECRET>` after a subscription is due.
+- A successfully delivered checkout for the same product and email automatically cancels its remaining reminders.
+
 ## 📚 API Documentation
 
 ### POST /api/send-notification-email

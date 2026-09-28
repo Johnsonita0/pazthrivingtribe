@@ -24,7 +24,11 @@ Required environment variables in production:
 - `VITE_SUPABASE_URL` — your Supabase project URL for client-side access
 - `VITE_SUPABASE_ANON_KEY` — your Supabase anon/public key for client-side access
 - `SUPABASE_URL` — the same Supabase project URL for server-side admin APIs
-- `SUPABASE_SERVICE_ROLE_KEY` — secret Supabase service role key used by `/api/admin-update`
+- `SUPABASE_SERVICE_ROLE_KEY` — secret Supabase service role key used by server-side admin and release-notification APIs
+- `RESEND_API_KEY` — server-only key used to deliver product release emails
+- `RESEND_FROM_EMAIL` — verified sender address for release emails
+- `CRON_SECRET` — secret bearer token used to protect `/api/release-notifications`
+- `VITE_APP_URL` — public site origin used to build direct product links in emails
 - `ADMIN_EMAILS` — comma-separated list of allowed admin emails (fallback)
 - `OPENAI_API_KEY` — server-only key used by `/api/generate-product-description`
 - `OPENAI_MODEL` — optional model override; defaults to `gpt-4o-mini`
@@ -35,6 +39,14 @@ Add `OPENAI_API_KEY` to the local `.env` file for development and to the Vercel 
 Alternate fix: if Vercel does not expose `SUPABASE_SERVICE_ROLE_KEY` to the function, also add `VITE_SUPABASE_SERVICE_ROLE_KEY` with the same service role key value. The admin endpoint will accept either variable name at runtime.
 
 The admin endpoint is available at `/api/admin-update`.
+
+### Scheduled product release notifications
+
+Run the `product_release_notifications` table, RLS, and index statements from `supabase-admin-setup.sql` in the Supabase SQL Editor. This table is only accessible to the server-side service role.
+
+The release signup endpoint stores one opt-in per product and email. Vercel runs `/api/release-notifications` every minute and sends the product link when checkout opens, then 12 and 24 hours later. Add `CRON_SECRET`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, and `VITE_APP_URL` to the Vercel project environment. The Vercel plan must allow a one-minute cron frequency for these timings.
+
+After a successful checkout delivers the product file to the same email, the remaining release reminders are stopped.
 
 ### Paystack Test Mode URLs
 

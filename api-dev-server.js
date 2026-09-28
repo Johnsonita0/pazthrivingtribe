@@ -29,6 +29,8 @@ import vendorPinChangedEmailHandler from './server-handlers/vendor-pin-changed-e
 import activityNotificationHandler from './server-handlers/activity-notification.js';
 import testimonialSubmissionHandler from './server-handlers/testimonial-submission.js';
 import generateProductDescriptionHandler from './server-handlers/generate-product-description.js';
+import productReleaseNotificationHandler from './server-handlers/product-release-notification.js';
+import releaseNotificationsHandler from './server-handlers/release-notifications.js';
 
 try {
   process.loadEnvFile?.('.env');
@@ -88,6 +90,17 @@ const server = http.createServer((req, res) => {
       if (pathname === '/api/complete-shop-payment' && req.method === 'POST') {
         req.body = body;
         await completeShopPaymentHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/product-release-notification' && req.method === 'POST') {
+        req.body = body ? JSON.parse(body) : {};
+        await productReleaseNotificationHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/release-notifications' && req.method === 'GET') {
+        await releaseNotificationsHandler(req, res);
         return;
       }
 
