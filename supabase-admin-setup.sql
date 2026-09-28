@@ -228,9 +228,14 @@ create table if not exists product_release_notifications (
   next_notification_at timestamptz,
   notification_count integer not null default 0 check (notification_count between 0 and 3),
   status text not null default 'active' check (status in ('active', 'purchased', 'completed')),
+  admin_notification_sent_at timestamptz,
+  admin_notification_claimed_at timestamptz,
   created_at timestamptz not null default now(),
   unique (product_id, email)
 );
+
+alter table if exists product_release_notifications add column if not exists admin_notification_sent_at timestamptz;
+alter table if exists product_release_notifications add column if not exists admin_notification_claimed_at timestamptz;
 
 create extension if not exists pg_cron;
 create extension if not exists pg_net;

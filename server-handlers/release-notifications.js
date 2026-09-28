@@ -25,6 +25,92 @@ function productRoute(product) {
   return `/shop?product=${encodeURIComponent(slug || product.id)}&app=1`;
 }
 
+function adminRecipients(env) {
+  return [...new Set([
+    env.ADMIN_EMAILS,
+    env.VITE_ADMIN_EMAILS,
+    'pazthrivingtribe@gmail.com'
+  ]
+    .flatMap((value) => String(value || '').split(','))
+    .map((value) => value.trim().toLowerCase())
+    .filter((value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)))];
+}
+
+async function sendPendingAdminNotifications(supabase, env, now) {
+  const staleClaimBefore = new Date(now.getTime() - 10 * 60 * 1000).toISOString();
+  const { data: pendingNotifications, error } = await supabase
+    .from('product_release_notifications')
+    .select('id,product_id,product_title,email,customer_name,phone,release_at')
+    .is('admin_notification_sent_at', null)
+    .or(`admin_notification_claimed_at.is.null,admin_notification_claimed_at.lt.${staleClaimBefore}`)
+    .order('created_at', { ascending: true })
+    .limit(50);
+  if (error) throw error;
+
+  let sent = 0;
+  let failed = 0;
+  const recipients = adminRecipients(env);
+  for (const notification of pendingNotifications || []) {
+    const { data: claimed, error: claimError } = await supabase
+      .from('product_release_notifications')
+      .update({ admin_notification_claimed_at: now.toISOString() })
+      .eq('id', notification.id)
+      .is('admin_notification_sent_at', null)
+      .or(`admin_notification_claimed_at.is.null,admin_notification_claimed_at.lt.${staleClaimBefore}`)
+      .select('id')
+      .maybeSingle();
+    if (claimError) {
+      failed += 1;
+      console.error('Could not claim release signup admin notification:', claimError);
+      continue;
+    }
+    if (!claimed) continue;
+
+    const releaseLabel = new Intl.DateTimeFormat('en-NG', {
+      timeZone: 'Africa/Lagos',
+      dateStyle: 'medium',
+      timeStyle: 'short'
+    }).format(new Date(notification.release_at));
+    const productUrl = `${(env.VITE_APP_URL || 'https://pazthrivingtribe.org').replace(/\/$/, '')}${productRoute({ id: notification.product_id, title: notification.product_title })}`;
+    const subject = `Release notification signup — ${notification.product_title}`;
+    const html = buildPazEmailTemplate({
+      title: 'A customer activated a release alert',
+      eyebrow: 'New product notification',
+      intro: 'Hello PAZ team,',
+      accentText: 'A customer asked to be notified when a scheduled product opens for checkout.',
+      bodyHtml: `<p><strong>Product:</strong> ${escapeHtml(notification.product_title)}</p><p><strong>Release time:</strong> ${escapeHtml(releaseLabel)} WAT</p><p><strong>Customer:</strong> ${escapeHtml(notification.customer_name)}</p><p><strong>Email:</strong> ${escapeHtml(notification.email)}</p><p><strong>Phone:</strong> ${escapeHtml(notification.phone || 'Not provided')}</p>`,
+      productName: notification.product_title,
+      ctaLabel: 'Open product',
+      ctaUrl: productUrl,
+      footerNote: 'This customer was added to the scheduled product release notification list.'
+    });
+
+    try {
+      await sendResendEmail({
+        to: recipients,
+        subject,
+        html,
+        text: `A customer activated a release alert. Product: ${notification.product_title}. Release: ${releaseLabel} WAT. Customer: ${notification.customer_name} (${notification.email}). Phone: ${notification.phone || 'Not provided'}. Product page: ${productUrl}`
+      });
+      const { error: markSentError } = await supabase
+        .from('product_release_notifications')
+        .update({ admin_notification_sent_at: new Date().toISOString(), admin_notification_claimed_at: null })
+        .eq('id', notification.id)
+        .is('admin_notification_sent_at', null);
+      if (markSentError) throw markSentError;
+      sent += 1;
+    } catch (sendError) {
+      failed += 1;
+      console.error('Release signup admin email failed:', sendError);
+      await supabase.from('product_release_notifications')
+        .update({ admin_notification_claimed_at: null })
+        .eq('id', notification.id)
+        .is('admin_notification_sent_at', null);
+    }
+  }
+  return { sent, failed };
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') return sendJson(res, 405, { error: 'Method not allowed.' });
 
@@ -42,6 +128,13 @@ export default async function handler(req, res) {
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
   const now = new Date();
+  let adminNotifications;
+  try {
+    adminNotifications = await sendPendingAdminNotifications(supabase, env, now);
+  } catch (error) {
+    console.error('Could not load pending release signup admin notifications:', error);
+    return sendJson(res, 500, { error: 'Could not load pending admin notifications.' });
+  }
   const { data: dueNotifications, error: dueError } = await supabase
     .from('product_release_notifications')
     .select('id,product_id,email,customer_name,release_at,notification_count')
@@ -54,8 +147,8 @@ export default async function handler(req, res) {
     return sendJson(res, 500, { error: 'Could not load due release notifications.' });
   }
 
-  let sent = 0;
-  let failed = 0;
+  let sent = adminNotifications.sent;
+  let failed = adminNotifications.failed;
   for (const notification of dueNotifications || []) {
     const { data: product, error: productError } = await supabase
       .from('store_products')
