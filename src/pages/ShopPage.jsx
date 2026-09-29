@@ -583,6 +583,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const [ratingForm, setRatingForm] = useState({ reviewerName: '', reviewerEmail: '', rating: 0, comment: '' });
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
+  const [descriptionOverflow, setDescriptionOverflow] = useState({ description: '', hasOverflow: false });
   const [activePromotionalSlide, setActivePromotionalSlide] = useState(0);
   const [promotionalAds, setPromotionalAds] = useState([]);
   const [calculatorCurrency, setCalculatorCurrency] = useState('NGN');
@@ -617,10 +618,34 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const [releaseNotificationSubmitting, setReleaseNotificationSubmitting] = useState(false);
   const [releaseNotificationError, setReleaseNotificationError] = useState('');
 
+  const descriptionRef = useRef(null);
+
   useEffect(() => {
     const intervalId = window.setInterval(() => setAvailabilityNow(Date.now()), 15000);
     return () => window.clearInterval(intervalId);
   }, []);
+
+  useEffect(() => {
+    const descriptionElement = descriptionRef.current;
+    if (!descriptionElement || descriptionExpanded) return undefined;
+
+    const description = selectedProduct?.description || '';
+    const measureOverflow = () => {
+      setDescriptionOverflow({
+        description,
+        hasOverflow: descriptionElement.scrollHeight > descriptionElement.clientHeight + 1
+      });
+    };
+    const frameId = window.requestAnimationFrame(measureOverflow);
+    const resizeObserver = new ResizeObserver(measureOverflow);
+    resizeObserver.observe(descriptionElement);
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+      resizeObserver.disconnect();
+    };
+  }, [descriptionExpanded, selectedProduct?.description]);
+
   const productNgnPrice = (product) => product.isFree ? 0 : Number(product.price || 0) * (currencyRatesToNgn[product.currency || 'NGN'] || 1);
   const calculatorRate = currencyRatesToNgn[calculatorCurrency] || 1;
   const calculatorAmount = selectedProduct?.isFree ? 0 : selectedProduct ? productNgnPrice(selectedProduct) / calculatorRate : 0;
@@ -2331,7 +2356,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                 </div>
                 <div>
                   <div style={{ margin: '0 0 10px', color: '#475569' }}>
-                    <p style={{
+                    <p ref={descriptionRef} style={{
                       margin: '0 0 5px',
                       lineHeight: 1.55,
                       whiteSpace: 'pre-wrap',
@@ -2342,7 +2367,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                     }}>
                       {selectedProduct.description || 'No description provided yet.'}
                     </p>
-                    {selectedProduct.description && (
+                    {descriptionOverflow.description === (selectedProduct.description || '') && descriptionOverflow.hasOverflow && (
                       <button
                         type="button"
                         onClick={() => setDescriptionExpanded((current) => !current)}
