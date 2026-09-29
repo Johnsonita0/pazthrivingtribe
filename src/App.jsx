@@ -274,6 +274,9 @@ export default function App() {
   const location = useLocation();
   const isIndependencePreview = new URLSearchParams(location.search).get('independencePreview') === '1';
   const isIndependenceDay = (nigeriaDate.month === 10 && nigeriaDate.day === 1) || isIndependencePreview;
+  const isOctoberLaunchWindow = isIndependenceDay
+    || (nigeriaDate.month === 9 && nigeriaDate.day >= 25)
+    || (nigeriaDate.month === 10 && nigeriaDate.day <= 14);
   const withIndependencePreview = (path) => isIndependencePreview
     ? `${path}${path.includes('?') ? '&' : '?'}independencePreview=1`
     : path;
@@ -647,15 +650,42 @@ export default function App() {
     }
   ];
 
-  const homeSlides = isIndependenceDay ? getIndependenceDaySlides(independenceAnniversary).map((slide) => ({
+  const independenceCampaignSlide = {
+    title: 'Nigeria’s Independence Day',
+    subtitle: 'Celebrating the strength, diversity, and shared future of our nation this 1 October.',
+    eyebrow: '1 OCTOBER · INDEPENDENCE DAY',
+    image: '/image/nigeria-independence-flag.svg',
+    imageAlt: 'Nigeria’s green-white-green independence flag',
+    slideClassName: 'hero-independence-day-bg',
+    independenceDay: true,
+    hideAction: true
+  };
+  const bookReleaseSlide = {
+    title: 'I Fainted! …But I Didn’t Quit!',
+    subtitle: 'A new book from PAZ Thriving Tribe. Launching 1 October 2026.',
+    eyebrow: 'BOOK RELEASE · 1 OCTOBER 2026',
+    image: 'https://pcprbkqpxntxgtseiyie.supabase.co/storage/v1/object/public/prof-upload/products/covers/1790535861008-ifainted-coveer--1-.png',
+    imageAlt: 'Cover of I Fainted! …But I Didn’t Quit!',
+    slideClassName: 'hero-slide-book-release',
+    actionLabel: 'Explore the book',
+    actionPath: '/shop/i-fainted-but-i-didn-t-quit',
+    actionIcon: 'fa-solid fa-book-open'
+  };
+  const campaignHomeSlides = [
+    ...(isIndependenceDay ? [independenceCampaignSlide] : []),
+    ...(isOctoberLaunchWindow ? [bookReleaseSlide] : [])
+  ];
+  const independenceHistorySlides = getIndependenceDaySlides(independenceAnniversary).map((slide) => ({
     title: slide.title,
     subtitle: slide.tagline,
     eyebrow: slide.eyebrow,
     image: slide.image,
     imageAlt: slide.imageAlt,
     slideClassName: 'hero-independence-day-bg',
-    independenceDay: true
-  })) : [
+    independenceDay: true,
+    hideAction: true
+  }));
+  const standardHomeSlides = [
     {
       title: "Paz Thriving Tribe",
       subtitle: "Coaching, Mentoring and Counselling Organization.",
@@ -700,6 +730,10 @@ export default function App() {
       image: "./image/pic6.png",
       imageType: 'contain'
     },
+  ];
+  const homeSlides = [
+    ...campaignHomeSlides,
+    ...(isIndependenceDay ? independenceHistorySlides : standardHomeSlides)
   ];
 
   const homeHighlights = [
@@ -4661,12 +4695,33 @@ export default function App() {
                 <section className="hero-section">
                   {(() => {
                     const currentSlide = homeSlides[currentHomeSlide] || homeSlides[0];
+                    const actionPath = currentSlide.actionPath || (currentSlide.independenceDay
+                      ? '/store'
+                      : currentSlide.title === 'Structured Teens Development Program'
+                        ? '/teens_reg'
+                        : currentSlide.title === 'Share Your Feedback'
+                          ? '/feedback'
+                          : ((currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? '/book-session' : '/teens_reg'));
+                    const actionLabel = currentSlide.actionLabel || (currentSlide.independenceDay
+                      ? 'Explore the story'
+                      : currentSlide.title === 'Structured Teens Development Program'
+                        ? 'Apply Now'
+                        : currentSlide.title === 'Share Your Feedback'
+                          ? 'Take the Survey'
+                          : ((currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? 'Book Now' : 'Register Now'));
+                    const actionIcon = currentSlide.actionIcon || (currentSlide.independenceDay
+                      ? 'fa-solid fa-arrow-right'
+                      : currentSlide.title === 'Structured Teens Development Program'
+                        ? 'fa-solid fa-pen-to-square'
+                        : currentSlide.title === 'Share Your Feedback'
+                          ? 'fa-solid fa-comment-dots'
+                          : ((currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? 'fa-solid fa-calendar-check' : 'fa-solid fa-user-plus'));
                     return (
                       <>
                         <div
                           className={`hero-slide-bg ${currentSlide.imageType === 'contain' ? 'hero-bg-contain' : ''} ${currentSlide.imageType === 'bottom' ? 'hero-slide-bottom' : ''} ${currentSlide.slideClassName || ''}`}
-                          role={currentSlide.independenceDay ? 'img' : undefined}
-                          aria-label={currentSlide.independenceDay ? currentSlide.imageAlt : undefined}
+                          role={currentSlide.imageAlt ? 'img' : undefined}
+                          aria-label={currentSlide.imageAlt}
                           style={{
                             backgroundImage: currentSlide.imageType === 'contain' ? 'none' : `url(${currentSlide.image})`,
                             backgroundSize: currentSlide.imageType === 'logo' ? 'contain' : 'cover',
@@ -4684,27 +4739,18 @@ export default function App() {
                         {currentSlide.imageType !== 'contain' && (
                           <div className="hero-overlay" key={currentHomeSlide}>
                             <div className="hero-copy-card">
-                              {currentSlide.independenceDay && <span className="hero-independence-day-kicker">{currentSlide.eyebrow} · NAIJA @{independenceAnniversary}</span>}
+                              {currentSlide.eyebrow && <span className="hero-independence-day-kicker">{currentSlide.eyebrow}{currentSlide.independenceDay ? ` · NAIJA @${independenceAnniversary}` : ''}</span>}
                               <h1>{currentSlide.title}</h1>
                               <p>{currentSlide.subtitle}</p>
-                              <div className="hero-action-row">
+                              {!currentSlide.hideAction && <div className="hero-action-row">
                                 <button
                                   className="hero-scroll-btn"
-                                  onClick={() => {
-                                    const actionPath = currentSlide.independenceDay
-                                      ? (isIndependencePreview ? '/store?independencePreview=1' : '/store')
-                                      : currentSlide.title === 'Structured Teens Development Program'
-                                      ? '/teens_reg'
-                                      : currentSlide.title === 'Share Your Feedback'
-                                        ? '/feedback'
-                                        : ((currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? '/book-session' : '/teens_reg');
-                                    navigate(actionPath);
-                                  }}
+                                  onClick={() => navigate(actionPath)}
                                 >
-                                  {currentSlide.independenceDay ? 'Explore the story' : currentSlide.title === 'Structured Teens Development Program' ? 'Apply Now' : currentSlide.title === 'Share Your Feedback' ? 'Take the Survey' : ((currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? 'Book Now' : 'Register Now')}
-                                  <i className={currentSlide.independenceDay ? 'fa-solid fa-arrow-right' : currentSlide.title === 'Structured Teens Development Program' ? 'fa-solid fa-pen-to-square' : currentSlide.title === 'Share Your Feedback' ? 'fa-solid fa-comment-dots' : ((currentSlide.title === 'Need Someone to Talk To?' || currentSlide.title === 'We Also Offer Church Coaching Sessions') ? 'fa-solid fa-calendar-check' : 'fa-solid fa-user-plus')}></i>
+                                  {actionLabel}
+                                  <i className={actionIcon}></i>
                                 </button>
-                              </div>
+                              </div>}
                             </div>
                             <div className="hero-arrow-cluster" aria-label="Slide navigation">
                               <button

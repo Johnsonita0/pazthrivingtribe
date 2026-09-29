@@ -430,6 +430,16 @@ const money = (value, currency = 'NGN') => new Intl.NumberFormat(undefined, {
 const productPriceLabel = (product) => product.isFree ? 'Free' : `${currencySymbols[product.currency || 'NGN'] || ''}${Number(product.price || 0).toLocaleString()}`;
 
 const productSlug = (product) => encodeURIComponent(String(product?.title || product?.id || 'product').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
+const formatReviewTimestamp = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return '';
+  return new Intl.DateTimeFormat('en-NG', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'Africa/Lagos'
+  }).format(date);
+};
 
 const promotionalProductUrl = (value) => {
   const rawValue = String(value || '').trim();
@@ -2352,7 +2362,25 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                       <textarea placeholder="Share a short review (optional)" value={ratingForm.comment} onChange={(event) => setRatingForm((current) => ({ ...current, comment: event.target.value }))} rows="3" style={{ padding: '9px 10px', border: '1px solid #cbd5e1', borderRadius: '8px', resize: 'vertical', font: 'inherit' }} />
                       <button type="submit" disabled={ratingSubmitting} style={{ justifySelf: 'start', border: 0, borderRadius: '8px', padding: '10px 14px', background: ratingSubmitting ? '#cbd5e1' : '#166534', color: ratingSubmitting ? '#475569' : '#fff', fontWeight: 800, cursor: ratingSubmitting ? 'wait' : 'pointer' }}>{ratingSubmitting ? 'Saving rating...' : 'Submit rating'}</button>
                     </form>
-                    {productReviews.length > 0 && <div style={{ display: 'grid', gap: '8px', marginTop: '14px' }}>{productReviews.slice(0, 5).map((review) => <article key={review.id} style={{ paddingTop: '8px', borderTop: '1px solid #e2e8f0', fontSize: '0.8rem' }}><div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}><strong>{review.reviewer_name}</strong><span style={{ color: '#f59e0b' }}>{'★'.repeat(Number(review.rating || 0))}</span></div>{review.comment && <p style={{ margin: '4px 0 0', color: '#475569', lineHeight: 1.45 }}>{review.comment}</p>}</article>)}</div>}
+                    {productReviews.length > 0 && (
+                      <div style={{ display: 'grid', gap: '8px', marginTop: '14px' }}>
+                        {productReviews.slice(0, 5).map((review) => {
+                          const postedAt = formatReviewTimestamp(review.created_at);
+                          return (
+                            <article key={review.id} style={{ paddingTop: '8px', borderTop: '1px solid #e2e8f0', fontSize: '0.8rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
+                                <div style={{ display: 'grid', gap: '2px' }}>
+                                  <strong>{review.reviewer_name}</strong>
+                                  {postedAt && <time dateTime={review.created_at} style={{ color: '#64748b', fontSize: '0.72rem' }}>Posted {postedAt}</time>}
+                                </div>
+                                <span style={{ color: '#f59e0b' }}>{'★'.repeat(Number(review.rating || 0))}</span>
+                              </div>
+                              {review.comment && <p style={{ margin: '4px 0 0', color: '#475569', lineHeight: 1.45 }}>{review.comment}</p>}
+                            </article>
+                          );
+                        })}
+                      </div>
+                    )}
                   </section>
                 </div>
               </div>
