@@ -1132,16 +1132,6 @@ export default function AdminDashboard(props) {
     feedback: "tribe_parent_feedback",
   };
 
-  const uniqueVisitorCount = new Set(
-    clientActivityLog
-      .map((entry) => entry.session_id
-        ? `session:${entry.session_id}`
-        : entry.ip_address
-          ? `ip:${entry.ip_address}`
-          : null)
-      .filter(Boolean),
-  ).size;
-
   const extractDbId = (rowId) => {
     if (!rowId) return rowId;
     const parts = rowId.split("-");
@@ -2383,9 +2373,9 @@ export default function AdminDashboard(props) {
   const dashboardViews = [
     {
       id: "visitors",
-      label: "Visitors",
+      label: "Visits",
       color: "#2e7af0",
-      value: uniqueVisitorCount,
+      value: clientActivityLog.length,
     },
     {
       id: "teens",
