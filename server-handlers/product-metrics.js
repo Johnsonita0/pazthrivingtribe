@@ -62,6 +62,11 @@ export default async function handler(req, res) {
         .select('order_id')
         .eq('product_id', productId))
     ]);
+    const uniqueViews = new Set(
+      activity
+        .filter((row) => row.session_id && row.ip_address)
+        .map((row) => JSON.stringify([row.session_id, row.ip_address]))
+    );
 
     let notified = null;
     if (hasReleaseDate) {
@@ -90,7 +95,7 @@ export default async function handler(req, res) {
 
     res.setHeader?.('Cache-Control', 'no-store');
     return sendJson(res, 200, {
-      views: activity.length,
+      views: uniqueViews.size,
       completedOrders: completedOrders.size,
       hasReleaseDate,
       notified
