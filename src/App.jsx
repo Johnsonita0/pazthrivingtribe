@@ -1439,7 +1439,7 @@ export default function App() {
             session_format: item.session_format || item.format || '',
             notes: item.notes || item.note || '',
             paymentReference: item.payment_reference || item.paymentReference || '',
-            paymentStatus: item.payment_status || item.paymentStatus || 'pending',
+            paymentStatus: item.payment_status || item.paymentStatus || 'not_required',
             created_at: item.created_at || ''
           })));
         }
@@ -2043,72 +2043,34 @@ export default function App() {
     if (bookingSubmitting) return;
     setBookingSubmitting(true);
 
-    if (!paystackPublicKey || paystackPublicKey.includes('demo_key_update_from_admin')) {
-      setBookingSubmitting(false);
-      setToastMessage('Paystack is not configured yet. Please contact the site administrator.');
-      setToastType('error');
-      return;
-    }
-
     try {
-      if (!window.PaystackPop) throw new Error('Payment checkout is still loading. Please try again shortly.');
-      const paymentHandler = window.PaystackPop?.setup({
-        key: paystackPublicKey,
-        email: bookingForm.email,
-        amount: 5000 * 100,
-        currency: 'NGN',
-        ref: `BOOK-${Date.now()}`,
-        metadata: { custom_fields: [{ display_name: 'Service', variable_name: 'service', value: 'Talk & Thrive booking' }] },
-        callback: (response) => {
-          void (async () => {
-            try {
-            const completionResponse = await fetch('/api/complete-service-payment', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                type: 'booking',
-                reference: response.reference,
-                email: bookingForm.email,
-                details: {
-                  registration_type: bookingForm.clientType,
-                  contact_name: bookingForm.name,
-                  phone: bookingForm.phone,
-                  program_type: 'Talk & Thrive Counseling',
-                  preferred_time: bookingForm.preferredTime,
-                  session_format: bookingForm.sessionType,
-                  notes: bookingForm.concern
-                }
-              })
-            });
-            const completion = await completionResponse.json().catch(() => ({}));
-            if (!completionResponse.ok) throw new Error(completion.error || 'Payment completed but booking could not be saved.');
-            setBookingSubmitted(true);
-            setToastMessage('Payment successful. Your booking request has been submitted.');
-            setToastType('success');
-            setBookingForm({ name: '', email: '', phone: '', clientType: 'Individual', sessionType: 'Virtual', preferredTime: 'Any time', concern: '' });
-            } catch (error) {
-              console.error('Paid booking completion failed:', error);
-              setBookingSubmitted(false);
-              setToastMessage(error.message || 'Payment completed but booking could not be saved.');
-              setToastType('error');
-            } finally {
-              setBookingSubmitting(false);
-            }
-          })();
-        },
-        onClose: () => {
-          setBookingSubmitting(false);
-          setToastMessage('Payment was cancelled. You can try again anytime.');
-          setToastType('error');
-        }
-      });
-      if (!paymentHandler) throw new Error('Payment checkout is unavailable.');
-      paymentHandler.openIframe();
+      const bookingPayload = {
+        registration_type: bookingForm.clientType,
+        contact_name: bookingForm.name.trim(),
+        email: bookingForm.email.trim(),
+        phone: bookingForm.phone.trim(),
+        program_type: 'Talk & Thrive Counseling',
+        preferred_time: bookingForm.preferredTime,
+        session_format: bookingForm.sessionType,
+        notes: bookingForm.concern,
+        payment_status: 'not_required'
+      };
+      const { error } = await supabase.from('tribe_bookings').insert([bookingPayload]);
+      if (error) throw error;
+
+      const savedBooking = { ...bookingPayload, id: `booking-${Date.now()}`, created_at: new Date().toISOString() };
+      setBookings((current) => [savedBooking, ...current]);
+      void notifyAdminActivity('Booking request', 'New free session booking', savedBooking);
+      setBookingSubmitted(true);
+      setToastMessage('Your free booking request has been submitted.');
+      setToastType('success');
+      setBookingForm({ name: '', email: '', phone: '', clientType: 'Individual', sessionType: 'Virtual', preferredTime: 'Any time', concern: '' });
     } catch (error) {
-      console.error('Unable to open booking payment:', error);
-      setBookingSubmitting(false);
-      setToastMessage('We could not open the payment window. Please try again.');
+      console.error('Unable to save booking request:', error);
+      setToastMessage('We could not submit your booking. Please try again.');
       setToastType('error');
+    } finally {
+      setBookingSubmitting(false);
     }
   };
 
@@ -5147,7 +5109,7 @@ export default function App() {
           <Route path="/teens-registration" element={<TeensRegistrationPage paystackPublicKey={paystackPublicKey} />} />
           <Route path="/teens_reg" element={<TeensRegistrationPage paystackPublicKey={paystackPublicKey} />} />
           <Route path="/teens-reg" element={<TeensRegistrationPage paystackPublicKey={paystackPublicKey} />} />
-          <Route path="/book-session" element={<BookSessionPage paystackPublicKey={paystackPublicKey} />} />
+          <Route path="/book-session" element={<BookSessionPage />} />
           <Route path="/feedback" element={<FeedbackPage />} />
           <Route path="/store" element={<div className="public-website-container"><StorePage isIndependenceDay={isIndependenceDay} independenceAnniversary={independenceAnniversary} isIndependencePreview={isIndependencePreview} /></div>} />
           <Route path="/shop" element={<div className="public-website-container shop-page-shell" style={{ paddingTop: '72px' }}><ShopPage onOrderSubmitted={setShopOrders} paystackPublicKey={paystackPublicKey} storeProducts={storeProducts} storeBankAccount={storeBankAccount} isIndependenceDay={isIndependenceDay} independenceAnniversary={independenceAnniversary} isIndependencePreview={isIndependencePreview} /></div>} />

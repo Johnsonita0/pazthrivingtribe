@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import CustomDropdown from '../components/CustomDropdown';
+import { supabase } from '../supabaseClient';
+import { notifyAdminActivity } from '../utils/notifyAdminActivity';
 
 const createInitial = () => ({
   registrationType: '',
@@ -15,25 +17,12 @@ const createInitial = () => ({
   note: ''
 });
 
-export default function BookSessionPage({ paystackPublicKey = '' }) {
+export default function BookSessionPage() {
   const [form, setForm] = useState(createInitial());
   const [saving, setSaving] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [toast, setToast] = useState('');
-  const [paystackReady, setPaystackReady] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (window.PaystackPop) {
-      setPaystackReady(true);
-      return undefined;
-    }
-    const script = document.createElement('script');
-    script.src = 'https://js.paystack.co/v1/inline.js';
-    script.onload = () => setPaystackReady(true);
-    document.body.appendChild(script);
-    return () => { script.onload = null; };
-  }, []);
 
   useEffect(() => {
     if (!toast) return undefined;
@@ -92,34 +81,23 @@ export default function BookSessionPage({ paystackPublicKey = '' }) {
         preferred_date: form.preferredDate || null,
         preferred_time: form.preferredTime || null,
         session_format: form.sessionFormat,
-        notes: form.note || ''
+        notes: form.note || '',
+        payment_status: 'not_required'
       };
 
-      if (!paystackReady || !window.PaystackPop) throw new Error('Payment checkout is still loading. Please try again shortly.');
-      if (!paystackPublicKey || paystackPublicKey.includes('demo_key_update_from_admin')) throw new Error('Paystack is not configured yet.');
-      const paymentHandler = window.PaystackPop.setup({
-        key: paystackPublicKey, email: form.email, amount: 5000 * 100, currency: 'NGN', ref: `BOOK-${Date.now()}`,
-        metadata: { custom_fields: [{ display_name: 'Service', variable_name: 'service', value: 'Booking session' }, { display_name: 'Program', variable_name: 'program', value: form.programType }] },
-        callback: (response) => {
-          void (async () => {
-            try {
-            const completionResponse = await fetch('/api/complete-service-payment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type: 'booking', reference: response.reference, email: form.email, details: payload }) });
-            const completion = await completionResponse.json().catch(() => ({}));
-            if (!completionResponse.ok) throw new Error(completion.error || 'Payment completed but booking could not be saved.');
-            setToast('Payment successful. Booking submitted.');
-            setSubmitted(true);
-            setForm(createInitial());
-            } catch (error) { setToast(error.message); }
-            setSaving(false);
-          })();
-        },
-        onClose: () => { setSaving(false); setToast('Payment was cancelled.'); }
-      });
-      paymentHandler.openIframe();
-    } catch (err) {
-      console.error('Booking failed', err);
+      const { error } = await supabase.from('tribe_bookings').insert([payload]);
+      if (error) throw error;
+
+      const savedBooking = { ...payload, id: `booking-${Date.now()}`, created_at: new Date().toISOString() };
+      void notifyAdminActivity('Booking request', 'New free session booking', savedBooking);
+      setToast('Your free booking request has been submitted.');
+      setSubmitted(true);
+      setForm(createInitial());
+    } catch (error) {
+      console.error('Booking failed', error);
+      setToast(error.message || 'Booking failed. Please try again later.');
+    } finally {
       setSaving(false);
-      setToast(err.message || 'Booking failed. Please try again later.');
     }
   };
 

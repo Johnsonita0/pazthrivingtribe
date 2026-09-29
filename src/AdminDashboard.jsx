@@ -2399,7 +2399,10 @@ export default function AdminDashboard(props) {
           (applicant) => applicant.paymentStatus || applicant.payment_status,
         ).length +
         bookings.filter(
-          (booking) => booking.paymentStatus || booking.payment_status,
+          (booking) => {
+            const status = booking.paymentStatus || booking.payment_status;
+            return status && status !== "not_required";
+          },
         ).length,
     },
     {
@@ -2721,7 +2724,10 @@ export default function AdminDashboard(props) {
         status: applicant.paymentStatus || applicant.payment_status,
       })),
     ...bookings
-      .filter((booking) => booking.paymentStatus || booking.payment_status)
+      .filter((booking) => {
+        const status = booking.paymentStatus || booking.payment_status;
+        return status && status !== "not_required";
+      })
       .map((booking) => ({
         ...booking,
         service: "Booking session",

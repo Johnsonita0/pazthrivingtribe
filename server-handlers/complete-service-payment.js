@@ -17,15 +17,6 @@ function cleanEmail(value) {
 }
 
 function getDetails(type, details = {}) {
-  if (type === 'booking') {
-    return {
-      registration_type: details.registration_type || '', contact_name: details.contact_name || '',
-      email: details.email, phone: details.phone || '', home_address: details.home_address || '',
-      program_type: details.program_type || '', preferred_date: details.preferred_date || null,
-      preferred_time: details.preferred_time || null, session_format: details.session_format || 'Online (Zoom)',
-      notes: details.notes || '', payment_reference: details.payment_reference, payment_status: 'paid'
-    };
-  }
   return {
     registration_type: details.registration_type || '', parent_or_guardian_name: details.parent_or_guardian_name || '',
     full_name: details.full_name || details.parent_or_guardian_name || '', email: details.email,
@@ -43,7 +34,7 @@ export default async function handler(req, res) {
     try { body = JSON.parse(body); } catch { return sendJson(res, 400, { error: 'Invalid JSON body.' }); }
   }
 
-  const type = body.type === 'booking' ? 'booking' : body.type === 'registration' ? 'registration' : '';
+  const type = body.type === 'registration' ? 'registration' : '';
   const email = cleanEmail(body.email || body.details?.email);
   const reference = String(body.reference || '').trim();
   if (!type || !email || !reference) return sendJson(res, 400, { error: 'A service type, valid email, and Paystack reference are required.' });
@@ -64,12 +55,11 @@ export default async function handler(req, res) {
 
     const details = getDetails(type, { ...(body.details || {}), email, payment_reference: reference });
     const supabase = createClient(supabaseUrl, serviceRoleKey);
-    const table = type === 'booking' ? 'tribe_bookings' : 'tribe_applicants';
-    const { data: saved, error } = await supabase.from(table).insert(details).select('id').single();
+    const { data: saved, error } = await supabase.from('tribe_applicants').insert(details).select('id').single();
     if (error) throw error;
 
-    const serviceName = type === 'booking' ? 'Booking session' : 'Registration';
-    const name = details.contact_name || details.parent_or_guardian_name || details.full_name || 'Customer';
+    const serviceName = 'Registration';
+    const name = details.parent_or_guardian_name || details.full_name || 'Customer';
     const html = buildPazEmailTemplate({ title: `${serviceName} payment confirmed`, eyebrow: 'Payment confirmed', intro: `Hi ${name},`, accentText: `Your ${serviceName.toLowerCase()} payment of ₦5,000 was received successfully.`, bodyHtml: `<p>Your request has been submitted and our team will contact you with the next steps.</p><p><strong>Paystack reference:</strong> ${reference}</p><p><strong>Service:</strong> ${serviceName}</p>`, ctaLabel: 'Visit PAZ Thriving Tribe', ctaUrl: process.env.VITE_APP_URL || 'https://pazthrivingtribe.org', footerNote: 'Thank you for choosing PAZ Thriving Tribe.' });
     const adminHtml = buildPazEmailTemplate({ title: `${serviceName} payment received`, eyebrow: 'New paid service request', intro: 'Hello PAZ team,', accentText: `A ${serviceName.toLowerCase()} request has been paid.`, bodyHtml: `<p><strong>Customer:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p><p><strong>Amount:</strong> ₦5,000</p><p><strong>Reference:</strong> ${reference}</p>`, ctaLabel: 'Open admin dashboard', ctaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/admin`, showSecondaryCta: true, secondaryCtaLabel: 'Payment history', secondaryCtaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/dashboard?view=payment-history&reference=${encodeURIComponent(reference)}`, footerNote: 'Internal notification for PAZ Thriving Tribe.' });
     await Promise.all([
