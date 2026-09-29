@@ -347,6 +347,14 @@ export default async function handler(req, res) {
         return jsonResponse(res, 200, { signedUrl: signedUrlResult.data?.signedUrl || null })
       } else if (!table) {
         return jsonResponse(res, 400, { error: 'Missing table' })
+      } else if (action === 'count') {
+        let query = supabase.from(table).select('id', { count: 'exact', head: true })
+        if (match && typeof match === 'object') {
+          Object.entries(match).forEach(([key, value]) => { query = query.eq(key, value) })
+        }
+        const { count, error } = await query
+        if (error) throw error
+        return jsonResponse(res, 200, { count: count || 0 })
       } else if (action === 'update') {
         if (!match) return jsonResponse(res, 400, { error: 'Missing match object for update' })
         result = await supabase.from(table).update(payload).match(match)

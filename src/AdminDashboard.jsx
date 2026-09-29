@@ -150,6 +150,7 @@ export default function AdminDashboard(props) {
     setFormMetric,
     promoSlides,
     setPromoSlides,
+    testimonialCount = null,
     testimonialAuthor,
     setTestimonialAuthor,
     testimonialOrigin,
@@ -253,6 +254,7 @@ export default function AdminDashboard(props) {
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
   const [productDeleteTarget, setProductDeleteTarget] = useState(null);
   const [vendorProfiles, setVendorProfiles] = useState([]);
+  const [vendorCount, setVendorCount] = useState(null);
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [productReviewModal, setProductReviewModal] = useState(null);
   const [vendorSearch, setVendorSearch] = useState("");
@@ -271,6 +273,7 @@ export default function AdminDashboard(props) {
   });
   const [adminAds, setAdminAds] = useState([]);
   const [supportMessages, setSupportMessages] = useState([]);
+  const [openSupportCount, setOpenSupportCount] = useState(null);
   const [supportReplyDrafts, setSupportReplyDrafts] = useState({});
   const [supportReplySaving, setSupportReplySaving] = useState(null);
   const paymentReference =
@@ -695,6 +698,48 @@ export default function AdminDashboard(props) {
       active = false;
     };
   }, [activeDashboardView, mode, session]);
+
+  useEffect(() => {
+    if (mode !== "dashboard" || !isAdmin || !session || refreshLoading)
+      return undefined;
+    let active = true;
+    const token = session?.access_token || session?.accessToken || "";
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    };
+    const loadCount = async (table, match) => {
+      const response = await fetch("/api/admin-update", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ action: "count", table, match }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || `Could not count ${table}.`);
+      return Number(payload.count || 0);
+    };
+
+    Promise.all([
+      loadCount("vendor_profiles"),
+      loadCount("vendor_support_messages", { status: "open" }),
+      loadCount("customer_support_messages", { status: "open" }),
+    ])
+      .then(([vendors, vendorSupport, customerSupport]) => {
+        if (!active) return;
+        setVendorCount(vendors);
+        setOpenSupportCount(vendorSupport + customerSupport);
+      })
+      .catch((error) => {
+        if (!active) return;
+        console.error("Dashboard activity counts could not be loaded:", error);
+        setVendorCount(null);
+        setOpenSupportCount(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isAdmin, mode, refreshLoading, session]);
 
   const updateVendorStatus = async (vendor, status) => {
     const token = session?.access_token || session?.accessToken || "";
@@ -2370,7 +2415,7 @@ export default function AdminDashboard(props) {
       id: "testimonials",
       label: "Testimonials",
       color: "#7c3aed",
-      value: Math.max(promoSlides.length || 0, 0),
+      value: testimonialCount ?? "—",
     },
     {
       id: "slider",
@@ -2388,14 +2433,13 @@ export default function AdminDashboard(props) {
       id: "vendors",
       label: "Vendors",
       color: "#0f766e",
-      value: vendorProfiles.length,
+      value: vendorCount ?? "—",
     },
     {
       id: "support",
       label: "Support Chat",
       color: "#2563eb",
-      value: supportMessages.filter((message) => message.status === "open")
-        .length,
+      value: openSupportCount ?? "—",
     },
     {
       id: "payment-history",

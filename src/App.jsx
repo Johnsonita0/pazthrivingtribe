@@ -595,6 +595,7 @@ export default function App() {
   const [testimonialSubmitting, setTestimonialSubmitting] = useState(false);
   const [expandedFaqIndex, setExpandedFaqIndex] = useState(0);
   const [promoSlideAutoPlay, setPromoSlideAutoPlay] = useState(true);
+  const [testimonialCount, setTestimonialCount] = useState(null);
   const [promoSlides, setPromoSlides] = useState([
     {
       title: 'Jojo’s Mom',
@@ -1610,10 +1611,15 @@ export default function App() {
 
   const fetchTestimonials = async () => {
     try {
-      const { data, error } = await supabase.from('tribe_testimonials').select('*').eq('status', 'published').order('created_at', { ascending: false });
-      if (error) throw error;
-      if (Array.isArray(data)) {
-        setPromoSlides(data.map((item) => ({
+      const [publishedResult, countResult] = await Promise.all([
+        supabase.from('tribe_testimonials').select('*').eq('status', 'published').order('created_at', { ascending: false }),
+        supabase.from('tribe_testimonials').select('id', { count: 'exact', head: true }),
+      ]);
+      if (publishedResult.error) throw publishedResult.error;
+      if (countResult.error) throw countResult.error;
+      setTestimonialCount(countResult.count ?? 0);
+      if (Array.isArray(publishedResult.data)) {
+        setPromoSlides(publishedResult.data.map((item) => ({
           id: item.id,
           title: item.author || item.title || 'Anonymous',
           text: item.text || '',
@@ -5277,6 +5283,7 @@ export default function App() {
                 formMetric={formMetric}
                 setFormMetric={setFormMetric}
                 promoSlides={promoSlides}
+                testimonialCount={testimonialCount}
                 testimonialAuthor={testimonialAuthor}
                 setTestimonialAuthor={setTestimonialAuthor}
                 testimonialOrigin={testimonialOrigin}
@@ -5383,6 +5390,7 @@ export default function App() {
                 formMetric={formMetric}
                 setFormMetric={setFormMetric}
                 promoSlides={promoSlides}
+                testimonialCount={testimonialCount}
                 testimonialAuthor={testimonialAuthor}
                 setTestimonialAuthor={setTestimonialAuthor}
                 testimonialOrigin={testimonialOrigin}
