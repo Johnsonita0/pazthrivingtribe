@@ -2357,7 +2357,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                     <span>{selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? 'Out of stock' : `${selectedProduct.stockCount} available`}</span>
                   </div>
                   <div aria-label="Product interest" style={{ display: 'flex', gap: '18px', flexWrap: 'wrap', marginBottom: '12px', color: '#475569', fontSize: '0.82rem' }}>
-                    <span><strong>{productMetrics ? Number(productMetrics.uniqueViewers || 0).toLocaleString('en-NG') : '—'}</strong> Viewed</span>
+                    <span><strong>{productMetrics ? Number(productMetrics.views || 0).toLocaleString('en-NG') : '—'}</strong> Viewed</span>
                     <span><strong>{productMetrics ? Number(productMetrics.completedOrders || 0).toLocaleString('en-NG') : '—'}</strong> Completed Order</span>
                     {productMetrics?.hasReleaseDate && <span><strong>{Number(productMetrics.notified || 0).toLocaleString('en-NG')}</strong> Notified</span>}
                   </div>
@@ -2392,8 +2392,13 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                       <button type="submit" disabled={ratingSubmitting} style={{ justifySelf: 'start', border: 0, borderRadius: '8px', padding: '10px 14px', background: ratingSubmitting ? '#cbd5e1' : '#166534', color: ratingSubmitting ? '#475569' : '#fff', fontWeight: 800, cursor: ratingSubmitting ? 'wait' : 'pointer' }}>{ratingSubmitting ? 'Saving rating...' : 'Submit rating'}</button>
                     </form>
                     {productReviews.length > 0 && (
-                      <div style={{ display: 'grid', gap: '8px', marginTop: '14px' }}>
-                        {productReviews.slice(0, 5).map((review) => {
+                      <div
+                        role="region"
+                        aria-label="Product reviews"
+                        tabIndex={0}
+                        style={{ display: 'grid', gap: '8px', marginTop: '14px', maxHeight: isSmallScreen ? 'min(42vh, 360px)' : 'min(45vh, 480px)', overflowY: 'auto', overscrollBehavior: 'contain', paddingRight: '6px' }}
+                      >
+                        {productReviews.map((review) => {
                           const postedAt = formatReviewTimestamp(review.created_at);
                           return (
                             <article key={review.id} style={{ paddingTop: '8px', borderTop: '1px solid #e2e8f0', fontSize: '0.8rem' }}>

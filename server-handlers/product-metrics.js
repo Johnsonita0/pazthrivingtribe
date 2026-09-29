@@ -73,14 +73,6 @@ export default async function handler(req, res) {
       notified = count || 0;
     }
 
-    const viewers = new Set();
-    for (const visit of activity) {
-      const sessionId = String(visit.session_id || '').trim();
-      const ipAddress = String(visit.ip_address || '').trim();
-      const viewerId = sessionId ? `session:${sessionId}` : ipAddress ? `ip:${ipAddress}` : '';
-      if (viewerId) viewers.add(viewerId);
-    }
-
     const orderIds = [...new Set(orderItems.map((item) => item.order_id).filter(Boolean))];
     const completedOrders = new Set();
     for (let offset = 0; offset < orderIds.length; offset += 100) {
@@ -96,9 +88,9 @@ export default async function handler(req, res) {
       }
     }
 
-    res.setHeader?.('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300');
+    res.setHeader?.('Cache-Control', 'no-store');
     return sendJson(res, 200, {
-      uniqueViewers: viewers.size,
+      views: activity.length,
       completedOrders: completedOrders.size,
       hasReleaseDate,
       notified
