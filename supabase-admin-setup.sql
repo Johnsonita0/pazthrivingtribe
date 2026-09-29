@@ -748,6 +748,17 @@ DO $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'tribe_applicants' AND policyname = 'allow trusted admin read on applicants'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow trusted admin read on applicants" ON tribe_applicants FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM site_admins WHERE uid = auth.uid()::text OR lower(email) = lower(auth.jwt()->>''email'')));';
+  END IF;
+END
+$$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
     WHERE schemaname = 'public' AND tablename = 'tribe_applicants' AND policyname = 'allow public insert for applicants'
   ) THEN
     EXECUTE 'CREATE POLICY "allow public insert for applicants" ON tribe_applicants FOR INSERT WITH CHECK (true);';
@@ -1363,6 +1374,26 @@ create table if not exists tribe_contact_messages (
   message text,
   created_at timestamptz default now()
 );
+
+alter table if exists tribe_contact_messages enable row level security;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'tribe_contact_messages' AND policyname = 'allow public insert for contact messages'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow public insert for contact messages" ON tribe_contact_messages FOR INSERT WITH CHECK (true);';
+  END IF;
+
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'tribe_contact_messages' AND policyname = 'allow trusted admin read on contact messages'
+  ) THEN
+    EXECUTE 'CREATE POLICY "allow trusted admin read on contact messages" ON tribe_contact_messages FOR SELECT TO authenticated USING (EXISTS (SELECT 1 FROM site_admins WHERE uid = auth.uid()::text OR lower(email) = lower(auth.jwt()->>''email'')));';
+  END IF;
+END
+$$;
 
 alter table if exists tribe_social_feed enable row level security;
 

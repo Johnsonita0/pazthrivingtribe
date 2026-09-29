@@ -371,6 +371,7 @@ export default function App() {
   const verifyAdminAccess = async (currentSession) => {
     if (!currentSession?.access_token) {
       setIsAdmin(false);
+      adminDataLoadedForRef.current = null;
       return false;
     }
     setAdminAccessLoading(true);
@@ -381,6 +382,17 @@ export default function App() {
       const payload = await response.json().catch(() => ({}));
       const authorized = response.ok && payload.isAdmin === true;
       setIsAdmin(authorized);
+      const userId = currentSession.user?.id;
+      if (authorized && userId && adminDataLoadedForRef.current !== userId) {
+        adminDataLoadedForRef.current = userId;
+        void fetchDynamicWebsiteContent().then((loaded) => {
+          if (!loaded && adminDataLoadedForRef.current === userId) {
+            adminDataLoadedForRef.current = null;
+          }
+        });
+      } else if (!authorized) {
+        adminDataLoadedForRef.current = null;
+      }
       return authorized;
     } catch (error) {
       console.error('Admin access check failed:', error);
@@ -512,25 +524,36 @@ export default function App() {
   const [contactMessages, setContactMessages] = useState([]);
   const [parentFeedback, setParentFeedback] = useState([]);
   const [contactSubmitting, setContactSubmitting] = useState(false);
+  const adminDataLoadedForRef = useRef(null);
 
   const handleContactFormSubmit = async (event) => {
     event.preventDefault();
     if (contactSubmitting) return;
     setContactSubmitting(true);
-    const trimmedMessage = {
-      id: `contact-${Date.now()}`,
+    const messagePayload = {
       name: contactForm.name.trim(),
       email: contactForm.email.trim(),
       subject: contactForm.subject.trim(),
-      message: contactForm.message.trim(),
-      createdAt: new Date().toISOString()
+      message: contactForm.message.trim()
     };
-    setContactMessages((prev) => [trimmedMessage, ...prev]);
-    void notifyAdminActivity('Contact message', 'New contact message', trimmedMessage);
-    setContactForm({ name: '', email: '', subject: '', message: '' });
-    setToastMessage('Your message has been received and will be reviewed by the team shortly.');
-    setToastType('success');
-    window.setTimeout(() => setContactSubmitting(false), 500);
+
+    try {
+      const { error } = await supabase.from('tribe_contact_messages').insert([messagePayload]);
+      if (error) throw error;
+
+      const savedMessage = { ...messagePayload, id: `contact-${Date.now()}`, createdAt: new Date().toISOString() };
+      setContactMessages((prev) => [savedMessage, ...prev]);
+      void notifyAdminActivity('Contact message', 'New contact message', savedMessage);
+      setContactForm({ name: '', email: '', subject: '', message: '' });
+      setToastMessage('Your message has been received and will be reviewed by the team shortly.');
+      setToastType('success');
+    } catch (error) {
+      console.error('Contact message could not be saved:', error);
+      setToastMessage('Your message could not be submitted. Please try again.');
+      setToastType('error');
+    } finally {
+      setContactSubmitting(false);
+    }
   };
 
   // --- Sliding Hero Banner States (Main Page) ---
