@@ -40,6 +40,27 @@ const whatsappTips = [
   'Need a warm welcome today?'
 ];
 
+let youtubeIframeApiPromise;
+const loadYouTubeIframeApi = () => {
+  if (window.YT?.Player) return Promise.resolve(window.YT);
+  if (youtubeIframeApiPromise) return youtubeIframeApiPromise;
+
+  youtubeIframeApiPromise = new Promise((resolve, reject) => {
+    const previousCallback = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => {
+      previousCallback?.();
+      resolve(window.YT);
+    };
+
+    const script = document.createElement('script');
+    script.src = 'https://www.youtube.com/iframe_api';
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+
+  return youtubeIframeApiPromise;
+};
+
 const legalDocuments = {
   privacy: {
     id: 'paz-privacy-policy',
@@ -734,6 +755,8 @@ export default function App() {
   const [socialMetadataLoading, setSocialMetadataLoading] = useState(false);
   const [youtubeEmbedUrl, setYoutubeEmbedUrl] = useState('https://www.youtube.com/embed/-vOSeWpU1Xs');
   const [activeYoutubeIndex, setActiveYoutubeIndex] = useState(0);
+  const youtubePlayerContainerRef = useRef(null);
+  const youtubeAutoplayNextRef = useRef(false);
   const defaultYoutubeVideo = {
     id: 'default-teachable-moment',
     platform: 'YouTube',
@@ -791,6 +814,44 @@ export default function App() {
     });
   const youtubeVideos = publishedYoutubeVideos.length > 0 ? publishedYoutubeVideos : [defaultYoutubeVideo];
   const activeYoutubeVideo = youtubeVideos[activeYoutubeIndex] || youtubeVideos[0];
+
+  useEffect(() => {
+    if (!activeYoutubeVideo?.embedUrl || !youtubePlayerContainerRef.current) return undefined;
+
+    let cancelled = false;
+    let player;
+    loadYouTubeIframeApi().then((YT) => {
+      if (cancelled || !youtubePlayerContainerRef.current) return;
+
+      const videoId = new URL(activeYoutubeVideo.embedUrl).pathname.split('/').filter(Boolean).pop();
+      if (!videoId) return;
+
+      const autoplay = youtubeAutoplayNextRef.current;
+      youtubeAutoplayNextRef.current = false;
+      player = new YT.Player(youtubePlayerContainerRef.current, {
+        videoId,
+        playerVars: { autoplay: autoplay ? 1 : 0, origin: window.location.origin },
+        events: {
+          onReady: (event) => {
+            event.target.getIframe().title = activeYoutubeVideo.title || 'Teachable Moments with Coach Roseline';
+          },
+          onStateChange: (event) => {
+            if (event.data === YT.PlayerState.ENDED && youtubeVideos.length > 1) {
+              youtubeAutoplayNextRef.current = true;
+              setActiveYoutubeIndex((current) => (current + 1) % youtubeVideos.length);
+            }
+          },
+        },
+      });
+    }).catch((error) => {
+      console.error('YouTube player could not be initialized:', error);
+    });
+
+    return () => {
+      cancelled = true;
+      player?.destroy();
+    };
+  }, [activeYoutubeIndex, activeYoutubeVideo?.embedUrl, activeYoutubeVideo?.title, location.pathname, youtubeVideos.length]);
 
         
 
@@ -4733,13 +4794,7 @@ export default function App() {
                     </div>
                     <div className="founder-video-embed-wrap">
                       {activeYoutubeVideo?.embedUrl ? (
-                        <iframe
-                          key={activeYoutubeVideo.embedUrl}
-                          src={activeYoutubeVideo.embedUrl}
-                          title={activeYoutubeVideo.title || 'Teachable Moments with Coach Roseline'}
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                          allowFullScreen
-                        ></iframe>
+                        <div ref={youtubePlayerContainerRef} className="founder-video-youtube-player"></div>
                       ) : (
                         <div className="founder-video-empty-state">
                           <i className="fa-brands fa-youtube" aria-hidden="true"></i>
