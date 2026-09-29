@@ -624,6 +624,11 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const productNgnPrice = (product) => product.isFree ? 0 : Number(product.price || 0) * (currencyRatesToNgn[product.currency || 'NGN'] || 1);
   const calculatorRate = currencyRatesToNgn[calculatorCurrency] || 1;
   const calculatorAmount = selectedProduct?.isFree ? 0 : selectedProduct ? productNgnPrice(selectedProduct) / calculatorRate : 0;
+  const productRatingAverage = productReviews.length
+    ? productReviews.reduce((total, review) => total + Number(review.rating || 0), 0) / productReviews.length
+    : Number(selectedProduct?.rating || 0);
+  const productRatingPercentage = Math.round((productRatingAverage / 5) * 100);
+
   const promotionalProducts = storeData.products.map(normalizeProduct);
   const findPromotionalProduct = (item) => {
     const productKey = promotionalProductKey(item?.url);
@@ -2353,7 +2358,11 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                   </div>
                   {selectedProduct.vendorName && <div style={{ marginBottom: '10px', color: '#475569', fontSize: '0.82rem' }}>Published by <strong>{selectedProduct.vendorName}</strong></div>}
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '10px', color: '#64748b', fontSize: '0.8rem' }}>
-                    <span>{'★'.repeat(Math.round(selectedProduct.rating || 0)) || 'No rating'}{selectedProduct.reviews ? ` (${selectedProduct.reviews} reviews)` : ''}</span>
+                    <span>
+                      {productRatingAverage > 0
+                        ? `${'★'.repeat(Math.round(productRatingAverage))} ${productRatingAverage.toFixed(1)}/5 (${productRatingPercentage}%)${selectedProduct.reviews ? ` · ${selectedProduct.reviews} reviews` : ''}`
+                        : 'No ratings yet'}
+                    </span>
                     <span>{selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? 'Out of stock' : `${selectedProduct.stockCount} available`}</span>
                   </div>
                   <div aria-label="Product interest" style={{ display: 'flex', gap: '18px', flexWrap: 'wrap', marginBottom: '12px', color: '#475569', fontSize: '0.82rem' }}>
