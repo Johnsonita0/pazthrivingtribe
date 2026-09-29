@@ -240,6 +240,7 @@ export default function AdminDashboard(props) {
   const [commerceSubTab, setCommerceSubTab] = useState("storefront");
   const [paymentHistoryTab, setPaymentHistoryTab] = useState("booking");
   const [tableFilters, setTableFilters] = useState({});
+  const [dashboardTablePage, setDashboardTablePage] = useState(1);
   const [selectedRowIds, setSelectedRowIds] = useState([]);
   const [viewingRow, setViewingRow] = useState(null);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -474,17 +475,20 @@ export default function AdminDashboard(props) {
     )
       return undefined;
     let active = true;
-    supabase
-      .from("tribe_parent_feedback")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(200)
-      .then(({ data, error }) => {
-        if (active && !error && Array.isArray(data)) setParentFeedback(data);
-      })
-      .catch((error) =>
-        console.error("Parent feedback refresh failed:", error),
-      );
+    void (async () => {
+      const rows = [];
+      for (let offset = 0; ; offset += 1000) {
+        const { data, error } = await supabase
+          .from("tribe_parent_feedback")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .range(offset, offset + 999);
+        if (error) throw error;
+        rows.push(...(data || []));
+        if (!data || data.length < 1000) break;
+      }
+      if (active) setParentFeedback(rows);
+    })().catch((error) => console.error("Parent feedback refresh failed:", error));
     return () => {
       active = false;
     };
@@ -1085,7 +1089,11 @@ export default function AdminDashboard(props) {
 
   const uniqueVisitorCount = new Set(
     clientActivityLog
-      .map((entry) => entry.ip_address || entry.session_id)
+      .map((entry) => entry.session_id
+        ? `session:${entry.session_id}`
+        : entry.ip_address
+          ? `ip:${entry.ip_address}`
+          : null)
       .filter(Boolean),
   ).size;
 
@@ -2484,7 +2492,7 @@ export default function AdminDashboard(props) {
   };
 
   const dashboardTableData = {
-    visitors: clientActivityLog.slice(0, 10).map((entry) => ({
+    visitors: clientActivityLog.map((entry) => ({
       id:
         entry.id ||
         `${entry.session_id || "activity"}-${entry.created_at || Date.now()}`,
@@ -2500,7 +2508,7 @@ export default function AdminDashboard(props) {
     })),
     teens: (() => {
       const rows = [];
-      applicants.slice(0, 50).forEach((applicant) => {
+      applicants.forEach((applicant) => {
         const baseParent = {
           email: applicant.email || "No email",
           phone: applicant.phone || "No phone",
@@ -2572,7 +2580,7 @@ export default function AdminDashboard(props) {
 
       return rows;
     })(),
-    messages: contactMessages.slice(0, 10).map((message) => ({
+    messages: contactMessages.map((message) => ({
       id:
         message.id ||
         `${message.email || "message"}-${message.createdAt || Date.now()}`,
@@ -2583,7 +2591,7 @@ export default function AdminDashboard(props) {
         message.message || "No message provided",
       ],
     })),
-    bookings: (bookings || []).slice(0, 50).map((b) => ({
+    bookings: (bookings || []).map((b) => ({
       id: b.id || `${b.email || "booking"}-${b.created_at || Date.now()}`,
       columns: [
         b.contact_name || b.contactName || "No name",
@@ -2598,7 +2606,7 @@ export default function AdminDashboard(props) {
         b.notes || b.note || "N/A",
       ],
     })),
-    testimonials: promoSlides.slice(0, 10).map((testimonial) => ({
+    testimonials: promoSlides.map((testimonial) => ({
       id:
         testimonial.id ||
         `${testimonial.title || "testimonial"}-${testimonial.createdAt || Date.now()}`,
@@ -2609,7 +2617,7 @@ export default function AdminDashboard(props) {
         testimonial.imageType || "Website",
       ],
     })),
-    slider: promoSlides.slice(0, 10).map((testimonial) => ({
+    slider: promoSlides.map((testimonial) => ({
       id:
         testimonial.id ||
         `${testimonial.title || "testimonial"}-${testimonial.createdAt || Date.now()}`,
@@ -2620,7 +2628,7 @@ export default function AdminDashboard(props) {
         testimonial.imageType || "Website",
       ],
     })),
-    feedback: (parentFeedback || []).slice(0, 50).map((response) => ({
+    feedback: (parentFeedback || []).map((response) => ({
       id:
         response.id ||
         `${response.parent_name || "feedback"}-${response.created_at || Date.now()}`,
@@ -2674,6 +2682,17 @@ export default function AdminDashboard(props) {
       );
     }),
   );
+  const dashboardPageSize = 50;
+  const dashboardPageCount = Math.max(1, Math.ceil(filteredDashboardRows.length / dashboardPageSize));
+  const activeDashboardPage = Math.min(dashboardTablePage, dashboardPageCount);
+  const paginatedDashboardRows = filteredDashboardRows.slice(
+    (activeDashboardPage - 1) * dashboardPageSize,
+    activeDashboardPage * dashboardPageSize,
+  );
+  const pageRangeStart = filteredDashboardRows.length
+    ? (activeDashboardPage - 1) * dashboardPageSize + 1
+    : 0;
+  const pageRangeEnd = Math.min(activeDashboardPage * dashboardPageSize, filteredDashboardRows.length);
   const filterOptions = activeFilterDefinitions.map((filter) => ({
     ...filter,
     options: Array.from(
@@ -7144,7 +7163,7 @@ export default function AdminDashboard(props) {
                     </thead>
                     <tbody>
                       {filteredDashboardRows.length > 0 ? (
-                        filteredDashboardRows.map((row) => (
+                        paginatedDashboardRows.map((row) => (
                           <tr
                             key={row.id}
                             style={{ borderTop: "1px solid #eef2f7" }}
@@ -7272,6 +7291,32 @@ export default function AdminDashboard(props) {
                     </tbody>
                   </table>
                 </div>
+                {filteredDashboardRows.length > 0 && (
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", padding: "14px 4px", flexWrap: "wrap" }}>
+                    <span style={{ color: "#4b5563", fontSize: "0.9rem" }}>
+                      Showing {pageRangeStart}-{pageRangeEnd} of {filteredDashboardRows.length} records
+                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <button
+                        type="button"
+                        onClick={() => setDashboardTablePage((page) => Math.max(1, page - 1))}
+                        disabled={activeDashboardPage <= 1}
+                        aria-label="Previous records page"
+                      >
+                        Previous
+                      </button>
+                      <span aria-live="polite">Page {activeDashboardPage} of {dashboardPageCount}</span>
+                      <button
+                        type="button"
+                        onClick={() => setDashboardTablePage((page) => Math.min(dashboardPageCount, page + 1))}
+                        disabled={activeDashboardPage >= dashboardPageCount}
+                        aria-label="Next records page"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>

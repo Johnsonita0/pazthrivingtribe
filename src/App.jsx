@@ -426,7 +426,15 @@ export default function App() {
         localStorage.setItem('paz-visitor-session-id', sessionId);
       }
     } catch (error) {
-      sessionId = `temporary-${Date.now()}`;
+      try {
+        sessionId = sessionStorage.getItem('paz-visitor-session-id') || '';
+        if (!sessionId) {
+          sessionId = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+          sessionStorage.setItem('paz-visitor-session-id', sessionId);
+        }
+      } catch (storageError) {
+        sessionId = `temporary-${Date.now()}`;
+      }
     }
 
     fetch('/api/track-visitor', {
@@ -1207,13 +1215,24 @@ export default function App() {
   const tryLoadSupabaseTables = async (tableNames) => {
     for (const tableName of tableNames) {
       try {
-        const { data, error } = await supabase.from(tableName).select('*').order('created_at', { ascending: false }).limit(200);
-        if (error) {
-          continue;
+        const rows = [];
+        let offset = 0;
+        let failed = false;
+        while (true) {
+          const { data, error } = await supabase
+            .from(tableName)
+            .select('*')
+            .order('created_at', { ascending: false })
+            .range(offset, offset + 999);
+          if (error || !Array.isArray(data)) {
+            failed = true;
+            break;
+          }
+          rows.push(...data);
+          if (data.length < 1000) break;
+          offset += 1000;
         }
-        if (Array.isArray(data)) {
-          return data;
-        }
+        if (!failed) return rows;
       } catch (err) {
         continue;
       }
@@ -1294,7 +1313,7 @@ export default function App() {
       const [productsResult, bankResult, ordersResult] = await Promise.all([
         supabase.from('store_products').select('*').order('created_at', { ascending: false }),
         supabase.from('store_bank_accounts').select('*').order('created_at', { ascending: false }).limit(1),
-        supabase.from('shop_orders').select('*').order('created_at', { ascending: false }).limit(200)
+        tryLoadSupabaseTables(['shop_orders'])
       ]);
 
       let loadedPublicProducts = false;
@@ -1328,8 +1347,8 @@ export default function App() {
         });
       }
 
-      if (!ordersResult.error && Array.isArray(ordersResult.data)) {
-        const orderRows = ordersResult.data;
+      if (Array.isArray(ordersResult)) {
+        const orderRows = ordersResult;
         const ordersWithItems = await Promise.all(orderRows.map(async (order) => {
           try {
             const { data: itemRows, error: itemError } = await supabase
@@ -1357,10 +1376,10 @@ export default function App() {
 
   const fetchDynamicWebsiteContent = async () => {
     try {
-      const [{ data: serviceData, error: serviceError }, { data: programData, error: programError }, { data: applicantData, error: applicantError }] = await Promise.all([
+      const [{ data: serviceData, error: serviceError }, { data: programData, error: programError }, applicantData] = await Promise.all([
         supabase.from('tribe_services').select('*'),
         supabase.from('tribe_programs').select('*'),
-        supabase.from('tribe_applicants').select('*').order('created_at', { ascending: false }).limit(20)
+        tryLoadSupabaseTables(['tribe_applicants'])
       ]);
 
       if (!serviceError && serviceData && serviceData.length > 0) {
@@ -1391,7 +1410,7 @@ export default function App() {
         })));
       }
 
-      if (!applicantError && applicantData) {
+      if (Array.isArray(applicantData)) {
         setApplicants(applicantData.map((item) => ({
           id: item.id?.toString() || `${item.full_name}-${item.created_at}`,
           fullName: item.full_name,
@@ -1464,7 +1483,7 @@ export default function App() {
             ip_address: item.ip_address || item.ip || '',
             device_type: item.device_type || item.device || '',
             location: item.location || '',
-            session_id: item.session_id || item.session || item.user_id || 'Unknown session'
+            session_id: item.session_id || item.session || item.user_id || ''
           })));
         }
       } catch (err) {
