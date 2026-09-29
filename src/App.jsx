@@ -440,12 +440,33 @@ export default function App() {
       }
     }
 
+    const isProductRoute = /^\/shop\/[^/]+\/?$/.test(location.pathname);
+    const productViewKey = `paz-product-view:${sessionId}:${location.pathname}`;
+    let productViewStorage = null;
+    if (isProductRoute) {
+      try {
+        productViewStorage = window.localStorage;
+        if (productViewStorage.getItem(productViewKey)) return;
+      } catch (error) {
+        try {
+          productViewStorage = window.sessionStorage;
+          if (productViewStorage.getItem(productViewKey)) return;
+        } catch (storageError) {
+          productViewStorage = null;
+        }
+      }
+      productViewStorage?.setItem(productViewKey, '1');
+    }
+
     fetch('/api/track-visitor', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       keepalive: true,
       body: JSON.stringify({ path: location.pathname, sessionId })
+    }).then((response) => {
+      if (!response.ok) throw new Error('Visitor tracking request failed');
     }).catch((error) => {
+      if (isProductRoute) productViewStorage?.removeItem(productViewKey);
       console.debug('Visitor tracking unavailable:', error);
     });
   }, [isAdminRoute, location.pathname]);
