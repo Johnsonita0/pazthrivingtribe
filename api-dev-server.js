@@ -30,6 +30,7 @@ import activityNotificationHandler from './server-handlers/activity-notification
 import testimonialSubmissionHandler from './server-handlers/testimonial-submission.js';
 import generateProductDescriptionHandler from './server-handlers/generate-product-description.js';
 import productReleaseNotificationHandler from './server-handlers/product-release-notification.js';
+import productMetricsHandler from './server-handlers/product-metrics.js';
 import releaseNotificationsHandler from './server-handlers/release-notifications.js';
 
 try {
@@ -148,6 +149,12 @@ const server = http.createServer((req, res) => {
 
       if (pathname === '/api/store-products-public' && req.method === 'GET') {
         await storeProductsPublicHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/product-metrics' && req.method === 'GET') {
+        req.query = parsedUrl.query;
+        await productMetricsHandler(req, res);
         return;
       }
 

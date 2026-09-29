@@ -22,6 +22,7 @@ import activityNotificationHandler from '../server-handlers/activity-notificatio
 import testimonialSubmissionHandler from '../server-handlers/testimonial-submission.js';
 import generateProductDescriptionHandler from '../server-handlers/generate-product-description.js';
 import productReleaseNotificationHandler from '../server-handlers/product-release-notification.js';
+import productMetricsHandler from '../server-handlers/product-metrics.js';
 import releaseNotificationsHandler from '../server-handlers/release-notifications.js';
 
 const handlers = {
@@ -38,6 +39,7 @@ const handlers = {
   '/customer-support': customerSupportHandler,
   '/resolve-bank-account': resolveBankAccountHandler,
   '/store-products-public': storeProductsPublicHandler,
+  '/product-metrics': productMetricsHandler,
   '/vendor-password-reset-email': vendorPasswordResetEmailHandler,
   '/vendor-pin-changed-email': vendorPinChangedEmailHandler,
   '/activity-notification': activityNotificationHandler,

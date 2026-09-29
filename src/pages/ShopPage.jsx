@@ -579,6 +579,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const [cartOpen, setCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [productReviews, setProductReviews] = useState([]);
+  const [productMetrics, setProductMetrics] = useState(null);
   const [ratingForm, setRatingForm] = useState({ reviewerName: '', reviewerEmail: '', rating: 0, comment: '' });
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [descriptionExpanded, setDescriptionExpanded] = useState(false);
@@ -725,6 +726,29 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
       .catch(() => {});
     return () => { active = false; };
   }, [selectedProduct?.id]);
+
+  useEffect(() => {
+    if (!isProductPage || !selectedProduct?.id) {
+      setProductMetrics(null);
+      return undefined;
+    }
+
+    let active = true;
+    setProductMetrics(null);
+    fetch(`/api/product-metrics?productId=${encodeURIComponent(selectedProduct.id)}`)
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || 'Product metrics could not be loaded.');
+        if (active) setProductMetrics(payload);
+      })
+      .catch((error) => {
+        if (active) console.warn('Product metrics unavailable:', error.message);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isProductPage, selectedProduct?.id]);
 
   const submitProductRating = async (event) => {
     event.preventDefault();
@@ -2332,6 +2356,11 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                     <span>{'★'.repeat(Math.round(selectedProduct.rating || 0)) || 'No rating'}{selectedProduct.reviews ? ` (${selectedProduct.reviews} reviews)` : ''}</span>
                     <span>{selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? 'Out of stock' : `${selectedProduct.stockCount} available`}</span>
                   </div>
+                  <div aria-label="Product interest" style={{ display: 'flex', gap: '18px', flexWrap: 'wrap', marginBottom: '12px', color: '#475569', fontSize: '0.82rem' }}>
+                    <span><strong>{productMetrics ? Number(productMetrics.uniqueViewers || 0).toLocaleString('en-NG') : '—'}</strong> Viewed</span>
+                    <span><strong>{productMetrics ? Number(productMetrics.completedOrders || 0).toLocaleString('en-NG') : '—'}</strong> Completed Order</span>
+                    {productMetrics?.hasReleaseDate && <span><strong>{Number(productMetrics.notified || 0).toLocaleString('en-NG')}</strong> Notified</span>}
+                  </div>
                   {!getProductAvailability(selectedProduct, availabilityNow).available && <div role="status" style={{ marginBottom: '10px', padding: '10px 12px', border: '1px solid #fed7aa', borderRadius: '8px', background: '#fff7ed', color: '#9a3412', fontSize: '.84rem', lineHeight: 1.45, fontWeight: 700 }}>{getProductAvailability(selectedProduct, availabilityNow).message}</div>}
 
                   {!selectedProduct.isFree && <div style={{ padding: '14px', border: '1px solid #fed7aa', borderRadius: '12px', background: '#fffaf5' }}>
@@ -2369,13 +2398,11 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                           return (
                             <article key={review.id} style={{ paddingTop: '8px', borderTop: '1px solid #e2e8f0', fontSize: '0.8rem' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
-                                <div style={{ display: 'grid', gap: '2px' }}>
-                                  <strong>{review.reviewer_name}</strong>
-                                  {postedAt && <time dateTime={review.created_at} style={{ color: '#64748b', fontSize: '0.72rem' }}>Posted {postedAt}</time>}
-                                </div>
+                                <strong>{review.reviewer_name}</strong>
                                 <span style={{ color: '#f59e0b' }}>{'★'.repeat(Number(review.rating || 0))}</span>
                               </div>
                               {review.comment && <p style={{ margin: '4px 0 0', color: '#475569', lineHeight: 1.45 }}>{review.comment}</p>}
+                              {postedAt && <time dateTime={review.created_at} style={{ display: 'block', marginTop: '5px', color: '#64748b', fontSize: '0.72rem' }}>Posted {postedAt}</time>}
                             </article>
                           );
                         })}
