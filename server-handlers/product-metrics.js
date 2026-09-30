@@ -64,8 +64,10 @@ export default async function handler(req, res) {
     ]);
     const uniqueViews = new Set(
       activity
-        .filter((row) => row.session_id && row.ip_address)
-        .map((row) => JSON.stringify([row.session_id, row.ip_address]))
+        .filter((row) => row.session_id)
+        .map((row) => JSON.stringify(row.ip_address
+          ? [row.session_id, row.ip_address]
+          : [row.session_id]))
     );
 
     let notified = null;
