@@ -32,6 +32,9 @@ import generateProductDescriptionHandler from './server-handlers/generate-produc
 import productReleaseNotificationHandler from './server-handlers/product-release-notification.js';
 import productMetricsHandler from './server-handlers/product-metrics.js';
 import releaseNotificationsHandler from './server-handlers/release-notifications.js';
+import productChatHandler from './server-handlers/product-chat.js';
+import vendorProductChatHandler from './server-handlers/vendor-product-chat.js';
+import resendInboundHandler from './server-handlers/resend-inbound.js';
 
 try {
   process.loadEnvFile?.('.env');
@@ -120,6 +123,24 @@ const server = http.createServer((req, res) => {
       if (pathname === '/api/customer-support' && req.method === 'POST') {
         req.body = body ? JSON.parse(body) : {};
         await customerSupportHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/product-chat' && req.method === 'POST') {
+        req.body = body ? JSON.parse(body) : {};
+        await productChatHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/vendor-product-chat' && req.method === 'POST') {
+        req.body = body ? JSON.parse(body) : {};
+        await vendorProductChatHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/resend-inbound' && req.method === 'POST') {
+        req.rawBody = body;
+        await resendInboundHandler(req, res);
         return;
       }
 

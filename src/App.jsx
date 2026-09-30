@@ -10,7 +10,6 @@ import AdminDashboard from './AdminDashboard';
 import TeensRegistrationPage from './pages/TeensRegistrationPage';
 import BookSessionPage from './pages/BookSessionPage';
 import FeedbackPage from './pages/FeedbackPage';
-import StorePage from './pages/StorePage';
 import ShopPage from './pages/ShopPage';
 import VendorDashboard from './pages/VendorDashboard';
 import CustomerSupportChat from './components/CustomerSupportChat';
@@ -76,7 +75,10 @@ const legalDocuments = {
       },
       {
         title: 'How we use information',
-        paragraphs: ['We use information to respond to enquiries, arrange coaching and mentoring services, manage applications and orders, provide support, maintain site security, and improve our services. We do not sell personal information.']
+        paragraphs: [
+          'We use information to respond to enquiries, arrange coaching and mentoring services, manage applications and orders, provide support, maintain site security, and improve our services. We do not sell personal information.',
+          'For marketplace product chats, we collect your name, email address, phone number, and messages. Chats about vendor products are shared with that product’s vendor and PAZ support; chats about PAZ products are handled by PAZ support. We store the conversation and may email participants about new messages so they can continue the conversation.'
+        ]
       },
       {
         title: 'Confidentiality and young people',
@@ -287,7 +289,7 @@ export default function App() {
   const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/dashboard');
   const isVendorRoute = location.pathname === '/vendor';
   const isFeedbackRoute = location.pathname === '/feedback';
-  const isStoreRoute = ['/store', '/shop'].includes(location.pathname) || location.pathname.startsWith('/store/') || location.pathname.startsWith('/shop/');
+  const isStoreRoute = location.pathname === '/shop' || location.pathname.startsWith('/shop/');
   const isShopMenuActive = isStoreRoute;
 
   useEffect(() => {
@@ -4648,7 +4650,7 @@ export default function App() {
           </Link>
           <div className="nav-right-cluster">
             {!isAdminRoute && (
-              <Link to={withIndependencePreview('/store')} className={`nav-shop-link ${isShopMenuActive ? 'active' : ''}`} style={independenceNavStyle} onClick={() => setNavOpen(false)}>
+              <Link to={withIndependencePreview('/shop')} className={`nav-shop-link ${isShopMenuActive ? 'active' : ''}`} style={independenceNavStyle} onClick={() => setNavOpen(false)}>
                 <i className="fa-solid fa-bag-shopping"></i> Shop
               </Link>
             )}
@@ -4723,7 +4725,7 @@ export default function App() {
                   {(() => {
                     const currentSlide = homeSlides[currentHomeSlide] || homeSlides[0];
                     const actionPath = currentSlide.actionPath || (currentSlide.independenceDay
-                      ? '/store'
+                      ? '/shop'
                       : currentSlide.title === 'Structured Teens Development Program'
                         ? '/teens_reg'
                         : currentSlide.title === 'Share Your Feedback'
@@ -5203,7 +5205,7 @@ export default function App() {
           <Route path="/teens-reg" element={<TeensRegistrationPage paystackPublicKey={paystackPublicKey} />} />
           <Route path="/book-session" element={<BookSessionPage />} />
           <Route path="/feedback" element={<FeedbackPage />} />
-          <Route path="/store" element={<div className="public-website-container"><StorePage isIndependenceDay={isIndependenceDay} independenceAnniversary={independenceAnniversary} isIndependencePreview={isIndependencePreview} /></div>} />
+          <Route path="/store/*" element={<Navigate to="/shop" replace />} />
           <Route path="/shop" element={<div className="public-website-container shop-page-shell" style={{ paddingTop: '72px' }}><ShopPage onOrderSubmitted={setShopOrders} paystackPublicKey={paystackPublicKey} storeProducts={storeProducts} storeBankAccount={storeBankAccount} isIndependenceDay={isIndependenceDay} independenceAnniversary={independenceAnniversary} isIndependencePreview={isIndependencePreview} /></div>} />
           <Route path="/shop/:productName" element={<div className="public-website-container shop-page-shell" style={{ paddingTop: '72px' }}><ShopPage onOrderSubmitted={setShopOrders} paystackPublicKey={paystackPublicKey} storeProducts={storeProducts} storeBankAccount={storeBankAccount} isIndependenceDay={isIndependenceDay} independenceAnniversary={independenceAnniversary} isIndependencePreview={isIndependencePreview} /></div>} />
           <Route path="/vendor" element={<><VendorDashboard /><CustomerSupportChat /></>} />

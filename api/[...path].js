@@ -24,6 +24,8 @@ import generateProductDescriptionHandler from '../server-handlers/generate-produ
 import productReleaseNotificationHandler from '../server-handlers/product-release-notification.js';
 import productMetricsHandler from '../server-handlers/product-metrics.js';
 import releaseNotificationsHandler from '../server-handlers/release-notifications.js';
+import productChatHandler from '../server-handlers/product-chat.js';
+import vendorProductChatHandler from '../server-handlers/vendor-product-chat.js';
 
 const handlers = {
   '/admin-auth': adminAuthHandler,
@@ -33,6 +35,8 @@ const handlers = {
   '/complete-shop-payment': completeShopPaymentHandler,
   '/product-release-notification': productReleaseNotificationHandler,
   '/release-notifications': releaseNotificationsHandler,
+  '/product-chat': productChatHandler,
+  '/vendor-product-chat': vendorProductChatHandler,
   '/complete-service-payment': completeServicePaymentHandler,
   '/product-preview': productPreviewHandler,
   '/vendor-support': vendorSupportHandler,

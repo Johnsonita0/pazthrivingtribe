@@ -273,6 +273,9 @@ export default function AdminDashboard(props) {
   });
   const [adminAds, setAdminAds] = useState([]);
   const [supportMessages, setSupportMessages] = useState([]);
+  const [productChatConversations, setProductChatConversations] = useState([]);
+  const [productChatReplyDrafts, setProductChatReplyDrafts] = useState({});
+  const [productChatReplySaving, setProductChatReplySaving] = useState(null);
   const [openSupportCount, setOpenSupportCount] = useState(null);
   const [supportReplyDrafts, setSupportReplyDrafts] = useState({});
   const [supportReplySaving, setSupportReplySaving] = useState(null);
@@ -600,6 +603,34 @@ export default function AdminDashboard(props) {
     showAdminToast("success", "Reply sent", "Your reply was emailed to the client and saved to the support conversation.");
   };
 
+  const replyToProductChat = async (conversation) => {
+    const message = String(productChatReplyDrafts[conversation.id] || "").trim();
+    if (!message || !conversation.id) return;
+    setProductChatReplySaving(conversation.id);
+    try {
+      const token = session?.access_token || session?.accessToken || "";
+      const response = await fetch("/api/admin-update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: "reply_product_chat", payload: { conversationId: conversation.id, message } }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        showAdminToast("error", "Reply failed", payload.error || "The product chat reply could not be sent.");
+        return;
+      }
+      setProductChatConversations((current) => current.map((item) => item.id === conversation.id
+        ? { ...item, status: "open", last_message_at: payload.message?.created_at || new Date().toISOString(), messages: [...(item.messages || []), payload.message] }
+        : item));
+      setProductChatReplyDrafts((current) => ({ ...current, [conversation.id]: "" }));
+      showAdminToast(payload.emailSent ? "success" : "warning", payload.emailSent ? "Reply sent" : "Reply saved", payload.emailSent ? "Your reply is in the conversation and was emailed to the customer." : "Your reply is saved, but the customer email could not be delivered.");
+    } catch {
+      showAdminToast("error", "Reply failed", "The product chat reply could not be sent.");
+    } finally {
+      setProductChatReplySaving(null);
+    }
+  };
+
   useEffect(() => {
     if (mode !== "dashboard" || activeDashboardView !== "vendors" || vendorTab !== "approved") return undefined;
     const approvedVendors = vendorProfiles.filter((vendor) => vendor.status === "approved");
@@ -664,20 +695,27 @@ export default function AdminDashboard(props) {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     };
-    Promise.all(
-      ["vendor_support_messages", "customer_support_messages"].map((table) =>
-        fetch("/api/admin-update", {
-          method: "POST",
-          headers,
-          body: JSON.stringify({ action: "select", table, columns: "*" }),
-        }).then((response) =>
-          response
-            .json()
-            .then((payload) => (response.ok ? payload.data || [] : [])),
+    const loadSupportInbox = () => Promise.all([
+      Promise.all(
+        ["vendor_support_messages", "customer_support_messages"].map((table) =>
+          fetch("/api/admin-update", {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ action: "select", table, columns: "*" }),
+          }).then((response) =>
+            response
+              .json()
+              .then((payload) => (response.ok ? payload.data || [] : [])),
+          ),
         ),
       ),
-    )
-      .then(([vendorMessages, customerMessages]) => {
+      fetch("/api/admin-update", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ action: "product_chat_inbox" }),
+      }).then((response) => response.json().then((payload) => (response.ok ? payload.data || [] : []))),
+    ])
+      .then(([[vendorMessages, customerMessages], productChats]) => {
         if (active)
           setSupportMessages(
             [
@@ -692,10 +730,14 @@ export default function AdminDashboard(props) {
                 new Date(right.created_at) - new Date(left.created_at),
             ),
           );
+        if (active) setProductChatConversations(productChats);
       })
       .catch(() => {});
+    void loadSupportInbox();
+    const refreshInterval = window.setInterval(() => { void loadSupportInbox(); }, 20000);
     return () => {
       active = false;
+      window.clearInterval(refreshInterval);
     };
   }, [activeDashboardView, mode, session]);
 
@@ -723,11 +765,12 @@ export default function AdminDashboard(props) {
       loadCount("vendor_profiles"),
       loadCount("vendor_support_messages", { status: "open" }),
       loadCount("customer_support_messages", { status: "open" }),
+      loadCount("product_chat_conversations", { status: "open" }),
     ])
-      .then(([vendors, vendorSupport, customerSupport]) => {
+      .then(([vendors, vendorSupport, customerSupport, productChats]) => {
         if (!active) return;
         setVendorCount(vendors);
-        setOpenSupportCount(vendorSupport + customerSupport);
+        setOpenSupportCount(vendorSupport + customerSupport + productChats);
       })
       .catch((error) => {
         if (!active) return;
@@ -5399,8 +5442,46 @@ export default function AdminDashboard(props) {
                   Customer care
                 </p>
                 <h3 style={{ margin: "8px 0 18px", fontSize: "1.5rem" }}>
-                  Support chat inbox
+                  Customer care inbox
                 </h3>
+                <section aria-labelledby="product-conversations-title" style={{ marginBottom: "26px" }}>
+                  <h4 id="product-conversations-title" style={{ margin: "0 0 10px", color: "#173c2b", fontSize: "1.05rem" }}>Product conversations</h4>
+                  {productChatConversations.length ? (
+                    <div style={{ display: "grid", gap: "12px" }}>
+                      {productChatConversations.map((conversation) => (
+                        <article key={conversation.id} style={{ padding: "14px 0", borderTop: "1px solid #dfe7e2" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+                            <div>
+                              <strong style={{ color: "#23372d" }}>{conversation.product_title}</strong>
+                              <div style={{ marginTop: "4px", color: "#52645a", fontSize: ".84rem" }}>
+                                {conversation.customer_name} · {conversation.customer_email} · {conversation.customer_phone}
+                              </div>
+                            </div>
+                            <span style={{ color: "#52645a", fontSize: ".78rem" }}>
+                              {conversation.assigned_to === "vendor" ? `Vendor: ${conversation.vendor_name || "product owner"}` : "Assigned to PAZ support"} · {conversation.status}
+                            </span>
+                          </div>
+                          <div style={{ display: "grid", gap: "8px", marginTop: "12px", maxHeight: "300px", overflowY: "auto" }}>
+                            {(conversation.messages || []).map((message) => (
+                              <div key={message.id} style={{ padding: "9px 11px", borderLeft: `3px solid ${message.sender_role === "customer" ? "#17633e" : message.sender_role === "vendor" ? "#c76b24" : "#3673a8"}`, background: "#f7f9f7" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", flexWrap: "wrap", color: "#52645a", fontSize: ".76rem" }}>
+                                  <strong>{message.sender_name} · {message.sender_role}</strong>
+                                  <time dateTime={message.created_at}>{message.created_at ? new Date(message.created_at).toLocaleString() : ""}</time>
+                                </div>
+                                <div style={{ marginTop: "5px", color: "#263a30", whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{message.message}</div>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ display: "grid", gap: "8px", marginTop: "12px" }}>
+                            <textarea value={productChatReplyDrafts[conversation.id] || ""} onChange={(event) => setProductChatReplyDrafts((current) => ({ ...current, [conversation.id]: event.target.value }))} placeholder="Reply to the customer" maxLength={4000} rows="2" style={{ width: "100%", boxSizing: "border-box", padding: "9px 10px", border: "1px solid #cbd5e1", borderRadius: "6px", resize: "vertical", font: "inherit" }} />
+                            <button type="button" onClick={() => replyToProductChat(conversation)} disabled={productChatReplySaving === conversation.id || !String(productChatReplyDrafts[conversation.id] || "").trim()} style={{ justifySelf: "start", border: 0, borderRadius: "6px", padding: "9px 13px", background: productChatReplySaving === conversation.id ? "#cbd5e1" : "#17633e", color: productChatReplySaving === conversation.id ? "#475569" : "#fff", fontWeight: 800, cursor: productChatReplySaving === conversation.id ? "wait" : "pointer" }}>{productChatReplySaving === conversation.id ? "Sending reply…" : "Reply to conversation"}</button>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : <p style={{ margin: 0, color: "#64748b" }}>No product conversations yet.</p>}
+                </section>
+                <h4 style={{ margin: "0 0 10px", color: "#173c2b", fontSize: "1.05rem" }}>Other support messages</h4>
                 <div style={{ display: "grid", gap: "10px" }}>
                   {supportMessages.length ? (
                     supportMessages.map((message) => (

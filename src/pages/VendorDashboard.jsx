@@ -180,6 +180,10 @@ export default function VendorDashboard() {
   const [products, setProducts] = useState([]);
   const [sales, setSales] = useState([]);
   const [ads, setAds] = useState([]);
+  const [productChats, setProductChats] = useState([]);
+  const [productChatDrafts, setProductChatDrafts] = useState({});
+  const [productChatSaving, setProductChatSaving] = useState(null);
+  const [productChatsLoaded, setProductChatsLoaded] = useState(false);
   const [tab, setTab] = useState("products");
   const [authMode, setAuthMode] = useState("sign-in");
   const [authForm, setAuthForm] = useState({ email: "", password: "" });
@@ -535,6 +539,51 @@ export default function VendorDashboard() {
       }));
     setProductForm((current) => ({ ...current, currency: vendor?.payout_currency || "NGN" }));
     setLoading(false);
+  };
+
+  useEffect(() => {
+    if (tab !== "chats" || !session?.access_token) return undefined;
+    let active = true;
+    const loadProductChats = () => fetch("/api/vendor-product-chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+      body: JSON.stringify({ action: "list" }),
+    }).then(async (response) => {
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Product conversations could not be loaded.");
+      if (active) setProductChats(Array.isArray(payload.data) ? payload.data : []);
+    }).catch((error) => {
+      if (active) setNotice({ type: "error", text: error.message || "Product conversations could not be loaded." });
+    }).finally(() => {
+      if (active) setProductChatsLoaded(true);
+    });
+    void loadProductChats();
+    const refreshInterval = window.setInterval(() => { void loadProductChats(); }, 20000);
+    return () => { active = false; window.clearInterval(refreshInterval); };
+  }, [session, tab]);
+
+  const replyToVendorProductChat = async (conversation) => {
+    const message = String(productChatDrafts[conversation.id] || "").trim();
+    if (!message || !session?.access_token) return;
+    setProductChatSaving(conversation.id);
+    try {
+      const response = await fetch("/api/vendor-product-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ action: "reply", conversationId: conversation.id, message }),
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Your reply could not be sent.");
+      setProductChats((current) => current.map((item) => item.id === conversation.id
+        ? { ...item, status: "open", last_message_at: payload.message?.created_at || new Date().toISOString(), messages: [...(item.messages || []), payload.message] }
+        : item));
+      setProductChatDrafts((current) => ({ ...current, [conversation.id]: "" }));
+      setNotice({ type: payload.emailSent ? "success" : "error", text: payload.emailSent ? "Your reply was saved and emailed to the customer." : "Your reply was saved, but the customer email could not be sent." });
+    } catch (error) {
+      setNotice({ type: "error", text: error.message || "Your reply could not be sent." });
+    } finally {
+      setProductChatSaving(null);
+    }
   };
 
   const prepareVendorAccess = async (user) => {
@@ -2290,8 +2339,8 @@ export default function VendorDashboard() {
           </button>
         </form>}
         {!settingsOpen && <div ref={dashboardContentRef}>
-        <div className="vendor-section-tabs" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: "8px", marginTop: "22px" }}>
-          {["products", "sales", "earnings", "ads"].map((sectionTab) => (
+        <div className="vendor-section-tabs" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: "8px", marginTop: "22px" }}>
+          {["products", "sales", "earnings", "ads", "chats"].map((sectionTab) => (
             <button
               key={sectionTab}
               type="button"
@@ -2310,7 +2359,37 @@ export default function VendorDashboard() {
             </button>
           ))}
         </div>
-        {tab === "products" ? (
+        {tab === "chats" ? (
+          <section style={{ marginTop: "14px", background: "#fff", padding: "20px", borderRadius: "12px", border: "1px solid #dfe7ef" }}>
+            <p style={{ margin: 0, color: "#15803d", textTransform: "uppercase", letterSpacing: ".12em", fontSize: ".7rem", fontWeight: 800 }}>Customer care</p>
+            <h2 style={{ margin: "6px 0 16px", fontSize: "1.35rem" }}>Product conversations</h2>
+            <p style={{ margin: "0 0 16px", color: "#64748b", fontSize: ".84rem" }}>Chats for your products are also visible to PAZ support. New messages appear here automatically.</p>
+            {!productChatsLoaded ? <p role="status" style={{ color: "#64748b" }}>Loading conversations…</p> : productChats.length ? (
+              <div style={{ display: "grid", gap: "18px" }}>
+                {productChats.map((conversation) => (
+                  <article key={conversation.id} style={{ paddingTop: "14px", borderTop: "1px solid #dfe7ef" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+                      <div><strong>{conversation.product_title}</strong><div style={{ marginTop: "4px", color: "#64748b", fontSize: ".82rem" }}>{conversation.customer_name} · {conversation.customer_email} · {conversation.customer_phone}</div></div>
+                      <span style={{ color: "#64748b", fontSize: ".78rem" }}>{conversation.status}</span>
+                    </div>
+                    <div style={{ display: "grid", gap: "8px", maxHeight: "300px", overflowY: "auto", marginTop: "12px" }}>
+                      {(conversation.messages || []).map((item) => (
+                        <div key={item.id} style={{ padding: "9px 11px", borderLeft: `3px solid ${item.sender_role === "customer" ? "#17633e" : item.sender_role === "vendor" ? "#c76b24" : "#3673a8"}`, background: "#f7f9f7" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", gap: "10px", flexWrap: "wrap", color: "#52645a", fontSize: ".76rem" }}><strong>{item.sender_name} · {item.sender_role}</strong><time dateTime={item.created_at}>{item.created_at ? new Date(item.created_at).toLocaleString() : ""}</time></div>
+                          <div style={{ marginTop: "5px", whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{item.message}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: "grid", gap: "8px", marginTop: "12px" }}>
+                      <textarea value={productChatDrafts[conversation.id] || ""} onChange={(event) => setProductChatDrafts((current) => ({ ...current, [conversation.id]: event.target.value }))} maxLength={4000} rows="2" placeholder="Reply to the customer" style={{ ...fieldStyle, resize: "vertical" }} />
+                      <button type="button" onClick={() => replyToVendorProductChat(conversation)} disabled={productChatSaving === conversation.id || !String(productChatDrafts[conversation.id] || "").trim()} style={{ justifySelf: "start", border: 0, borderRadius: "8px", padding: "9px 13px", background: "#166534", color: "#fff", fontWeight: 800, cursor: "pointer" }}>{productChatSaving === conversation.id ? "Sending reply…" : "Reply to conversation"}</button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : <p style={{ color: "#64748b" }}>No customer conversations for your products yet.</p>}
+          </section>
+        ) : tab === "products" ? (
           <section
             className="vendor-product-manager-panel"
             style={{

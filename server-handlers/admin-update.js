@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { sendResendEmail } from './lib/resend.js'
 import { buildPazEmailTemplate } from './lib/paz-email-template.js'
+import { decryptProductChatToken, normalizeEmail, sendProductChatEmail } from './lib/product-chat.js'
 
 // Serverless admin endpoint for secure updates using the Supabase service role key.
 // Requires these environment variables to be set in your deployment:
@@ -139,6 +140,83 @@ export default async function handler(req, res) {
           .from(table)
           .update({ admin_reply: reply, status: 'closed', updated_at: new Date().toISOString() })
           .match(match)
+      } else if (action === 'product_chat_inbox') {
+        const { data: conversations, error: conversationError } = await supabase
+          .from('product_chat_conversations')
+          .select('id,product_id,product_title,vendor_name,assigned_to,customer_name,customer_email,customer_phone,status,created_at,updated_at,last_message_at')
+          .order('last_message_at', { ascending: false })
+          .limit(250)
+        if (conversationError) throw conversationError
+        const conversationIds = (conversations || []).map((conversation) => conversation.id)
+        let messages = []
+        if (conversationIds.length) {
+          const { data, error } = await supabase
+            .from('product_chat_messages')
+            .select('id,conversation_id,sender_role,sender_name,sender_email,message,created_at')
+            .in('conversation_id', conversationIds)
+            .order('created_at', { ascending: true })
+          if (error) throw error
+          messages = data || []
+        }
+        const messagesByConversation = new Map()
+        for (const message of messages) {
+          const thread = messagesByConversation.get(message.conversation_id) || []
+          thread.push(message)
+          messagesByConversation.set(message.conversation_id, thread)
+        }
+        return jsonResponse(res, 200, {
+          data: (conversations || []).map((conversation) => ({
+            ...conversation,
+            messages: messagesByConversation.get(conversation.id) || []
+          }))
+        })
+      } else if (action === 'reply_product_chat') {
+        const conversationId = String(payload?.conversationId || '').trim()
+        const reply = String(payload?.message || '').trim().slice(0, 4000)
+        if (!conversationId || !reply) return jsonResponse(res, 400, { error: 'A conversation and reply are required.' })
+        const { data: conversation, error: lookupError } = await supabase
+          .from('product_chat_conversations')
+          .select('id,product_id,product_title,vendor_name,assigned_to,customer_name,customer_email,customer_phone,status,email_reply_token,access_token_ciphertext')
+          .eq('id', conversationId)
+          .maybeSingle()
+        if (lookupError) throw lookupError
+        if (!conversation) return jsonResponse(res, 404, { error: 'Product conversation not found.' })
+        const recipient = normalizeEmail(conversation.customer_email)
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipient)) return jsonResponse(res, 400, { error: 'This conversation has no valid customer email.' })
+
+        const senderName = String(user.user_metadata?.full_name || 'PAZ Support').trim()
+        const senderEmail = normalizeEmail(user.email) || 'pazthrivingtribe@gmail.com'
+        const now = new Date().toISOString()
+        const { data: savedMessage, error: insertError } = await supabase
+          .from('product_chat_messages')
+          .insert({ conversation_id: conversation.id, sender_role: 'admin', sender_name: senderName, sender_email: senderEmail, message: reply })
+          .select('id,conversation_id,sender_role,sender_name,sender_email,message,created_at')
+          .single()
+        if (insertError) throw insertError
+        const { error: updateError } = await supabase
+          .from('product_chat_conversations')
+          .update({ status: 'open', updated_at: now, last_message_at: now })
+          .eq('id', conversation.id)
+        if (updateError) throw updateError
+
+        let emailSent = true
+        try {
+          await sendProductChatEmail({
+            to: [recipient],
+            subject: `Reply about ${conversation.product_title}`,
+            heading: `${senderName} replied to your product question.`,
+            conversation,
+            senderName,
+            senderEmail,
+            message: reply,
+            token: conversation.access_token_ciphertext ? decryptProductChatToken(conversation.access_token_ciphertext) : undefined,
+            replyToken: conversation.email_reply_token
+          })
+        } catch (emailError) {
+          emailSent = false
+          console.error('Product chat admin reply email failed:', emailError?.message || emailError)
+        }
+        return jsonResponse(res, 200, { ok: true, emailSent, message: savedMessage })
       } else if (action === 'send_vendor_password_reset') {
         if (!match?.id) return jsonResponse(res, 400, { error: 'A vendor ID is required' })
 

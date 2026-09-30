@@ -4,6 +4,7 @@ import confetti from 'canvas-confetti';
 import { getCountries, getCountryCallingCode, isValidPhoneNumber, parsePhoneNumberFromString } from 'libphonenumber-js';
 import { supabase } from '../supabaseClient';
 import ProductCover, { resolveProductCover } from '../components/ProductCover';
+import ProductChat from '../components/ProductChat';
 import { notifyAdminActivity } from '../utils/notifyAdminActivity';
 import { getIndependenceDaySlides } from '../utils/independenceDaySlides';
 import { getProductAvailability } from '../utils/productAvailability';
@@ -2450,6 +2451,8 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                   </section>
                 </div>
               </div>
+
+              <ProductChat key={selectedProduct.id} product={selectedProduct} />
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px', flexWrap: 'wrap' }}>
                 {!isProductPage && <button type="button" onClick={() => { setSelectedProduct(null); navigate(shopUrl); }} style={{ border: '1px solid #cbd5e1', borderRadius: '9px', padding: '11px 18px', background: '#fff', color: '#334155', fontWeight: 700, cursor: 'pointer', flex: isSmallScreen ? '1 1 120px' : '0 0 auto' }}>Close</button>}
