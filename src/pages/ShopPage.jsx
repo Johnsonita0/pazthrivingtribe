@@ -655,6 +655,8 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     ? productReviews.reduce((total, review) => total + Number(review.rating || 0), 0) / productReviews.length
     : Number(selectedProduct?.rating || 0);
   const productRatingPercentage = Math.round((productRatingAverage / 5) * 100);
+  const selectedProductAvailability = selectedProduct ? getProductAvailability(selectedProduct, availabilityNow) : null;
+  const selectedProductOutOfStock = Boolean(selectedProduct && (selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0));
 
   const promotionalProducts = storeData.products.map(normalizeProduct);
   const findPromotionalProduct = (item) => {
@@ -2377,7 +2379,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
           <div
             role="presentation"
             onClick={() => { setSelectedProduct(null); navigate(shopUrl); }}
-            style={isProductPage ? { position: 'relative', zIndex: 1, display: 'block', padding: isSmallScreen ? '24px 12px 48px' : '36px 20px 64px', background: '#f8fafc' } : { position: 'fixed', inset: 0, zIndex: 260, display: 'grid', placeItems: 'start center', padding: isSmallScreen ? '78px 12px 12px' : '88px 20px 16px', background: 'rgba(15, 23, 42, 0.55)', backdropFilter: 'blur(4px)', overflow: 'hidden' }}
+            style={isProductPage ? { position: 'relative', zIndex: 1, display: 'block', padding: isSmallScreen ? '24px 12px 120px' : '36px 20px 120px', background: '#f8fafc' } : { position: 'fixed', inset: 0, zIndex: 260, display: 'grid', placeItems: 'start center', padding: isSmallScreen ? '78px 12px 12px' : '88px 20px 16px', background: 'rgba(15, 23, 42, 0.55)', backdropFilter: 'blur(4px)', overflow: 'hidden' }}
           >
             <div
               role={isProductPage ? 'main' : 'dialog'}
@@ -2508,6 +2510,17 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                 {!isProductPage && <button type="button" onClick={(event) => { addToCart(selectedProduct, event); setSelectedProduct(null); }} disabled={selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0} style={{ border: 'none', borderRadius: '9px', padding: '11px 18px', background: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? '#e5e7eb' : '#f97316', color: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? '#64748b' : '#fff', fontWeight: 800, cursor: 'pointer', flex: isSmallScreen ? '1 1 160px' : '0 0 auto' }}>{getProductAvailability(selectedProduct, availabilityNow).reason === 'not-released' ? 'Activate release alert' : selectedProduct.isFree ? 'Request product' : 'Add to cart'}</button>}
                 {isProductPage && <button type="button" onClick={() => checkoutProduct(selectedProduct)} disabled={selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0} style={{ border: 'none', borderRadius: '9px', padding: '11px 18px', background: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? '#e5e7eb' : '#166534', color: selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? '#64748b' : '#fff', fontWeight: 800, cursor: 'pointer', flex: isSmallScreen ? '1 1 160px' : '0 0 auto' }}><i className={`fa-solid ${getProductAvailability(selectedProduct, availabilityNow).reason === 'not-released' ? 'fa-bell' : 'fa-lock'}`} aria-hidden="true" /> {getProductAvailability(selectedProduct, availabilityNow).reason === 'not-released' ? 'Notify me' : 'Checkout'}</button>}
               </div>
+            </div>
+          </div>
+        )}
+
+        {selectedProduct && isProductPage && !cartOpen && !releaseNotificationProduct && (
+          <div role="region" aria-label="Product quick actions" style={{ position: 'fixed', zIndex: 220, right: 0, bottom: 0, left: 0, padding: '10px 16px calc(10px + env(safe-area-inset-bottom))', borderTop: '1px solid #e2e8f0', background: 'rgba(255, 255, 255, 0.97)', boxShadow: '0 -8px 24px rgba(15, 23, 42, 0.1)', backdropFilter: 'blur(10px)' }}>
+            <div style={{ display: 'flex', gap: '10px', width: 'min(980px, 100%)', margin: '0 auto' }}>
+              <button type="button" onClick={() => { setSelectedProduct(null); navigate(shopUrl); }} style={{ flex: '0 1 220px', minHeight: '48px', padding: '11px 16px', border: '1px solid #f97316', borderRadius: '8px', background: '#fff7ed', color: '#c2410c', fontWeight: 800, cursor: 'pointer' }}>Shop more</button>
+              <button type="button" onClick={() => checkoutProduct(selectedProduct)} disabled={selectedProductOutOfStock || (!selectedProductAvailability?.available && selectedProductAvailability?.reason !== 'not-released')} style={{ flex: 1, minHeight: '48px', padding: '11px 16px', border: 0, borderRadius: '8px', background: selectedProductOutOfStock || (!selectedProductAvailability?.available && selectedProductAvailability?.reason !== 'not-released') ? '#e5e7eb' : '#166534', color: selectedProductOutOfStock || (!selectedProductAvailability?.available && selectedProductAvailability?.reason !== 'not-released') ? '#64748b' : '#fff', fontWeight: 800, cursor: selectedProductOutOfStock || (!selectedProductAvailability?.available && selectedProductAvailability?.reason !== 'not-released') ? 'not-allowed' : 'pointer' }}>
+                {selectedProductOutOfStock ? 'Out of stock' : selectedProductAvailability?.reason === 'not-released' ? 'Notify me' : 'Checkout'}
+              </button>
             </div>
           </div>
         )}
