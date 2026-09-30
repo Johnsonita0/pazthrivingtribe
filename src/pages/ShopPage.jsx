@@ -580,6 +580,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const [cartOpen, setCartOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [productReviews, setProductReviews] = useState([]);
+  const [productRatingSummaries, setProductRatingSummaries] = useState({});
   const [productMetrics, setProductMetrics] = useState(null);
   const [ratingForm, setRatingForm] = useState({ reviewerName: '', reviewerEmail: '', rating: 0, comment: '' });
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
@@ -757,6 +758,51 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
       .catch(() => {});
     return () => { active = false; };
   }, [selectedProduct?.id]);
+
+  useEffect(() => {
+    const productIds = [...new Set((storeData.products || []).map((product) => String(product.id || '').trim()).filter(Boolean))];
+    if (!productIds.length) return undefined;
+    let active = true;
+
+    const loadProductRatingSummaries = async () => {
+      const ratingsByProduct = new Map();
+      for (let productIndex = 0; productIndex < productIds.length; productIndex += 100) {
+        const productIdBatch = productIds.slice(productIndex, productIndex + 100);
+        let offset = 0;
+        while (true) {
+          const { data, error } = await supabase
+            .from('product_ratings')
+            .select('product_id,rating')
+            .in('product_id', productIdBatch)
+            .order('created_at', { ascending: true })
+            .range(offset, offset + 999);
+          if (error) {
+            console.warn('Product rating summaries could not be loaded:', error.message);
+            return;
+          }
+          for (const item of data || []) {
+            const ratings = ratingsByProduct.get(String(item.product_id)) || [];
+            ratings.push(Number(item.rating || 0));
+            ratingsByProduct.set(String(item.product_id), ratings);
+          }
+          if (!data || data.length < 1000) break;
+          offset += 1000;
+        }
+      }
+
+      const summaries = {};
+      for (const [productId, ratings] of ratingsByProduct) {
+        summaries[productId] = {
+          rating: ratings.reduce((total, rating) => total + rating, 0) / ratings.length,
+          reviews: ratings.length
+        };
+      }
+      if (active) setProductRatingSummaries(summaries);
+    };
+
+    void loadProductRatingSummaries();
+    return () => { active = false; };
+  }, [storeData.products]);
 
   useEffect(() => {
     if (!isProductPage || !selectedProduct?.id) {
@@ -1019,6 +1065,8 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   }, [selectedCategory, searchTerm, priceRange, minRating, sortBy]);
 
   const categories = ['All', ...new Set((storeData.products || []).map((product) => product.category))];
+  const getProductRating = (product) => Number(productRatingSummaries[String(product.id)]?.rating ?? product.rating ?? 0);
+  const getProductReviewCount = (product) => Number(productRatingSummaries[String(product.id)]?.reviews ?? product.reviews ?? 0);
 
   const filteredBySearch = (storeData.products || []).filter((product) => {
     const query = searchTerm.trim().toLowerCase();
@@ -1040,12 +1088,12 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
 
   const allVisibleProducts = filteredByCategory.filter((product) => {
     const inPriceRange = productNgnPrice(product) >= priceRange[0] && productNgnPrice(product) <= priceRange[1];
-    const hasMinRating = (product.rating || 0) >= minRating;
+    const hasMinRating = getProductRating(product) >= minRating;
     return inPriceRange && hasMinRating;
   }).sort((a, b) => {
     if (sortBy === 'price-low') return a.price - b.price;
     if (sortBy === 'price-high') return b.price - a.price;
-    if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
+    if (sortBy === 'rating') return getProductRating(b) - getProductRating(a);
     if (sortBy === 'newest') return b.id.localeCompare(a.id);
     return 0;
   });
@@ -2087,11 +2135,11 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                         <div style={{ display: 'flex', color: '#FDB913', fontSize: '11px', letterSpacing: '-1px' }}>
                           {[...Array(5)].map((_, i) => (
                             <span key={i}>
-                              {i < Math.floor(product.rating) ? '★' : i < product.rating ? '★' : '☆'}
+                              {i < Math.floor(getProductRating(product)) ? '★' : i < getProductRating(product) ? '★' : '☆'}
                             </span>
                           ))}
                         </div>
-                        <span style={{ fontSize: '11px', color: '#666' }}>({product.reviews})</span>
+                        <span style={{ fontSize: '11px', color: '#666' }}>({getProductReviewCount(product)})</span>
                       </div>
 
                       {/* Stock Info - Tight */}
