@@ -2479,7 +2479,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                         role="region"
                         aria-label="Product reviews"
                         tabIndex={0}
-                        style={{ display: 'grid', gap: '8px', marginTop: '14px', maxHeight: isSmallScreen ? 'min(42vh, 360px)' : 'min(45vh, 480px)', overflowY: 'auto', overscrollBehavior: 'contain', paddingRight: '6px' }}
+                        style={{ display: 'grid', gap: '8px', marginTop: '14px', maxHeight: isSmallScreen ? 'min(42vh, 360px)' : 'min(45vh, 480px)', overflowY: 'auto', overscrollBehaviorY: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y', paddingRight: '6px' }}
                       >
                         {productReviews.map((review) => {
                           const postedAt = formatReviewTimestamp(review.created_at);
