@@ -442,8 +442,17 @@ export default function App() {
       }
     }
 
-    const isProductRoute = /^\/shop\/[^/]+\/?$/.test(location.pathname);
-    const productViewKey = `paz-product-view:${sessionId}:${location.pathname}`;
+    const queryProduct = new URLSearchParams(location.search).get('product');
+    const queryProductSlug = String(queryProduct || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    const trackedPath = location.pathname === '/shop' && queryProductSlug
+      ? `/shop/${queryProductSlug}`
+      : location.pathname;
+    const isProductRoute = /^\/shop\/[^/]+\/?$/.test(trackedPath);
+    const productViewKey = `paz-product-view:${sessionId}:${trackedPath}`;
     let productViewStorage = null;
     if (isProductRoute) {
       try {
@@ -464,14 +473,14 @@ export default function App() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       keepalive: true,
-      body: JSON.stringify({ path: location.pathname, sessionId })
+      body: JSON.stringify({ path: trackedPath, sessionId })
     }).then((response) => {
       if (!response.ok) throw new Error('Visitor tracking request failed');
     }).catch((error) => {
       if (isProductRoute) productViewStorage?.removeItem(productViewKey);
       console.debug('Visitor tracking unavailable:', error);
     });
-  }, [isAdminRoute, location.pathname]);
+  }, [isAdminRoute, location.pathname, location.search]);
 
   const defaultStoreProducts = [
     { id: 'ebook-confidence', title: 'Confidence for Teens', description: 'A step-by-step digital guide to help young people build confidence, healthy habits, and emotional resilience.', price: 5500, category: 'Ebook', cover: '/logo/logomain.png', fileUrl: '', inStock: true, stockCount: 245 },
