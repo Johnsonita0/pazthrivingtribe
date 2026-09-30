@@ -4665,7 +4665,7 @@ export default function App() {
             )}
             {!isAdminRoute && (
               <div className="nav-cta-group">
-                <Link to="/teens_reg" className="nav-cta-link" style={independenceNavStyle} onClick={() => setNavOpen(false)}>
+                <Link to={withIndependencePreview('/teens_reg')} className="nav-cta-link" style={independenceNavStyle} onClick={() => setNavOpen(false)}>
                   <i className="fa-solid fa-user-plus" aria-hidden="true"></i>
                   <span>Apply</span>
                 </Link>
@@ -4673,7 +4673,7 @@ export default function App() {
                   <i className="fa-solid fa-store" aria-hidden="true"></i>
                   <span>Vendor</span>
                 </Link>
-                <Link to="/book-session" className="nav-cta-link secondary" style={independenceNavStyle} onClick={() => setNavOpen(false)}>
+                <Link to={withIndependencePreview('/book-session')} className="nav-cta-link secondary" style={independenceNavStyle} onClick={() => setNavOpen(false)}>
                   <i className="fa-solid fa-calendar-check" aria-hidden="true"></i>
                   <span>Book</span>
                 </Link>
@@ -4689,16 +4689,16 @@ export default function App() {
                 <Link to={withIndependencePreview('/')} className="nav-link-item" style={independenceNavStyle} onClick={() => { setNavOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
                   <i className="fa-solid fa-house"></i> Home
                 </Link>
-                <Link to="/care-counseling" className="nav-link-item" onClick={() => setNavOpen(false)}>
+                <Link to={withIndependencePreview('/care-counseling')} className="nav-link-item" style={independenceNavStyle} onClick={() => setNavOpen(false)}>
                   <i className="fa-solid fa-hand-holding-heart"></i> Talk & Thrive
                 </Link>
-                <Link to="/teens-kids-academy" className="nav-link-item" onClick={() => setNavOpen(false)}>
+                <Link to={withIndependencePreview('/teens-kids-academy')} className="nav-link-item" style={independenceNavStyle} onClick={() => setNavOpen(false)}>
                   <i className="fa-solid fa-child-reaching"></i> Thriving Pre-teens & Teens
                 </Link>
-                <Link to="/services/family" className="nav-link-item" onClick={() => setNavOpen(false)}>
+                <Link to={withIndependencePreview('/services/family')} className="nav-link-item" style={independenceNavStyle} onClick={() => setNavOpen(false)}>
                   <i className="fa-solid fa-people-roof"></i> Thriving Parents
                 </Link>
-                <Link to="/services/marriage" className="nav-link-item" onClick={() => setNavOpen(false)}>
+                <Link to={withIndependencePreview('/services/marriage')} className="nav-link-item" style={independenceNavStyle} onClick={() => setNavOpen(false)}>
                   <i className="fa-solid fa-heart-crack"></i> Thriving Women
                 </Link>
               </>
