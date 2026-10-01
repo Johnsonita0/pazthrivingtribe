@@ -264,8 +264,10 @@ export default function App() {
   const [heroPopupMode, setHeroPopupMode] = useState(null); // 'register' | 'booking' | null
   const [cookieConsentAccepted, setCookieConsentAccepted] = useState(false);
   const [showCookieBanner, setShowCookieBanner] = useState(false);
+  const [showAppDownloadPopup, setShowAppDownloadPopup] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const logoImageUrl = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"%3E%3Crect width="48" height="48" rx="12" fill="%23238636"/%3E%3Ctext x="50%" y="55%" font-size="26" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-weight="700"%3EP%3C/text%3E%3C/svg%3E';
+  const appDownloadUrl = 'https://github.com/Johnsonita0/pazthrivingtribe/releases/latest/download/Paz-Thriving-Tribe.apk';
 
   // --- Auth & System Loading States ---
   const [session, setSession] = useState(null);
@@ -419,6 +421,29 @@ export default function App() {
     });
     return () => window.cancelAnimationFrame(frameId);
   }, [location.pathname, location.search, location.hash, location.key]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const dismissed = window.localStorage.getItem('paz-app-download-popup-dismissed');
+    if (dismissed === '1') return undefined;
+
+    const timer = window.setTimeout(() => setShowAppDownloadPopup(true), 1400);
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  const dismissAppDownloadPopup = () => {
+    setShowAppDownloadPopup(false);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('paz-app-download-popup-dismissed', '1');
+    }
+  };
+
+  const handleAppDownload = () => {
+    dismissAppDownloadPopup();
+    if (typeof window !== 'undefined') {
+      window.open(appDownloadUrl, '_blank', 'noopener,noreferrer');
+    }
+  };
 
   useEffect(() => {
     if (isAdminRoute) return;
@@ -4170,6 +4195,99 @@ export default function App() {
         .footer-bottom-copyright-strip p { font-size: 0.9rem; color: var(--text-muted); margin: 0; }
         .footer-regulatory-tags { display: flex; gap: 1.5rem; }
 
+        .app-download-popup {
+          position: fixed;
+          right: 1rem;
+          bottom: 1rem;
+          z-index: 30001;
+          width: min(340px, calc(100vw - 1.5rem));
+          padding: 1rem;
+          border-radius: 18px;
+          border: 1px solid rgba(22, 101, 52, 0.15);
+          background: rgba(255, 255, 255, 0.98);
+          box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+          backdrop-filter: blur(10px);
+        }
+        .app-download-popup-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 0.75rem;
+        }
+        .app-download-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.4rem;
+          padding: 0.35rem 0.65rem;
+          border-radius: 999px;
+          background: rgba(22, 101, 52, 0.12);
+          color: var(--brand-green);
+          font-size: 0.68rem;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+        .app-download-popup-close {
+          width: 30px;
+          height: 30px;
+          border: 1px solid rgba(15, 23, 42, 0.1);
+          border-radius: 999px;
+          background: #f8fafc;
+          color: var(--text-primary);
+          font-size: 1.1rem;
+          cursor: pointer;
+        }
+        .app-download-popup h3 {
+          margin: 0.9rem 0 0.45rem;
+          color: var(--text-primary);
+          font-size: 1.2rem;
+          line-height: 1.3;
+        }
+        .app-download-popup p {
+          margin: 0;
+          font-size: 0.9rem;
+          line-height: 1.55;
+          color: var(--text-muted);
+        }
+        .app-download-actions {
+          display: flex;
+          gap: 0.65rem;
+          margin-top: 0.9rem;
+        }
+        .app-download-primary-btn,
+        .app-download-secondary-btn {
+          flex: 1;
+          min-height: 40px;
+          border-radius: 10px;
+          border: 1px solid transparent;
+          font-weight: 700;
+          cursor: pointer;
+          transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+        .app-download-primary-btn {
+          background: var(--brand-green);
+          color: #ffffff;
+        }
+        .app-download-secondary-btn {
+          background: #fff;
+          border-color: rgba(15, 23, 42, 0.12);
+          color: var(--text-primary);
+        }
+        .app-download-primary-btn:hover,
+        .app-download-secondary-btn:hover {
+          transform: translateY(-1px);
+        }
+        @media (max-width: 640px) {
+          .app-download-popup {
+            right: 0.75rem;
+            bottom: 0.75rem;
+            width: min(290px, calc(100vw - 1.25rem));
+          }
+          .app-download-actions {
+            flex-direction: column;
+          }
+        }
+
         .legal-modal-overlay {
           position: fixed;
           inset: 0;
@@ -4608,6 +4726,21 @@ export default function App() {
             ></i>
             <span className="toast-message-text">{toastMessage}</span>
             <button type="button" className="toast-close-btn" onClick={() => setToastMessage(null)} aria-label="Dismiss notification">×</button>
+          </div>
+        </div>
+      )}
+
+      {showAppDownloadPopup && (
+        <div className="app-download-popup" role="dialog" aria-live="polite" aria-label="Download the PAZ app">
+          <div className="app-download-popup-header">
+            <span className="app-download-badge"><i className="fa-solid fa-download" aria-hidden="true"></i> App</span>
+            <button type="button" className="app-download-popup-close" aria-label="Close app download popup" onClick={dismissAppDownloadPopup}>×</button>
+          </div>
+          <h3>Download the PAZ app</h3>
+          <p>Get the Android APK to access the shop, bookings, and support on the go.</p>
+          <div className="app-download-actions">
+            <button type="button" className="app-download-primary-btn" onClick={handleAppDownload}>Download APK</button>
+            <button type="button" className="app-download-secondary-btn" onClick={dismissAppDownloadPopup}>Maybe later</button>
           </div>
         </div>
       )}
