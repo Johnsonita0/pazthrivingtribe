@@ -267,7 +267,7 @@ export default function App() {
   const [showAppDownloadPopup, setShowAppDownloadPopup] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const logoImageUrl = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"%3E%3Crect width="48" height="48" rx="12" fill="%23238636"/%3E%3Ctext x="50%" y="55%" font-size="26" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-weight="700"%3EP%3C/text%3E%3C/svg%3E';
-  const appDownloadUrl = 'https://github.com/Johnsonita0/pazthrivingtribe/releases/latest/download/Paz-Thriving-Tribe.apk';
+  const appDownloadUrl = 'https://expo.dev/artifacts/eas/th_ppyQ6PVS4i4CtpLFBEJV9l4H21hjpRbr97mPh23o.apk';
 
   // --- Auth & System Loading States ---
   const [session, setSession] = useState(null);
@@ -424,7 +424,7 @@ export default function App() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
-    const dismissed = window.localStorage.getItem('paz-app-download-popup-dismissed');
+    const dismissed = window.localStorage.getItem('paz-app-download-popup-dismissed-v2');
     if (dismissed === '1') return undefined;
 
     const timer = window.setTimeout(() => setShowAppDownloadPopup(true), 1400);
@@ -434,7 +434,7 @@ export default function App() {
   const dismissAppDownloadPopup = () => {
     setShowAppDownloadPopup(false);
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem('paz-app-download-popup-dismissed', '1');
+      window.localStorage.setItem('paz-app-download-popup-dismissed-v2', '1');
     }
   };
 
@@ -4669,6 +4669,7 @@ export default function App() {
           .portal-workspace-header h2 { font-size: 1.1rem; }
           .dashboard-tab-button { padding: 0.55rem 0.75rem; font-size: 0.75rem; }
         }
+
       `}</style>
 
       {initialLoading && (
@@ -4736,8 +4737,8 @@ export default function App() {
             <span className="app-download-badge"><i className="fa-solid fa-download" aria-hidden="true"></i> App</span>
             <button type="button" className="app-download-popup-close" aria-label="Close app download popup" onClick={dismissAppDownloadPopup}>×</button>
           </div>
-          <h3>Download the PAZ app</h3>
-          <p>Get the Android APK to access the shop, bookings, and support on the go.</p>
+          <h3>PAZ Shop for Android</h3>
+          <p>The app is ready. Download the APK and install it on your Android phone.</p>
           <div className="app-download-actions">
             <button type="button" className="app-download-primary-btn" onClick={handleAppDownload}>Download APK</button>
             <button type="button" className="app-download-secondary-btn" onClick={dismissAppDownloadPopup}>Maybe later</button>
