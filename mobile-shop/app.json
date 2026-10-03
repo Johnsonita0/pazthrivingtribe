@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "PAZ Shop",
+    "slug": "paz-shop",
+    "version": "1.0.0",
+    "scheme": "pazshop",
+    "orientation": "portrait",
+    "description": "The PAZ Thriving Tribe digital product shop.",
+    "icon": "./assets/paz-logo.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "org.pazthrivingtribe.shop",
+      "adaptiveIcon": {
+        "backgroundColor": "#f2f8f3",
+        "foregroundImage": "./assets/paz-logo.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-web-browser"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "e08b1944-6dd5-48de-9bd4-f49685b7784a"
+      }
+    }
+  }
+}

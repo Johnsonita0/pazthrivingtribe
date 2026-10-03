@@ -3,6 +3,7 @@ import adminAccessHandler from '../server-handlers/admin-access.js';
 import adminHealthHandler from '../server-handlers/admin-health.js';
 import adminUpdateHandler from '../server-handlers/admin-update.js';
 import completeShopPaymentHandler from '../server-handlers/complete-shop-payment.js';
+import initializeShopPaymentHandler from '../server-handlers/initialize-shop-payment.js';
 import currencyRatesHandler from '../server-handlers/currency-rates.js';
 import fetchMetaHandler from '../server-handlers/fetch-meta.js';
 import paystackWebhookHandler from '../server-handlers/paystack-webhook.js';
@@ -23,6 +24,7 @@ import testimonialSubmissionHandler from '../server-handlers/testimonial-submiss
 import generateProductDescriptionHandler from '../server-handlers/generate-product-description.js';
 import productReleaseNotificationHandler from '../server-handlers/product-release-notification.js';
 import productMetricsHandler from '../server-handlers/product-metrics.js';
+import productRatingsHandler from '../server-handlers/product-ratings.js';
 import releaseNotificationsHandler from '../server-handlers/release-notifications.js';
 import productChatHandler from '../server-handlers/product-chat.js';
 import vendorProductChatHandler from '../server-handlers/vendor-product-chat.js';
@@ -33,6 +35,7 @@ const handlers = {
   '/admin-health': adminHealthHandler,
   '/admin-update': adminUpdateHandler,
   '/complete-shop-payment': completeShopPaymentHandler,
+  '/initialize-shop-payment': initializeShopPaymentHandler,
   '/product-release-notification': productReleaseNotificationHandler,
   '/release-notifications': releaseNotificationsHandler,
   '/product-chat': productChatHandler,
@@ -44,6 +47,7 @@ const handlers = {
   '/resolve-bank-account': resolveBankAccountHandler,
   '/store-products-public': storeProductsPublicHandler,
   '/product-metrics': productMetricsHandler,
+  '/product-ratings': productRatingsHandler,
   '/vendor-password-reset-email': vendorPasswordResetEmailHandler,
   '/vendor-pin-changed-email': vendorPinChangedEmailHandler,
   '/activity-notification': activityNotificationHandler,
@@ -59,6 +63,17 @@ const handlers = {
   '/webhook': resendWebhookHandler
 };
 
+const mobileShopCorsRoutes = new Set([
+  '/complete-shop-payment',
+  '/initialize-shop-payment',
+  '/product-chat',
+  '/product-metrics',
+  '/product-ratings',
+  '/product-release-notification',
+  '/store-products-public',
+  '/track-visitor'
+]);
+
 function sendJson(res, statusCode, payload) {
   if (typeof res.status === 'function') return res.status(statusCode).json(payload);
   res.writeHead(statusCode, { 'Content-Type': 'application/json' });
@@ -70,6 +85,16 @@ export default async function handler(req, res) {
   const route = requestUrl.pathname.startsWith('/api/')
     ? requestUrl.pathname.slice('/api'.length)
     : requestUrl.pathname;
+  if (mobileShopCorsRoutes.has(route)) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Max-Age', '86400');
+    if (req.method === 'OPTIONS') {
+      res.statusCode = 204;
+      return res.end();
+    }
+  }
   const routeHandler = handlers[route];
 
   if (!routeHandler) return sendJson(res, 404, { error: 'API route not found' });

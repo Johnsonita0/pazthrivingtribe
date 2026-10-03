@@ -428,6 +428,59 @@ const money = (value, currency = 'NGN') => new Intl.NumberFormat(undefined, {
   maximumFractionDigits: 0
 }).format(Number(value || 0));
 
+function OrderSuccessActions({ appDownloadUrl, onShopMore }) {
+  return (
+    <div style={{ display: 'flex', gap: '10px', marginTop: '14px', width: '100%' }}>
+      <a
+        href={appDownloadUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          flex: '2 1 200px',
+          minWidth: 0,
+          minHeight: '46px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          padding: '10px 12px',
+          border: '1px solid #166534',
+          borderRadius: '8px',
+          background: '#166534',
+          color: '#fff',
+          fontWeight: 800,
+          textAlign: 'center',
+          textDecoration: 'none',
+          cursor: 'pointer',
+          boxSizing: 'border-box'
+        }}
+      >
+        <i className="fa-solid fa-download" aria-hidden="true" />
+        Download PAZ App
+      </a>
+      <button
+        type="button"
+        onClick={onShopMore}
+        style={{
+          flex: '1 1 100px',
+          minWidth: 0,
+          minHeight: '46px',
+          padding: '10px 12px',
+          border: '1px solid #cbd5e1',
+          borderRadius: '8px',
+          background: '#fff',
+          color: '#334155',
+          fontWeight: 700,
+          cursor: 'pointer',
+          boxSizing: 'border-box'
+        }}
+      >
+        Shop more
+      </button>
+    </div>
+  );
+}
+
 const productPriceLabel = (product) => product.isFree ? 'Free' : `${currencySymbols[product.currency || 'NGN'] || ''}${Number(product.price || 0).toLocaleString()}`;
 
 const productSlug = (product) => encodeURIComponent(String(product?.title || product?.id || 'product').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''));
@@ -557,7 +610,7 @@ const readStoreData = () => {
   }
 };
 
-export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', storeProducts, storeBankAccount, isIndependenceDay = false, independenceAnniversary = 66, isIndependencePreview = false }) {
+export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', storeProducts, storeBankAccount, isIndependenceDay = false, independenceAnniversary = 66, isIndependencePreview = false, appDownloadUrl }) {
   const navigate = useNavigate();
   const { productName } = useParams();
   const [searchParams] = useSearchParams();
@@ -1509,6 +1562,16 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     }
   };
 
+  const handleShopMoreAfterOrder = () => {
+    setCartOpen(false);
+    setCheckoutStage('details');
+    setPaymentProof(null);
+    setPaymentProofFile(null);
+    setSubmittedOrder(null);
+    setSelectedProduct(null);
+    navigate(shopUrl);
+  };
+
   const handleCheckout = async (event) => {
     event.preventDefault();
     const customerEmail = checkoutForm.email.trim().toLowerCase();
@@ -1702,11 +1765,14 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
       }}>
         <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 14px' }}>
           {/* Top row: Logo and Search */}
-          <div style={{ display: 'grid', gridTemplateColumns: isSmallScreen ? '72px 1fr 64px' : '100px 1fr 120px', gap: isSmallScreen ? '8px' : '16px', alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isSmallScreen ? '96px 1fr 64px' : '138px 1fr 120px', gap: isSmallScreen ? '8px' : '16px', alignItems: 'center' }}>
             {/* Logo */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-              <img src="/logo/logomain.png" alt="Paz" style={{ width: '40px', height: '40px', borderRadius: '6px' }} />
-              <div style={{ fontSize: '16px', fontWeight: 'bold' }}>Paz</div>
+            <div aria-label="PAZ Store" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'default' }}>
+              <span aria-hidden="true" style={{ width: '38px', height: '38px', flex: '0 0 38px', borderRadius: '7px', background: '#008751', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                <i className="fa-solid fa-bag-shopping" style={{ fontSize: '22px' }}></i>
+                <i className="fa-solid fa-cart-shopping" style={{ position: 'absolute', right: '-3px', bottom: '-3px', fontSize: '13px', color: '#ff9900', WebkitTextStroke: '1px #131921' }}></i>
+              </span>
+              <span style={{ fontSize: '14px', fontWeight: 900, lineHeight: 1.05, color: '#fff' }}>PAZ<br />STORE</span>
             </div>
 
             {/* Search Bar */}
@@ -2833,6 +2899,8 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                   Your product files have been sent to <strong>{submittedOrder.email}</strong>. Check your inbox and spam folder, open the delivery email, then download and open the attached PDF or ZIP file on your device.
                 </div>
 
+                <OrderSuccessActions appDownloadUrl={appDownloadUrl} onShopMore={handleShopMoreAfterOrder} />
+
                 <button
                   type="button"
                   onClick={() => {
@@ -3023,6 +3091,8 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
             <p style={{ margin: 0, fontSize: '12px', color: '#047857' }}>
               📌 Please save your order number <strong>{submittedOrder.orderNumber}</strong> for your records.
             </p>
+
+            <OrderSuccessActions appDownloadUrl={appDownloadUrl} onShopMore={handleShopMoreAfterOrder} />
           </div>
         )}
       </div>
@@ -3118,4 +3188,3 @@ const fieldStyle = {
   background: '#f9fafb',
   fontFamily: 'inherit'
 };
-

@@ -18,6 +18,7 @@ import resendWebhookHandler from './server-handlers/resend-webhook.js';
 import sendNotificationEmailHandler from './server-handlers/send-notification-email.js';
 import sendRegistrationEmailHandler from './server-handlers/send-registration-email.js';
 import completeShopPaymentHandler from './server-handlers/complete-shop-payment.js';
+import initializeShopPaymentHandler from './server-handlers/initialize-shop-payment.js';
 import currencyRatesHandler from './server-handlers/currency-rates.js';
 import completeServicePaymentHandler from './server-handlers/complete-service-payment.js';
 import vendorSupportHandler from './server-handlers/vendor-support.js';
@@ -31,6 +32,7 @@ import testimonialSubmissionHandler from './server-handlers/testimonial-submissi
 import generateProductDescriptionHandler from './server-handlers/generate-product-description.js';
 import productReleaseNotificationHandler from './server-handlers/product-release-notification.js';
 import productMetricsHandler from './server-handlers/product-metrics.js';
+import productRatingsHandler from './server-handlers/product-ratings.js';
 import releaseNotificationsHandler from './server-handlers/release-notifications.js';
 import productChatHandler from './server-handlers/product-chat.js';
 import vendorProductChatHandler from './server-handlers/vendor-product-chat.js';
@@ -94,6 +96,12 @@ const server = http.createServer((req, res) => {
       if (pathname === '/api/complete-shop-payment' && req.method === 'POST') {
         req.body = body;
         await completeShopPaymentHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/initialize-shop-payment' && req.method === 'POST') {
+        req.body = body ? JSON.parse(body) : {};
+        await initializeShopPaymentHandler(req, res);
         return;
       }
 
@@ -176,6 +184,13 @@ const server = http.createServer((req, res) => {
       if (pathname === '/api/product-metrics' && req.method === 'GET') {
         req.query = parsedUrl.query;
         await productMetricsHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/product-ratings' && (req.method === 'GET' || req.method === 'POST')) {
+        req.query = parsedUrl.query;
+        req.body = req.method === 'POST' ? (body ? JSON.parse(body) : {}) : {};
+        await productRatingsHandler(req, res);
         return;
       }
 

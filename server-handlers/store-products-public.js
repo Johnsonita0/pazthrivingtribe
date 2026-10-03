@@ -26,5 +26,8 @@ export default async function handler(req, res) {
 
   res.statusCode = error ? 500 : 200;
   res.setHeader('Content-Type', 'application/json');
-  res.end(JSON.stringify(error ? { error: error.message } : { data: data || [] }));
+  res.end(JSON.stringify(error ? { error: error.message } : {
+    data: data || [],
+    storageBaseUrl: supabaseUrl.replace(/\/$/, '')
+  }));
 }
