@@ -1,7 +1,7 @@
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 
-const APK_URL = 'https://expo.dev/artifacts/eas/QhJ6YKf1M_nbDvbDaJfJEY1M3-3yFEd6NWsjXxZlf4k.apk'
+const APK_URL = 'https://expo.dev/artifacts/eas/Zet-_Qr47h8biC1v13sxDRSazgNPji-CnEhHeuaB22s.apk'
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
