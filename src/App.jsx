@@ -4671,11 +4671,11 @@ export default function App() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="nav-cta-link app-download-nav-link"
-                aria-label="Download the PAZ Android app"
-                title="Download the PAZ Android app"
+                aria-label="Download PAZ Android APK"
+                title="Download PAZ Android APK"
               >
                 <i className="fa-solid fa-download" aria-hidden="true"></i>
-                <span>Download</span>
+                <span>Download APK</span>
               </a>
             )}
             {!isAdminRoute && (
