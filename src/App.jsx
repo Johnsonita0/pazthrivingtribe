@@ -266,7 +266,7 @@ export default function App() {
   const [showCookieBanner, setShowCookieBanner] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const logoImageUrl = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48"%3E%3Crect width="48" height="48" rx="12" fill="%23238636"/%3E%3Ctext x="50%" y="55%" font-size="26" text-anchor="middle" fill="white" font-family="system-ui, sans-serif" font-weight="700"%3EP%3C/text%3E%3C/svg%3E';
-  const appDownloadUrl = 'https://expo.dev/artifacts/eas/QhJ6YKf1M_nbDvbDaJfJEY1M3-3yFEd6NWsjXxZlf4k.apk';
+  const appDownloadUrl = '/api/app-download';
 
   // --- Auth & System Loading States ---
   const [session, setSession] = useState(null);

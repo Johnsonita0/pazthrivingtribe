@@ -28,8 +28,10 @@ import productRatingsHandler from '../server-handlers/product-ratings.js';
 import releaseNotificationsHandler from '../server-handlers/release-notifications.js';
 import productChatHandler from '../server-handlers/product-chat.js';
 import vendorProductChatHandler from '../server-handlers/vendor-product-chat.js';
+import appDownloadHandler from '../server-handlers/app-download.js';
 
 const handlers = {
+  '/app-download': appDownloadHandler,
   '/admin-auth': adminAuthHandler,
   '/admin-access': adminAccessHandler,
   '/admin-health': adminHealthHandler,

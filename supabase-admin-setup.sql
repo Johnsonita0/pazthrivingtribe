@@ -195,6 +195,7 @@ create table if not exists shop_orders (
   phone text,
   subtotal numeric(12,2) default 0,
   total numeric(12,2) default 0,
+  currency text,
   notes text,
   status text default 'pending',
   payment_proof_path text,
@@ -206,6 +207,7 @@ create table if not exists shop_orders (
 );
 
 alter table if exists shop_orders add column if not exists payment_mode text default 'live';
+alter table if exists shop_orders add column if not exists currency text;
 
 create table if not exists shop_order_items (
   id uuid primary key default gen_random_uuid(),
@@ -216,6 +218,33 @@ create table if not exists shop_order_items (
   quantity integer default 1,
   created_at timestamptz default now()
 );
+
+create table if not exists customer_profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  email text,
+  first_name text,
+  last_name text,
+  full_name text,
+  phone text,
+  country_code text not null default 'NG',
+  language text not null default 'English',
+  currency text not null default 'NGN',
+  notifications_enabled boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.customer_profiles add column if not exists country_code text not null default 'NG';
+alter table public.customer_profiles add column if not exists language text not null default 'English';
+alter table public.customer_profiles add column if not exists currency text not null default 'NGN';
+alter table public.customer_profiles add column if not exists notifications_enabled boolean not null default false;
+alter table public.customer_profiles add column if not exists email text;
+alter table public.customer_profiles add column if not exists first_name text;
+alter table public.customer_profiles add column if not exists last_name text;
+alter table public.customer_profiles add column if not exists full_name text;
+alter table public.customer_profiles add column if not exists phone text;
+alter table public.customer_profiles add column if not exists created_at timestamptz not null default now();
+alter table public.customer_profiles add column if not exists updated_at timestamptz not null default now();
 
 create table if not exists product_release_notifications (
   id uuid primary key default gen_random_uuid(),
@@ -578,19 +607,8 @@ BEGIN
     EXECUTE 'CREATE POLICY "allow public read bank accounts" ON public.store_bank_accounts FOR SELECT USING (true);';
   END IF;
 
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public' AND tablename = 'shop_orders' AND policyname = 'allow public read shop orders'
-  ) THEN
-    EXECUTE 'CREATE POLICY "allow public read shop orders" ON public.shop_orders FOR SELECT USING (true);';
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public' AND tablename = 'shop_order_items' AND policyname = 'allow public read order items'
-  ) THEN
-    EXECUTE 'CREATE POLICY "allow public read order items" ON public.shop_order_items FOR SELECT USING (true);';
-  END IF;
+  EXECUTE 'DROP POLICY IF EXISTS "allow public read shop orders" ON public.shop_orders;';
+  EXECUTE 'DROP POLICY IF EXISTS "allow public read order items" ON public.shop_order_items;';
 
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
@@ -726,6 +744,91 @@ insert into site_admins (email, uid)
 values ('pazthrivingtribe@gmail.com', '44787dbc-03ba-475e-9d5c-86ba765d5b0a')
 on conflict (email) do update
 set uid = excluded.uid;
+
+alter table public.customer_profiles enable row level security;
+alter table public.shop_orders enable row level security;
+alter table public.shop_order_items enable row level security;
+
+do $$
+declare
+  old_policy record;
+begin
+  for old_policy in
+    select schemaname, tablename, policyname
+    from pg_policies
+    where schemaname = 'public'
+      and tablename in ('customer_profiles', 'shop_orders', 'shop_order_items')
+      and cmd in ('SELECT', 'ALL')
+  loop
+    execute format('drop policy %I on %I.%I', old_policy.policyname, old_policy.schemaname, old_policy.tablename);
+  end loop;
+end
+$$;
+
+create or replace function public.is_confirmed_shop_customer(customer_email text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from auth.users as account
+    where account.id = auth.uid()
+      and account.email_confirmed_at is not null
+      and lower(account.email) = lower(customer_email)
+  );
+$$;
+
+revoke all on function public.is_confirmed_shop_customer(text) from public;
+grant execute on function public.is_confirmed_shop_customer(text) to authenticated;
+
+drop policy if exists customer_profiles_select_own on public.customer_profiles;
+drop policy if exists customer_profiles_insert_own on public.customer_profiles;
+drop policy if exists customer_profiles_update_own on public.customer_profiles;
+create policy customer_profiles_select_own
+  on public.customer_profiles for select to authenticated
+  using (id = auth.uid());
+create policy customer_profiles_insert_own
+  on public.customer_profiles for insert to authenticated
+  with check (id = auth.uid());
+create policy customer_profiles_update_own
+  on public.customer_profiles for update to authenticated
+  using (id = auth.uid())
+  with check (id = auth.uid());
+
+create policy shop_orders_select_customer_or_admin
+  on public.shop_orders for select to authenticated
+  using (
+    public.is_confirmed_shop_customer(email)
+    or exists (
+      select 1 from public.site_admins
+      where uid = auth.uid()::text
+        or lower(email) = lower(auth.jwt() ->> 'email')
+    )
+  );
+
+create policy shop_order_items_select_customer_or_admin
+  on public.shop_order_items for select to authenticated
+  using (
+    exists (
+      select 1
+      from public.shop_orders as customer_order
+      where customer_order.id = shop_order_items.order_id
+        and (
+          public.is_confirmed_shop_customer(customer_order.email)
+          or exists (
+            select 1 from public.site_admins
+            where uid = auth.uid()::text
+              or lower(email) = lower(auth.jwt() ->> 'email')
+          )
+        )
+    )
+  );
+
+grant select, insert, update on public.customer_profiles to authenticated;
+grant select on public.shop_orders, public.shop_order_items to authenticated;
 
 -- Keep vendor identity documents private while allowing trusted admins to preview them.
 DO $$
@@ -1472,4 +1575,3 @@ create index if not exists idx_tribe_activity_ip_address on tribe_activity (ip_a
 -- Indexes (add as needed)
 create index if not exists idx_tribe_applicants_created_at on tribe_applicants (created_at);
 create index if not exists idx_tribe_bookings_created_at on tribe_bookings (created_at);
-

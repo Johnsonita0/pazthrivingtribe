@@ -272,8 +272,58 @@ export default async function handler(req, res) {
       });
     }
 
-    const itemSummary = normalizedItems.map(({ product, quantity }) => `• ${product.title} x${quantity}`).join('\n');
     const customerName = String(body.customerName || 'Customer').trim();
+    const { data: existingOrder, error: existingOrderError } = await supabase
+      .from('shop_orders')
+      .select('id,email')
+      .eq('order_number', orderNumber)
+      .maybeSingle();
+    if (existingOrderError) throw existingOrderError;
+    if (existingOrder?.email && String(existingOrder.email).toLowerCase() !== email) {
+      throw new Error('The order number is already associated with another customer.');
+    }
+
+    let savedOrderId = existingOrder?.id;
+    if (!savedOrderId) {
+      const { data: savedOrder, error: saveOrderError } = await supabase
+        .from('shop_orders')
+        .insert({
+          order_number: orderNumber,
+          customer_name: customerName,
+          email,
+          subtotal: expectedAmount,
+          total: expectedAmount,
+          currency: orderCurrency,
+          status: isFreeOrder ? 'completed' : 'paid',
+          payment_reference: reference || null,
+          payment_mode: isFreeOrder ? 'free' : 'live',
+        })
+        .select('id')
+        .single();
+      if (saveOrderError) throw saveOrderError;
+      savedOrderId = savedOrder.id;
+    }
+
+    const { data: savedItems, error: savedItemsError } = await supabase
+      .from('shop_order_items')
+      .select('id')
+      .eq('order_id', savedOrderId)
+      .limit(1);
+    if (savedItemsError) throw savedItemsError;
+    if (!savedItems?.length) {
+      const { error: saveItemsError } = await supabase
+        .from('shop_order_items')
+        .insert(normalizedItems.map(({ product, quantity }) => ({
+          order_id: savedOrderId,
+          product_id: String(product.id),
+          title: String(product.title || 'PAZ product'),
+          price: Number(product.price || 0),
+          quantity,
+        })));
+      if (saveItemsError) throw saveItemsError;
+    }
+
+    const itemSummary = normalizedItems.map(({ product, quantity }) => `• ${product.title} x${quantity}`).join('\n');
     const customerEmail = buildCustomerProductEmail({ customerName, orderNumber, itemSummary, isFreeOrder });
     const { subject, html, text } = customerEmail;
     const adminRecipients = getAdminEmails();

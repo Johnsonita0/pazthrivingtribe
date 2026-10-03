@@ -1,19 +1,63 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Easing, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StatusBar as NativeStatusBar, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Animated, Easing, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StatusBar as NativeStatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { CartView } from './src/CartView';
 import { CatalogView } from './src/CatalogView';
 import { apiRequest, CartLine, formatPrice, normalizeProduct, Product, productAvailability, productImageUrl, productSlug, Rating } from './src/api';
 import { ProductDetailView, ProductMetrics } from './src/ProductDetailView';
 import { Button, Field, palette } from './src/ShopComponents';
 import { ensureCustomerProfile, isSupabaseConfigured, supabase } from './src/supabaseClient';
+import { AccountPreferences, AccountStep, AccountUser, CustomerAccountFlow } from './src/CustomerAccountFlow';
 
 const CART_KEY = 'paz-shop-cart-v1';
 const VISITOR_KEY = 'paz-shop-visitor-id';
+const ACCOUNT_PREFERENCES_KEY = 'paz-shop-account-preferences-v1';
 type Screen = 'catalog' | 'detail' | 'success';
 type OrderRequest = { reference: string; orderNumber: string; email: string; customerName: string; items: { id: string; quantity: number }[] };
+const DEFAULT_ACCOUNT_PREFERENCES: AccountPreferences = {
+  countryCode: 'NG',
+  language: 'English',
+  currency: 'NGN',
+  notificationsEnabled: false,
+  setupComplete: false,
+};
+
+function LoadingBars() {
+  const bars = useRef([new Animated.Value(0), new Animated.Value(0), new Animated.Value(0), new Animated.Value(0)]).current;
+
+  useEffect(() => {
+    const animations = bars.map((value, index) => Animated.loop(Animated.sequence([
+      Animated.delay(index * 110),
+      Animated.timing(value, { toValue: 1, duration: 300, useNativeDriver: Platform.OS !== 'web' }),
+      Animated.timing(value, { toValue: 0, duration: 300, useNativeDriver: Platform.OS !== 'web' }),
+    ])));
+    animations.forEach((animation) => animation.start());
+    return () => animations.forEach((animation) => animation.stop());
+  }, [bars]);
+
+  const colors = [palette.green, palette.orange, palette.darkGreen, '#f3c98e'];
+
+  return (
+    <View style={styles.appLoaderBars} accessibilityElementsHidden>
+      {bars.map((value, index) => (
+        <Animated.View
+          key={index}
+          style={[
+            styles.appLoaderBar,
+            {
+              backgroundColor: colors[index],
+              opacity: value.interpolate({ inputRange: [0, 1], outputRange: [0.55, 1] }),
+              transform: [{ scaleY: value.interpolate({ inputRange: [0, 1], outputRange: [0.45, 1] }) }],
+            },
+          ]}
+        />
+      ))}
+    </View>
+  );
+}
 
 export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -50,14 +94,14 @@ export default function App() {
   const [checkoutError, setCheckoutError] = useState('');
   const [pendingCheckout, setPendingCheckout] = useState<OrderRequest | null>(null);
   const [completedOrder, setCompletedOrder] = useState<{ orderNumber: string; email: string } | null>(null);
-  const [authModalVisible, setAuthModalVisible] = useState(false);
-  const [authMode, setAuthMode] = useState<'signIn' | 'signUp'>('signIn');
-  const [authName, setAuthName] = useState('');
-  const [authEmail, setAuthEmail] = useState('');
-  const [authPassword, setAuthPassword] = useState('');
+  const [accountVisible, setAccountVisible] = useState(false);
+  const [accountStep, setAccountStep] = useState<AccountStep>('auth');
+  const [accountPreferences, setAccountPreferences] = useState<AccountPreferences>(DEFAULT_ACCOUNT_PREFERENCES);
+  const [accountSetupLoaded, setAccountSetupLoaded] = useState(false);
+  const [authNotice, setAuthNotice] = useState('');
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState('');
-  const [currentUser, setCurrentUser] = useState<{ id: string; email?: string | null; user_metadata?: Record<string, any> } | null>(null);
+  const [currentUser, setCurrentUser] = useState<AccountUser>(null);
   const [chatVisible, setChatVisible] = useState(false);
   const [chatName, setChatName] = useState('');
   const [chatEmail, setChatEmail] = useState('');
@@ -72,7 +116,6 @@ export default function App() {
   const completedReferencesRef = useRef(new Set<string>());
   const processPaymentRef = useRef<(reference: string) => Promise<void>>(async () => {});
   const flightProgress = useRef(new Animated.Value(0)).current;
-  const logoRotation = useRef(new Animated.Value(0)).current;
   const { width: windowWidth } = useWindowDimensions();
 
   const categories = useMemo(() => ['All', ...new Set(products.map((product) => product.category).filter(Boolean))], [products]);
@@ -100,31 +143,96 @@ export default function App() {
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
-    const initialiseAccount = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (!error && session?.user) {
-        setCurrentUser(session.user);
-        await ensureCustomerProfile(session.user);
-      }
-    };
-    void initialiseAccount();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
       setCurrentUser(session?.user ?? null);
-      if (session?.user) void ensureCustomerProfile(session.user);
     });
     return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
-    const spin = Animated.loop(Animated.timing(logoRotation, {
-      toValue: 1,
-      duration: 1600,
-      easing: Easing.linear,
-      useNativeDriver: Platform.OS !== 'web',
-    }));
-    spin.start();
-    return () => spin.stop();
-  }, [logoRotation]);
+    let active = true;
+    const loadAccountSetup = async () => {
+      let preferences = DEFAULT_ACCOUNT_PREFERENCES;
+      const validCountries = ['NG', 'GH', 'GB', 'US'];
+      const validCurrencies = ['NGN', 'GHS', 'GBP', 'USD'];
+      const stored = await AsyncStorage.getItem(ACCOUNT_PREFERENCES_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as Partial<AccountPreferences>;
+        if (validCountries.includes(String(parsed.countryCode)) && validCurrencies.includes(String(parsed.currency))) {
+          preferences = {
+            ...DEFAULT_ACCOUNT_PREFERENCES,
+            ...parsed,
+            language: 'English',
+            setupComplete: parsed.setupComplete === true,
+            notificationsEnabled: parsed.notificationsEnabled === true,
+          };
+        }
+      }
+
+      if (isSupabaseConfigured) {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw new Error(error.message);
+        if (session?.user) {
+          setCurrentUser(session.user);
+          const { data: profile, error: profileError } = await supabase
+            .from('customer_profiles')
+            .select('country_code,language,currency,notifications_enabled')
+            .eq('id', session.user.id)
+            .maybeSingle();
+          if (profileError) {
+            console.warn('Could not load PAZ account preferences from Supabase:', profileError.message);
+          } else if (profile) {
+            preferences = {
+              ...preferences,
+              countryCode: validCountries.includes(String(profile.country_code)) ? String(profile.country_code) : preferences.countryCode,
+              language: 'English',
+              currency: validCurrencies.includes(String(profile.currency)) ? String(profile.currency) : preferences.currency,
+              notificationsEnabled: profile.notifications_enabled === true,
+              setupComplete: true,
+            };
+            void AsyncStorage.setItem(ACCOUNT_PREFERENCES_KEY, JSON.stringify(preferences)).catch((storageError) => {
+              console.warn('Could not cache PAZ account preferences:', storageError);
+            });
+          }
+        }
+      }
+
+      if (!active) return;
+      setAccountPreferences(preferences);
+      if (!preferences.setupComplete) {
+        setAccountStep('preferences');
+        setAccountVisible(true);
+      }
+    };
+    void loadAccountSetup().catch((error) => {
+      console.warn('Could not load saved PAZ account preferences:', error);
+      if (active) {
+        setAccountPreferences(DEFAULT_ACCOUNT_PREFERENCES);
+        setAccountStep('preferences');
+        setAccountVisible(true);
+      }
+    }).finally(() => {
+      if (active) setAccountSetupLoaded(true);
+    });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser || !accountPreferences.setupComplete) return;
+    void ensureCustomerProfile(currentUser, {
+      country_code: accountPreferences.countryCode,
+      language: accountPreferences.language,
+      currency: accountPreferences.currency,
+      notifications_enabled: accountPreferences.notificationsEnabled,
+    });
+  }, [currentUser, accountPreferences]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    if (currentUser.email) setCustomerEmail((current) => current || currentUser.email || '');
+    const profileName = currentUser.user_metadata?.full_name || currentUser.user_metadata?.first_name;
+    if (profileName) setCustomerName((current) => current || profileName);
+  }, [currentUser]);
 
   useEffect(() => {
     void loadProducts();
@@ -313,38 +421,104 @@ export default function App() {
     finally { setChatBusy(false); }
   };
 
-  const submitAuth = async () => {
+  const saveAccountPreferences = async (preferences: AccountPreferences) => {
+    setAuthError('');
+    try {
+      await AsyncStorage.setItem(ACCOUNT_PREFERENCES_KEY, JSON.stringify(preferences));
+      setAccountPreferences(preferences);
+      if (currentUser) {
+        const profile = await ensureCustomerProfile(currentUser, {
+          country_code: preferences.countryCode,
+          language: preferences.language,
+          currency: preferences.currency,
+          notifications_enabled: preferences.notificationsEnabled,
+        });
+        if (!profile) throw new Error('Your preferences were saved on this device but could not be synced to your PAZ profile.');
+      }
+      return true;
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Your preferences could not be saved.');
+      return false;
+    }
+  };
+
+  const continuePreferences = async () => {
+    const wasSetupComplete = accountPreferences.setupComplete;
+    const nextPreferences = { ...accountPreferences, setupComplete: true };
+    if (!await saveAccountPreferences(nextPreferences)) return;
+    setAccountStep(wasSetupComplete ? currentUser ? 'dashboard' : 'auth' : 'notifications');
+  };
+
+  const finishNotificationStep = async (notificationsEnabled: boolean) => {
+    const nextPreferences = { ...accountPreferences, setupComplete: true, notificationsEnabled };
+    if (!await saveAccountPreferences(nextPreferences)) return;
+    setAccountStep(currentUser ? 'dashboard' : 'auth');
+  };
+
+  const allowNotifications = async () => {
+    setAuthError('');
+    try {
+      const permission = await Notifications.requestPermissionsAsync();
+      const enabled = permission.granted || permission.status === 'granted';
+      await finishNotificationStep(enabled);
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Notification permission could not be requested. You can choose “Not now” to continue.');
+    }
+  };
+
+  const browseAsGuest = async () => {
+    if (!accountPreferences.setupComplete) {
+      const guestPreferences = { ...accountPreferences, setupComplete: true, notificationsEnabled: false };
+      if (!await saveAccountPreferences(guestPreferences)) return;
+    }
+    setAccountVisible(false);
+  };
+
+  const submitAuth = async (mode: 'signIn' | 'signUp', name: string, emailInput: string, passwordInput: string) => {
     if (!isSupabaseConfigured) {
       setAuthError('Supabase is not configured yet for mobile sign-in.');
       return;
     }
-    if (!authEmail.trim() || !authPassword.trim()) {
+    if (!emailInput.trim() || !passwordInput.trim()) {
       setAuthError('Enter both your email and password to continue.');
+      return;
+    }
+    if (mode === 'signUp' && !name.trim()) {
+      setAuthError('Enter your name to create your account.');
       return;
     }
     setAuthBusy(true);
     setAuthError('');
+    setAuthNotice('');
     try {
-      const email = authEmail.trim().toLowerCase();
-      const password = authPassword.trim();
-      const result = authMode === 'signIn'
+      const email = emailInput.trim().toLowerCase();
+      const password = passwordInput;
+      const result = mode === 'signIn'
         ? await supabase.auth.signInWithPassword({ email, password })
         : await supabase.auth.signUp({
             email,
             password,
-            options: { data: { full_name: authName.trim() || email.split('@')[0] } },
+            options: { data: { full_name: name.trim() } },
           });
       if (result.error) throw new Error(result.error.message);
-      const user = result.data?.user ?? result.data?.session?.user;
-      if (user) {
-        setCurrentUser(user);
-        await ensureCustomerProfile(user, authMode === 'signUp' ? { full_name: authName.trim() || user.email || 'PAZ shopper', email: user.email || email } : {});
+      const user = result.data?.session?.user ?? (mode === 'signIn' ? result.data?.user : null);
+      if (!user) {
+        setAuthNotice('Your account was created. Check your email to confirm it, then sign in.');
+        setAuthBusy(false);
+        return;
       }
-      setAuthName('');
-      setAuthEmail('');
-      setAuthPassword('');
-      setAuthModalVisible(false);
-      setNotice(authMode === 'signIn' ? 'Welcome back to your PAZ account.' : 'Your account is ready. Confirm your email to finish setup.');
+      setCurrentUser(user);
+      const profile = await ensureCustomerProfile(user, {
+        full_name: mode === 'signUp' ? name.trim() : user.user_metadata?.full_name || null,
+        email: user.email || email,
+        country_code: accountPreferences.countryCode,
+        language: accountPreferences.language,
+        currency: accountPreferences.currency,
+        notifications_enabled: accountPreferences.notificationsEnabled,
+      });
+      if (!profile && isSupabaseConfigured) throw new Error('Your account is signed in, but your PAZ profile could not be saved.');
+      setAccountStep('dashboard');
+      setAuthNotice('');
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : 'Your account request could not be completed.');
     } finally {
@@ -359,8 +533,8 @@ export default function App() {
       const { error } = await supabase.auth.signOut();
       if (error) throw new Error(error.message);
       setCurrentUser(null);
-      setAuthModalVisible(false);
-      setNotice('You have signed out of your PAZ account.');
+      setAccountStep('auth');
+      setAuthNotice('You have signed out of your PAZ account.');
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : 'Your session could not be ended.');
     } finally {
@@ -405,7 +579,7 @@ export default function App() {
       {screen !== 'detail' ? <View style={styles.header}>
         <View style={styles.brandBlock}><Image source={require('./assets/paz-logo.png')} style={styles.brandLogo} resizeMode="contain" /><View><Text style={styles.brandEyebrow}>PAZ THRIVING TRIBE</Text><Text style={styles.brandTitle}>{screen === 'success' ? 'Order confirmed' : 'PAZ Shop'}</Text></View></View>
         {screen !== 'success' ? <View style={styles.headerActions}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Open account" onPress={() => { setAuthError(''); setAuthModalVisible(true); }} style={styles.accountButton}><Text style={styles.accountButtonText}>{currentUser ? `Hi, ${accountLabel}` : 'Account'}</Text></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="Open account" onPress={() => { setAuthError(''); setAuthNotice(''); setAccountStep(currentUser ? 'dashboard' : 'auth'); setAccountVisible(true); }} style={styles.accountButton}><Text style={styles.accountButtonText}>{currentUser ? `Hi, ${accountLabel}` : 'Account'}</Text></Pressable>
           <Pressable accessibilityRole="button" accessibilityLabel={`Open bag, ${cartCount} items`} onPress={() => setCartVisible(true)} style={styles.bagButton}><Text style={styles.bagText}>Bag</Text><View style={styles.bagCount}><Text style={styles.bagCountText}>{cartCount}</Text></View></Pressable>
         </View> : null}
       </View> : null}
@@ -416,7 +590,8 @@ export default function App() {
       {screen === 'success' && completedOrder ? <View style={styles.success}><View style={styles.successMark}><Text style={styles.successMarkText}>✓</Text></View><Text style={styles.successKicker}>ORDER CONFIRMED</Text><Text style={styles.successTitle}>Your next chapter starts here.</Text><Text style={styles.successCopy}>We sent your product to {completedOrder.email}. Check your inbox for order {completedOrder.orderNumber}.</Text><Button title="Back to the shop" onPress={() => { setCompletedOrder(null); setScreen('catalog'); }} /></View> : null}
 
       {!initialLoadComplete ? <View style={styles.appLoader} accessibilityRole="progressbar" accessibilityLabel="Loading PAZ Shop">
-        <Animated.Image source={require('./assets/paz-logo.png')} style={[styles.appLoaderLogo, { transform: [{ rotate: logoRotation.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }] }]} resizeMode="contain" />
+        <Image source={require('./assets/paz-logo.png')} style={styles.appLoaderLogo} resizeMode="contain" />
+        <LoadingBars />
         <Text style={styles.appLoaderLabel}>PAZ SHOP</Text>
       </View> : null}
 
@@ -424,17 +599,24 @@ export default function App() {
         {productImageUrl(flyingProduct.cover, storageBaseUrl) ? <Image source={{ uri: productImageUrl(flyingProduct.cover, storageBaseUrl) }} style={styles.flightImage} resizeMode="cover" /> : <Text style={styles.flightLetter}>{flyingProduct.title.slice(0, 1)}</Text>}
       </Animated.View> : null}
 
-      <Modal visible={authModalVisible} transparent animationType="slide" onRequestClose={() => setAuthModalVisible(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalShade}><View style={styles.modalSheet}><View style={styles.modalHandle} /><Pressable onPress={() => setAuthModalVisible(false)} style={styles.modalClose}><Text style={styles.modalCloseText}>×</Text></Pressable><Text style={styles.modalKicker}>{authMode === 'signIn' ? 'WELCOME BACK' : 'CREATE ACCOUNT'}</Text><Text style={styles.modalTitle}>{authMode === 'signIn' ? 'Sign in to PAZ' : 'Create your PAZ account'}</Text><Text style={styles.modalCopy}>{authMode === 'signIn' ? 'Track your orders and save your shopping details.' : 'Join the PAZ community and keep your order history with you.'}</Text>
-          {authMode === 'signUp' ? <Field label="Full name" value={authName} onChangeText={setAuthName} placeholder="Your name" maxLength={120} /> : null}
-          <Field label="Email address" value={authEmail} onChangeText={setAuthEmail} placeholder="you@example.com" keyboardType="email-address" maxLength={254} />
-          <View style={styles.passwordWrap}><Text style={styles.fieldLabel}>Password</Text><TextInput value={authPassword} onChangeText={setAuthPassword} placeholder="Enter your password" placeholderTextColor="#87948a" secureTextEntry autoCapitalize="none" autoCorrect={false} style={styles.passwordInput} /></View>
-          {authError ? <Text style={styles.formError}>{authError}</Text> : null}
-          <Button title={authBusy ? 'Please wait…' : authMode === 'signIn' ? 'Sign in' : 'Create account'} disabled={authBusy} onPress={() => void submitAuth()} />
-          <Pressable accessibilityRole="button" onPress={() => { setAuthMode((current) => current === 'signIn' ? 'signUp' : 'signIn'); setAuthError(''); }} style={styles.switchAuth}><Text style={styles.switchAuthText}>{authMode === 'signIn' ? 'Need an account? Create one' : 'Already a customer? Sign in'}</Text></Pressable>
-          {currentUser ? <Button title="Sign out" secondary onPress={() => void signOutAccount()} /> : null}
-        </View></KeyboardAvoidingView>
-      </Modal>
+      <CustomerAccountFlow
+        visible={accountVisible && accountSetupLoaded}
+        step={accountStep}
+        preferences={accountPreferences}
+        user={currentUser}
+        busy={authBusy}
+        error={authError}
+        notice={authNotice}
+        onClose={() => setAccountVisible(false)}
+        onPreferencesChange={setAccountPreferences}
+        onContinuePreferences={() => void continuePreferences()}
+        onEditPreferences={() => setAccountStep('preferences')}
+        onAllowNotifications={() => void allowNotifications()}
+        onSkipNotifications={() => void finishNotificationStep(false)}
+        onSubmitAuth={(mode, name, email, password) => void submitAuth(mode, name, email, password)}
+        onSignOut={() => void signOutAccount()}
+        onBrowseAsGuest={() => void browseAsGuest()}
+      />
 
       <Modal visible={cartVisible} transparent animationType="slide" onRequestClose={() => setCartVisible(false)}>
         <View style={styles.cartModalShade}>
@@ -469,6 +651,8 @@ const styles = StyleSheet.create({
   app: { flex: 1, paddingTop: NativeStatusBar.currentHeight || 0, backgroundColor: palette.paper },
   appLoader: { ...StyleSheet.absoluteFill, zIndex: 1000, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.paper },
   appLoaderLogo: { width: 104, height: 104 },
+  appLoaderBars: { height: 24, marginTop: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  appLoaderBar: { width: 6, height: 20, borderRadius: 3 },
   appLoaderLabel: { marginTop: 14, color: palette.green, fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
   header: { minHeight: 76, paddingHorizontal: 18, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: palette.white, borderBottomWidth: 1, borderBottomColor: palette.line },
   brandBlock: { flexDirection: 'row', alignItems: 'center', gap: 11 },
@@ -485,11 +669,6 @@ const styles = StyleSheet.create({
   notice: { minHeight: 40, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: palette.greenWash },
   noticeText: { flex: 1, paddingVertical: 7, color: palette.darkGreen, fontSize: 11, fontWeight: '700' },
   noticeClose: { paddingLeft: 10, color: palette.green, fontSize: 20 },
-  passwordWrap: { marginTop: 10 },
-  fieldLabel: { marginBottom: 5, color: palette.ink, fontSize: 11, fontWeight: '800' },
-  passwordInput: { minHeight: 45, paddingHorizontal: 12, borderWidth: 1, borderColor: palette.line, borderRadius: 6, color: palette.ink, backgroundColor: palette.white, fontSize: 13 },
-  switchAuth: { marginTop: 12, alignItems: 'center', justifyContent: 'center', paddingVertical: 10 },
-  switchAuthText: { color: palette.green, fontSize: 12, fontWeight: '800' },
   flightToken: { position: 'absolute', left: 0, bottom: 38, zIndex: 20, width: 42, height: 48, overflow: 'hidden', borderWidth: 2, borderColor: palette.white, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.green, elevation: 8 },
   flightImage: { width: '100%', height: '100%' },
   flightLetter: { color: palette.white, fontSize: 18, fontWeight: '900' },

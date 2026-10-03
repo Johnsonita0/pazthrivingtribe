@@ -37,6 +37,7 @@ import releaseNotificationsHandler from './server-handlers/release-notifications
 import productChatHandler from './server-handlers/product-chat.js';
 import vendorProductChatHandler from './server-handlers/vendor-product-chat.js';
 import resendInboundHandler from './server-handlers/resend-inbound.js';
+import appDownloadHandler from './server-handlers/app-download.js';
 
 try {
   process.loadEnvFile?.('.env');
@@ -74,6 +75,11 @@ const server = http.createServer((req, res) => {
       if (pathname === '/api/admin-update' && req.method === 'POST') {
         req.body = body;
         await adminUpdateHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/app-download') {
+        await appDownloadHandler(req, res);
         return;
       }
 

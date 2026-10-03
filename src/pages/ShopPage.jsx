@@ -1451,6 +1451,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
             phone: order.phone,
             subtotal: Number(order.total || 0),
             total: Number(order.total || 0),
+            currency: order.currency || cartCurrency || null,
             notes: order.notes || '',
             status: order.status || 'pending',
             payment_reference: order.paymentReference || order.payment_reference || null,
