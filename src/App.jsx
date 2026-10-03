@@ -5573,7 +5573,7 @@ export default function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
 
-        {!isAdminRoute && !isVendorRoute && location.pathname !== '/' && <CustomerSupportChat />}
+        {!isAdminRoute && !isVendorRoute && !isStoreRoute && location.pathname !== '/' && <CustomerSupportChat />}
 
         {/* Contact Us Section */}
         {!isRegistrationRoute && !isAdminRoute && !isVendorRoute && !isFeedbackRoute && !isStoreRoute && (

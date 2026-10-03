@@ -963,7 +963,7 @@ export default function StorePage({ isIndependenceDay = false, independenceAnniv
                       boxShadow: '0 10px 18px rgba(255, 153, 0, 0.24)'
                     }}
                   >
-                    Checkout
+                    Download
                   </button>
                 </div>
               )}
@@ -1064,4 +1064,3 @@ export default function StorePage({ isIndependenceDay = false, independenceAnniv
     </div>
   );
 }
-

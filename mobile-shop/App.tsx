@@ -2,12 +2,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Easing, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StatusBar as NativeStatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Easing, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StatusBar as NativeStatusBar, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { CartView } from './src/CartView';
 import { CatalogView } from './src/CatalogView';
 import { apiRequest, CartLine, formatPrice, normalizeProduct, Product, productAvailability, productImageUrl, productSlug, Rating } from './src/api';
 import { ProductDetailView, ProductMetrics } from './src/ProductDetailView';
 import { Button, Field, palette } from './src/ShopComponents';
+import { ensureCustomerProfile, isSupabaseConfigured, supabase } from './src/supabaseClient';
 
 const CART_KEY = 'paz-shop-cart-v1';
 const VISITOR_KEY = 'paz-shop-visitor-id';
@@ -49,6 +50,14 @@ export default function App() {
   const [checkoutError, setCheckoutError] = useState('');
   const [pendingCheckout, setPendingCheckout] = useState<OrderRequest | null>(null);
   const [completedOrder, setCompletedOrder] = useState<{ orderNumber: string; email: string } | null>(null);
+  const [authModalVisible, setAuthModalVisible] = useState(false);
+  const [authMode, setAuthMode] = useState<'signIn' | 'signUp'>('signIn');
+  const [authName, setAuthName] = useState('');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authBusy, setAuthBusy] = useState(false);
+  const [authError, setAuthError] = useState('');
+  const [currentUser, setCurrentUser] = useState<{ id: string; email?: string | null; user_metadata?: Record<string, any> } | null>(null);
   const [chatVisible, setChatVisible] = useState(false);
   const [chatName, setChatName] = useState('');
   const [chatEmail, setChatEmail] = useState('');
@@ -72,6 +81,7 @@ export default function App() {
   const cartCurrency = cart.find((line) => !line.product.isFree)?.product.currency || cart[0]?.product.currency || 'NGN';
   const allFree = cart.length > 0 && cart.every((line) => line.product.isFree);
   const totalLabel = formatPrice({ price: cartTotal, currency: cartCurrency, isFree: allFree });
+  const accountLabel = currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.first_name || currentUser?.email?.split('@')[0] || 'Account';
 
   const loadProducts = async () => {
     setLoading(true);
@@ -87,6 +97,23 @@ export default function App() {
       setInitialLoadComplete(true);
     }
   };
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    const initialiseAccount = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (!error && session?.user) {
+        setCurrentUser(session.user);
+        await ensureCustomerProfile(session.user);
+      }
+    };
+    void initialiseAccount();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
+      setCurrentUser(session?.user ?? null);
+      if (session?.user) void ensureCustomerProfile(session.user);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     const spin = Animated.loop(Animated.timing(logoRotation, {
@@ -286,6 +313,61 @@ export default function App() {
     finally { setChatBusy(false); }
   };
 
+  const submitAuth = async () => {
+    if (!isSupabaseConfigured) {
+      setAuthError('Supabase is not configured yet for mobile sign-in.');
+      return;
+    }
+    if (!authEmail.trim() || !authPassword.trim()) {
+      setAuthError('Enter both your email and password to continue.');
+      return;
+    }
+    setAuthBusy(true);
+    setAuthError('');
+    try {
+      const email = authEmail.trim().toLowerCase();
+      const password = authPassword.trim();
+      const result = authMode === 'signIn'
+        ? await supabase.auth.signInWithPassword({ email, password })
+        : await supabase.auth.signUp({
+            email,
+            password,
+            options: { data: { full_name: authName.trim() || email.split('@')[0] } },
+          });
+      if (result.error) throw new Error(result.error.message);
+      const user = result.data?.user ?? result.data?.session?.user;
+      if (user) {
+        setCurrentUser(user);
+        await ensureCustomerProfile(user, authMode === 'signUp' ? { full_name: authName.trim() || user.email || 'PAZ shopper', email: user.email || email } : {});
+      }
+      setAuthName('');
+      setAuthEmail('');
+      setAuthPassword('');
+      setAuthModalVisible(false);
+      setNotice(authMode === 'signIn' ? 'Welcome back to your PAZ account.' : 'Your account is ready. Confirm your email to finish setup.');
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Your account request could not be completed.');
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const signOutAccount = async () => {
+    if (!isSupabaseConfigured) return;
+    setAuthBusy(true);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw new Error(error.message);
+      setCurrentUser(null);
+      setAuthModalVisible(false);
+      setNotice('You have signed out of your PAZ account.');
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Your session could not be ended.');
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
   const completeFreeOrder = async () => {
     if (!customerName.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) return setCheckoutError('Enter your name and a valid email address for delivery.');
     setCheckoutBusy(true); setCheckoutError('');
@@ -322,7 +404,10 @@ export default function App() {
       <StatusBar style={screen === 'detail' ? 'light' : 'dark'} />
       {screen !== 'detail' ? <View style={styles.header}>
         <View style={styles.brandBlock}><Image source={require('./assets/paz-logo.png')} style={styles.brandLogo} resizeMode="contain" /><View><Text style={styles.brandEyebrow}>PAZ THRIVING TRIBE</Text><Text style={styles.brandTitle}>{screen === 'success' ? 'Order confirmed' : 'PAZ Shop'}</Text></View></View>
-        {screen !== 'success' ? <Pressable accessibilityRole="button" accessibilityLabel={`Open bag, ${cartCount} items`} onPress={() => setCartVisible(true)} style={styles.bagButton}><Text style={styles.bagText}>Bag</Text><View style={styles.bagCount}><Text style={styles.bagCountText}>{cartCount}</Text></View></Pressable> : null}
+        {screen !== 'success' ? <View style={styles.headerActions}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Open account" onPress={() => { setAuthError(''); setAuthModalVisible(true); }} style={styles.accountButton}><Text style={styles.accountButtonText}>{currentUser ? `Hi, ${accountLabel}` : 'Account'}</Text></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={`Open bag, ${cartCount} items`} onPress={() => setCartVisible(true)} style={styles.bagButton}><Text style={styles.bagText}>Bag</Text><View style={styles.bagCount}><Text style={styles.bagCountText}>{cartCount}</Text></View></Pressable>
+        </View> : null}
       </View> : null}
       {notice && screen !== 'success' ? <Pressable onPress={() => setNotice('')} style={styles.notice}><Text style={styles.noticeText}>{notice}</Text><Text style={styles.noticeClose}>×</Text></Pressable> : null}
 
@@ -338,6 +423,18 @@ export default function App() {
       {flyingProduct ? <Animated.View style={[styles.flightToken, { transform: [{ translateX: flightProgress.interpolate({ inputRange: [0, 1], outputRange: [windowWidth * 0.62, windowWidth * 0.08] }) }, { translateY: flightProgress.interpolate({ inputRange: [0, 1], outputRange: [0, -5] }) }, { scale: flightProgress.interpolate({ inputRange: [0, 1], outputRange: [1, 0.34] }) }], opacity: flightProgress.interpolate({ inputRange: [0, 0.72, 1], outputRange: [1, 1, 0] }), pointerEvents: 'none' }]}>
         {productImageUrl(flyingProduct.cover, storageBaseUrl) ? <Image source={{ uri: productImageUrl(flyingProduct.cover, storageBaseUrl) }} style={styles.flightImage} resizeMode="cover" /> : <Text style={styles.flightLetter}>{flyingProduct.title.slice(0, 1)}</Text>}
       </Animated.View> : null}
+
+      <Modal visible={authModalVisible} transparent animationType="slide" onRequestClose={() => setAuthModalVisible(false)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalShade}><View style={styles.modalSheet}><View style={styles.modalHandle} /><Pressable onPress={() => setAuthModalVisible(false)} style={styles.modalClose}><Text style={styles.modalCloseText}>×</Text></Pressable><Text style={styles.modalKicker}>{authMode === 'signIn' ? 'WELCOME BACK' : 'CREATE ACCOUNT'}</Text><Text style={styles.modalTitle}>{authMode === 'signIn' ? 'Sign in to PAZ' : 'Create your PAZ account'}</Text><Text style={styles.modalCopy}>{authMode === 'signIn' ? 'Track your orders and save your shopping details.' : 'Join the PAZ community and keep your order history with you.'}</Text>
+          {authMode === 'signUp' ? <Field label="Full name" value={authName} onChangeText={setAuthName} placeholder="Your name" maxLength={120} /> : null}
+          <Field label="Email address" value={authEmail} onChangeText={setAuthEmail} placeholder="you@example.com" keyboardType="email-address" maxLength={254} />
+          <View style={styles.passwordWrap}><Text style={styles.fieldLabel}>Password</Text><TextInput value={authPassword} onChangeText={setAuthPassword} placeholder="Enter your password" placeholderTextColor="#87948a" secureTextEntry autoCapitalize="none" autoCorrect={false} style={styles.passwordInput} /></View>
+          {authError ? <Text style={styles.formError}>{authError}</Text> : null}
+          <Button title={authBusy ? 'Please wait…' : authMode === 'signIn' ? 'Sign in' : 'Create account'} disabled={authBusy} onPress={() => void submitAuth()} />
+          <Pressable accessibilityRole="button" onPress={() => { setAuthMode((current) => current === 'signIn' ? 'signUp' : 'signIn'); setAuthError(''); }} style={styles.switchAuth}><Text style={styles.switchAuthText}>{authMode === 'signIn' ? 'Need an account? Create one' : 'Already a customer? Sign in'}</Text></Pressable>
+          {currentUser ? <Button title="Sign out" secondary onPress={() => void signOutAccount()} /> : null}
+        </View></KeyboardAvoidingView>
+      </Modal>
 
       <Modal visible={cartVisible} transparent animationType="slide" onRequestClose={() => setCartVisible(false)}>
         <View style={styles.cartModalShade}>
@@ -378,6 +475,9 @@ const styles = StyleSheet.create({
   brandLogo: { width: 46, height: 46, borderRadius: 23, backgroundColor: palette.white },
   brandEyebrow: { color: palette.green, fontSize: 8, fontWeight: '900', letterSpacing: 1.15 },
   brandTitle: { marginTop: 2, color: palette.ink, fontSize: 18, fontWeight: '900' },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  accountButton: { minHeight: 42, paddingHorizontal: 12, borderWidth: 1, borderColor: palette.line, borderRadius: 12, justifyContent: 'center', backgroundColor: palette.greenWash },
+  accountButtonText: { color: palette.darkGreen, fontSize: 11, fontWeight: '900' },
   bagButton: { minWidth: 76, minHeight: 42, paddingHorizontal: 11, borderWidth: 1, borderColor: palette.line, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: palette.white },
   bagText: { color: palette.ink, fontSize: 12, fontWeight: '800' },
   bagCount: { minWidth: 21, height: 21, paddingHorizontal: 4, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.orange },
@@ -385,6 +485,11 @@ const styles = StyleSheet.create({
   notice: { minHeight: 40, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: palette.greenWash },
   noticeText: { flex: 1, paddingVertical: 7, color: palette.darkGreen, fontSize: 11, fontWeight: '700' },
   noticeClose: { paddingLeft: 10, color: palette.green, fontSize: 20 },
+  passwordWrap: { marginTop: 10 },
+  fieldLabel: { marginBottom: 5, color: palette.ink, fontSize: 11, fontWeight: '800' },
+  passwordInput: { minHeight: 45, paddingHorizontal: 12, borderWidth: 1, borderColor: palette.line, borderRadius: 6, color: palette.ink, backgroundColor: palette.white, fontSize: 13 },
+  switchAuth: { marginTop: 12, alignItems: 'center', justifyContent: 'center', paddingVertical: 10 },
+  switchAuthText: { color: palette.green, fontSize: 12, fontWeight: '800' },
   flightToken: { position: 'absolute', left: 0, bottom: 38, zIndex: 20, width: 42, height: 48, overflow: 'hidden', borderWidth: 2, borderColor: palette.white, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.green, elevation: 8 },
   flightImage: { width: '100%', height: '100%' },
   flightLetter: { color: palette.white, fontSize: 18, fontWeight: '900' },

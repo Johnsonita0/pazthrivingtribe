@@ -2585,7 +2585,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
             <div style={{ display: 'flex', gap: '10px', width: 'min(980px, 100%)', margin: '0 auto' }}>
               <button type="button" onClick={() => { setSelectedProduct(null); navigate(shopUrl); }} style={{ flex: '0 1 220px', minHeight: '48px', padding: '11px 16px', border: '1px solid #f97316', borderRadius: '8px', background: '#fff7ed', color: '#c2410c', fontWeight: 800, cursor: 'pointer' }}>Shop more</button>
               <button type="button" onClick={() => checkoutProduct(selectedProduct)} disabled={selectedProductOutOfStock || (!selectedProductAvailability?.available && selectedProductAvailability?.reason !== 'not-released')} style={{ flex: 1, minHeight: '48px', padding: '11px 16px', border: 0, borderRadius: '8px', background: selectedProductOutOfStock || (!selectedProductAvailability?.available && selectedProductAvailability?.reason !== 'not-released') ? '#e5e7eb' : '#166534', color: selectedProductOutOfStock || (!selectedProductAvailability?.available && selectedProductAvailability?.reason !== 'not-released') ? '#64748b' : '#fff', fontWeight: 800, cursor: selectedProductOutOfStock || (!selectedProductAvailability?.available && selectedProductAvailability?.reason !== 'not-released') ? 'not-allowed' : 'pointer' }}>
-                {selectedProductOutOfStock ? 'Out of stock' : selectedProductAvailability?.reason === 'not-released' ? 'Notify me' : 'Checkout'}
+                {selectedProductOutOfStock ? 'Out of stock' : selectedProductAvailability?.reason === 'not-released' ? 'Notify me' : 'Download'}
               </button>
             </div>
           </div>
