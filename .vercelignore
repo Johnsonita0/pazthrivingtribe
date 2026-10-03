@@ -3,4 +3,5 @@ api/admin-password-reset.js
 api/send-email-resend.js
 dist
 node_modules
+mobile-shop/android
 .env*
