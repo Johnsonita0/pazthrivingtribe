@@ -23,6 +23,7 @@
     },
     "android": {
       "package": "org.pazthrivingtribe.shop",
+      "minSdkVersion": 24,
       "adaptiveIcon": {
         "backgroundColor": "#f2f8f3",
         "foregroundImage": "./assets/paz-app-icon.png",

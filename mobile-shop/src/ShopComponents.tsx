@@ -15,19 +15,20 @@ export const palette = {
   red: '#ae3c2d',
 };
 
-export function Button({ title, onPress, disabled = false, secondary = false, compact = false }: {
+export function Button({ title, onPress, disabled = false, secondary = false, compact = false, fill = false }: {
   title: string;
   onPress: () => void;
   disabled?: boolean;
   secondary?: boolean;
   compact?: boolean;
+  fill?: boolean;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
       onPress={onPress}
       disabled={disabled}
-      style={({ pressed }) => [styles.button, compact && styles.buttonCompact, secondary && styles.buttonSecondary, disabled && styles.buttonDisabled, pressed && !disabled && styles.pressed]}
+      style={({ pressed }) => [styles.button, compact && styles.buttonCompact, fill && styles.buttonFill, secondary && styles.buttonSecondary, disabled && styles.buttonDisabled, pressed && !disabled && styles.pressed]}
     >
       <Text style={[styles.buttonText, secondary && styles.buttonSecondaryText, disabled && styles.buttonDisabledText]}>{title}</Text>
     </Pressable>
@@ -101,8 +102,9 @@ export function ProductCard({ product, storageBaseUrl, onPress }: {
 }
 
 const styles = StyleSheet.create({
-  button: { flex: 1, minHeight: 48, paddingHorizontal: 16, borderRadius: 7, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.green },
+  button: { alignSelf: 'stretch', minHeight: 48, paddingHorizontal: 16, borderRadius: 7, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.green },
   buttonCompact: { flex: 0, minHeight: 38 },
+  buttonFill: { flex: 1 },
   buttonSecondary: { borderWidth: 1, borderColor: palette.green, backgroundColor: palette.white },
   buttonDisabled: { backgroundColor: '#dce4de' },
   buttonText: { color: palette.white, fontSize: 13, fontWeight: '900', textAlign: 'center' },

@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   textButton: { alignItems: 'center', justifyContent: 'center', paddingVertical: 13 },
   textButtonLabel: { color: palette.green, fontSize: 12, fontWeight: '900', textAlign: 'center' },
   mutedButtonLabel: { color: palette.muted, fontSize: 12, fontWeight: '700', textAlign: 'center' },
-  centered: { flex: 1, minHeight: 500, justifyContent: 'center', alignItems: 'center' },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   notifyIcon: { width: 82, height: 82, marginBottom: 22, borderRadius: 41, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.greenWash },
   notifyIconText: { color: palette.green, fontSize: 42, fontWeight: '800' },
   authContent: { paddingTop: 15 },

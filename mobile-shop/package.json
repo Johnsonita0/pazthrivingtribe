@@ -28,6 +28,7 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "build:apk": "npx eas-cli build --platform android --profile preview",
+    "build:production-apk": "npx eas-cli build --platform android --profile production-apk",
     "update:preview": "npx eas-cli update --channel preview",
     "update:production": "npx eas-cli update --channel production"
   },

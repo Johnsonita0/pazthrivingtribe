@@ -622,7 +622,6 @@ export default function App() {
         <View style={styles.cartModalShade}>
           <Pressable accessibilityRole="button" accessibilityLabel="Close bag" style={styles.cartScrim} onPress={() => setCartVisible(false)} />
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.cartDrawer}>
-            <View style={styles.drawerHandle} />
             <View style={styles.drawerHeader}>
               <View><Text style={styles.drawerEyebrow}>PAZ THRIVING TRIBE</Text><Text style={styles.drawerTitle}>Your bag</Text></View>
               <Pressable accessibilityRole="button" accessibilityLabel="Close bag" onPress={() => setCartVisible(false)} style={styles.drawerClose}><Text style={styles.drawerCloseText}>×</Text></Pressable>
@@ -674,9 +673,8 @@ const styles = StyleSheet.create({
   flightLetter: { color: palette.white, fontSize: 18, fontWeight: '900' },
   cartModalShade: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', backgroundColor: '#101a14aa' },
   cartScrim: { ...StyleSheet.absoluteFill },
-  cartDrawer: { width: '100%', maxWidth: 560, height: '96%', maxHeight: '96%', minHeight: 0, overflow: 'hidden', borderTopLeftRadius: 18, borderTopRightRadius: 18, backgroundColor: palette.paper },
-  drawerHandle: { width: 38, height: 4, marginTop: 9, alignSelf: 'center', borderRadius: 2, backgroundColor: '#bfcac1' },
-  drawerHeader: { minHeight: 58, paddingHorizontal: 18, paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: palette.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  cartDrawer: { width: '100%', maxWidth: 560, height: '68%', maxHeight: '68%', minHeight: 0, overflow: 'hidden', borderTopLeftRadius: 18, borderTopRightRadius: 18, backgroundColor: palette.paper },
+  drawerHeader: { minHeight: 50, paddingHorizontal: 18, paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: palette.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   drawerEyebrow: { color: palette.green, fontSize: 8, fontWeight: '900', letterSpacing: 1.1 },
   drawerTitle: { marginTop: 2, color: palette.ink, fontSize: 19, fontWeight: '900' },
   drawerClose: { width: 38, height: 38, borderWidth: 1, borderColor: palette.line, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.white },

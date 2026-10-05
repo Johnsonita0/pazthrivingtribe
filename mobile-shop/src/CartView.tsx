@@ -62,13 +62,13 @@ export function CartView(props: Props) {
           {props.error ? <Text style={styles.error}>{props.error}</Text> : null}
           {!props.drawer && props.pendingPayment ? <Button title={props.busy ? 'Checking…' : 'Check payment'} secondary disabled={props.busy} onPress={props.onConfirmPayment} /> : null}
           {!props.drawer ? <Button title={props.busy ? 'Please wait…' : props.freeOrder ? 'Request free product' : `Pay ${props.totalLabel}`} disabled={props.busy} onPress={props.onCheckout} /> : null}
-          <Text style={styles.deliveryNote}>Digital products are delivered to your email after the order is confirmed.</Text>
+          {!props.drawer ? <Text style={styles.deliveryNote}>Digital products are delivered to your email after the order is confirmed.</Text> : null}
         </View>
       </>}
       </ScrollView>
       {props.drawer && props.cart.length ? <View style={styles.stickyFooter}>
         {props.pendingPayment ? <Button title={props.busy ? 'Checking…' : 'Check payment'} secondary compact disabled={props.busy} onPress={props.onConfirmPayment} /> : null}
-        <Button title={props.busy ? 'Please wait…' : props.freeOrder ? 'Request free product' : `Pay ${props.totalLabel}`} disabled={props.busy} onPress={props.onCheckout} />
+        <Button fill title={props.busy ? 'Please wait…' : props.freeOrder ? 'Request free product' : `Pay ${props.totalLabel}`} disabled={props.busy} onPress={props.onCheckout} />
       </View> : null}
     </View>
   );
@@ -78,8 +78,8 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   scroll: { flex: 1 },
   content: { paddingHorizontal: 18, paddingTop: 19, paddingBottom: 24 },
-  drawerContent: { flexGrow: 1, paddingTop: 7, paddingBottom: 14 },
-  stickyFooter: { paddingHorizontal: 18, paddingTop: 9, paddingBottom: 12, borderTopWidth: 1, borderColor: palette.line, flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: palette.white },
+  drawerContent: { paddingTop: 5, paddingBottom: 8 },
+  stickyFooter: { paddingHorizontal: 18, paddingTop: 7, paddingBottom: 8, borderTopWidth: 1, borderColor: palette.line, flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: palette.white },
   heading: { color: palette.ink, fontSize: 26, fontWeight: '900' },
   backButton: { marginBottom: 12 },
   backText: { color: palette.green, fontSize: 12, fontWeight: '800' },
@@ -87,8 +87,8 @@ const styles = StyleSheet.create({
   emptyMark: { width: 58, height: 58, borderRadius: 29, overflow: 'hidden', backgroundColor: palette.greenWash, color: palette.green, fontSize: 34, lineHeight: 58, textAlign: 'center' },
   emptyTitle: { color: palette.ink, fontSize: 18, fontWeight: '900' },
   emptyCopy: { color: palette.muted, fontSize: 12, textAlign: 'center' },
-  line: { marginTop: 13, paddingVertical: 13, borderBottomWidth: 1, borderColor: palette.line, flexDirection: 'row', gap: 12 },
-  thumb: { width: 72, height: 82, overflow: 'hidden', borderRadius: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.greenWash },
+  line: { marginTop: 9, paddingVertical: 9, borderBottomWidth: 1, borderColor: palette.line, flexDirection: 'row', gap: 12 },
+  thumb: { width: 64, height: 72, overflow: 'hidden', borderRadius: 6, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.greenWash },
   thumbImage: { width: '100%', height: '100%' },
   thumbLetter: { color: palette.green, fontSize: 25, fontWeight: '900' },
   lineBody: { flex: 1, justifyContent: 'center' },
@@ -100,11 +100,11 @@ const styles = StyleSheet.create({
   quantity: { minWidth: 14, color: palette.ink, fontSize: 12, fontWeight: '800', textAlign: 'center' },
   remove: { marginLeft: 'auto', padding: 5 },
   removeText: { color: palette.red, fontSize: 10, fontWeight: '700' },
-  totalRow: { marginTop: 18, flexDirection: 'row', justifyContent: 'space-between' },
+  totalRow: { marginTop: 13, flexDirection: 'row', justifyContent: 'space-between' },
   totalLabel: { color: palette.ink, fontSize: 14, fontWeight: '800' },
   total: { color: palette.darkGreen, fontSize: 16, fontWeight: '900' },
   secureNote: { marginTop: 6, color: palette.muted, fontSize: 10 },
-  form: { marginTop: 12 },
+  form: { marginTop: 8 },
   formHeading: { marginBottom: 3, color: palette.ink, fontSize: 16, fontWeight: '900' },
   error: { marginTop: 10, color: palette.red, fontSize: 11, lineHeight: 17 },
   deliveryNote: { marginTop: 9, color: palette.muted, fontSize: 9, lineHeight: 14, textAlign: 'center' },
