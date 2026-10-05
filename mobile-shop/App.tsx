@@ -590,7 +590,7 @@ export default function App() {
       {screen === 'success' && completedOrder ? <View style={styles.success}><View style={styles.successMark}><Text style={styles.successMarkText}>✓</Text></View><Text style={styles.successKicker}>ORDER CONFIRMED</Text><Text style={styles.successTitle}>Your next chapter starts here.</Text><Text style={styles.successCopy}>We sent your product to {completedOrder.email}. Check your inbox for order {completedOrder.orderNumber}.</Text><Button title="Back to the shop" onPress={() => { setCompletedOrder(null); setScreen('catalog'); }} /></View> : null}
 
       {!initialLoadComplete ? <View style={styles.appLoader} accessibilityRole="progressbar" accessibilityLabel="Loading PAZ Shop">
-        <Image source={require('./assets/paz-logo.png')} style={styles.appLoaderLogo} resizeMode="contain" />
+        <Image source={require('./assets/paz-app-icon.png')} style={styles.appLoaderLogo} resizeMode="contain" />
         <LoadingBars />
         <Text style={styles.appLoaderLabel}>PAZ SHOP</Text>
       </View> : null}

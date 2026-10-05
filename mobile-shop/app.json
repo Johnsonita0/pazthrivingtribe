@@ -6,8 +6,20 @@
     "scheme": "pazshop",
     "orientation": "portrait",
     "description": "The PAZ Thriving Tribe digital product shop.",
-    "icon": "./assets/paz-logo.png",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/e08b1944-6dd5-48de-9bd4-f49685b7784a",
+      "checkAutomatically": "ON_LOAD"
+    },
+    "icon": "./assets/paz-app-icon.png",
     "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/paz-app-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "ios": {
       "supportsTablet": true
     },
@@ -15,14 +27,14 @@
       "package": "org.pazthrivingtribe.shop",
       "adaptiveIcon": {
         "backgroundColor": "#f2f8f3",
-        "foregroundImage": "./assets/paz-logo.png",
+        "foregroundImage": "./assets/paz-app-icon.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/paz-app-icon.png"
     },
     "plugins": [
       "expo-web-browser",
