@@ -23,10 +23,10 @@ npm run update:production -- --message "Describe the production update"
 ```
 
 The preview build subscribes to the `preview` channel; the production build
-subscribes to `production`. Updates use the app's `appVersion` runtime policy,
-so an update is delivered only to compatible installed builds. Increment the
-app version and create a new native build when necessary to keep native and
-JavaScript changes compatible.
+subscribes to `production`. Updates use the explicit runtime version `1.0.0`, so an update is delivered
+only to compatible installed builds. Keep this value aligned with the app
+version when making incompatible native changes, and create a new native build
+when necessary to keep native and JavaScript changes compatible.
 
 OTA updates cover JavaScript and bundled assets only. Changes to native
 dependencies, native code, or native app configuration require a new EAS
