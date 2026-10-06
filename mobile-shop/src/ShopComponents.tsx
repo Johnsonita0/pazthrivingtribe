@@ -2,17 +2,17 @@ import { Image, Pressable, StyleSheet, Text, TextInput, View } from 'react-nativ
 import { formatPrice, Product, productAvailability, productImageUrl } from './api';
 
 export const palette = {
-  ink: '#17261d',
-  muted: '#66746b',
-  green: '#286247',
-  darkGreen: '#173f30',
-  greenWash: '#eaf1ec',
-  orange: '#e9ad62',
-  orangeWash: '#fbf2e6',
-  paper: '#f7f7f2',
+  ink: '#24143f',
+  muted: '#746c84',
+  green: '#6127c8',
+  darkGreen: '#381477',
+  greenWash: '#f1eafd',
+  orange: '#ee4b91',
+  orangeWash: '#fff0f7',
+  paper: '#faf8ff',
   white: '#ffffff',
-  line: '#e4e8e1',
-  red: '#ae3c2d',
+  line: '#e9e2f2',
+  red: '#bd3157',
 };
 
 export function Button({ title, onPress, disabled = false, secondary = false, compact = false, fill = false }: {

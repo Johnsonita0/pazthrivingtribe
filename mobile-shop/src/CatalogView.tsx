@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, ImageBackground, Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Product, productImageUrl, SITE_ROOT } from './api';
+import { categoryMatches, Product, productImageUrl, SITE_ROOT } from './api';
 import { palette, ProductCard } from './ShopComponents';
 
 type Props = {
   products: Product[];
+  accountName?: string;
   storageBaseUrl: string;
   categories: string[];
   category: string;
@@ -120,9 +121,10 @@ export function CatalogView(props: Props) {
   ];
   const promo = promos[activePromo];
   const promoImage = typeof promo.image === 'string' ? { uri: promo.image } : promo.image;
+  const quickCategories = props.categories.filter((item) => item !== 'All').slice(0, 4);
   const filtered = props.products.filter((product) => {
     const text = `${product.title} ${product.category} ${product.description}`.toLowerCase();
-    return (props.category === 'All' || product.category === props.category) && text.includes(props.search.trim().toLowerCase());
+    return categoryMatches(product.category, props.category) && text.includes(props.search.trim().toLowerCase());
   });
 
   useEffect(() => {
@@ -132,6 +134,13 @@ export function CatalogView(props: Props) {
 
   return (
     <View style={styles.screen}>
+      <View style={styles.homeIntro}>
+        <View>
+          <Text style={styles.greeting}>Hello, {props.accountName || 'Ada'} <Text style={styles.greetingMark}>✦</Text></Text>
+          <Text style={styles.welcomeCopy}>Good to see you again.</Text>
+        </View>
+        <View style={styles.avatar}><Text style={styles.avatarText}>{(props.accountName || 'A').slice(0, 1).toUpperCase()}</Text></View>
+      </View>
       <ImageBackground source={promoImage} style={styles.promoBoard} imageStyle={styles.promoImage}>
         <View style={styles.promoShade} />
         <View style={styles.promoCopy}>
@@ -154,6 +163,24 @@ export function CatalogView(props: Props) {
         <TextInput value={props.search} onChangeText={props.onSearch} placeholder="Search the shop" placeholderTextColor="#78857c" style={styles.searchInput} returnKeyType="search" />
         {props.search ? <Pressable onPress={() => props.onSearch('')}><Text style={styles.clearSearch}>×</Text></Pressable> : null}
       </View>
+      {quickCategories.length ? <View style={styles.quickCategories}>
+        {quickCategories.map((item, index) => {
+          const categoryKey = item.toLowerCase();
+          const isGrocery = /grocer|grocery|food/.test(categoryKey);
+          const isGadget = /gadget|elect|tech/.test(categoryKey);
+          const icon = isGrocery ? '▤' : isGadget ? '▣' : ['▤', '✧', '⌂', '✿'][index];
+          const color = isGrocery ? '#118f7b' : isGadget ? '#2679c9' : ['#692ad2', '#e84b8b', '#118f7b', '#c47a05'][index];
+          const wash = isGrocery ? '#e7f5f1' : isGadget ? '#e8f2ff' : ['#efe7ff', '#ffeaf3', '#e7f5f1', '#fff3dc'][index];
+          return (
+          <Pressable key={item} accessibilityRole="button" onPress={() => props.onCategory(item)} style={({ pressed }) => [styles.quickCategory, pressed && styles.quickCategoryPressed]}>
+            <View style={[styles.quickIcon, { backgroundColor: wash }]}>
+              <Text style={[styles.quickIconText, { color }]}>{icon}</Text>
+            </View>
+            <Text numberOfLines={1} style={styles.quickCategoryLabel}>{item}</Text>
+          </Pressable>
+          );
+        })}
+      </View> : null}
       <ScrollView horizontal style={styles.categoryScroll} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categories}>
         {props.categories.map((item) => (
           <Pressable key={item} onPress={() => props.onCategory(item)} style={[styles.chip, props.category === item && styles.chipActive]}>
@@ -185,7 +212,13 @@ export function CatalogView(props: Props) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  promoBoard: { height: 140, marginTop: 12, marginHorizontal: 14, overflow: 'hidden', justifyContent: 'center', borderRadius: 12, backgroundColor: palette.darkGreen },
+  homeIntro: { minHeight: 54, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  greeting: { color: palette.ink, fontSize: 19, fontWeight: '900' },
+  greetingMark: { color: '#edaa1b', fontSize: 15 },
+  welcomeCopy: { marginTop: 2, color: palette.muted, fontSize: 10 },
+  avatar: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.greenWash },
+  avatarText: { color: palette.green, fontSize: 13, fontWeight: '900' },
+  promoBoard: { height: 140, marginTop: 4, marginHorizontal: 14, overflow: 'hidden', justifyContent: 'center', borderRadius: 12, backgroundColor: palette.darkGreen },
   promoImage: { borderRadius: 12 },
   promoShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(10, 35, 25, 0.66)' },
   promoCopy: { maxWidth: 390, paddingHorizontal: 16, paddingVertical: 10, alignItems: 'flex-start' },
@@ -203,6 +236,12 @@ const styles = StyleSheet.create({
   searchMark: { marginRight: 9, color: palette.green, fontSize: 23 },
   searchInput: { flex: 1, paddingVertical: 8, color: palette.ink, fontSize: 14 },
   clearSearch: { paddingHorizontal: 5, color: palette.muted, fontSize: 21 },
+  quickCategories: { minHeight: 84, paddingHorizontal: 18, paddingTop: 10, flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
+  quickCategory: { flex: 1, minWidth: 0, alignItems: 'center', gap: 5 },
+  quickCategoryPressed: { opacity: 0.75 },
+  quickIcon: { width: 42, height: 42, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  quickIconText: { fontSize: 21, fontWeight: '900' },
+  quickCategoryLabel: { maxWidth: '100%', color: palette.muted, fontSize: 9, fontWeight: '700' },
   categoryScroll: { height: 53, flexGrow: 0, flexShrink: 0 },
   categories: { paddingHorizontal: 18, paddingTop: 9, paddingBottom: 8, gap: 8 },
   chip: { minHeight: 36, paddingHorizontal: 14, borderWidth: 1, borderColor: palette.line, borderRadius: 11, justifyContent: 'center', backgroundColor: palette.white },

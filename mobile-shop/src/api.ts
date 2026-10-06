@@ -66,6 +66,19 @@ export function normalizeProduct(raw: Record<string, unknown>): Product {
   };
 }
 
+export function categoryMatches(productCategory: string, selectedCategory: string) {
+  const productValue = productCategory.trim().toLowerCase();
+  const selectedValue = selectedCategory.trim().toLowerCase();
+  if (!selectedValue || selectedValue === 'all') return true;
+  if (selectedValue === 'groceries' || selectedValue === 'grocery') {
+    return /grocer|grocery|food|produce|market/.test(productValue);
+  }
+  if (selectedValue === 'gadgets' || selectedValue === 'gadget') {
+    return /gadget|electronic|technology|tech/.test(productValue);
+  }
+  return productValue === selectedValue;
+}
+
 export function productAvailability(product: Product): Availability {
   if (product.releaseEnabled && product.releaseAt) {
     const release = Date.parse(product.releaseAt);

@@ -6,16 +6,20 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Easing, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StatusBar as NativeStatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { CartView } from './src/CartView';
 import { CatalogView } from './src/CatalogView';
-import { apiRequest, CartLine, formatPrice, normalizeProduct, Product, productAvailability, productImageUrl, productSlug, Rating } from './src/api';
+import { CategoriesView } from './src/CategoriesView';
+import { apiRequest, CartLine, categoryMatches, formatPrice, normalizeProduct, Product, productAvailability, productImageUrl, productSlug, Rating } from './src/api';
 import { ProductDetailView, ProductMetrics } from './src/ProductDetailView';
 import { Button, Field, palette } from './src/ShopComponents';
 import { ensureCustomerProfile, isSupabaseConfigured, supabase } from './src/supabaseClient';
 import { AccountPreferences, AccountStep, AccountUser, CustomerAccountFlow } from './src/CustomerAccountFlow';
+import { OnboardingFlow } from './src/OnboardingFlow';
+import { SplashScreen } from './src/SplashScreen';
 
 const CART_KEY = 'paz-shop-cart-v1';
 const VISITOR_KEY = 'paz-shop-visitor-id';
 const ACCOUNT_PREFERENCES_KEY = 'paz-shop-account-preferences-v1';
-type Screen = 'catalog' | 'detail' | 'success';
+const ONBOARDING_KEY = 'paz-shop-onboarding-v2';
+type Screen = 'catalog' | 'categories' | 'detail' | 'cart' | 'success';
 type OrderRequest = { reference: string; orderNumber: string; email: string; customerName: string; items: { id: string; quantity: number }[] };
 const DEFAULT_ACCOUNT_PREFERENCES: AccountPreferences = {
   countryCode: 'NG',
@@ -59,10 +63,21 @@ function LoadingBars() {
   );
 }
 
+function TabButton({ icon, label, active, onPress }: { icon: string; label: string; active: boolean; onPress: () => void }) {
+  return (
+    <Pressable accessibilityRole="button" accessibilityState={{ selected: active }} onPress={onPress} style={styles.tabButton}>
+      <Text style={[styles.tabIcon, active && styles.tabIconActive]}>{icon}</Text>
+      <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{label}</Text>
+    </Pressable>
+  );
+}
+
 export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [storageBaseUrl, setStorageBaseUrl] = useState('');
   const [screen, setScreen] = useState<Screen>('catalog');
+  const [splashElapsed, setSplashElapsed] = useState(false);
+  const [onboardingStatus, setOnboardingStatus] = useState<'loading' | 'pending' | 'done'>('loading');
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [cart, setCart] = useState<CartLine[]>([]);
@@ -118,13 +133,37 @@ export default function App() {
   const flightProgress = useRef(new Animated.Value(0)).current;
   const { width: windowWidth } = useWindowDimensions();
 
-  const categories = useMemo(() => ['All', ...new Set(products.map((product) => product.category).filter(Boolean))], [products]);
+  const categories = useMemo(() => {
+    const availableCategories = products.map((product) => product.category).filter(Boolean);
+    const otherCategories = [...new Set(availableCategories)].filter((item) =>
+      !categoryMatches(item, 'Groceries') && !categoryMatches(item, 'Gadgets')
+    );
+    return ['All', 'Groceries', 'Gadgets', ...otherCategories];
+  }, [products]);
   const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0);
   const cartTotal = cart.reduce((sum, line) => sum + (line.product.isFree ? 0 : line.product.price) * line.quantity, 0);
   const cartCurrency = cart.find((line) => !line.product.isFree)?.product.currency || cart[0]?.product.currency || 'NGN';
   const allFree = cart.length > 0 && cart.every((line) => line.product.isFree);
   const totalLabel = formatPrice({ price: cartTotal, currency: cartCurrency, isFree: allFree });
   const accountLabel = currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.first_name || currentUser?.email?.split('@')[0] || 'Account';
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSplashElapsed(true), 2400);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void AsyncStorage.getItem(ONBOARDING_KEY)
+      .then((value) => {
+        if (active) setOnboardingStatus(value === 'complete' ? 'done' : 'pending');
+      })
+      .catch((error) => {
+        console.warn('Could not load PAZ onboarding state:', error);
+        if (active) setOnboardingStatus('pending');
+      });
+    return () => { active = false; };
+  }, []);
 
   const loadProducts = async () => {
     setLoading(true);
@@ -201,7 +240,6 @@ export default function App() {
       setAccountPreferences(preferences);
       if (!preferences.setupComplete) {
         setAccountStep('preferences');
-        setAccountVisible(true);
       }
     };
     void loadAccountSetup().catch((error) => {
@@ -209,7 +247,6 @@ export default function App() {
       if (active) {
         setAccountPreferences(DEFAULT_ACCOUNT_PREFERENCES);
         setAccountStep('preferences');
-        setAccountVisible(true);
       }
     }).finally(() => {
       if (active) setAccountSetupLoaded(true);
@@ -474,6 +511,17 @@ export default function App() {
     setAccountVisible(false);
   };
 
+  const completeOnboarding = async () => {
+    setOnboardingStatus('done');
+    void AsyncStorage.setItem(ONBOARDING_KEY, 'complete').catch((error) => {
+      console.warn('Could not save PAZ onboarding state:', error);
+    });
+    setAuthError('');
+    setAuthNotice('');
+    setAccountStep('auth');
+    setAccountVisible(true);
+  };
+
   const submitAuth = async (mode: 'signIn' | 'signUp', name: string, emailInput: string, passwordInput: string) => {
     if (!isSupabaseConfigured) {
       setAuthError('Supabase is not configured yet for mobile sign-in.');
@@ -573,11 +621,15 @@ export default function App() {
 
   const confirmPayment = () => { if (pendingCheckout?.reference) void finishPayment(pendingCheckout.reference); };
 
+  if (!splashElapsed || !initialLoadComplete || onboardingStatus === 'loading' || !accountSetupLoaded) {
+    return <SplashScreen />;
+  }
+
   return (
     <View style={styles.app}>
       <StatusBar style={screen === 'detail' ? 'light' : 'dark'} />
       {screen !== 'detail' ? <View style={styles.header}>
-        <View style={styles.brandBlock}><Image source={require('./assets/paz-logo.png')} style={styles.brandLogo} resizeMode="contain" /><View><Text style={styles.brandEyebrow}>PAZ THRIVING TRIBE</Text><Text style={styles.brandTitle}>{screen === 'success' ? 'Order confirmed' : 'PAZ Shop'}</Text></View></View>
+        <View style={styles.brandBlock}><Image source={require('./assets/paz-logo.png')} style={styles.brandLogo} resizeMode="contain" /><View><Text style={styles.brandEyebrow}>PAZ THRIVING TRIBE</Text><Text style={styles.brandTitle}>{screen === 'success' ? 'Order confirmed' : screen === 'categories' ? 'Categories' : screen === 'cart' ? 'Your cart' : 'PAZ Shop'}</Text></View></View>
         {screen !== 'success' ? <View style={styles.headerActions}>
           <Pressable accessibilityRole="button" accessibilityLabel="Open account" onPress={() => { setAuthError(''); setAuthNotice(''); setAccountStep(currentUser ? 'dashboard' : 'auth'); setAccountVisible(true); }} style={styles.accountButton}><Text style={styles.accountButtonText}>{currentUser ? `Hi, ${accountLabel}` : 'Account'}</Text></Pressable>
           <Pressable accessibilityRole="button" accessibilityLabel={`Open bag, ${cartCount} items`} onPress={() => setCartVisible(true)} style={styles.bagButton}><Text style={styles.bagText}>Bag</Text><View style={styles.bagCount}><Text style={styles.bagCountText}>{cartCount}</Text></View></Pressable>
@@ -585,14 +637,17 @@ export default function App() {
       </View> : null}
       {notice && screen !== 'success' ? <Pressable onPress={() => setNotice('')} style={styles.notice}><Text style={styles.noticeText}>{notice}</Text><Text style={styles.noticeClose}>×</Text></Pressable> : null}
 
-      {screen === 'catalog' ? <CatalogView products={products} storageBaseUrl={storageBaseUrl} categories={categories} category={category} search={search} loading={loading} error={pageError} onCategory={setCategory} onSearch={setSearch} onOpen={(product) => void openProduct(product)} onRefresh={() => void loadProducts()} /> : null}
+      {screen === 'catalog' ? <CatalogView products={products} accountName={currentUser?.user_metadata?.first_name || currentUser?.user_metadata?.full_name?.split(' ')[0]} storageBaseUrl={storageBaseUrl} categories={categories} category={category} search={search} loading={loading} error={pageError} onCategory={setCategory} onSearch={setSearch} onOpen={(product) => void openProduct(product)} onRefresh={() => void loadProducts()} /> : null}
+      {screen === 'categories' ? <CategoriesView categories={categories} products={products} loading={loading} onSelect={(selectedCategory) => { setCategory(selectedCategory); setSearch(''); setScreen('catalog'); }} /> : null}
       {screen === 'detail' && selectedProduct ? <ProductDetailView product={selectedProduct} storageBaseUrl={storageBaseUrl} metrics={metrics} ratings={ratings} loading={detailLoading} ratingValue={ratingValue} ratingName={ratingName} ratingEmail={ratingEmail} ratingComment={ratingComment} ratingBusy={ratingBusy} cartCount={cartCount} onBack={() => setScreen('catalog')} onCart={() => setCartVisible(true)} onAdd={() => addToCart(selectedProduct)} onChat={() => void openChat()} onRatingValue={setRatingValue} onRatingName={setRatingName} onRatingEmail={setRatingEmail} onRatingComment={setRatingComment} onSubmitRating={() => void submitRating()} /> : null}
+      {screen === 'cart' ? <CartView cart={cart} storageBaseUrl={storageBaseUrl} totalLabel={totalLabel} freeOrder={allFree} customerName={customerName} customerEmail={customerEmail} busy={checkoutBusy} error={checkoutError} pendingPayment={Boolean(pendingCheckout)} onName={setCustomerName} onEmail={setCustomerEmail} onQuantity={updateQuantity} onRemove={(id) => setCart((current) => current.filter((line) => line.product.id !== id))} onCheckout={() => void (allFree ? completeFreeOrder() : startPaidCheckout())} onConfirmPayment={confirmPayment} onShop={() => setScreen('catalog')} onBack={() => setScreen('catalog')} /> : null}
       {screen === 'success' && completedOrder ? <View style={styles.success}><View style={styles.successMark}><Text style={styles.successMarkText}>✓</Text></View><Text style={styles.successKicker}>ORDER CONFIRMED</Text><Text style={styles.successTitle}>Your next chapter starts here.</Text><Text style={styles.successCopy}>We sent your product to {completedOrder.email}. Check your inbox for order {completedOrder.orderNumber}.</Text><Button title="Back to the shop" onPress={() => { setCompletedOrder(null); setScreen('catalog'); }} /></View> : null}
 
-      {!initialLoadComplete ? <View style={styles.appLoader} accessibilityRole="progressbar" accessibilityLabel="Loading PAZ Shop">
-        <Image source={require('./assets/paz-app-icon.png')} style={styles.appLoaderLogo} resizeMode="contain" />
-        <LoadingBars />
-        <Text style={styles.appLoaderLabel}>PAZ SHOP</Text>
+      {screen !== 'detail' && screen !== 'success' ? <View style={styles.tabBar}>
+        <TabButton icon="⌂" label="Home" active={screen === 'catalog'} onPress={() => setScreen('catalog')} />
+        <TabButton icon="▦" label="Categories" active={screen === 'categories'} onPress={() => setScreen('categories')} />
+        <TabButton icon="▢" label={`Cart${cartCount ? ` · ${cartCount}` : ''}`} active={screen === 'cart'} onPress={() => setScreen('cart')} />
+        <TabButton icon="◉" label="Profile" active={accountVisible} onPress={() => { setAuthError(''); setAuthNotice(''); setAccountStep(currentUser ? 'dashboard' : 'auth'); setAccountVisible(true); }} />
       </View> : null}
 
       {flyingProduct ? <Animated.View style={[styles.flightToken, { transform: [{ translateX: flightProgress.interpolate({ inputRange: [0, 1], outputRange: [windowWidth * 0.62, windowWidth * 0.08] }) }, { translateY: flightProgress.interpolate({ inputRange: [0, 1], outputRange: [0, -5] }) }, { scale: flightProgress.interpolate({ inputRange: [0, 1], outputRange: [1, 0.34] }) }], opacity: flightProgress.interpolate({ inputRange: [0, 0.72, 1], outputRange: [1, 1, 0] }), pointerEvents: 'none' }]}>
@@ -616,6 +671,11 @@ export default function App() {
         onSubmitAuth={(mode, name, email, password) => void submitAuth(mode, name, email, password)}
         onSignOut={() => void signOutAccount()}
         onBrowseAsGuest={() => void browseAsGuest()}
+      />
+
+      <OnboardingFlow
+        visible={initialLoadComplete && onboardingStatus === 'pending'}
+        onGetStarted={() => void completeOnboarding()}
       />
 
       <Modal visible={cartVisible} transparent animationType="slide" onRequestClose={() => setCartVisible(false)}>
@@ -668,6 +728,12 @@ const styles = StyleSheet.create({
   notice: { minHeight: 40, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: palette.greenWash },
   noticeText: { flex: 1, paddingVertical: 7, color: palette.darkGreen, fontSize: 11, fontWeight: '700' },
   noticeClose: { paddingLeft: 10, color: palette.green, fontSize: 20 },
+  tabBar: { minHeight: 62, paddingTop: 5, paddingBottom: 4, borderTopWidth: 1, borderColor: palette.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', backgroundColor: palette.white },
+  tabButton: { minWidth: 70, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 1 },
+  tabIcon: { color: palette.muted, fontSize: 20, lineHeight: 23 },
+  tabIconActive: { color: palette.green },
+  tabLabel: { color: palette.muted, fontSize: 9, fontWeight: '700' },
+  tabLabelActive: { color: palette.green, fontWeight: '900' },
   flightToken: { position: 'absolute', left: 0, bottom: 38, zIndex: 20, width: 42, height: 48, overflow: 'hidden', borderWidth: 2, borderColor: palette.white, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.green, elevation: 8 },
   flightImage: { width: '100%', height: '100%' },
   flightLetter: { color: palette.white, fontSize: 18, fontWeight: '900' },

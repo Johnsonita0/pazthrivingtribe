@@ -2413,6 +2413,13 @@ export default function AdminDashboard(props) {
     );
   }
 
+  const completedShopOrders = shopOrders.filter(
+    (order) =>
+      ["paid", "free", "completed"].includes(
+        String(order.status || "").toLowerCase(),
+      ) && String(order.paymentMode || "live").toLowerCase() !== "test",
+  );
+
   const dashboardViews = [
     {
       id: "visitors",
@@ -5134,6 +5141,18 @@ export default function AdminDashboard(props) {
                             }}
                           >
                             {shopOrders.length} total
+                          </div>
+                          <div
+                            style={{
+                              background: "#f0fdf4",
+                              border: "1px solid #bbf7d0",
+                              borderRadius: "999px",
+                              padding: "8px 12px",
+                              color: "#166534",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {completedShopOrders.length} completed live
                           </div>
                           <button
                             type="button"

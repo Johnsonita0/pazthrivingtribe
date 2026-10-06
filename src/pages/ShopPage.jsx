@@ -2510,7 +2510,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                   </div>
                   <div aria-label="Product interest" style={{ display: 'flex', gap: '18px', flexWrap: 'wrap', marginBottom: '12px', color: '#475569', fontSize: '0.82rem' }}>
                     <span><strong>{productMetrics ? Number(productMetrics.views || 0).toLocaleString('en-NG') : '—'}</strong> Viewed</span>
-                    <span><strong>{productMetrics ? Number(productMetrics.completedOrders || 0).toLocaleString('en-NG') : '—'}</strong> Completed Order</span>
+                    <span><strong>{productMetrics ? Number(productMetrics.completedOrders || 0).toLocaleString('en-NG') : '—'}</strong> Completed Store Orders</span>
                     {productMetrics?.hasReleaseDate && <span><strong>{Number(productMetrics.notified || 0).toLocaleString('en-NG')}</strong> Notify signups</span>}
                   </div>
                   {!getProductAvailability(selectedProduct, availabilityNow).available && <div role="status" style={{ marginBottom: '10px', padding: '10px 12px', border: '1px solid #fed7aa', borderRadius: '8px', background: '#fff7ed', color: '#9a3412', fontSize: '.84rem', lineHeight: 1.45, fontWeight: 700 }}>{getProductAvailability(selectedProduct, availabilityNow).message}</div>}
