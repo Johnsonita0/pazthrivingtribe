@@ -52,15 +52,14 @@ export default async function handler(req, res) {
       .replace(/^-|-$/g, '');
     const productPath = `/shop/${productSlug}`;
     const hasReleaseDate = Boolean(product.release_at && Number.isFinite(Date.parse(product.release_at)));
-    const [activity, orderItems] = await Promise.all([
+    const [activity, completedOrderRows] = await Promise.all([
       readAllRows(() => supabase
         .from('tribe_activity')
         .select('session_id,ip_address')
         .eq('path', productPath)),
       readAllRows(() => supabase
-        .from('shop_order_items')
-        .select('order_id')
-        .eq('product_id', productId))
+        .from('shop_orders')
+        .select('id,status,payment_mode'))
     ]);
     const uniqueViews = new Set(
       activity
@@ -80,25 +79,15 @@ export default async function handler(req, res) {
       notified = count || 0;
     }
 
-    const orderIds = [...new Set(orderItems.map((item) => item.order_id).filter(Boolean))];
-    const completedOrders = new Set();
-    for (let offset = 0; offset < orderIds.length; offset += 100) {
-      const { data: orders, error: ordersError } = await supabase
-        .from('shop_orders')
-        .select('id,email,status,payment_mode')
-        .in('id', orderIds.slice(offset, offset + 100))
-        .in('status', ['paid', 'free']);
-      if (ordersError) throw ordersError;
-      for (const order of orders || []) {
-        if (String(order.payment_mode || '').toLowerCase() === 'test') continue;
-        completedOrders.add(order.id);
-      }
-    }
+    const completedOrders = completedOrderRows.filter((order) =>
+      ['paid', 'free', 'completed'].includes(String(order.status || '').toLowerCase())
+      && String(order.payment_mode || 'live').toLowerCase() !== 'test'
+    ).length;
 
     res.setHeader?.('Cache-Control', 'no-store');
     return sendJson(res, 200, {
       views: uniqueViews.size,
-      completedOrders: completedOrders.size,
+      completedOrders,
       hasReleaseDate,
       notified
     });
