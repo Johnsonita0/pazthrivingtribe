@@ -4666,19 +4666,6 @@ export default function App() {
               </Link>
             )}
             {!isAdminRoute && (
-              <a
-                href={appDownloadUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="nav-cta-link app-download-nav-link"
-                aria-label="Download PAZ Android APK"
-                title="Download PAZ Android APK"
-              >
-                <i className="fa-solid fa-download" aria-hidden="true"></i>
-                <span>Download APK</span>
-              </a>
-            )}
-            {!isAdminRoute && (
               <div className="nav-cta-group">
                 <Link to={withIndependencePreview('/teens_reg')} className="nav-cta-link" style={independenceNavStyle} onClick={() => setNavOpen(false)}>
                   <i className="fa-solid fa-user-plus" aria-hidden="true"></i>
