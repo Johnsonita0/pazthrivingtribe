@@ -8,6 +8,11 @@ function sendJson(res, statusCode, payload) {
   res.end(JSON.stringify(payload));
 }
 
+function isCompletedLiveOrder(order) {
+  return ['paid', 'free', 'completed'].includes(String(order.status || '').toLowerCase())
+    && String(order.payment_mode || 'live').toLowerCase() !== 'test';
+}
+
 async function readAllRows(buildQuery) {
   const rows = [];
   for (let offset = 0; ; offset += PAGE_SIZE) {
@@ -22,8 +27,9 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return sendJson(res, 405, { error: 'Method not allowed' });
 
   const requestUrl = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
+  const metricsScope = requestUrl.searchParams.get('scope');
   const productId = String(req.query?.productId || requestUrl.searchParams.get('productId') || '').trim();
-  if (!/^[0-9a-f-]{36}$/i.test(productId)) {
+  if (metricsScope !== 'store' && !/^[0-9a-f-]{36}$/i.test(productId)) {
     return sendJson(res, 400, { error: 'A valid product ID is required.' });
   }
 
@@ -35,6 +41,16 @@ export default async function handler(req, res) {
 
   try {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
+    if (metricsScope === 'store') {
+      const orderRows = await readAllRows(() => supabase
+        .from('shop_orders')
+        .select('status,payment_mode'));
+      res.setHeader?.('Cache-Control', 'no-store');
+      return sendJson(res, 200, {
+        completedOrders: orderRows.filter(isCompletedLiveOrder).length
+      });
+    }
+
     const { data: product, error: productError } = await supabase
       .from('store_products')
       .select('id,title,status,vendor_id,release_at')
@@ -79,10 +95,7 @@ export default async function handler(req, res) {
       notified = count || 0;
     }
 
-    const completedOrders = completedOrderRows.filter((order) =>
-      ['paid', 'free', 'completed'].includes(String(order.status || '').toLowerCase())
-      && String(order.payment_mode || 'live').toLowerCase() !== 'test'
-    ).length;
+    const completedOrders = completedOrderRows.filter(isCompletedLiveOrder).length;
 
     res.setHeader?.('Cache-Control', 'no-store');
     return sendJson(res, 200, {

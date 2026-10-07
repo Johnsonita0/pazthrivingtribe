@@ -428,41 +428,14 @@ const money = (value, currency = 'NGN') => new Intl.NumberFormat(undefined, {
   maximumFractionDigits: 0
 }).format(Number(value || 0));
 
-function OrderSuccessActions({ appDownloadUrl, onShopMore }) {
+function OrderSuccessActions({ onShopMore }) {
   return (
     <div style={{ display: 'flex', gap: '10px', marginTop: '14px', width: '100%' }}>
-      <a
-        href={appDownloadUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        style={{
-          flex: '2 1 200px',
-          minWidth: 0,
-          minHeight: '46px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '8px',
-          padding: '10px 12px',
-          border: '1px solid #166534',
-          borderRadius: '8px',
-          background: '#166534',
-          color: '#fff',
-          fontWeight: 800,
-          textAlign: 'center',
-          textDecoration: 'none',
-          cursor: 'pointer',
-          boxSizing: 'border-box'
-        }}
-      >
-        <i className="fa-solid fa-download" aria-hidden="true" />
-        Download PAZ App
-      </a>
       <button
         type="button"
         onClick={onShopMore}
         style={{
-          flex: '1 1 100px',
+          flex: '1 1 100%',
           minWidth: 0,
           minHeight: '46px',
           padding: '10px 12px',
@@ -610,7 +583,7 @@ const readStoreData = () => {
   }
 };
 
-export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', storeProducts, storeBankAccount, isIndependenceDay = false, independenceAnniversary = 66, isIndependencePreview = false, appDownloadUrl }) {
+export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', storeProducts, storeBankAccount, isIndependenceDay = false, independenceAnniversary = 66, isIndependencePreview = false }) {
   const navigate = useNavigate();
   const { productName } = useParams();
   const [searchParams] = useSearchParams();
@@ -2900,7 +2873,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                   Your product files have been sent to <strong>{submittedOrder.email}</strong>. Check your inbox and spam folder, open the delivery email, then download and open the attached PDF or ZIP file on your device.
                 </div>
 
-                <OrderSuccessActions appDownloadUrl={appDownloadUrl} onShopMore={handleShopMoreAfterOrder} />
+                <OrderSuccessActions onShopMore={handleShopMoreAfterOrder} />
 
                 <button
                   type="button"
@@ -3093,7 +3066,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
               📌 Please save your order number <strong>{submittedOrder.orderNumber}</strong> for your records.
             </p>
 
-            <OrderSuccessActions appDownloadUrl={appDownloadUrl} onShopMore={handleShopMoreAfterOrder} />
+            <OrderSuccessActions onShopMore={handleShopMoreAfterOrder} />
           </div>
         )}
       </div>

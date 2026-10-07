@@ -213,6 +213,25 @@ export default function AdminDashboard(props) {
     setShopOrders,
   } = props;
 
+  const [serverCompletedShopOrderCount, setServerCompletedShopOrderCount] = useState(null);
+
+  useEffect(() => {
+    if (mode !== "dashboard" || !isAdmin) return undefined;
+    let active = true;
+    fetch("/api/product-metrics?scope=store")
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || "Completed store order count unavailable.");
+        const count = Number(payload.completedOrders);
+        if (!Number.isFinite(count)) throw new Error("Completed store order count is invalid.");
+        if (active) setServerCompletedShopOrderCount(count);
+      })
+      .catch((error) => {
+        if (active) console.warn("Completed store order count unavailable:", error.message);
+      });
+    return () => { active = false; };
+  }, [mode, isAdmin]);
+
   const [storeProductForm, setStoreProductForm] = useState({
     title: "",
     description: "",
@@ -5152,7 +5171,7 @@ export default function AdminDashboard(props) {
                               fontWeight: 700,
                             }}
                           >
-                            {completedShopOrders.length} completed live
+                            {serverCompletedShopOrderCount ?? completedShopOrders.length} completed live
                           </div>
                           <button
                             type="button"
