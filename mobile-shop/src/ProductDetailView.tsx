@@ -1,4 +1,5 @@
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { productAvailability, productImageUrl, Product, Rating } from './api';
 import { Button, Field, palette, Stars } from './ShopComponents';
 
@@ -16,9 +17,13 @@ type Props = {
   ratingComment: string;
   ratingBusy: boolean;
   cartCount: number;
+  isFavorite: boolean;
   onBack: () => void;
   onCart: () => void;
   onAdd: () => void;
+  onBuyNow: () => void;
+  onShare: () => void;
+  onToggleFavorite: () => void;
   onChat: () => void;
   onRatingValue: (value: number) => void;
   onRatingName: (value: string) => void;
@@ -36,22 +41,47 @@ export function ProductDetailView(props: Props) {
   const cover = productImageUrl(product.cover, props.storageBaseUrl);
   const disabled = availability.reason === 'closed' || !product.inStock || product.stockCount <= 0;
   const actionLabel = availability.reason === 'not-released' ? 'Notify me' : disabled ? 'Unavailable' : 'Add to bag';
+  const hasDiscount = !product.isFree && product.originalPrice != null && product.originalPrice > product.price;
+  const discountPercent = hasDiscount ? Math.round((1 - product.price / product.originalPrice!) * 100) : 0;
 
   return (
     <View style={styles.screen}>
       <View style={styles.detailTopBar}>
-        <Pressable onPress={props.onBack} style={styles.backButton} accessibilityRole="button"><Text style={styles.backText}>‹  Shop</Text></Pressable>
-        <Text style={styles.topBarBrand}>PAZ SHOP</Text>
-        <View style={styles.topBarSpacer} />
+        <Pressable onPress={props.onBack} style={styles.headerAction} accessibilityRole="button" accessibilityLabel="Back to books">
+          <FontAwesome5 name="arrow-left" size={15} color={palette.ink} />
+        </Pressable>
+        <View style={styles.headerActions}>
+          <Pressable onPress={props.onShare} style={styles.headerAction} accessibilityRole="button" accessibilityLabel={`Share ${product.title}`}>
+            <FontAwesome5 name="share-alt" size={15} color={palette.ink} />
+          </Pressable>
+          <Pressable onPress={props.onToggleFavorite} style={styles.headerAction} accessibilityRole="button" accessibilityLabel={props.isFavorite ? 'Remove from favorites' : 'Add to favorites'} accessibilityState={{ selected: props.isFavorite }}>
+            <FontAwesome5 name="heart" size={16} color={props.isFavorite ? palette.orange : palette.ink} solid={props.isFavorite} />
+          </Pressable>
+        </View>
       </View>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.coverWrap}>
-          {cover ? <Image source={{ uri: cover }} style={styles.cover} resizeMode="cover" /> : <View style={styles.coverFallback}><Text style={styles.fallbackCategory}>{product.category}</Text><Text style={styles.fallbackTitle}>{product.title}</Text><Text style={styles.fallbackBrand}>PAZ THRIVING TRIBE</Text></View>}
+          {cover ? <Image source={{ uri: cover }} style={styles.cover} resizeMode="contain" /> : <View style={styles.coverFallback}><Text style={styles.fallbackCategory}>{product.category}</Text><Text style={styles.fallbackTitle}>{product.title}</Text><Text style={styles.fallbackBrand}>PAZ THRIVING TRIBE</Text></View>}
         </View>
         <Text style={styles.category}>{product.category}</Text>
         <Text style={styles.title}>{product.title}</Text>
+        {product.vendorName ? <Text style={styles.author}>by {product.vendorName}</Text> : null}
         <View style={styles.ratingRow}><Stars rating={average} size={16} /><Text style={styles.ratingText}>{average ? `${average.toFixed(1)}/5 · ${props.ratings.length || product.reviews} reviews` : 'No ratings yet'}</Text></View>
-        <View style={styles.priceRow}><Text style={styles.price}>{product.isFree ? 'Free' : `${product.currency} ${product.price.toLocaleString()}`}</Text><Text style={styles.stock}>{product.inStock && product.stockCount > 0 ? `${product.stockCount} available` : 'Out of stock'}</Text></View>
+        <View style={styles.priceRow}>
+          <View style={styles.priceGroup}>
+            <Text style={styles.price}>{product.isFree ? 'Free' : `${product.currency} ${product.price.toLocaleString()}`}</Text>
+            {hasDiscount && product.originalPrice != null ? <Text style={styles.originalPrice}>{`${product.currency} ${product.originalPrice.toLocaleString()}`}</Text> : null}
+          </View>
+          {hasDiscount ? <Text style={styles.discountBadge}>{discountPercent}% OFF</Text> : <Text style={styles.stock}>{product.inStock && product.stockCount > 0 ? 'In stock' : 'Out of stock'}</Text>}
+        </View>
+        <View style={styles.deliveryMeta}>
+          <View style={styles.deliveryMetaItem}><FontAwesome5 name="download" size={11} color={palette.green} /><Text style={styles.deliveryMetaText}>Instant download</Text></View>
+          <View style={styles.deliveryMetaItem}><FontAwesome5 name="file-alt" size={11} color={palette.green} /><Text style={styles.deliveryMetaText}>{product.fileFormats.length ? product.fileFormats.join(', ') : 'Digital file'}</Text></View>
+        </View>
+        <View style={styles.purchaseActions}>
+          <Button title={actionLabel === 'Add to bag' ? 'Add to Cart' : actionLabel} disabled={disabled} onPress={props.onAdd} />
+          <Button title="Buy Now" secondary disabled={disabled} onPress={props.onBuyNow} />
+        </View>
         {props.metrics ? <View style={styles.metricsRow}>
           <Metric label="Viewed" value={props.metrics.views || 0} />
           <Metric label="Orders" value={props.metrics.completedOrders || 0} />
@@ -81,10 +111,10 @@ export function ProductDetailView(props: Props) {
           <Button title="Message about this product" secondary onPress={props.onChat} />
         </View>
       </ScrollView>
-      <View style={styles.actionBar}>
-        <Pressable accessibilityRole="button" accessibilityLabel={`Open bag, ${props.cartCount} items`} onPress={props.onCart} style={styles.bagAction}><Text style={styles.bagActionText}>Bag · {props.cartCount}</Text></Pressable>
-        <Button title={actionLabel} disabled={disabled} onPress={props.onAdd} />
-      </View>
+      <Pressable accessibilityRole="button" accessibilityLabel={`Open bag, ${props.cartCount} items`} onPress={props.onCart} style={styles.cartFloatingButton}>
+        <FontAwesome5 name="shopping-cart" size={15} color={palette.white} />
+        <Text style={styles.cartFloatingText}>{props.cartCount}</Text>
+      </Pressable>
     </View>
   );
 }
@@ -95,25 +125,31 @@ function Metric({ label, value }: { label: string; value: number }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  detailTopBar: { height: 48, paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: palette.darkGreen },
-  backButton: { minWidth: 80 },
-  backText: { color: palette.white, fontSize: 13, fontWeight: '800' },
-  topBarBrand: { color: '#d4e8d8', fontSize: 9, fontWeight: '900', letterSpacing: 1.2 },
-  topBarSpacer: { minWidth: 80 },
-  content: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 24 },
-  coverWrap: { height: 250, overflow: 'hidden', borderRadius: 8, backgroundColor: '#e5eee6' },
+  detailTopBar: { height: 42, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: palette.white },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  headerAction: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
+  content: { paddingHorizontal: 18, paddingTop: 2, paddingBottom: 30 },
+  coverWrap: { height: 210, overflow: 'hidden', borderRadius: 8, backgroundColor: '#fbfaff' },
   cover: { width: '100%', height: '100%' },
   coverFallback: { flex: 1, justifyContent: 'space-between', padding: 18, backgroundColor: palette.green },
   fallbackCategory: { color: '#d4e8d8', fontSize: 10, fontWeight: '900', textTransform: 'uppercase' },
   fallbackTitle: { color: palette.white, fontSize: 23, lineHeight: 28, fontWeight: '900' },
   fallbackBrand: { color: '#d4e8d8', fontSize: 9, fontWeight: '800', letterSpacing: 1 },
-  category: { marginTop: 17, color: palette.green, fontSize: 10, fontWeight: '900', letterSpacing: 1, textTransform: 'uppercase' },
-  title: { marginTop: 5, color: palette.ink, fontSize: 25, lineHeight: 30, fontWeight: '900' },
+  category: { marginTop: 10, color: palette.green, fontSize: 9, fontWeight: '900', letterSpacing: 0.8, textTransform: 'uppercase' },
+  title: { marginTop: 4, color: palette.ink, fontSize: 21, lineHeight: 26, fontWeight: '900' },
+  author: { marginTop: 2, color: palette.muted, fontSize: 11, fontWeight: '700' },
   ratingRow: { marginTop: 9, flexDirection: 'row', alignItems: 'center', gap: 7 },
-  ratingText: { color: palette.muted, fontSize: 11 },
-  priceRow: { marginTop: 14, paddingVertical: 12, borderTopWidth: 1, borderBottomWidth: 1, borderColor: palette.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  price: { color: palette.darkGreen, fontSize: 20, fontWeight: '900' },
-  stock: { color: palette.muted, fontSize: 11, fontWeight: '700' },
+  ratingText: { color: palette.muted, fontSize: 10 },
+  priceRow: { marginTop: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  priceGroup: { flexDirection: 'row', alignItems: 'center', gap: 9 },
+  price: { color: palette.green, fontSize: 19, fontWeight: '900' },
+  originalPrice: { color: palette.muted, fontSize: 12, textDecorationLine: 'line-through' },
+  discountBadge: { paddingHorizontal: 9, paddingVertical: 5, borderRadius: 12, color: palette.orange, backgroundColor: palette.orangeWash, fontSize: 8, fontWeight: '900' },
+  stock: { color: palette.green, fontSize: 9, fontWeight: '800' },
+  deliveryMeta: { marginTop: 9, flexDirection: 'row', flexWrap: 'wrap', gap: 14 },
+  deliveryMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  deliveryMetaText: { color: palette.muted, fontSize: 9, fontWeight: '700' },
+  purchaseActions: { marginTop: 15, gap: 9 },
   metricsRow: { paddingVertical: 12, borderBottomWidth: 1, borderColor: palette.line, flexDirection: 'row', justifyContent: 'space-around' },
   metric: { alignItems: 'center' },
   metricValue: { color: palette.ink, fontSize: 15, fontWeight: '900' },
@@ -139,7 +175,6 @@ const styles = StyleSheet.create({
   chatKicker: { color: palette.orange, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
   chatTitle: { marginTop: 4, color: palette.ink, fontSize: 16, fontWeight: '900' },
   chatCopy: { marginTop: 5, marginBottom: 10, color: palette.muted, fontSize: 11, lineHeight: 17 },
-  actionBar: { paddingHorizontal: 15, paddingTop: 9, paddingBottom: 11, borderTopWidth: 1, borderColor: palette.line, flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: palette.white },
-  bagAction: { minHeight: 47, paddingHorizontal: 15, borderWidth: 1, borderColor: palette.line, borderRadius: 7, alignItems: 'center', justifyContent: 'center' },
-  bagActionText: { color: palette.ink, fontSize: 11, fontWeight: '800' },
+  cartFloatingButton: { position: 'absolute', right: 15, bottom: 15, width: 40, height: 40, borderRadius: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, backgroundColor: palette.green, elevation: 3 },
+  cartFloatingText: { color: palette.white, fontSize: 9, fontWeight: '900' },
 });

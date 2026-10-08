@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { Button, Field, palette } from './ShopComponents';
-import { isSupabaseConfigured, supabase } from './supabaseClient';
+import { Image, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Button, palette } from './ShopComponents';
+import { isSupabaseConfigured } from './supabaseClient';
 
-export type AccountStep = 'preferences' | 'notifications' | 'auth' | 'dashboard';
+export type AccountStep = 'preferences' | 'notifications' | 'auth';
 export type AccountPreferences = {
   countryCode: string;
   language: string;
@@ -20,19 +20,20 @@ export type AccountUser = {
 type Props = {
   visible: boolean;
   step: AccountStep;
+  initialAuthMode: 'signIn' | 'signUp';
   preferences: AccountPreferences;
-  user: AccountUser;
   busy: boolean;
   error: string;
   notice: string;
+  requireAuthentication?: boolean;
   onClose: () => void;
   onPreferencesChange: (value: AccountPreferences) => void;
   onContinuePreferences: () => void;
-  onEditPreferences: () => void;
   onAllowNotifications: () => void;
   onSkipNotifications: () => void;
-  onSubmitAuth: (mode: 'signIn' | 'signUp', name: string, email: string, password: string) => void;
-  onSignOut: () => void;
+  onSubmitAuth: (mode: 'signIn' | 'signUp', name: string, identifier: string, password: string, remember: boolean) => void;
+  onSocialSignIn: (provider: 'google' | 'facebook', remember: boolean) => void;
+  onResetPassword: (identifier: string) => void;
   onBrowseAsGuest: () => void;
 };
 
@@ -44,58 +45,25 @@ const countries = [
 ];
 const currencies = ['NGN', 'GHS', 'GBP', 'USD'];
 
-type CustomerOrder = {
-  id: string;
-  order_number: string;
-  total: number | null;
-  currency: string | null;
-  status: string | null;
-  created_at: string;
-  shop_order_items?: { title: string | null; quantity: number | null }[];
-};
-
 export function CustomerAccountFlow(props: Props) {
   const {
-    visible, step, preferences, user, busy, error, notice, onClose,
-    onPreferencesChange, onContinuePreferences, onEditPreferences, onAllowNotifications, onSkipNotifications,
-    onSubmitAuth, onSignOut, onBrowseAsGuest,
+    visible, step, initialAuthMode, preferences, busy, error, notice, requireAuthentication = false, onClose,
+    onPreferencesChange, onContinuePreferences, onAllowNotifications, onSkipNotifications,
+    onSubmitAuth, onSocialSignIn, onResetPassword, onBrowseAsGuest,
   } = props;
-  const [authMode, setAuthMode] = useState<'signIn' | 'signUp'>('signIn');
+  const [authMode, setAuthMode] = useState<'signIn' | 'signUp'>(initialAuthMode);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [orders, setOrders] = useState<CustomerOrder[]>([]);
-  const [ordersLoading, setOrdersLoading] = useState(false);
-  const [ordersError, setOrdersError] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [localAuthError, setLocalAuthError] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    if (step !== 'dashboard' || !user?.email || !isSupabaseConfigured) {
-      setOrders([]);
-      setOrdersError('');
-      return;
-    }
-    let active = true;
-    setOrdersLoading(true);
-    setOrdersError('');
-    void supabase
-      .from('shop_orders')
-      .select('id,order_number,total,currency,status,created_at,shop_order_items(title,quantity)')
-      .ilike('email', user.email)
-      .order('created_at', { ascending: false })
-      .limit(20)
-      .then(({ data, error: queryError }: { data: CustomerOrder[] | null; error: { message: string } | null }) => {
-        if (!active) return;
-        if (queryError) throw new Error(queryError.message);
-        setOrders(data || []);
-      })
-      .catch((loadError: unknown) => {
-        if (active) setOrdersError(loadError instanceof Error ? loadError.message : 'Order history could not be loaded.');
-      })
-      .finally(() => {
-        if (active) setOrdersLoading(false);
-      });
-    return () => { active = false; };
-  }, [step, user?.id, user?.email]);
+    if (visible && step === 'auth') setAuthMode(initialAuthMode);
+  }, [visible, step, initialAuthMode]);
 
   const updateCountry = (countryCode: string) => {
     const country = countries.find((item) => item.code === countryCode);
@@ -105,13 +73,12 @@ export function CustomerAccountFlow(props: Props) {
 
   const title = step === 'preferences' ? 'Make PAZ yours' :
     step === 'notifications' ? 'Stay in the loop' :
-      step === 'dashboard' ? 'Your account' :
         authMode === 'signIn' ? 'Welcome back' : 'Create your account';
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} presentationStyle="fullScreen">
-      <KeyboardAvoidingView style={styles.page} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.topBar}>
+      <KeyboardAvoidingView style={[styles.page, step === 'auth' && styles.authPage]} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        {step !== 'auth' ? <View style={styles.topBar}>
           <View style={styles.brand}>
             <Image source={require('../assets/paz-logo.png')} style={styles.logo} resizeMode="contain" />
             <View>
@@ -122,9 +89,9 @@ export function CustomerAccountFlow(props: Props) {
           <Pressable accessibilityRole="button" accessibilityLabel="Close account" onPress={onClose} style={styles.close}>
             <Text style={styles.closeText}>×</Text>
           </Pressable>
-        </View>
+        </View> : null}
 
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={[styles.content, step === 'auth' && styles.authPageContent]} keyboardShouldPersistTaps="handled">
           {step === 'preferences' ? (
             <>
               <View style={styles.hero}>
@@ -187,58 +154,117 @@ export function CustomerAccountFlow(props: Props) {
           ) : null}
 
           {step === 'auth' ? (
-            <View style={styles.authContent}>
-              <Text style={styles.copy}>{authMode === 'signIn' ? 'Sign in to see your profile and order history.' : 'Create an account to keep your PAZ details and purchases together.'}</Text>
-              {!isSupabaseConfigured ? <Text style={styles.formError}>Supabase is not configured for mobile accounts yet.</Text> : null}
-              {authMode === 'signUp' ? <Field label="Full name" value={name} onChangeText={setName} placeholder="Your name" maxLength={120} /> : null}
-              <Field label="Email address" value={email} onChangeText={setEmail} placeholder="you@example.com" keyboardType="email-address" maxLength={254} />
-              <View style={styles.passwordWrap}>
-                <Text style={styles.inputLabel}>Password</Text>
-                <TextInput value={password} onChangeText={setPassword} placeholder="Enter your password" placeholderTextColor="#87948a" secureTextEntry autoCapitalize="none" autoCorrect={false} style={styles.passwordInput} />
+            <View style={styles.authCard}>
+              <View style={styles.authBrand}>
+                <Image source={require('../assets/paz-emblem.png')} style={styles.authLogo} resizeMode="contain" />
+                <Text style={styles.authBrandName}>PAZ</Text>
+                <Text style={styles.authBrandDescriptor}>DIGITAL SHOP</Text>
               </View>
-              {error ? <Text accessibilityRole="alert" style={styles.formError}>{error}</Text> : null}
+              <Text style={styles.authTitle}>{authMode === 'signIn' ? 'Login' : 'Create Account'}</Text>
+              {!isSupabaseConfigured ? <Text style={styles.formError}>Supabase is not configured for mobile accounts yet.</Text> : null}
+              {authMode === 'signUp' ? (
+                <View style={styles.authInputRow}>
+                  <Text style={styles.authInputIcon}>♙</Text>
+                  <TextInput value={name} onChangeText={setName} placeholder="Full name" placeholderTextColor="#8490a8" autoCapitalize="words" maxLength={120} style={styles.authInput} />
+                </View>
+              ) : null}
+              <View style={styles.authInputRow}>
+                <Text style={styles.authInputIcon}>✉</Text>
+                <TextInput
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="Email or Phone Number"
+                  placeholderTextColor="#8490a8"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  maxLength={254}
+                  style={styles.authInput}
+                />
+              </View>
+              <View style={styles.authInputRow}>
+                <Text style={styles.authInputIcon}>▣</Text>
+                <TextInput
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Password"
+                  placeholderTextColor="#8490a8"
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  style={styles.authInput}
+                />
+                <Pressable accessibilityRole="button" accessibilityLabel={showPassword ? 'Hide password' : 'Show password'} onPress={() => setShowPassword((visible) => !visible)} hitSlop={8}>
+                  <Text style={styles.passwordVisibility}>{showPassword ? 'Hide' : '◉'}</Text>
+                </Pressable>
+              </View>
+              {authMode === 'signUp' ? (
+                <View style={styles.authInputRow}>
+                  <Text style={styles.authInputIcon}>▣</Text>
+                  <TextInput
+                    value={confirmPassword}
+                    onChangeText={(value) => { setConfirmPassword(value); setLocalAuthError(''); }}
+                    placeholder="Confirm Password"
+                    placeholderTextColor="#8490a8"
+                    secureTextEntry={!showConfirmPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    style={styles.authInput}
+                  />
+                  <Pressable accessibilityRole="button" accessibilityLabel={showConfirmPassword ? 'Hide confirmation password' : 'Show confirmation password'} onPress={() => setShowConfirmPassword((visible) => !visible)} hitSlop={8}>
+                    <Text style={styles.passwordVisibility}>{showConfirmPassword ? 'Hide' : '◉'}</Text>
+                  </Pressable>
+                </View>
+              ) : null}
+              {authMode === 'signIn' ? (
+                <View style={styles.authOptions}>
+                  <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: rememberMe }} onPress={() => setRememberMe((checked) => !checked)} style={styles.rememberButton}>
+                    <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>{rememberMe ? <Text style={styles.checkmark}>✓</Text> : null}</View>
+                    <Text style={styles.rememberLabel}>Remember me</Text>
+                  </Pressable>
+                  <Pressable accessibilityRole="button" onPress={() => onResetPassword(email)} hitSlop={6}>
+                    <Text style={styles.forgotLabel}>Forgot Password?</Text>
+                  </Pressable>
+                </View>
+              ) : null}
+              {localAuthError || error ? <Text accessibilityRole="alert" style={styles.formError}>{localAuthError || error}</Text> : null}
               {notice ? <Text style={styles.formNotice}>{notice}</Text> : null}
-              <Button title={busy ? 'Please wait…' : authMode === 'signIn' ? 'Sign in' : 'Create account'} disabled={busy || !isSupabaseConfigured} onPress={() => onSubmitAuth(authMode, name, email, password)} />
-              <Pressable accessibilityRole="button" onPress={() => setAuthMode((mode) => mode === 'signIn' ? 'signUp' : 'signIn')} style={styles.textButton}>
-                <Text style={styles.textButtonLabel}>{authMode === 'signIn' ? 'New to PAZ? Create an account' : 'Already have an account? Sign in'}</Text>
+              <Pressable
+                accessibilityRole="button"
+                disabled={busy || !isSupabaseConfigured}
+                onPress={() => {
+                  setLocalAuthError('');
+                  if (authMode === 'signUp' && password !== confirmPassword) {
+                    setLocalAuthError('Your passwords do not match.');
+                    return;
+                  }
+                  onSubmitAuth(authMode, name, email, password, rememberMe);
+                }}
+                style={({ pressed }) => [styles.loginButton, (busy || !isSupabaseConfigured) && styles.loginButtonDisabled, pressed && styles.buttonPressed]}
+              >
+                <Text style={styles.loginButtonText}>{busy ? 'Please wait…' : authMode === 'signIn' ? 'Login' : 'Sign Up'}</Text>
               </Pressable>
-              <Pressable accessibilityRole="button" onPress={onBrowseAsGuest} style={styles.textButton}>
-                <Text style={styles.mutedButtonLabel}>Continue shopping as a guest</Text>
+              <View style={styles.authDivider}><View style={styles.dividerLine} /><Text style={styles.dividerText}>or</Text><View style={styles.dividerLine} /></View>
+              <Pressable accessibilityRole="button" disabled={busy || !isSupabaseConfigured} onPress={() => onSocialSignIn('google', rememberMe)} style={[styles.socialButton, (busy || !isSupabaseConfigured) && styles.socialButtonDisabled]}>
+                <Text style={styles.googleMark}>G</Text>
+                <Text style={styles.socialButtonText}>{busy ? 'Connecting…' : 'Continue with Google'}</Text>
               </Pressable>
+              <Pressable accessibilityRole="button" disabled={busy || !isSupabaseConfigured} onPress={() => onSocialSignIn('facebook', rememberMe)} style={[styles.socialButton, styles.facebookButton, (busy || !isSupabaseConfigured) && styles.socialButtonDisabled]}>
+                <Text style={styles.facebookMark}>f</Text>
+                <Text style={styles.socialButtonText}>{busy ? 'Connecting…' : 'Continue with Facebook'}</Text>
+              </Pressable>
+              <Pressable accessibilityRole="button" onPress={() => { setLocalAuthError(''); setAuthMode((mode) => mode === 'signIn' ? 'signUp' : 'signIn'); }} style={styles.accountToggle}>
+                <Text style={styles.accountToggleText}>{authMode === 'signIn' ? "Don't have an account? " : 'Already have an account? '}</Text>
+                <Text style={styles.textButtonLabel}>{authMode === 'signIn' ? 'Sign Up' : 'Login'}</Text>
+              </Pressable>
+              {!requireAuthentication ? (
+                <Pressable accessibilityRole="button" onPress={onBrowseAsGuest} style={styles.textButton}>
+                  <Text style={styles.textButtonLabel}>Continue as guest</Text>
+                </Pressable>
+              ) : null}
             </View>
           ) : null}
 
-          {step === 'dashboard' ? (
-            <View>
-              <View style={styles.profileCard}>
-                <View style={styles.avatar}><Text style={styles.avatarText}>{(user?.user_metadata?.full_name || user?.email || 'P').slice(0, 1).toUpperCase()}</Text></View>
-                <View style={styles.profileText}>
-                  <Text style={styles.profileName}>{user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'PAZ customer'}</Text>
-                  <Text style={styles.optionCopy}>{user?.email}</Text>
-                </View>
-              </View>
-              <View style={styles.preferenceSummary}>
-                <View><Text style={styles.sectionTitle}>Shopping preferences</Text><Text style={styles.optionCopy}>{countries.find((country) => country.code === preferences.countryCode)?.name || preferences.countryCode} · {preferences.language} · {preferences.currency}</Text></View>
-                <Pressable accessibilityRole="button" onPress={onEditPreferences} style={styles.editButton}><Text style={styles.editButtonText}>Edit</Text></Pressable>
-              </View>
-              <View style={styles.ordersHeading}><Text style={styles.sectionTitle}>Your orders</Text><Text style={styles.optionCopy}>Most recent first</Text></View>
-              {!isSupabaseConfigured ? <Text style={styles.formError}>Connect Supabase to view account data.</Text> : null}
-              {ordersLoading ? <ActivityIndicator color={palette.green} style={styles.spinner} /> : null}
-              {ordersError ? <Text accessibilityRole="alert" style={styles.formError}>{ordersError}</Text> : null}
-              {!ordersLoading && !ordersError && isSupabaseConfigured && orders.length === 0 ? (
-                <View style={styles.emptyOrders}><Text style={styles.emptyTitle}>No orders yet</Text><Text style={styles.optionCopy}>Your completed purchases will appear here.</Text></View>
-              ) : null}
-              {orders.map((order) => (
-                <View key={order.id} style={styles.orderCard}>
-                  <View style={styles.orderHeader}><Text style={styles.orderNumber}>{order.order_number}</Text><Text style={styles.orderStatus}>{order.status || 'processing'}</Text></View>
-                  <Text style={styles.optionCopy}>{new Date(order.created_at).toLocaleDateString()} · {order.currency || '—'} {Number(order.total || 0).toLocaleString()}</Text>
-                  {order.shop_order_items?.length ? <Text style={styles.orderItems}>{order.shop_order_items.map((item) => `${item.title || 'PAZ product'} ×${item.quantity || 1}`).join(' · ')}</Text> : null}
-                </View>
-              ))}
-              {notice ? <Text style={styles.formNotice}>{notice}</Text> : null}
-              <Button title="Sign out" secondary onPress={onSignOut} />
-            </View>
-          ) : null}
         </ScrollView>
       </KeyboardAvoidingView>
     </Modal>
@@ -247,6 +273,7 @@ export function CustomerAccountFlow(props: Props) {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: palette.paper },
+  authPage: { backgroundColor: '#f5f8ff' },
   topBar: { minHeight: 78, paddingHorizontal: 19, borderBottomWidth: 1, borderBottomColor: palette.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: palette.white },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 11 },
   logo: { width: 44, height: 44 },
@@ -255,6 +282,28 @@ const styles = StyleSheet.create({
   close: { width: 40, height: 40, borderWidth: 1, borderColor: palette.line, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   closeText: { color: palette.muted, fontSize: 27, lineHeight: 30 },
   content: { flexGrow: 1, width: '100%', maxWidth: 560, padding: 20, paddingBottom: 36, alignSelf: 'center' },
+  authPageContent: { maxWidth: 480, paddingHorizontal: 16, paddingVertical: 18, justifyContent: 'center' },
+  authCard: { width: '100%', minHeight: 610, paddingHorizontal: 20, paddingTop: 24, paddingBottom: 19, borderWidth: 1, borderColor: '#d8e3ff', borderRadius: 24, alignItems: 'stretch', backgroundColor: '#fff', shadowColor: '#5872b5', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.12, shadowRadius: 22, elevation: 5 },
+  authBrand: { alignItems: 'center', marginBottom: 10 },
+  authLogo: { width: 70, height: 70 },
+  authBrandName: { marginTop: 0, color: '#5120b9', fontSize: 21, lineHeight: 24, fontWeight: '900' },
+  authBrandDescriptor: { marginTop: 0, color: '#21153d', fontSize: 9, letterSpacing: 1.8, fontWeight: '900' },
+  authTitle: { marginBottom: 13, color: '#291450', fontSize: 22, lineHeight: 27, fontWeight: '900' },
+  authInputRow: { minHeight: 48, marginTop: 9, paddingHorizontal: 12, borderWidth: 1, borderColor: '#dce3f0', borderRadius: 11, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#fff' },
+  authInputIcon: { width: 17, color: '#68758f', fontSize: 15, fontWeight: '700', textAlign: 'center' },
+  authInput: { minWidth: 0, minHeight: 46, flex: 1, paddingVertical: 0, color: '#21153d', fontSize: 12 },
+  passwordVisibility: { minWidth: 28, color: '#71809b', fontSize: 13, fontWeight: '700', textAlign: 'center' },
+  authOptions: { minHeight: 38, marginTop: 4, marginBottom: 5, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  rememberButton: { minHeight: 36, flexDirection: 'row', alignItems: 'center', gap: 7 },
+  checkbox: { width: 16, height: 16, borderWidth: 1, borderColor: '#8a7aa7', borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  checkboxChecked: { borderColor: '#4e1bb9', backgroundColor: '#4e1bb9' },
+  checkmark: { color: '#fff', fontSize: 11, lineHeight: 14, fontWeight: '900' },
+  rememberLabel: { color: '#46395e', fontSize: 10, fontWeight: '700' },
+  forgotLabel: { color: '#5621b8', fontSize: 10, fontWeight: '800' },
+  loginButton: { minHeight: 50, marginTop: 4, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: '#4e1bb9', shadowColor: '#3f159d', shadowOffset: { width: 0, height: 5 }, shadowOpacity: 0.2, shadowRadius: 8, elevation: 3 },
+  loginButtonDisabled: { opacity: 0.55 },
+  loginButtonText: { color: '#fff', fontSize: 14, fontWeight: '900' },
+  buttonPressed: { opacity: 0.78 },
   hero: { alignItems: 'center', paddingTop: 8, paddingBottom: 22 },
   heroIcon: { fontSize: 42, marginBottom: 9 },
   heroTitle: { color: palette.ink, fontSize: 25, lineHeight: 31, fontWeight: '900', textAlign: 'center' },
@@ -280,26 +329,20 @@ const styles = StyleSheet.create({
   notifyIcon: { width: 82, height: 82, marginBottom: 22, borderRadius: 41, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.greenWash },
   notifyIconText: { color: palette.green, fontSize: 42, fontWeight: '800' },
   authContent: { paddingTop: 15 },
+  authDivider: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 16 },
+  dividerLine: { height: 1, flex: 1, backgroundColor: palette.line },
+  dividerText: { color: palette.muted, fontSize: 11, fontWeight: '700' },
+  socialButton: { minHeight: 45, marginTop: 7, paddingHorizontal: 14, borderWidth: 1, borderColor: '#dce3f0', borderRadius: 11, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, backgroundColor: '#fff' },
+  facebookButton: { marginTop: 8 },
+  socialButtonDisabled: { opacity: 0.55 },
+  googleMark: { color: '#4285f4', fontSize: 17, fontWeight: '900' },
+  facebookMark: { color: '#1877f2', fontSize: 20, fontWeight: '900' },
+  socialButtonText: { color: '#34405b', fontSize: 11, fontWeight: '800' },
+  accountToggle: { minHeight: 34, marginTop: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  accountToggleText: { color: '#66728a', fontSize: 10, fontWeight: '600' },
   passwordWrap: { marginTop: 10, marginBottom: 12 },
   inputLabel: { marginBottom: 5, color: palette.ink, fontSize: 11, fontWeight: '800' },
   passwordInput: { minHeight: 47, paddingHorizontal: 12, borderWidth: 1, borderColor: palette.line, borderRadius: 8, color: palette.ink, backgroundColor: palette.white, fontSize: 13 },
   formError: { marginBottom: 12, color: '#a12720', fontSize: 12, lineHeight: 18 },
   formNotice: { marginBottom: 12, color: palette.darkGreen, fontSize: 12, lineHeight: 18 },
-  profileCard: { minHeight: 88, padding: 16, borderWidth: 1, borderColor: palette.line, borderRadius: 14, flexDirection: 'row', alignItems: 'center', backgroundColor: palette.white },
-  avatar: { width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.greenWash },
-  avatarText: { color: palette.darkGreen, fontSize: 20, fontWeight: '900' },
-  profileText: { flex: 1, marginLeft: 13 },
-  profileName: { color: palette.ink, fontSize: 15, fontWeight: '900' },
-  preferenceSummary: { marginTop: 17, padding: 14, borderWidth: 1, borderColor: palette.line, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: palette.white },
-  editButton: { padding: 8 },
-  editButtonText: { color: palette.green, fontSize: 12, fontWeight: '900' },
-  ordersHeading: { marginTop: 24, marginBottom: 10 },
-  spinner: { marginVertical: 18 },
-  emptyOrders: { padding: 18, borderWidth: 1, borderColor: palette.line, borderRadius: 12, alignItems: 'center', backgroundColor: palette.white },
-  emptyTitle: { color: palette.ink, fontSize: 13, fontWeight: '900' },
-  orderCard: { marginBottom: 9, padding: 14, borderWidth: 1, borderColor: palette.line, borderRadius: 12, backgroundColor: palette.white },
-  orderHeader: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
-  orderNumber: { color: palette.ink, fontSize: 12, fontWeight: '900' },
-  orderStatus: { color: palette.darkGreen, fontSize: 10, fontWeight: '900', textTransform: 'capitalize' },
-  orderItems: { marginTop: 8, color: palette.ink, fontSize: 11, lineHeight: 16 },
 });

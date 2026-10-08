@@ -5,6 +5,9 @@ create table if not exists public.customer_profiles (
   first_name text,
   last_name text,
   full_name text,
+  avatar_url text,
+  delivery_address jsonb,
+  expo_push_token text,
   phone text,
   country_code text not null default 'NG',
   language text not null default 'English',
@@ -18,6 +21,9 @@ alter table public.customer_profiles add column if not exists email text;
 alter table public.customer_profiles add column if not exists first_name text;
 alter table public.customer_profiles add column if not exists last_name text;
 alter table public.customer_profiles add column if not exists full_name text;
+alter table public.customer_profiles add column if not exists avatar_url text;
+alter table public.customer_profiles add column if not exists delivery_address jsonb;
+alter table public.customer_profiles add column if not exists expo_push_token text;
 alter table public.customer_profiles add column if not exists phone text;
 alter table public.customer_profiles add column if not exists country_code text not null default 'NG';
 alter table public.customer_profiles add column if not exists language text not null default 'English';
@@ -26,6 +32,9 @@ alter table public.customer_profiles add column if not exists notifications_enab
 alter table public.customer_profiles add column if not exists created_at timestamptz not null default now();
 alter table public.customer_profiles add column if not exists updated_at timestamptz not null default now();
 alter table public.shop_orders add column if not exists currency text;
+alter table public.shop_orders add column if not exists delivery_address jsonb;
+alter table public.shop_orders
+  add column if not exists customer_id uuid references auth.users(id) on delete set null;
 
 alter table public.customer_profiles enable row level security;
 alter table public.shop_orders enable row level security;
@@ -86,7 +95,8 @@ create policy customer_profiles_update_own
 create policy shop_orders_select_customer_or_admin
   on public.shop_orders for select to authenticated
   using (
-    public.is_confirmed_shop_customer(email)
+    customer_id = auth.uid()
+    or public.is_confirmed_shop_customer(email)
     or exists (
       select 1 from public.site_admins
       where uid = auth.uid()::text
@@ -114,3 +124,28 @@ create policy shop_order_items_select_customer_or_admin
 
 grant select, insert, update on public.customer_profiles to authenticated;
 grant select on public.shop_orders, public.shop_order_items to authenticated;
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('customer-avatars', 'customer-avatars', true, 5242880, array['image/jpeg', 'image/png', 'image/webp', 'image/heic'])
+on conflict (id) do update
+set public = true,
+    file_size_limit = excluded.file_size_limit,
+    allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists customer_avatars_insert_own on storage.objects;
+drop policy if exists customer_avatars_select_own on storage.objects;
+drop policy if exists customer_avatars_update_own on storage.objects;
+drop policy if exists customer_avatars_delete_own on storage.objects;
+create policy customer_avatars_select_own
+  on storage.objects for select to authenticated
+  using (bucket_id = 'customer-avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy customer_avatars_insert_own
+  on storage.objects for insert to authenticated
+  with check (bucket_id = 'customer-avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy customer_avatars_update_own
+  on storage.objects for update to authenticated
+  using (bucket_id = 'customer-avatars' and (storage.foldername(name))[1] = auth.uid()::text)
+  with check (bucket_id = 'customer-avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy customer_avatars_delete_own
+  on storage.objects for delete to authenticated
+  using (bucket_id = 'customer-avatars' and (storage.foldername(name))[1] = auth.uid()::text);

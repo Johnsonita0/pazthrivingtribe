@@ -1,21 +1,32 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import { createClient, type Session, type User } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+const publicConfig = Constants.expoConfig?.extra as { supabaseUrl?: string; supabaseAnonKey?: string } | undefined;
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || publicConfig?.supabaseUrl || process.env.SUPABASE_URL || '';
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || publicConfig?.supabaseAnonKey || process.env.SUPABASE_ANON_KEY || '';
 const hasSupabaseConfig = typeof supabaseUrl === 'string' && supabaseUrl.includes('supabase.co') && supabaseAnonKey.length > 0;
+let persistAuthSession = true;
+const temporaryAuthStorage = new Map<string, string>();
 
 const storage = {
   async getItem(key: string) {
-    return AsyncStorage.getItem(key);
+    return persistAuthSession ? AsyncStorage.getItem(key) : temporaryAuthStorage.get(key) ?? null;
   },
   async setItem(key: string, value: string) {
-    await AsyncStorage.setItem(key, value);
+    if (persistAuthSession) await AsyncStorage.setItem(key, value);
+    else temporaryAuthStorage.set(key, value);
   },
   async removeItem(key: string) {
+    temporaryAuthStorage.delete(key);
     await AsyncStorage.removeItem(key);
   },
 };
+
+export function setAuthSessionPersistence(remember: boolean) {
+  persistAuthSession = remember;
+  if (remember) temporaryAuthStorage.clear();
+}
 
 const noopQuery = () => ({
   select: async () => ({ data: [], error: null }),
@@ -37,6 +48,7 @@ export const supabase = hasSupabaseConfig
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: false,
+        flowType: 'pkce',
         storage,
       },
     })

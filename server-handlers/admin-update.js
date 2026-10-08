@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 import { sendResendEmail } from './lib/resend.js'
 import { buildPazEmailTemplate } from './lib/paz-email-template.js'
 import { decryptProductChatToken, normalizeEmail, sendProductChatEmail } from './lib/product-chat.js'
+import { sendCustomerChatPush } from './lib/expo-push.js'
 
 // Serverless admin endpoint for secure updates using the Supabase service role key.
 // Requires these environment variables to be set in your deployment:
@@ -176,7 +177,7 @@ export default async function handler(req, res) {
         if (!conversationId || !reply) return jsonResponse(res, 400, { error: 'A conversation and reply are required.' })
         const { data: conversation, error: lookupError } = await supabase
           .from('product_chat_conversations')
-          .select('id,product_id,product_title,vendor_name,assigned_to,customer_name,customer_email,customer_phone,status,email_reply_token,access_token_ciphertext')
+          .select('id,product_id,product_title,vendor_name,assigned_to,customer_id,customer_name,customer_email,customer_phone,status,email_reply_token,access_token_ciphertext')
           .eq('id', conversationId)
           .maybeSingle()
         if (lookupError) throw lookupError
@@ -215,6 +216,16 @@ export default async function handler(req, res) {
         } catch (emailError) {
           emailSent = false
           console.error('Product chat admin reply email failed:', emailError?.message || emailError)
+        }
+        try {
+          await sendCustomerChatPush(supabase, {
+            customerId: conversation.customer_id,
+            title: 'New reply from PAZ',
+            body: `${senderName} replied about ${conversation.product_title}.`,
+            conversationId: conversation.id
+          })
+        } catch (pushError) {
+          console.error('Product chat admin push failed:', pushError?.message || pushError)
         }
         return jsonResponse(res, 200, { ok: true, emailSent, message: savedMessage })
       } else if (action === 'send_vendor_password_reset') {

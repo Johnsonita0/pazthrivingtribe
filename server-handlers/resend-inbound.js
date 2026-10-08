@@ -3,6 +3,7 @@ import process from 'node:process';
 import { Webhook } from 'svix';
 import { createClient } from '@supabase/supabase-js';
 import { decryptProductChatToken, getAdminEmails, normalizeEmail, sendProductChatEmail } from './lib/product-chat.js';
+import { sendCustomerChatPush } from './lib/expo-push.js';
 
 const json = (res, status, payload) => {
   if (typeof res.status === 'function') return res.status(status).json(payload);
@@ -87,7 +88,7 @@ export default async function handler(req, res) {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
     const { data: conversation, error: conversationError } = await supabase
       .from('product_chat_conversations')
-      .select('id,product_title,vendor_name,vendor_email,assigned_to,customer_name,customer_email,email_reply_token,access_token_ciphertext')
+      .select('id,product_title,vendor_name,vendor_email,assigned_to,customer_id,customer_name,customer_email,email_reply_token,access_token_ciphertext')
       .eq('email_reply_token', replyToken)
       .maybeSingle();
     if (conversationError) throw conversationError;
@@ -149,6 +150,18 @@ export default async function handler(req, res) {
       });
     } catch (emailError) {
       console.error('Product chat email reply notification failed:', emailError?.message || emailError);
+    }
+    if (senderRole !== 'customer') {
+      try {
+        await sendCustomerChatPush(supabase, {
+          customerId: conversation.customer_id,
+          title: 'New reply from PAZ',
+          body: `${senderName} replied about ${conversation.product_title}.`,
+          conversationId: conversation.id
+        });
+      } catch (pushError) {
+        console.error('Inbound product chat push failed:', pushError?.message || pushError);
+      }
     }
     return json(res, 200, { ok: true });
   } catch (error) {

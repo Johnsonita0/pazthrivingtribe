@@ -1,6 +1,7 @@
 import process from 'node:process';
 import { createClient } from '@supabase/supabase-js';
 import { decryptProductChatToken, getAdminEmails, normalizeEmail, sendProductChatEmail } from './lib/product-chat.js';
+import { sendCustomerChatPush } from './lib/expo-push.js';
 
 const json = (res, status, payload) => {
   if (typeof res.status === 'function') return res.status(status).json(payload);
@@ -65,7 +66,7 @@ export default async function handler(req, res) {
       if (!conversationId || !message) return json(res, 400, { error: 'A conversation and reply are required.' });
       const { data: conversation, error: conversationError } = await supabase
         .from('product_chat_conversations')
-        .select('id,product_title,vendor_name,vendor_email,assigned_to,customer_name,customer_email,customer_phone,email_reply_token,access_token_ciphertext')
+        .select('id,product_title,vendor_name,vendor_email,assigned_to,customer_id,customer_name,customer_email,customer_phone,email_reply_token,access_token_ciphertext')
         .eq('id', conversationId)
         .eq('vendor_id', user.id)
         .eq('assigned_to', 'vendor')
@@ -104,6 +105,16 @@ export default async function handler(req, res) {
       } catch (emailError) {
         emailSent = false;
         console.error('Vendor product chat reply email failed:', emailError?.message || emailError);
+      }
+      try {
+        await sendCustomerChatPush(supabase, {
+          customerId: conversation.customer_id,
+          title: 'New reply from PAZ',
+          body: `${senderName} replied about ${conversation.product_title}.`,
+          conversationId: conversation.id
+        });
+      } catch (pushError) {
+        console.error('Vendor product chat push failed:', pushError?.message || pushError);
       }
       return json(res, 200, { ok: true, emailSent, message: savedMessage });
     }

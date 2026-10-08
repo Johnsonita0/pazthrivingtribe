@@ -1,13 +1,19 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
+import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Easing, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StatusBar as NativeStatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { CartView } from './src/CartView';
-import { CatalogView } from './src/CatalogView';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, Easing, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, Share, StatusBar as NativeStatusBar, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { FontAwesome5 } from '@expo/vector-icons';
+import { CheckoutPaymentMethod, CheckoutView } from './src/CheckoutView';
+import { BooksListingView } from './src/BooksListingView';
 import { CategoriesView } from './src/CategoriesView';
-import { apiRequest, CartLine, categoryMatches, formatPrice, normalizeProduct, Product, productAvailability, productImageUrl, productSlug, Rating } from './src/api';
+import { HomeView } from './src/HomeView';
+import { ProfileView } from './src/ProfileView';
+import { apiRequest, CartLine, categoryMatches, DeliveryAddress, formatPrice, normalizeProduct, Product, productAvailability, productImageUrl, productSlug, Rating, SITE_ROOT } from './src/api';
 import { ProductDetailView, ProductMetrics } from './src/ProductDetailView';
 import { Button, Field, palette } from './src/ShopComponents';
 import { ensureCustomerProfile, isSupabaseConfigured, supabase } from './src/supabaseClient';
@@ -15,12 +21,24 @@ import { AccountPreferences, AccountStep, AccountUser, CustomerAccountFlow } fro
 import { OnboardingFlow } from './src/OnboardingFlow';
 import { SplashScreen } from './src/SplashScreen';
 
+if (Platform.OS === 'web') WebBrowser.maybeCompleteAuthSession();
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowBanner: true,
+    shouldShowList: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
+
 const CART_KEY = 'paz-shop-cart-v1';
+const FAVORITES_KEY = 'paz-shop-favorite-books-v1';
 const VISITOR_KEY = 'paz-shop-visitor-id';
 const ACCOUNT_PREFERENCES_KEY = 'paz-shop-account-preferences-v1';
 const ONBOARDING_KEY = 'paz-shop-onboarding-v2';
-type Screen = 'catalog' | 'categories' | 'detail' | 'cart' | 'success';
-type OrderRequest = { reference: string; orderNumber: string; email: string; customerName: string; items: { id: string; quantity: number }[] };
+const REMEMBER_ACCOUNT_KEY = 'paz-shop-remember-account-v1';
+type Screen = 'home' | 'listing' | 'categories' | 'favorites' | 'profile' | 'detail' | 'checkout' | 'success';
+type OrderRequest = { reference: string; orderNumber: string; email: string; customerName: string; customerId: string; deliveryAddress: DeliveryAddress | null; items: { id: string; quantity: number }[] };
 const DEFAULT_ACCOUNT_PREFERENCES: AccountPreferences = {
   countryCode: 'NG',
   language: 'English',
@@ -63,10 +81,13 @@ function LoadingBars() {
   );
 }
 
-function TabButton({ icon, label, active, onPress }: { icon: string; label: string; active: boolean; onPress: () => void }) {
+function TabButton({ icon, label, active, badge, onPress }: { icon: 'home' | 'th-large' | 'shopping-bag' | 'shopping-cart' | 'user-circle' | 'heart'; label: string; active: boolean; badge?: number; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityState={{ selected: active }} onPress={onPress} style={styles.tabButton}>
-      <Text style={[styles.tabIcon, active && styles.tabIconActive]}>{icon}</Text>
+    <Pressable accessibilityRole="button" accessibilityLabel={badge ? `${label}, ${badge} items` : label} accessibilityState={{ selected: active }} onPress={onPress} style={({ pressed }) => [styles.tabButton, pressed && styles.tabButtonPressed]}>
+      <View style={[styles.tabIconWrap, active && styles.tabIconWrapActive]}>
+        <FontAwesome5 name={icon} size={17} solid color={active ? palette.green : palette.muted} />
+        {badge ? <View style={styles.tabBadge}><Text style={styles.tabBadgeText}>{badge > 99 ? '99+' : badge}</Text></View> : null}
+      </View>
       <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>{label}</Text>
     </Pressable>
   );
@@ -75,17 +96,17 @@ function TabButton({ icon, label, active, onPress }: { icon: string; label: stri
 export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [storageBaseUrl, setStorageBaseUrl] = useState('');
-  const [screen, setScreen] = useState<Screen>('catalog');
+  const [screen, setScreen] = useState<Screen>('home');
   const [splashElapsed, setSplashElapsed] = useState(false);
   const [onboardingStatus, setOnboardingStatus] = useState<'loading' | 'pending' | 'done'>('loading');
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [cartLoaded, setCartLoaded] = useState(false);
-  const [cartVisible, setCartVisible] = useState(false);
   const [flyingProduct, setFlyingProduct] = useState<Product | null>(null);
-  const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
+  const [initialComingSoonCategory, setInitialComingSoonCategory] = useState<'Groceries' | 'Gadgets' | null>(null);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState('');
   const [notice, setNotice] = useState('');
@@ -110,6 +131,7 @@ export default function App() {
   const [pendingCheckout, setPendingCheckout] = useState<OrderRequest | null>(null);
   const [completedOrder, setCompletedOrder] = useState<{ orderNumber: string; email: string } | null>(null);
   const [accountVisible, setAccountVisible] = useState(false);
+  const [accountAuthMode, setAccountAuthMode] = useState<'signIn' | 'signUp'>('signIn');
   const [accountStep, setAccountStep] = useState<AccountStep>('auth');
   const [accountPreferences, setAccountPreferences] = useState<AccountPreferences>(DEFAULT_ACCOUNT_PREFERENCES);
   const [accountSetupLoaded, setAccountSetupLoaded] = useState(false);
@@ -117,6 +139,12 @@ export default function App() {
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState('');
   const [currentUser, setCurrentUser] = useState<AccountUser>(null);
+  const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
+  const [deliveryAddress, setDeliveryAddress] = useState<DeliveryAddress | null>(null);
+  const [unreadChatCount, setUnreadChatCount] = useState(0);
+  const [openChatsRequest, setOpenChatsRequest] = useState(0);
+  const [openAddressRequest, setOpenAddressRequest] = useState(0);
+  const unreadChatErrorReportedRef = useRef(false);
   const [chatVisible, setChatVisible] = useState(false);
   const [chatName, setChatName] = useState('');
   const [chatEmail, setChatEmail] = useState('');
@@ -128,29 +156,165 @@ export default function App() {
   const [chatBusy, setChatBusy] = useState(false);
   const [chatNotice, setChatNotice] = useState('');
   const pendingOrderRef = useRef<OrderRequest | null>(null);
+  const previousScreenRef = useRef<Screen>('home');
+  const checkoutReturnScreenRef = useRef<Screen>('home');
+  const checkoutAuthRequiredRef = useRef(false);
   const completedReferencesRef = useRef(new Set<string>());
   const processPaymentRef = useRef<(reference: string) => Promise<void>>(async () => {});
   const flightProgress = useRef(new Animated.Value(0)).current;
   const { width: windowWidth } = useWindowDimensions();
 
-  const categories = useMemo(() => {
-    const availableCategories = products.map((product) => product.category).filter(Boolean);
-    const otherCategories = [...new Set(availableCategories)].filter((item) =>
-      !categoryMatches(item, 'Groceries') && !categoryMatches(item, 'Gadgets')
-    );
-    return ['All', 'Groceries', 'Gadgets', ...otherCategories];
-  }, [products]);
   const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0);
   const cartTotal = cart.reduce((sum, line) => sum + (line.product.isFree ? 0 : line.product.price) * line.quantity, 0);
   const cartCurrency = cart.find((line) => !line.product.isFree)?.product.currency || cart[0]?.product.currency || 'NGN';
   const allFree = cart.length > 0 && cart.every((line) => line.product.isFree);
   const totalLabel = formatPrice({ price: cartTotal, currency: cartCurrency, isFree: allFree });
   const accountLabel = currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.first_name || currentUser?.email?.split('@')[0] || 'Account';
+  const metadataAvatar = currentUser?.user_metadata?.avatar_url
+    || currentUser?.user_metadata?.picture
+    || currentUser?.user_metadata?.photo_url
+    || null;
 
   useEffect(() => {
-    const timer = setTimeout(() => setSplashElapsed(true), 2400);
+    setProfileAvatarUrl(typeof metadataAvatar === 'string' ? metadataAvatar : null);
+    if (!currentUser) return;
+    let active = true;
+    void (async () => {
+      try {
+        const { data, error } = await supabase.from('customer_profiles')
+          .select('avatar_url')
+          .eq('id', currentUser.id)
+          .maybeSingle();
+        if (error) throw new Error(error.message);
+        if (active && data?.avatar_url) setProfileAvatarUrl(data.avatar_url);
+      } catch (error) {
+        console.warn('Could not load the PAZ profile photo:', error);
+      }
+    })();
+    return () => { active = false; };
+  }, [currentUser?.id, metadataAvatar]);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setDeliveryAddress(null);
+      return;
+    }
+    let active = true;
+    void (async () => {
+      const { data, error } = await supabase.from('customer_profiles')
+        .select('delivery_address')
+        .eq('id', currentUser.id)
+        .maybeSingle();
+      if (error) {
+        console.warn('Could not load the saved PAZ delivery address:', error.message);
+        return;
+      }
+      if (active && data?.delivery_address && typeof data.delivery_address === 'object') {
+        const saved = data.delivery_address as DeliveryAddress;
+        setDeliveryAddress(saved);
+        setCustomerName(saved.fullName);
+      }
+    })().catch((error) => console.warn('Could not load the saved PAZ delivery address:', error));
+    return () => { active = false; };
+  }, [currentUser?.id]);
+
+  const openCheckout = () => {
+    checkoutReturnScreenRef.current = screen === 'checkout' ? checkoutReturnScreenRef.current : screen;
+    setCheckoutError('');
+    setNotice('');
+    setScreen('checkout');
+  };
+
+  const getCheckoutSession = async (): Promise<{ accessToken: string; user: SupabaseUser } | null> => {
+    if (!isSupabaseConfigured) {
+      setCheckoutError('Customer sign-in is not configured. Add the Expo Supabase URL and publishable key, then restart the app.');
+      return null;
+    }
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw new Error(error.message);
+      const session = data.session;
+      if (!session?.user || !session.access_token) {
+        checkoutAuthRequiredRef.current = true;
+        setAccountAuthMode('signUp');
+        setAccountStep('auth');
+        setAuthError('');
+        setAuthNotice('Create an account or sign in to complete your order.');
+        setAccountVisible(true);
+        return null;
+      }
+      if (!session.user.email || !session.user.email_confirmed_at) {
+        setCheckoutError('Confirm your account email before placing an order. Check your inbox, then sign in again.');
+        checkoutAuthRequiredRef.current = true;
+        setAccountAuthMode('signIn');
+        setAccountStep('auth');
+        setAuthError('');
+        setAuthNotice('Email confirmation is required for checkout.');
+        setAccountVisible(true);
+        return null;
+      }
+      if (session.user.email.toLowerCase() !== customerEmail.trim().toLowerCase()) {
+        setCheckoutError(`For account security, use your signed-in email (${session.user.email}) for digital delivery.`);
+        return null;
+      }
+      setCurrentUser(session.user);
+      return { accessToken: session.access_token, user: session.user };
+    } catch (error) {
+      setCheckoutError(error instanceof Error ? error.message : 'Your account could not be verified. Please sign in again.');
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSplashElapsed(true), 7000);
     return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    const openChatFromNotification = (response: Notifications.NotificationResponse | null) => {
+      if (response?.notification.request.content.data?.type !== 'product-chat') return;
+      setOpenChatsRequest((request) => request + 1);
+      setScreen('profile');
+    };
+    const subscription = Notifications.addNotificationResponseReceivedListener(openChatFromNotification);
+    void Notifications.getLastNotificationResponseAsync()
+      .then(openChatFromNotification)
+      .catch((error) => console.warn('Could not read the last PAZ notification:', error));
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser || screen === 'profile') {
+      if (!currentUser) setUnreadChatCount(0);
+      return;
+    }
+    let active = true;
+    const refreshUnreadChats = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw new Error(error.message);
+        if (!data.session?.access_token) throw new Error('The customer session is no longer available.');
+        const payload = await apiRequest('/product-chat', 'POST', { action: 'list-account' }, data.session.access_token);
+        const threads = Array.isArray(payload.data) ? payload.data : [];
+        if (active) {
+          unreadChatErrorReportedRef.current = false;
+          setUnreadChatCount(threads.reduce((total: number, chat: { unread_count?: number }) => total + (chat.unread_count || 0), 0));
+        }
+      } catch (error) {
+        if (active && !unreadChatErrorReportedRef.current) {
+          unreadChatErrorReportedRef.current = true;
+          console.warn('Could not refresh PAZ unread chat count:', error);
+        }
+      }
+    };
+    void refreshUnreadChats();
+    const timer = setInterval(() => void refreshUnreadChats(), 20000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [currentUser?.id, screen]);
 
   useEffect(() => {
     let active = true;
@@ -209,6 +373,9 @@ export default function App() {
       }
 
       if (isSupabaseConfigured) {
+        if (await AsyncStorage.getItem(REMEMBER_ACCOUNT_KEY) === 'false') {
+          await supabase.auth.signOut();
+        }
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) throw new Error(error.message);
         if (session?.user) {
@@ -218,9 +385,8 @@ export default function App() {
             .select('country_code,language,currency,notifications_enabled')
             .eq('id', session.user.id)
             .maybeSingle();
-          if (profileError) {
-            console.warn('Could not load PAZ account preferences from Supabase:', profileError.message);
-          } else if (profile) {
+          if (profileError) throw new Error(`Could not load your PAZ customer profile: ${profileError.message}`);
+          if (profile) {
             preferences = {
               ...preferences,
               countryCode: validCountries.includes(String(profile.country_code)) ? String(profile.country_code) : preferences.countryCode,
@@ -232,6 +398,14 @@ export default function App() {
             void AsyncStorage.setItem(ACCOUNT_PREFERENCES_KEY, JSON.stringify(preferences)).catch((storageError) => {
               console.warn('Could not cache PAZ account preferences:', storageError);
             });
+          } else {
+            const syncedProfile = await ensureCustomerProfile(session.user, {
+              country_code: preferences.countryCode,
+              language: preferences.language,
+              currency: preferences.currency,
+              notifications_enabled: preferences.notificationsEnabled,
+            });
+            if (!syncedProfile) throw new Error('Your signed-in account could not be initialized as a PAZ customer profile.');
           }
         }
       }
@@ -279,6 +453,19 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    void AsyncStorage.getItem(FAVORITES_KEY).then((stored) => {
+      if (!stored) return;
+      const ids: unknown = JSON.parse(stored);
+      if (!Array.isArray(ids) || !ids.every((id) => typeof id === 'string')) {
+        throw new Error('Saved favorites have an invalid format.');
+      }
+      setFavoriteIds(new Set(ids));
+    }).catch((error) => {
+      console.warn('Could not load saved PAZ shop favorites:', error);
+    });
+  }, []);
+
+  useEffect(() => {
     if (cartLoaded) void AsyncStorage.setItem(CART_KEY, JSON.stringify(cart)).catch(() => {});
   }, [cart, cartLoaded]);
 
@@ -288,12 +475,24 @@ export default function App() {
     setCheckoutBusy(true);
     setCheckoutError('');
     try {
-      await apiRequest('/complete-shop-payment', 'POST', { reference, orderNumber: order.orderNumber, email: order.email, customerName: order.customerName, items: order.items });
+      const authenticated = await getCheckoutSession();
+      if (!authenticated || authenticated.user.id !== order.customerId) {
+        if (authenticated) setCheckoutError('Sign in to the account used to start this payment, then check payment again.');
+        return;
+      }
+      await apiRequest('/complete-shop-payment', 'POST', {
+        reference,
+        source: 'paz-shop-mobile-app',
+        orderNumber: order.orderNumber,
+        email: order.email,
+        customerName: order.customerName,
+        deliveryAddress: order.deliveryAddress,
+        items: order.items,
+      }, authenticated.accessToken);
       completedReferencesRef.current.add(reference);
       pendingOrderRef.current = null;
       setPendingCheckout(null);
       setCart([]);
-      setCartVisible(false);
       setCompletedOrder({ orderNumber: order.orderNumber, email: order.email });
       setScreen('success');
     } catch (error) {
@@ -340,6 +539,7 @@ export default function App() {
   };
 
   const openProduct = async (product: Product) => {
+    previousScreenRef.current = screen === 'detail' ? previousScreenRef.current : screen;
     setSelectedProduct(product);
     setRatings([]);
     setMetrics(null);
@@ -356,18 +556,24 @@ export default function App() {
     setDetailLoading(false);
   };
 
-  const addToCart = (product: Product) => {
+  const addToCart = (product: Product): boolean => {
     const availability = productAvailability(product);
     if (!availability.available) {
       if (availability.reason === 'not-released') {
         setNotifyProduct(product);
         setNotifyError('');
       } else setNotice(availability.message);
-      return;
+      return false;
     }
-    if (!product.inStock || product.stockCount <= 0) return setNotice('This product is currently out of stock.');
+    if (!product.inStock || product.stockCount <= 0) {
+      setNotice('This product is currently out of stock.');
+      return false;
+    }
     const conflict = cart.find((line) => !line.product.isFree && !product.isFree && line.product.currency !== product.currency);
-    if (conflict) return setNotice(`Your bag uses ${conflict.product.currency}. Complete that order before adding ${product.currency} products.`);
+    if (conflict) {
+      setNotice(`Your bag uses ${conflict.product.currency}. Complete that order before adding ${product.currency} products.`);
+      return false;
+    }
     setCart((current) => {
       const existing = current.find((line) => line.product.id === product.id);
       return existing ? current.map((line) => line.product.id === product.id ? { ...line, quantity: line.quantity + 1 } : line) : [...current, { product, quantity: 1 }];
@@ -378,6 +584,44 @@ export default function App() {
       if (finished) setFlyingProduct(null);
     });
     setNotice(`${product.title} added to your bag.`);
+    return true;
+  };
+
+  const buyNow = (product: Product) => {
+    if (addToCart(product)) openCheckout();
+  };
+
+  const toggleFavorite = (product: Product) => {
+    const next = new Set(favoriteIds);
+    if (next.has(product.id)) next.delete(product.id);
+    else next.add(product.id);
+    setFavoriteIds(next);
+    void AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify([...next])).catch((error) => {
+      console.warn('Could not save PAZ shop favorites:', error);
+      setNotice('Your favorite could not be saved on this device.');
+    });
+  };
+
+  const shareProduct = async (product: Product) => {
+    const url = `${SITE_ROOT}/shop?product=${encodeURIComponent(productSlug(product.title))}&app=1`;
+    try {
+      if (Platform.OS === 'web' && typeof navigator !== 'undefined') {
+        if (navigator.share) {
+          await navigator.share({ title: product.title, text: `Take a look at ${product.title}.`, url });
+          return;
+        }
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(url);
+          setNotice('Product link copied to clipboard.');
+          return;
+        }
+        throw new Error('Sharing is not available in this browser.');
+      }
+      await Share.share({ message: `${product.title}\n${url}` });
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') return;
+      setNotice(error instanceof Error ? error.message : 'This product could not be shared.');
+    }
   };
 
   const updateQuantity = (id: string, delta: number) => setCart((current) => current
@@ -438,7 +682,14 @@ export default function App() {
     if (!selectedProduct) return;
     setChatBusy(true); setChatNotice('');
     try {
-      const payload = await apiRequest('/product-chat', 'POST', { action: 'start', productId: selectedProduct.id, name: chatName, email: chatEmail, phone: chatPhone, message: chatMessage, website: '' });
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw new Error(sessionError.message);
+      const payload = await apiRequest(
+        '/product-chat',
+        'POST',
+        { action: 'start', productId: selectedProduct.id, name: chatName, email: chatEmail, phone: chatPhone, message: chatMessage, website: '' },
+        sessionData.session?.user.email_confirmed_at ? sessionData.session.access_token : undefined,
+      );
       setChatToken(payload.token || ''); setChatMessages(payload.messages || []);
       if (payload.token) await AsyncStorage.setItem(`paz-product-chat-${selectedProduct.id}`, payload.token);
       setChatMessage('');
@@ -483,13 +734,21 @@ export default function App() {
     const wasSetupComplete = accountPreferences.setupComplete;
     const nextPreferences = { ...accountPreferences, setupComplete: true };
     if (!await saveAccountPreferences(nextPreferences)) return;
-    setAccountStep(wasSetupComplete ? currentUser ? 'dashboard' : 'auth' : 'notifications');
+    if (wasSetupComplete && currentUser) {
+      setAccountVisible(false);
+      setScreen('profile');
+      return;
+    }
+    setAccountStep(wasSetupComplete ? 'auth' : 'notifications');
   };
 
   const finishNotificationStep = async (notificationsEnabled: boolean) => {
     const nextPreferences = { ...accountPreferences, setupComplete: true, notificationsEnabled };
     if (!await saveAccountPreferences(nextPreferences)) return;
-    setAccountStep(currentUser ? 'dashboard' : 'auth');
+    if (currentUser) {
+      setAccountVisible(false);
+      setScreen('profile');
+    } else setAccountStep('auth');
   };
 
   const allowNotifications = async () => {
@@ -506,69 +765,201 @@ export default function App() {
   const browseAsGuest = async () => {
     if (!accountPreferences.setupComplete) {
       const guestPreferences = { ...accountPreferences, setupComplete: true, notificationsEnabled: false };
-      if (!await saveAccountPreferences(guestPreferences)) return;
+      if (!await saveAccountPreferences(guestPreferences)) return false;
     }
     setAccountVisible(false);
+    return true;
   };
 
-  const completeOnboarding = async () => {
+  const markOnboardingComplete = () => {
     setOnboardingStatus('done');
     void AsyncStorage.setItem(ONBOARDING_KEY, 'complete').catch((error) => {
       console.warn('Could not save PAZ onboarding state:', error);
     });
+  };
+
+  const openAccount = (authMode: 'signIn' | 'signUp' = 'signIn') => {
+    if (currentUser) {
+      setScreen('profile');
+      return;
+    }
     setAuthError('');
     setAuthNotice('');
+    setAccountAuthMode(authMode);
     setAccountStep('auth');
     setAccountVisible(true);
   };
 
-  const submitAuth = async (mode: 'signIn' | 'signUp', name: string, emailInput: string, passwordInput: string) => {
+  const completeOnboarding = async () => {
+    markOnboardingComplete();
+    openAccount();
+  };
+
+  const continueOnboardingAsGuest = async () => {
+    if (!await browseAsGuest()) return;
+    markOnboardingComplete();
+  };
+
+  const submitAuth = async (mode: 'signIn' | 'signUp', name: string, identifierInput: string, passwordInput: string, remember: boolean) => {
     if (!isSupabaseConfigured) {
       setAuthError('Supabase is not configured yet for mobile sign-in.');
       return;
     }
-    if (!emailInput.trim() || !passwordInput.trim()) {
-      setAuthError('Enter both your email and password to continue.');
+    if (!identifierInput.trim() || !passwordInput.trim()) {
+      setAuthError('Enter your email or phone number and password to continue.');
       return;
     }
     if (mode === 'signUp' && !name.trim()) {
       setAuthError('Enter your name to create your account.');
       return;
     }
+    if (checkoutAuthRequiredRef.current && !identifierInput.includes('@')) {
+      setAuthError('Use an email address for your account so PAZ can deliver your digital books.');
+      return;
+    }
     setAuthBusy(true);
     setAuthError('');
     setAuthNotice('');
     try {
-      const email = emailInput.trim().toLowerCase();
+      const identifier = identifierInput.trim();
+      const isPhone = !identifier.includes('@');
+      const email = identifier.toLowerCase();
       const password = passwordInput;
       const result = mode === 'signIn'
-        ? await supabase.auth.signInWithPassword({ email, password })
-        : await supabase.auth.signUp({
-            email,
-            password,
-            options: { data: { full_name: name.trim() } },
-          });
+        ? await supabase.auth.signInWithPassword(isPhone ? { phone: identifier.replace(/[\s()-]/g, ''), password } : { email, password })
+        : isPhone
+          ? await supabase.auth.signUp({ phone: identifier.replace(/[\s()-]/g, ''), password, options: { data: { full_name: name.trim() } } })
+          : await supabase.auth.signUp({ email, password, options: { data: { full_name: name.trim() } } });
       if (result.error) throw new Error(result.error.message);
       const user = result.data?.session?.user ?? (mode === 'signIn' ? result.data?.user : null);
       if (!user) {
-        setAuthNotice('Your account was created. Check your email to confirm it, then sign in.');
+        await AsyncStorage.setItem(REMEMBER_ACCOUNT_KEY, String(remember));
+        setAuthNotice(isPhone ? 'Your account was created. Check your phone for a verification code, then sign in.' : 'Your account was created. Check your email to confirm it, then sign in.');
         setAuthBusy(false);
         return;
       }
+      await AsyncStorage.setItem(REMEMBER_ACCOUNT_KEY, String(remember));
       setCurrentUser(user);
       const profile = await ensureCustomerProfile(user, {
         full_name: mode === 'signUp' ? name.trim() : user.user_metadata?.full_name || null,
-        email: user.email || email,
+        email: user.email || identifier,
         country_code: accountPreferences.countryCode,
         language: accountPreferences.language,
         currency: accountPreferences.currency,
         notifications_enabled: accountPreferences.notificationsEnabled,
       });
       if (!profile && isSupabaseConfigured) throw new Error('Your account is signed in, but your PAZ profile could not be saved.');
-      setAccountStep('dashboard');
       setAuthNotice('');
+      if (checkoutAuthRequiredRef.current) {
+        checkoutAuthRequiredRef.current = false;
+        setCustomerEmail(user.email || identifier);
+        const profileName = user.user_metadata?.full_name || (mode === 'signUp' ? name.trim() : '');
+        if (profileName) setCustomerName(profileName);
+        setAccountVisible(false);
+        setScreen('checkout');
+        setCheckoutError('Account verified. Review your order and tap Place order to continue.');
+      } else {
+        setAccountVisible(false);
+        setScreen('profile');
+      }
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : 'Your account request could not be completed.');
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const signInWithSocialProvider = async (provider: 'google' | 'facebook', remember: boolean) => {
+    if (!isSupabaseConfigured) {
+      setAuthError('Supabase is not configured yet for mobile sign-in.');
+      return;
+    }
+
+    setAuthBusy(true);
+    setAuthError('');
+    setAuthNotice('');
+    try {
+      const redirectTo = Platform.OS === 'web' && typeof window !== 'undefined'
+        ? `${window.location.origin}/auth/callback`
+        : 'pazshop://auth/callback';
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: { redirectTo, skipBrowserRedirect: true },
+      });
+      if (error) throw new Error(error.message);
+      if (!data.url) throw new Error(`${provider} sign-in could not be started.`);
+
+      const browserResult = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+      if (browserResult.type === 'cancel' || browserResult.type === 'dismiss') return;
+      if (browserResult.type !== 'success') throw new Error(`${provider} sign-in did not complete.`);
+
+      const callbackUrl = new URL(browserResult.url);
+      const callbackError = callbackUrl.searchParams.get('error_description') || callbackUrl.searchParams.get('error');
+      if (callbackError) throw new Error(callbackError);
+
+      const code = callbackUrl.searchParams.get('code');
+      if (code) {
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (exchangeError) throw new Error(exchangeError.message);
+      } else {
+        const callbackParams = new URLSearchParams(`${callbackUrl.search.slice(1)}&${callbackUrl.hash.slice(1)}`);
+        const accessToken = callbackParams.get('access_token');
+        const refreshToken = callbackParams.get('refresh_token');
+        if (!accessToken || !refreshToken) throw new Error('Google returned without a PAZ session. Check the Supabase redirect URL configuration.');
+        const { error: sessionError } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+        if (sessionError) throw new Error(sessionError.message);
+      }
+
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw new Error(sessionError.message);
+      const user = sessionData.session?.user;
+      if (!user) throw new Error(`${provider} sign-in completed without a user session.`);
+
+      await AsyncStorage.setItem(REMEMBER_ACCOUNT_KEY, String(remember));
+      setCurrentUser(user);
+      const profile = await ensureCustomerProfile(user, {
+        full_name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+        email: user.email || null,
+        country_code: accountPreferences.countryCode,
+        language: accountPreferences.language,
+        currency: accountPreferences.currency,
+        notifications_enabled: accountPreferences.notificationsEnabled,
+      });
+      if (!profile) throw new Error('You are signed in, but your PAZ profile could not be saved.');
+      if (checkoutAuthRequiredRef.current) {
+        checkoutAuthRequiredRef.current = false;
+        setCustomerEmail(user.email || '');
+        const profileName = user.user_metadata?.full_name || user.user_metadata?.name || '';
+        if (profileName) setCustomerName(profileName);
+        setAccountVisible(false);
+        setScreen('checkout');
+        setCheckoutError('Account verified. Review your order and tap Place order to continue.');
+      } else {
+        setAccountVisible(false);
+        setScreen('profile');
+      }
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : `${provider} sign-in could not be completed.`);
+    } finally {
+      setAuthBusy(false);
+    }
+  };
+
+  const resetPassword = async (identifier: string) => {
+    const email = identifier.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setAuthError('Enter the email address for your account to reset your password.');
+      return;
+    }
+    setAuthBusy(true);
+    setAuthError('');
+    setAuthNotice('');
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) throw new Error(error.message);
+      setAuthNotice('If an account exists for that email, password reset instructions have been sent.');
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Password reset could not be started.');
     } finally {
       setAuthBusy(false);
     }
@@ -582,7 +973,10 @@ export default function App() {
       if (error) throw new Error(error.message);
       setCurrentUser(null);
       setAccountStep('auth');
+      setAccountVisible(false);
+      setUnreadChatCount(0);
       setAuthNotice('You have signed out of your PAZ account.');
+      setScreen('profile');
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : 'Your session could not be ended.');
     } finally {
@@ -590,25 +984,99 @@ export default function App() {
     }
   };
 
+  const toggleProfileNotifications = async (enabled: boolean) => {
+    if (enabled) {
+      await allowNotifications();
+      return;
+    }
+    const nextPreferences = { ...accountPreferences, notificationsEnabled: false };
+    if (await saveAccountPreferences(nextPreferences)) {
+      if (currentUser) {
+        const { error } = await supabase.from('customer_profiles')
+          .update({ expo_push_token: null, updated_at: new Date().toISOString() })
+          .eq('id', currentUser.id);
+        if (error) {
+          setNotice(`Notifications were turned off on this device, but the saved device token could not be removed: ${error.message}`);
+          return;
+        }
+      }
+      setNotice('PAZ notifications are turned off.');
+    }
+  };
+
+  const registerCustomerPushToken = async (user: NonNullable<AccountUser>) => {
+    if (Platform.OS === 'web' || !Device.isDevice) {
+      setNotice('Native push notifications require PAZ Shop installed on a physical phone.');
+      return;
+    }
+    const projectId = Constants.easConfig?.projectId || Constants.expoConfig?.extra?.eas?.projectId;
+    if (!projectId) throw new Error('Set the EAS project ID before registering phone notifications.');
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'PAZ updates',
+        importance: Notifications.AndroidImportance.DEFAULT,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#145c3d',
+      });
+    }
+    const token = await Notifications.getExpoPushTokenAsync({ projectId });
+    const { data: updatedProfile, error } = await supabase.from('customer_profiles')
+      .update({ expo_push_token: token.data, notifications_enabled: true, updated_at: new Date().toISOString() })
+      .eq('id', user.id)
+      .select('id')
+      .maybeSingle();
+    if (error) throw new Error(`Push notifications could not be registered: ${error.message}`);
+    if (!updatedProfile) throw new Error('Your PAZ profile could not save the phone notification token.');
+  };
+
+  useEffect(() => {
+    if (!currentUser || !accountPreferences.notificationsEnabled) return;
+    void registerCustomerPushToken(currentUser).catch((error) => {
+      setNotice(error instanceof Error ? error.message : 'Phone notifications could not be registered.');
+    });
+  }, [currentUser?.id, accountPreferences.notificationsEnabled]);
+
+  const openProfileLink = async (url: string) => {
+    try {
+      await Linking.openURL(url);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'This PAZ page could not be opened.');
+    }
+  };
+
   const completeFreeOrder = async () => {
+    const authenticated = await getCheckoutSession();
+    if (!authenticated) return;
+    if (!cart.length) return setCheckoutError('Your cart is empty. Add a book before placing an order.');
     if (!customerName.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) return setCheckoutError('Enter your name and a valid email address for delivery.');
     setCheckoutBusy(true); setCheckoutError('');
     const orderNumber = `PAZ-${Date.now()}`;
     try {
-      await apiRequest('/complete-shop-payment', 'POST', { free: true, orderNumber, email: customerEmail.trim().toLowerCase(), customerName: customerName.trim(), items: cart.map((line) => ({ id: line.product.id, quantity: line.quantity })) });
-      setCart([]); setCartVisible(false); setCompletedOrder({ orderNumber, email: customerEmail.trim() }); setScreen('success');
+      await apiRequest('/complete-shop-payment', 'POST', {
+        free: true,
+        source: 'paz-shop-mobile-app',
+        orderNumber,
+        email: customerEmail.trim().toLowerCase(),
+        customerName: customerName.trim(),
+        deliveryAddress,
+        items: cart.map((line) => ({ id: line.product.id, quantity: line.quantity })),
+      }, authenticated.accessToken);
+      setCart([]); setCompletedOrder({ orderNumber, email: customerEmail.trim() }); setScreen('success');
     } catch (error) { setCheckoutError(error instanceof Error ? error.message : 'The free product request could not be completed.'); }
     finally { setCheckoutBusy(false); }
   };
 
-  const startPaidCheckout = async () => {
+  const startPaidCheckout = async (paymentMethod: CheckoutPaymentMethod) => {
+    const authenticated = await getCheckoutSession();
+    if (!authenticated) return;
+    if (!cart.length) return setCheckoutError('Your cart is empty. Add a book before placing an order.');
     if (!customerName.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())) return setCheckoutError('Enter your name and a valid email address to continue.');
     setCheckoutBusy(true); setCheckoutError('');
     const orderNumber = `PAZ-${Date.now()}`;
     const items = cart.map((line) => ({ id: line.product.id, quantity: line.quantity }));
     try {
-      const payment = await apiRequest('/initialize-shop-payment', 'POST', { orderNumber, customerName: customerName.trim(), email: customerEmail.trim().toLowerCase(), items });
-      const order: OrderRequest = { reference: payment.reference, orderNumber: payment.orderNumber || orderNumber, email: customerEmail.trim().toLowerCase(), customerName: customerName.trim(), items };
+      const payment = await apiRequest('/initialize-shop-payment', 'POST', { orderNumber, customerName: customerName.trim(), email: customerEmail.trim().toLowerCase(), deliveryAddress, items, paymentMethod }, authenticated.accessToken);
+      const order: OrderRequest = { reference: payment.reference, orderNumber: payment.orderNumber || orderNumber, email: customerEmail.trim().toLowerCase(), customerName: customerName.trim(), customerId: authenticated.user.id, deliveryAddress, items };
       pendingOrderRef.current = order; setPendingCheckout(order); setCheckoutBusy(false);
       const result = await WebBrowser.openAuthSessionAsync(payment.authorizationUrl, 'pazshop://payment-callback');
       if (result.type === 'success' && result.url) {
@@ -627,27 +1095,44 @@ export default function App() {
 
   return (
     <View style={styles.app}>
-      <StatusBar style={screen === 'detail' ? 'light' : 'dark'} />
-      {screen !== 'detail' ? <View style={styles.header}>
-        <View style={styles.brandBlock}><Image source={require('./assets/paz-logo.png')} style={styles.brandLogo} resizeMode="contain" /><View><Text style={styles.brandEyebrow}>PAZ THRIVING TRIBE</Text><Text style={styles.brandTitle}>{screen === 'success' ? 'Order confirmed' : screen === 'categories' ? 'Categories' : screen === 'cart' ? 'Your cart' : 'PAZ Shop'}</Text></View></View>
+      <StatusBar style="dark" />
+      {screen !== 'detail' && screen !== 'checkout' && screen !== 'home' && screen !== 'listing' && screen !== 'categories' && screen !== 'favorites' && screen !== 'profile' ? <View style={styles.header}>
+        <View style={styles.brandBlock}><Image source={require('./assets/paz-logo.png')} style={styles.brandLogo} resizeMode="contain" /><View><Text style={styles.brandEyebrow}>PAZ THRIVING TRIBE</Text><Text style={styles.brandTitle}>{screen === 'success' ? 'Order confirmed' : 'PAZ Shop'}</Text></View></View>
         {screen !== 'success' ? <View style={styles.headerActions}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Open account" onPress={() => { setAuthError(''); setAuthNotice(''); setAccountStep(currentUser ? 'dashboard' : 'auth'); setAccountVisible(true); }} style={styles.accountButton}><Text style={styles.accountButtonText}>{currentUser ? `Hi, ${accountLabel}` : 'Account'}</Text></Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel={`Open bag, ${cartCount} items`} onPress={() => setCartVisible(true)} style={styles.bagButton}><Text style={styles.bagText}>Bag</Text><View style={styles.bagCount}><Text style={styles.bagCountText}>{cartCount}</Text></View></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="Open account" onPress={() => openAccount()} style={styles.accountButton}><Text style={styles.accountButtonText}>{currentUser ? `Hi, ${accountLabel}` : 'Account'}</Text></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={`Open bag, ${cartCount} items`} onPress={openCheckout} style={styles.bagButton}><Text style={styles.bagText}>Bag</Text><View style={styles.bagCount}><Text style={styles.bagCountText}>{cartCount}</Text></View></Pressable>
         </View> : null}
       </View> : null}
       {notice && screen !== 'success' ? <Pressable onPress={() => setNotice('')} style={styles.notice}><Text style={styles.noticeText}>{notice}</Text><Text style={styles.noticeClose}>×</Text></Pressable> : null}
 
-      {screen === 'catalog' ? <CatalogView products={products} accountName={currentUser?.user_metadata?.first_name || currentUser?.user_metadata?.full_name?.split(' ')[0]} storageBaseUrl={storageBaseUrl} categories={categories} category={category} search={search} loading={loading} error={pageError} onCategory={setCategory} onSearch={setSearch} onOpen={(product) => void openProduct(product)} onRefresh={() => void loadProducts()} /> : null}
-      {screen === 'categories' ? <CategoriesView categories={categories} products={products} loading={loading} onSelect={(selectedCategory) => { setCategory(selectedCategory); setSearch(''); setScreen('catalog'); }} /> : null}
-      {screen === 'detail' && selectedProduct ? <ProductDetailView product={selectedProduct} storageBaseUrl={storageBaseUrl} metrics={metrics} ratings={ratings} loading={detailLoading} ratingValue={ratingValue} ratingName={ratingName} ratingEmail={ratingEmail} ratingComment={ratingComment} ratingBusy={ratingBusy} cartCount={cartCount} onBack={() => setScreen('catalog')} onCart={() => setCartVisible(true)} onAdd={() => addToCart(selectedProduct)} onChat={() => void openChat()} onRatingValue={setRatingValue} onRatingName={setRatingName} onRatingEmail={setRatingEmail} onRatingComment={setRatingComment} onSubmitRating={() => void submitRating()} /> : null}
-      {screen === 'cart' ? <CartView cart={cart} storageBaseUrl={storageBaseUrl} totalLabel={totalLabel} freeOrder={allFree} customerName={customerName} customerEmail={customerEmail} busy={checkoutBusy} error={checkoutError} pendingPayment={Boolean(pendingCheckout)} onName={setCustomerName} onEmail={setCustomerEmail} onQuantity={updateQuantity} onRemove={(id) => setCart((current) => current.filter((line) => line.product.id !== id))} onCheckout={() => void (allFree ? completeFreeOrder() : startPaidCheckout())} onConfirmPayment={confirmPayment} onShop={() => setScreen('catalog')} onBack={() => setScreen('catalog')} /> : null}
-      {screen === 'success' && completedOrder ? <View style={styles.success}><View style={styles.successMark}><Text style={styles.successMarkText}>✓</Text></View><Text style={styles.successKicker}>ORDER CONFIRMED</Text><Text style={styles.successTitle}>Your next chapter starts here.</Text><Text style={styles.successCopy}>We sent your product to {completedOrder.email}. Check your inbox for order {completedOrder.orderNumber}.</Text><Button title="Back to the shop" onPress={() => { setCompletedOrder(null); setScreen('catalog'); }} /></View> : null}
+      {screen === 'home' ? <HomeView products={products} signedIn={Boolean(currentUser)} accountName={currentUser?.user_metadata?.first_name || currentUser?.user_metadata?.full_name?.split(' ')[0] || currentUser?.email?.split('@')[0]} profileImageUrl={profileAvatarUrl} storageBaseUrl={storageBaseUrl} loading={loading} error={pageError} notificationCount={unreadChatCount} onRefresh={() => void loadProducts()} onNotifications={() => { setOpenChatsRequest((request) => request + 1); setScreen('profile'); }} onProfile={() => setScreen('profile')} onCreateAccount={() => openAccount('signUp')} onCategory={(selectedCategory) => {
+        if (/^grocer(?:y|ies)$/i.test(selectedCategory)) {
+          setInitialComingSoonCategory('Groceries');
+          setScreen('categories');
+          return;
+        }
+        if (/^gadgets?$/i.test(selectedCategory)) {
+          setInitialComingSoonCategory('Gadgets');
+          setScreen('categories');
+          return;
+        }
+        setInitialComingSoonCategory(null);
+        setCategory(selectedCategory);
+        setScreen('listing');
+      }} onMoreCategories={() => { setInitialComingSoonCategory(null); setScreen('categories'); }} onOpen={(product) => void openProduct(product)} onAddToCart={addToCart} /> : null}
+      {screen === 'listing' || screen === 'favorites' ? <BooksListingView products={products} loading={loading} error={pageError} storageBaseUrl={storageBaseUrl} category={category} favoriteIds={favoriteIds} favoritesOnly={screen === 'favorites'} onCategory={setCategory} onToggleFavorite={toggleFavorite} onBack={() => { setCategory('All'); setScreen('home'); }} onRefresh={() => void loadProducts()} onOpen={(product) => void openProduct(product)} onAddToCart={addToCart} /> : null}
+      {screen === 'categories' ? <CategoriesView products={products} loading={loading} initialComingSoonCategory={initialComingSoonCategory} onBack={() => { setInitialComingSoonCategory(null); setScreen('home'); }} onSelect={(selectedCategory) => { setInitialComingSoonCategory(null); setCategory(selectedCategory); setScreen('listing'); }} /> : null}
+      {screen === 'profile' ? <ProfileView user={currentUser} notificationsEnabled={accountPreferences.notificationsEnabled} openChatsRequest={openChatsRequest} openAddressRequest={openAddressRequest} deliveryAddress={deliveryAddress} onUnreadChange={setUnreadChatCount} onDeliveryAddressChange={(address) => { setDeliveryAddress(address); if (address?.fullName) setCustomerName(address.fullName); }} onWishlist={() => setScreen('favorites')} onCheckout={openCheckout} onToggleNotifications={(enabled) => void toggleProfileNotifications(enabled)} onSignIn={() => openAccount('signIn')} onCreateAccount={() => openAccount('signUp')} onSignOut={() => void signOutAccount()} onAvatarChange={setProfileAvatarUrl} /> : null}
+      {screen === 'detail' && selectedProduct ? <ProductDetailView product={selectedProduct} storageBaseUrl={storageBaseUrl} metrics={metrics} ratings={ratings} loading={detailLoading} ratingValue={ratingValue} ratingName={ratingName} ratingEmail={ratingEmail} ratingComment={ratingComment} ratingBusy={ratingBusy} cartCount={cartCount} isFavorite={favoriteIds.has(selectedProduct.id)} onBack={() => setScreen(previousScreenRef.current)} onCart={openCheckout} onAdd={() => addToCart(selectedProduct)} onBuyNow={() => buyNow(selectedProduct)} onShare={() => void shareProduct(selectedProduct)} onToggleFavorite={() => toggleFavorite(selectedProduct)} onChat={() => void openChat()} onRatingValue={setRatingValue} onRatingName={setRatingName} onRatingEmail={setRatingEmail} onRatingComment={setRatingComment} onSubmitRating={() => void submitRating()} /> : null}
+      {screen === 'checkout' ? <CheckoutView cart={cart} storageBaseUrl={storageBaseUrl} totalLabel={totalLabel} freeOrder={allFree} customerName={customerName} customerEmail={customerEmail} deliveryAddress={deliveryAddress} busy={checkoutBusy} error={checkoutError} pendingPayment={Boolean(pendingCheckout)} onName={setCustomerName} onEmail={setCustomerEmail} onManageAddress={() => { setOpenAddressRequest((request) => request + 1); setScreen('profile'); }} onQuantity={updateQuantity} onRemove={(id) => setCart((current) => current.filter((line) => line.product.id !== id))} onBack={() => setScreen(checkoutReturnScreenRef.current)} onPlaceOrder={(method) => void startPaidCheckout(method)} onRequestFreeProduct={() => void completeFreeOrder()} onConfirmPayment={confirmPayment} onContinueShopping={() => { setCategory('All'); setScreen('home'); }} /> : null}
+      {screen === 'success' && completedOrder ? <View style={styles.success}><View style={styles.successMark}><Text style={styles.successMarkText}>✓</Text></View><Text style={styles.successKicker}>ORDER CONFIRMED</Text><Text style={styles.successTitle}>Your next chapter starts here.</Text><Text style={styles.successCopy}>We sent your product to {completedOrder.email}. Check your inbox for order {completedOrder.orderNumber}.</Text><Button title="Back to the shop" onPress={() => { setCompletedOrder(null); setCategory('All'); setScreen('home'); }} /></View> : null}
 
-      {screen !== 'detail' && screen !== 'success' ? <View style={styles.tabBar}>
-        <TabButton icon="⌂" label="Home" active={screen === 'catalog'} onPress={() => setScreen('catalog')} />
-        <TabButton icon="▦" label="Categories" active={screen === 'categories'} onPress={() => setScreen('categories')} />
-        <TabButton icon="▢" label={`Cart${cartCount ? ` · ${cartCount}` : ''}`} active={screen === 'cart'} onPress={() => setScreen('cart')} />
-        <TabButton icon="◉" label="Profile" active={accountVisible} onPress={() => { setAuthError(''); setAuthNotice(''); setAccountStep(currentUser ? 'dashboard' : 'auth'); setAccountVisible(true); }} />
+      {screen !== 'detail' && screen !== 'checkout' && screen !== 'success' ? <View style={styles.tabBar}>
+        <TabButton icon="home" label="Home" active={screen === 'home'} onPress={() => { setCategory('All'); setScreen('home'); }} />
+        <TabButton icon="th-large" label="Categories" active={screen === 'categories' || screen === 'listing'} onPress={() => setScreen('categories')} />
+        <TabButton icon="shopping-cart" label="Cart" active={false} badge={cartCount} onPress={openCheckout} />
+        <TabButton icon="heart" label="Favorites" active={screen === 'favorites'} onPress={() => { setCategory('All'); setScreen('favorites'); }} />
+        <TabButton icon="user-circle" label="Profile" active={screen === 'profile'} onPress={() => setScreen('profile')} />
       </View> : null}
 
       {flyingProduct ? <Animated.View style={[styles.flightToken, { transform: [{ translateX: flightProgress.interpolate({ inputRange: [0, 1], outputRange: [windowWidth * 0.62, windowWidth * 0.08] }) }, { translateY: flightProgress.interpolate({ inputRange: [0, 1], outputRange: [0, -5] }) }, { scale: flightProgress.interpolate({ inputRange: [0, 1], outputRange: [1, 0.34] }) }], opacity: flightProgress.interpolate({ inputRange: [0, 0.72, 1], outputRange: [1, 1, 0] }), pointerEvents: 'none' }]}>
@@ -657,39 +1142,34 @@ export default function App() {
       <CustomerAccountFlow
         visible={accountVisible && accountSetupLoaded}
         step={accountStep}
+        initialAuthMode={accountAuthMode}
         preferences={accountPreferences}
-        user={currentUser}
         busy={authBusy}
         error={authError}
         notice={authNotice}
-        onClose={() => setAccountVisible(false)}
+        requireAuthentication={checkoutAuthRequiredRef.current}
+        onClose={() => {
+          if (checkoutAuthRequiredRef.current) {
+            setAuthError('Sign in or create an account to continue checkout.');
+            return;
+          }
+          setAccountVisible(false);
+        }}
         onPreferencesChange={setAccountPreferences}
         onContinuePreferences={() => void continuePreferences()}
-        onEditPreferences={() => setAccountStep('preferences')}
         onAllowNotifications={() => void allowNotifications()}
         onSkipNotifications={() => void finishNotificationStep(false)}
-        onSubmitAuth={(mode, name, email, password) => void submitAuth(mode, name, email, password)}
-        onSignOut={() => void signOutAccount()}
+        onSubmitAuth={(mode, name, identifier, password, remember) => void submitAuth(mode, name, identifier, password, remember)}
+        onSocialSignIn={(provider, remember) => void signInWithSocialProvider(provider, remember)}
+        onResetPassword={(identifier) => void resetPassword(identifier)}
         onBrowseAsGuest={() => void browseAsGuest()}
       />
 
       <OnboardingFlow
         visible={initialLoadComplete && onboardingStatus === 'pending'}
         onGetStarted={() => void completeOnboarding()}
+        onContinueAsGuest={() => void continueOnboardingAsGuest()}
       />
-
-      <Modal visible={cartVisible} transparent animationType="slide" onRequestClose={() => setCartVisible(false)}>
-        <View style={styles.cartModalShade}>
-          <Pressable accessibilityRole="button" accessibilityLabel="Close bag" style={styles.cartScrim} onPress={() => setCartVisible(false)} />
-          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.cartDrawer}>
-            <View style={styles.drawerHeader}>
-              <View><Text style={styles.drawerEyebrow}>PAZ THRIVING TRIBE</Text><Text style={styles.drawerTitle}>Your bag</Text></View>
-              <Pressable accessibilityRole="button" accessibilityLabel="Close bag" onPress={() => setCartVisible(false)} style={styles.drawerClose}><Text style={styles.drawerCloseText}>×</Text></Pressable>
-            </View>
-            <CartView drawer cart={cart} storageBaseUrl={storageBaseUrl} totalLabel={totalLabel} freeOrder={allFree} customerName={customerName} customerEmail={customerEmail} busy={checkoutBusy} error={checkoutError} pendingPayment={Boolean(pendingCheckout)} onName={setCustomerName} onEmail={setCustomerEmail} onQuantity={updateQuantity} onRemove={(id) => setCart((current) => current.filter((line) => line.product.id !== id))} onCheckout={() => void (allFree ? completeFreeOrder() : startPaidCheckout())} onConfirmPayment={confirmPayment} onShop={() => setCartVisible(false)} onBack={() => setCartVisible(false)} />
-          </KeyboardAvoidingView>
-        </View>
-      </Modal>
 
       <Modal visible={Boolean(notifyProduct)} transparent animationType="slide" onRequestClose={() => setNotifyProduct(null)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalShade}><View style={styles.modalSheet}><View style={styles.modalHandle} /><Pressable onPress={() => setNotifyProduct(null)} style={styles.modalClose}><Text style={styles.modalCloseText}>×</Text></Pressable><Text style={styles.modalKicker}>RELEASE ALERT</Text><Text style={styles.modalTitle}>Get notified</Text><Text style={styles.modalCopy}>{notifyProduct?.title} isn’t available yet. We’ll email you when it opens.</Text><Field label="Full name" value={notifyName} onChangeText={setNotifyName} placeholder="Your name" maxLength={120} /><Field label="Email address" value={notifyEmail} onChangeText={setNotifyEmail} placeholder="you@example.com" keyboardType="email-address" maxLength={254} /><Field label="Phone (optional)" value={notifyPhone} onChangeText={setNotifyPhone} placeholder="Phone number" keyboardType="phone-pad" maxLength={40} />{notifyError ? <Text style={styles.formError}>{notifyError}</Text> : null}<Button title={notifyBusy ? 'Saving…' : 'Notify me'} disabled={notifyBusy} onPress={() => void submitNotify()} /></View></KeyboardAvoidingView>
@@ -728,23 +1208,18 @@ const styles = StyleSheet.create({
   notice: { minHeight: 40, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: palette.greenWash },
   noticeText: { flex: 1, paddingVertical: 7, color: palette.darkGreen, fontSize: 11, fontWeight: '700' },
   noticeClose: { paddingLeft: 10, color: palette.green, fontSize: 20 },
-  tabBar: { minHeight: 62, paddingTop: 5, paddingBottom: 4, borderTopWidth: 1, borderColor: palette.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', backgroundColor: palette.white },
-  tabButton: { minWidth: 70, minHeight: 48, alignItems: 'center', justifyContent: 'center', gap: 1 },
-  tabIcon: { color: palette.muted, fontSize: 20, lineHeight: 23 },
-  tabIconActive: { color: palette.green },
-  tabLabel: { color: palette.muted, fontSize: 9, fontWeight: '700' },
+  tabBar: { minHeight: 68, paddingTop: 6, paddingBottom: Platform.OS === 'ios' ? 18 : 5, borderTopWidth: 1, borderColor: palette.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', backgroundColor: palette.white },
+  tabButton: { flex: 1, minHeight: 52, alignItems: 'center', justifyContent: 'center', gap: 2 },
+  tabButtonPressed: { opacity: 0.68 },
+  tabIconWrap: { width: 42, height: 27, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  tabIconWrapActive: { backgroundColor: palette.greenWash },
+  tabBadge: { position: 'absolute', top: -3, right: 1, minWidth: 16, height: 16, paddingHorizontal: 3, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.orange, borderWidth: 1, borderColor: palette.white },
+  tabBadgeText: { color: palette.white, fontSize: 8, lineHeight: 10, fontWeight: '900' },
+  tabLabel: { color: palette.muted, fontSize: 10, fontWeight: '700' },
   tabLabelActive: { color: palette.green, fontWeight: '900' },
   flightToken: { position: 'absolute', left: 0, bottom: 38, zIndex: 20, width: 42, height: 48, overflow: 'hidden', borderWidth: 2, borderColor: palette.white, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.green, elevation: 8 },
   flightImage: { width: '100%', height: '100%' },
   flightLetter: { color: palette.white, fontSize: 18, fontWeight: '900' },
-  cartModalShade: { flex: 1, alignItems: 'center', justifyContent: 'flex-end', backgroundColor: '#101a14aa' },
-  cartScrim: { ...StyleSheet.absoluteFill },
-  cartDrawer: { width: '100%', maxWidth: 560, height: '68%', maxHeight: '68%', minHeight: 0, overflow: 'hidden', borderTopLeftRadius: 18, borderTopRightRadius: 18, backgroundColor: palette.paper },
-  drawerHeader: { minHeight: 50, paddingHorizontal: 18, paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: palette.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  drawerEyebrow: { color: palette.green, fontSize: 8, fontWeight: '900', letterSpacing: 1.1 },
-  drawerTitle: { marginTop: 2, color: palette.ink, fontSize: 19, fontWeight: '900' },
-  drawerClose: { width: 38, height: 38, borderWidth: 1, borderColor: palette.line, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.white },
-  drawerCloseText: { color: palette.muted, fontSize: 25, lineHeight: 28 },
   success: { flex: 1, padding: 28, alignItems: 'center', justifyContent: 'center' },
   successMark: { width: 68, height: 68, borderRadius: 34, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.green },
   successMarkText: { color: palette.white, fontSize: 36, fontWeight: '700' },

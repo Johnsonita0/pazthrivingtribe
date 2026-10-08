@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Image, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { palette } from './ShopComponents';
 
-type Props = { visible: boolean; onGetStarted: () => void };
+type Props = { visible: boolean; onGetStarted: () => void; onContinueAsGuest: () => void };
 
 const slides = [
   { title: 'Welcome to PAZ\nDigital Shop', copy: 'Your one-stop shop for ebooks, journals, digital products, groceries and gadgets.' },
@@ -11,7 +11,7 @@ const slides = [
   { title: 'Shop Smarter', copy: 'Discover useful finds and have them delivered with ease.' },
 ];
 
-export function OnboardingFlow({ visible, onGetStarted }: Props) {
+export function OnboardingFlow({ visible, onGetStarted, onContinueAsGuest }: Props) {
   const [activeIndex, setActiveIndex] = useState(0);
   if (!visible) return null;
 
@@ -42,6 +42,9 @@ export function OnboardingFlow({ visible, onGetStarted }: Props) {
         </View>
         <Pressable accessibilityRole="button" onPress={advance} style={({ pressed }) => [styles.primaryButton, pressed && styles.pressed]}>
           <Text style={styles.primaryButtonText}>{activeIndex === 0 ? 'Get start' : isLastSlide ? 'Get Started' : 'Next'}</Text>
+        </Pressable>
+        <Pressable accessibilityRole="button" onPress={onContinueAsGuest} style={styles.guestLink}>
+          <Text style={styles.guestLinkText}>Continue as guest</Text>
         </Pressable>
         <Pressable accessibilityRole="button" onPress={onGetStarted} style={styles.accountLink}>
           <Text style={styles.accountLinkText}>Already have an account? <Text style={styles.loginText}>Log In</Text></Text>
@@ -164,6 +167,8 @@ const styles = StyleSheet.create({
   pageDotActive: { backgroundColor: '#5520bc' },
   primaryButton: { minHeight: 54, marginTop: 7, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: '#5520bc' },
   primaryButtonText: { color: palette.white, fontSize: 13, fontWeight: '900' },
+  guestLink: { minHeight: 34, marginTop: 2, alignItems: 'center', justifyContent: 'center' },
+  guestLinkText: { color: '#5520bc', fontSize: 11, fontWeight: '900' },
   accountLink: { minHeight: 38, marginTop: 5, alignItems: 'center', justifyContent: 'center' },
   accountLinkText: { color: '#544875', fontSize: 11, fontWeight: '600' },
   loginText: { color: '#5520bc', fontWeight: '900' },

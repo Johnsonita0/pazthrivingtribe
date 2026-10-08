@@ -1,4 +1,8 @@
-export const API_ROOT = 'https://www.pazthrivingtribe.org/api';
+const isLocalWeb = typeof window !== 'undefined'
+  && ['localhost', '127.0.0.1'].includes(window.location.hostname);
+export const API_ROOT = isLocalWeb
+  ? 'http://localhost:3001/api'
+  : 'https://www.pazthrivingtribe.org/api';
 export const SITE_ROOT = 'https://www.pazthrivingtribe.org';
 
 export type Product = {
@@ -6,6 +10,7 @@ export type Product = {
   title: string;
   description: string;
   price: number;
+  originalPrice: number | null;
   currency: string;
   isFree: boolean;
   category: string;
@@ -15,6 +20,7 @@ export type Product = {
   rating: number;
   reviews: number;
   vendorName: string;
+  fileFormats: string[];
   releaseEnabled: boolean;
   releaseAt: string | null;
   closeAt: string | null;
@@ -31,11 +37,24 @@ export type Rating = {
 
 export type CartLine = { product: Product; quantity: number };
 export type Availability = { available: boolean; reason: string; message: string };
+export type DeliveryAddress = {
+  fullName: string;
+  phone: string;
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+};
 
-export async function apiRequest(path: string, method: 'GET' | 'POST' = 'GET', body?: unknown): Promise<any> {
+export async function apiRequest(path: string, method: 'GET' | 'POST' = 'GET', body?: unknown, accessToken?: string): Promise<any> {
   const response = await fetch(`${API_ROOT}${path}`, {
     method,
-    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    headers: {
+      ...(body ? { 'Content-Type': 'application/json' } : {}),
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+    },
     body: body ? JSON.stringify(body) : undefined,
   });
   const payload = await response.json().catch(() => ({}));
@@ -45,11 +64,20 @@ export async function apiRequest(path: string, method: 'GET' | 'POST' = 'GET', b
 
 export function normalizeProduct(raw: Record<string, unknown>): Product {
   const stock = raw.stock_count ?? raw.stockCount;
+  const originalPriceValue = raw.original_price ?? raw.compare_at_price ?? raw.regular_price ?? null;
+  const originalPrice = originalPriceValue == null ? null : Number(originalPriceValue);
+  const formatsValue = raw.file_formats ?? raw.formats ?? raw.file_format;
+  const fileFormats = Array.isArray(formatsValue)
+    ? formatsValue.map(String).filter(Boolean)
+    : typeof formatsValue === 'string'
+      ? formatsValue.split(/[;,]/).map((format) => format.trim()).filter(Boolean)
+      : [];
   return {
     id: String(raw.id || raw.product_id || ''),
     title: String(raw.title || raw.name || 'Untitled product'),
     description: String(raw.description || ''),
     price: Number(raw.price ?? raw.amount ?? 0),
+    originalPrice: Number.isFinite(originalPrice) ? originalPrice : null,
     currency: String(raw.currency || 'NGN').toUpperCase(),
     isFree: Boolean(raw.is_free ?? raw.isFree ?? false),
     category: String(raw.category || 'Digital product'),
@@ -59,6 +87,7 @@ export function normalizeProduct(raw: Record<string, unknown>): Product {
     rating: Number(raw.rating || 0),
     reviews: Number(raw.reviews || 0),
     vendorName: String(raw.vendor_name || raw.vendorName || ''),
+    fileFormats,
     releaseEnabled: Boolean(raw.release_enabled ?? raw.releaseEnabled),
     releaseAt: (raw.release_at || raw.releaseAt || null) as string | null,
     closeAt: (raw.close_at || raw.closeAt || null) as string | null,
@@ -75,6 +104,15 @@ export function categoryMatches(productCategory: string, selectedCategory: strin
   }
   if (selectedValue === 'gadgets' || selectedValue === 'gadget') {
     return /gadget|electronic|technology|tech/.test(productValue);
+  }
+  if (selectedValue === 'ebooks' || selectedValue === 'ebook' || selectedValue === 'books') {
+    return /ebook|book|stationery|guide/.test(productValue);
+  }
+  if (selectedValue === 'journals' || selectedValue === 'journal') {
+    return /journal|planner|notebook|tracker/.test(productValue);
+  }
+  if (selectedValue === 'digital products' || selectedValue === 'digital product') {
+    return /digital|template|course|software|download/.test(productValue);
   }
   return productValue === selectedValue;
 }

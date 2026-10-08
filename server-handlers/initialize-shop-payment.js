@@ -23,7 +23,14 @@ export default async function handler(req, res) {
   const email = String(body.email || '').trim().toLowerCase();
   const customerName = String(body.customerName || '').trim().slice(0, 120);
   const orderNumber = String(body.orderNumber || '').trim().slice(0, 80);
+  const paymentMethod = body.paymentMethod === undefined ? 'card' : String(body.paymentMethod);
   const items = Array.isArray(body.items) ? body.items : [];
+  const authorization = req.headers?.authorization || req.headers?.Authorization || '';
+  const accessToken = /^Bearer\s+(.+)$/i.exec(String(authorization))?.[1] || '';
+  if (!['card', 'bank_transfer'].includes(paymentMethod)) {
+    return sendJson(res, 400, { error: 'Choose a supported payment method.' });
+  }
+  if (!accessToken) return sendJson(res, 401, { error: 'Sign in to a confirmed PAZ customer account before checkout.' });
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !customerName || !orderNumber || !items.length) {
     return sendJson(res, 400, { error: 'A valid name, email, order number, and cart are required.' });
   }
@@ -46,6 +53,12 @@ export default async function handler(req, res) {
 
   try {
     const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
+    const { data: authData, error: authError } = await supabase.auth.getUser(accessToken);
+    const customer = authData?.user;
+    if (authError || !customer) return sendJson(res, 401, { error: 'Your customer session is invalid or expired. Sign in again.' });
+    if (!customer.email_confirmed_at || String(customer.email || '').toLowerCase() !== email) {
+      return sendJson(res, 403, { error: 'Confirm your account and use its email address for digital delivery.' });
+    }
     const productIds = [...new Set(normalizedItems.map((item) => item.id))];
     const { data: products, error: productsError } = await supabase
       .from('store_products')
@@ -94,11 +107,13 @@ export default async function handler(req, res) {
         amount: Math.round(amount * 100),
         currency,
         reference,
+        channels: [paymentMethod],
         callback_url: `${siteUrl}/mobile-payment-return.html`,
         metadata: {
           order_number: orderNumber,
           customer_name: customerName,
-          source: 'paz-shop-android-app',
+          customer_id: customer.id,
+          source: 'paz-shop-mobile-app',
           custom_fields: [
             { display_name: 'Customer name', variable_name: 'customer_name', value: customerName },
             { display_name: 'Order number', variable_name: 'order_number', value: orderNumber }

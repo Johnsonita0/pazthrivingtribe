@@ -38,6 +38,15 @@ function getAdminEmails() {
     .filter((value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)))];
 }
 
+function escapeHtml(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export function isNigeriaIndependenceDay(date = new Date()) {
   const dateParts = new Intl.DateTimeFormat('en-GB', {
     timeZone: 'Africa/Lagos',
@@ -61,38 +70,29 @@ export function buildCustomerProductEmail({
   const subject = isIndependenceOrder
     ? `Happy Independence Day! Your PAZ products are ready — #${orderNumber}`
     : `Your PAZ products are ready — #${orderNumber}`;
-  const previewNotice = preview
-    ? '<p><strong>Test preview only:</strong> no payment was taken and no product file is attached.</p>'
-    : '';
   const publicSiteUrl = String(process.env.VITE_APP_URL || 'https://pazthrivingtribe.org').replace(/\/+$/, '');
-  const nigeriaYear = Number(new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'Africa/Lagos',
-    year: 'numeric'
-  }).format(date));
-  const independenceBanner = isIndependenceOrder
-    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 18px;border-collapse:separate;border-spacing:0;"><tr><td align="center" style="padding:12px;background:#eaf7ee;border:1px solid #b9dfc9;border-radius:12px;text-align:center;"><img src="${publicSiteUrl}/image/nigeria-independence-email.gif" alt="A waving Nigerian flag beneath bursting fireworks" width="640" style="display:block;width:100%;max-width:640px;height:auto;border:0;border-radius:8px;" /><div style="margin-top:12px;color:#006b40;font-size:15px;line-height:1.4;font-weight:900;">HAPPY INDEPENDENCE DAY, NIGERIA!</div><div style="margin-top:4px;color:#397252;font-size:12px;line-height:1.5;font-weight:700;">9JA@${nigeriaYear - 1960} · OCTOBER 1</div></td></tr></table>`
+  const safeName = escapeHtml(customerName);
+  const safeOrderNumber = escapeHtml(orderNumber);
+  const orderItems = escapeHtml(itemSummary).split('\n').map((line) => `<div style="padding:7px 0;border-bottom:1px solid #edf0ec;">${line || '&nbsp;'}</div>`).join('');
+  const independenceMessage = isIndependenceOrder
+    ? '<p style="margin:18px 0 0;color:#28623c;">Happy Independence Day! Thank you for choosing PAZ Thriving Tribe.</p>'
     : '';
-  const html = buildPazEmailTemplate({
-    title: subject,
-    eyebrow: isIndependenceOrder ? 'Nigeria Independence Day' : isFreeOrder ? 'Free product delivery' : 'Payment confirmed',
-    intro: `Hi ${customerName},`,
-    accentText: preview
-      ? 'This is a preview of the October 1 purchase email.'
-      : isIndependenceOrder
-        ? `Happy Independence Day! Your ${isFreeOrder ? 'requested product is' : 'purchased products are'} attached to this email.`
-        : isFreeOrder ? 'Your requested free product is attached to this email.' : 'Your payment was successful and your purchased files are attached to this email.',
-    bodyHtml: `${previewNotice}${independenceBanner}${isIndependenceOrder ? '<p>Wishing you and your loved ones a joyful Independence Day celebration. Thank you for choosing PAZ Thriving Tribe.</p>' : ''}<p><strong>${preview ? 'Sample purchase email.' : isFreeOrder ? 'Free product request confirmed.' : 'Payment confirmed.'}</strong></p><p>${preview ? 'This sample shows the customer message and order details only; no payment or product delivery occurred.' : 'Your digital products are attached below.'}</p><p><strong>Order number:</strong> ${orderNumber}</p><p><strong>Order items:</strong><br>${itemSummary.replace(/\n/g, '<br')}</p>`,
-    productName: 'PAZ digital products',
-    ctaLabel: 'Visit PAZ Thriving Tribe',
-    ctaUrl: process.env.VITE_APP_URL || 'https://pazthrivingtribe.org',
-    footerNote: preview
-      ? 'Test preview only. No order was created or payment collected.'
-      : isIndependenceOrder
-        ? 'With warm Independence Day wishes, PAZ Thriving Tribe.'
-        : 'Thank you for choosing PAZ Thriving Tribe.'
-  });
+  const deliveryMessage = preview
+    ? 'This is a sample of your customer purchase email. No payment was collected and no files were delivered.'
+    : isFreeOrder
+      ? 'Your requested digital products are ready. The files are attached to this email.'
+      : 'Your payment is confirmed and your digital products are ready. The files are attached to this email.';
+  const html = `<!doctype html><html><body style="margin:0;padding:24px 12px;background:#f4f7f4;font-family:Arial,Helvetica,sans-serif;color:#183228;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;border-collapse:separate;border-spacing:0;background:#fff;border:1px solid #e3ebe5;border-radius:18px;overflow:hidden;">
+      <tr><td style="padding:27px 28px;background:#145c3d;color:#fff;"><div style="font-size:11px;font-weight:800;letter-spacing:2px;">PAZ THRIVING TRIBE</div><div style="margin-top:15px;font-size:25px;font-weight:800;line-height:1.25;">${isFreeOrder ? 'Your books are ready' : 'Thank you for your order'}</div></td></tr>
+      <tr><td style="padding:27px 28px 12px;"><div style="font-size:16px;font-weight:700;">Hello ${safeName},</div><p style="margin:11px 0 0;color:#52645a;font-size:14px;line-height:1.7;">${deliveryMessage}</p>${independenceMessage}</td></tr>
+      <tr><td style="padding:14px 28px 25px;"><div style="padding:16px;border-radius:12px;background:#f5f8f5;"><div style="color:#65756b;font-size:11px;font-weight:700;letter-spacing:1px;">ORDER REFERENCE</div><div style="margin-top:5px;color:#145c3d;font-size:16px;font-weight:800;">${safeOrderNumber}</div><div style="margin-top:16px;color:#65756b;font-size:11px;font-weight:700;letter-spacing:1px;">YOUR DIGITAL BOOKS</div><div style="margin-top:6px;color:#263a2f;font-size:13px;line-height:1.55;">${orderItems}</div></div></td></tr>
+      <tr><td style="padding:0 28px 28px;"><a href="${escapeHtml(publicSiteUrl)}" style="display:inline-block;padding:13px 19px;border-radius:9px;background:#145c3d;color:#fff;text-decoration:none;font-size:13px;font-weight:700;">Continue exploring PAZ</a><p style="margin:22px 0 0;color:#718078;font-size:12px;line-height:1.6;">Need help with your order? Reply to this email and our customer care team will be happy to help.</p></td></tr>
+      <tr><td style="padding:17px 28px;border-top:1px solid #edf0ec;color:#829087;font-size:11px;line-height:1.6;">${preview ? 'Test preview only. No order was created or payment collected.' : 'With care, PAZ Thriving Tribe · Learn, grow, and thrive.'}</td></tr>
+    </table>
+  </body></html>`;
   const text = preview
-    ? `TEST PREVIEW ONLY. No payment or delivery occurred. ${isIndependenceOrder ? 'Happy Independence Day from PAZ Thriving Tribe! ' : ''}Sample order ${orderNumber}: ${itemSummary}`
+    ? `TEST PREVIEW ONLY. No payment or delivery occurred. Sample order ${orderNumber}: ${itemSummary}`
     : `${isIndependenceOrder ? 'Happy Independence Day from PAZ Thriving Tribe! ' : ''}${isFreeOrder ? 'Your requested free PAZ products' : 'Payment confirmed. Your selected PAZ products'} are attached to this email. Order: ${orderNumber}`;
 
   return { subject, html, text };
@@ -113,6 +113,9 @@ export default async function handler(req, res) {
   const reference = String(body.reference || '').trim();
   const items = Array.isArray(body.items) ? body.items : [];
   const isFreeOrder = body.free === true;
+  const isMobileFreeOrder = isFreeOrder && body.source === 'paz-shop-mobile-app';
+  const authorization = req.headers?.authorization || req.headers?.Authorization || '';
+  const accessToken = /^Bearer\s+(.+)$/i.exec(String(authorization))?.[1] || '';
 
   if (!email) return sendJson(res, 400, { error: 'A valid customer email is required.' });
   if ((!isFreeOrder && !reference) || !items.length) return sendJson(res, 400, { error: isFreeOrder ? 'Order items are required.' : 'Payment reference and order items are required.' });
@@ -138,6 +141,32 @@ export default async function handler(req, res) {
     }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
+    const isMobilePaidOrder = !isFreeOrder && transaction?.metadata?.source === 'paz-shop-mobile-app';
+    const isMobileOrder = isMobileFreeOrder || isMobilePaidOrder;
+    let authenticatedCustomer = null;
+    let deliveryAddress = null;
+    if (isMobileOrder) {
+      if (!accessToken) return sendJson(res, 401, { error: 'Sign in to your PAZ customer account to complete this order.' });
+      const { data: authData, error: authError } = await supabase.auth.getUser(accessToken);
+      authenticatedCustomer = authData?.user || null;
+      if (authError || !authenticatedCustomer) {
+        return sendJson(res, 401, { error: 'Your customer session is invalid or expired. Sign in again.' });
+      }
+      if (!authenticatedCustomer.email_confirmed_at
+        || String(authenticatedCustomer.email || '').toLowerCase() !== email) {
+        return sendJson(res, 403, { error: 'Confirm your account and use its email address for digital delivery.' });
+      }
+      if (isMobilePaidOrder && String(transaction?.metadata?.customer_id || '') !== authenticatedCustomer.id) {
+        return sendJson(res, 403, { error: 'Sign in to the account used to make this payment.' });
+      }
+      const { data: customerProfile, error: profileError } = await supabase
+        .from('customer_profiles')
+        .select('delivery_address')
+        .eq('id', authenticatedCustomer.id)
+        .maybeSingle();
+      if (profileError) throw profileError;
+      deliveryAddress = customerProfile?.delivery_address || null;
+    }
     const productIds = [...new Set(items.map((item) => String(item.id || '').trim()).filter(Boolean))];
     const { data: products, error: productsError } = await supabase
       .from('store_products')
@@ -291,6 +320,8 @@ export default async function handler(req, res) {
           order_number: orderNumber,
           customer_name: customerName,
           email,
+          customer_id: authenticatedCustomer?.id || null,
+          delivery_address: deliveryAddress,
           subtotal: expectedAmount,
           total: expectedAmount,
           currency: orderCurrency,

@@ -190,6 +190,7 @@ create table if not exists store_bank_accounts (
 create table if not exists shop_orders (
   id uuid primary key default gen_random_uuid(),
   order_number text unique not null,
+  customer_id uuid references auth.users(id) on delete set null,
   customer_name text,
   email text,
   phone text,
@@ -202,12 +203,15 @@ create table if not exists shop_orders (
   payment_proof_url text,
   payment_reference text,
   payment_mode text default 'live',
+  delivery_address jsonb,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
 
 alter table if exists shop_orders add column if not exists payment_mode text default 'live';
 alter table if exists shop_orders add column if not exists currency text;
+alter table public.shop_orders add column if not exists customer_id uuid references auth.users(id) on delete set null;
+alter table public.shop_orders add column if not exists delivery_address jsonb;
 
 create table if not exists shop_order_items (
   id uuid primary key default gen_random_uuid(),
@@ -226,6 +230,7 @@ create table if not exists customer_profiles (
   last_name text,
   full_name text,
   phone text,
+  delivery_address jsonb,
   country_code text not null default 'NG',
   language text not null default 'English',
   currency text not null default 'NGN',
@@ -243,6 +248,7 @@ alter table public.customer_profiles add column if not exists first_name text;
 alter table public.customer_profiles add column if not exists last_name text;
 alter table public.customer_profiles add column if not exists full_name text;
 alter table public.customer_profiles add column if not exists phone text;
+alter table public.customer_profiles add column if not exists delivery_address jsonb;
 alter table public.customer_profiles add column if not exists created_at timestamptz not null default now();
 alter table public.customer_profiles add column if not exists updated_at timestamptz not null default now();
 

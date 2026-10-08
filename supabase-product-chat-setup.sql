@@ -9,6 +9,8 @@ create table if not exists public.product_chat_conversations (
   customer_name text not null,
   customer_email text not null,
   customer_phone text not null,
+  customer_id uuid references auth.users(id) on delete set null,
+  customer_read_at timestamptz not null default now(),
   access_token_hash text not null unique,
   access_token_ciphertext text not null,
   email_reply_token text not null unique,
@@ -22,6 +24,10 @@ alter table public.product_chat_conversations
   add column if not exists access_token_ciphertext text;
 alter table public.product_chat_conversations
   add column if not exists email_reply_token text;
+alter table public.product_chat_conversations
+  add column if not exists customer_id uuid references auth.users(id) on delete set null;
+alter table public.product_chat_conversations
+  add column if not exists customer_read_at timestamptz not null default now();
 create unique index if not exists product_chat_conversations_email_reply_token_idx
   on public.product_chat_conversations (email_reply_token)
   where email_reply_token is not null;
@@ -39,6 +45,8 @@ create table if not exists public.product_chat_messages (
 
 create index if not exists product_chat_conversations_updated_idx
   on public.product_chat_conversations (last_message_at desc);
+create index if not exists product_chat_conversations_customer_idx
+  on public.product_chat_conversations (customer_id, last_message_at desc);
 create index if not exists product_chat_messages_conversation_idx
   on public.product_chat_messages (conversation_id, created_at);
 
