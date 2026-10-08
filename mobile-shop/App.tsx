@@ -828,8 +828,19 @@ export default function App() {
       const result = mode === 'signIn'
         ? await supabase.auth.signInWithPassword(isPhone ? { phone: identifier.replace(/[\s()-]/g, ''), password } : { email, password })
         : isPhone
-          ? await supabase.auth.signUp({ phone: identifier.replace(/[\s()-]/g, ''), password, options: { data: { full_name: name.trim() } } })
-          : await supabase.auth.signUp({ email, password, options: { data: { full_name: name.trim() } } });
+          ? await supabase.auth.signUp({
+              phone: identifier.replace(/[\s()-]/g, ''),
+              password,
+              options: { data: { full_name: name.trim(), account_type: 'customer', account_role: 'customer', app_source: 'paz-shop' } },
+            })
+          : await supabase.auth.signUp({
+              email,
+              password,
+              options: {
+                emailRedirectTo: `${SITE_ROOT}/shop?account=customer-confirmed`,
+                data: { full_name: name.trim(), account_type: 'customer', account_role: 'customer', app_source: 'paz-shop' },
+              },
+            });
       if (result.error) throw new Error(result.error.message);
       const user = result.data?.session?.user ?? (mode === 'signIn' ? result.data?.user : null);
       if (!user) {

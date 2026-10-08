@@ -14,9 +14,14 @@ free order.
    sign-ups. Keep email confirmation enabled for customer accounts.
 2. In **Authentication → URL Configuration → Redirect URLs**, allow
    `pazshop://auth/callback` for the app's Google/Facebook OAuth callback. For
-   confirmation emails, use a verified PAZ website URL as the Site URL and
-   configure a production SMTP provider so verification emails are delivered
-   reliably.
+   customer confirmation emails, allow
+   `https://www.pazthrivingtribe.org/shop?account=customer-confirmed` and use a
+   verified PAZ website URL as the Site URL. Configure a production SMTP
+   provider so verification emails are delivered reliably. Customer sign-ups
+   identify the account as `customer` and redirect back to the shop after
+   confirmation. Supabase confirmation email wording is configured per project,
+   not per app sign-up; use customer-neutral wording in the shared confirmation
+   template so vendor sign-ups do not receive a vendor-only message.
 3. In **SQL Editor**, run [`customer-account-setup.sql`](./customer-account-setup.sql).
    It creates/updates customer profiles, adds the order-to-customer link, and
    installs row-level-security policies for customers' own profile and orders,
