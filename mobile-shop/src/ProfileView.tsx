@@ -1,7 +1,7 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useCallback, useEffect, useState, type ComponentProps, type ReactNode } from 'react';
-import { ActivityIndicator, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Switch, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { apiRequest, DeliveryAddress } from './api';
 import { AccountUser } from './CustomerAccountFlow';
 import { supabase } from './supabaseClient';
@@ -144,6 +144,7 @@ export function ProfileView({
   const [chatBusy, setChatBusy] = useState(false);
   const [chatError, setChatError] = useState('');
   const [newMessageOpen, setNewMessageOpen] = useState(false);
+  const [expiredConversationIds, setExpiredConversationIds] = useState<Set<string>>(() => new Set());
   const [newMessageName, setNewMessageName] = useState('');
   const [newMessagePhone, setNewMessagePhone] = useState('');
   const [newMessage, setNewMessage] = useState('');
@@ -370,7 +371,14 @@ export function ProfileView({
       setConversations((current) => current.map((thread) => thread.id === opened.id ? opened : thread));
       await loadChats();
     } catch (error) {
-      setChatError(error instanceof Error ? error.message : 'This conversation could not be opened.');
+      const message = error instanceof Error ? error.message : 'This conversation could not be opened.';
+      if (message.includes('invalid or expired')) {
+        setExpiredConversationIds((current) => new Set(current).add(conversation.id));
+        setNewMessageOpen(true);
+        setChatError('This conversation link is no longer active. Start a new message below to continue with PAZ Customer Care.');
+      } else {
+        setChatError(message);
+      }
     } finally {
       setChatBusy(false);
     }
@@ -715,17 +723,19 @@ export function ProfileView({
             {!user ? <Text style={styles.emptyText}>Sign in to see all your conversations.</Text> : null}
             {chatsBusy ? <ActivityIndicator color={palette.green} style={styles.largeLoader} /> : null}
             {chatsError ? <Text accessibilityRole="alert" style={styles.error}>{chatsError}</Text> : null}
-            {!chatsBusy && !chatsError && user && !conversations.length ? (
+            {chatError ? <Text accessibilityRole="alert" style={styles.error}>{chatError}</Text> : null}
+            {user && !newMessageOpen ? (
+              <Pressable accessibilityRole="button" onPress={() => { setChatError(''); setNewMessageOpen(true); }} style={styles.newMessageButton}>
+                <FontAwesome5 name="plus" size={12} color={palette.white} />
+                <Text style={styles.primaryButtonText}>New message</Text>
+              </Pressable>
+            ) : null}
+            {user && newMessageOpen ? (
               <View style={styles.newConversationCard}>
                 <FontAwesome5 name="comments" size={24} color={palette.green} />
                 <Text style={styles.infoHeading}>Start a conversation</Text>
                 <Text style={styles.emptyText}>Send a message to PAZ Customer Care. Your conversation will appear here so you can continue it later.</Text>
-                {!newMessageOpen ? (
-                  <Pressable accessibilityRole="button" onPress={() => setNewMessageOpen(true)} style={styles.primaryButton}>
-                    <Text style={styles.primaryButtonText}>New message</Text>
-                  </Pressable>
-                ) : (
-                  <View style={styles.newConversationForm}>
+                <View style={styles.newConversationForm}>
                     <Text style={styles.rowSubtitle}>Reply email: {email}</Text>
                     <TextInput accessibilityLabel="Your name" value={newMessageName} onChangeText={setNewMessageName} placeholder="Your name" style={styles.replyInput} />
                     <TextInput accessibilityLabel="Phone number with country code" value={newMessagePhone} onChangeText={setNewMessagePhone} placeholder="Phone number, e.g. +234..." keyboardType="phone-pad" style={styles.replyInput} />
@@ -738,21 +748,19 @@ export function ProfileView({
                         {chatBusy ? <ActivityIndicator color={palette.white} /> : <Text style={styles.primaryButtonText}>Send message</Text>}
                       </Pressable>
                     </View>
-                  </View>
-                )}
-                {chatError ? <Text accessibilityRole="alert" style={styles.error}>{chatError}</Text> : null}
+                </View>
               </View>
             ) : null}
-            {conversations.map((conversation) => <Pressable key={conversation.id} accessibilityRole="button" onPress={() => void openConversation(conversation)} style={styles.conversationCard}>
+            {!chatsBusy && !chatsError && user && !conversations.length && !newMessageOpen ? <Text style={styles.emptyText}>No conversations yet. Start a new message whenever you need help.</Text> : null}
+            {conversations.map((conversation) => <Pressable key={conversation.id} accessibilityRole="button" disabled={expiredConversationIds.has(conversation.id)} onPress={() => void openConversation(conversation)} style={[styles.conversationCard, expiredConversationIds.has(conversation.id) && styles.expiredConversationCard]}>
               <View style={styles.conversationIcon}><FontAwesome5 name="book" size={15} color={palette.green} /></View>
               <View style={styles.conversationCopy}>
                 <Text numberOfLines={1} style={styles.orderNumber}>{conversation.product_title}</Text>
-                <Text style={styles.rowSubtitle}>{conversation.assigned_to === 'vendor' ? `${conversation.vendor_name || 'Product vendor'} · Vendor` : 'PAZ Customer Care'} · {new Date(conversation.last_message_at).toLocaleString()}</Text>
+                <Text style={styles.rowSubtitle}>{expiredConversationIds.has(conversation.id) ? 'This link is no longer active · Start a new message' : `${conversation.assigned_to === 'vendor' ? `${conversation.vendor_name || 'Product vendor'} · Vendor` : 'PAZ Customer Care'} · ${new Date(conversation.last_message_at).toLocaleString()}`}</Text>
                 {conversation.last_message ? <Text numberOfLines={1} style={styles.conversationPreview}>{conversation.last_message}</Text> : null}
               </View>
               {conversation.unread_count > 0 ? <View style={styles.unreadBadge}><Text style={styles.unreadBadgeText}>{conversation.unread_count}</Text></View> : <FontAwesome5 name="chevron-right" size={11} color={palette.muted} />}
             </Pressable>)}
-            {chatError ? <Text accessibilityRole="alert" style={styles.error}>{chatError}</Text> : null}
           </ScrollView> : null}
 
           {page === 'about' ? <ScrollView contentContainerStyle={styles.aboutContent}>
@@ -773,14 +781,14 @@ export function ProfileView({
               <Text style={styles.infoCopy}>Save your contact and delivery details here. PAZ will prefill them at checkout.</Text>
             </View>
             {!user ? <Text style={styles.error}>Sign in to save an address to your profile.</Text> : null}
-            <TextInput accessibilityLabel="Address full name" autoCapitalize="words" value={addressDraft.fullName} onChangeText={(value) => setAddressDraft((current) => ({ ...current, fullName: value }))} placeholder="Full name" style={styles.addressInput} />
-            <TextInput accessibilityLabel="Address phone number" value={addressDraft.phone} onChangeText={(value) => setAddressDraft((current) => ({ ...current, phone: value }))} placeholder="Phone number, e.g. +234..." keyboardType="phone-pad" style={styles.addressInput} />
-            <TextInput accessibilityLabel="Street address" value={addressDraft.addressLine1} onChangeText={(value) => setAddressDraft((current) => ({ ...current, addressLine1: value }))} placeholder="Street address" style={styles.addressInput} />
-            <TextInput accessibilityLabel="Apartment or landmark" value={addressDraft.addressLine2} onChangeText={(value) => setAddressDraft((current) => ({ ...current, addressLine2: value }))} placeholder="Apartment, suite or landmark (optional)" style={styles.addressInput} />
-            <TextInput accessibilityLabel="City" value={addressDraft.city} onChangeText={(value) => setAddressDraft((current) => ({ ...current, city: value }))} placeholder="City" style={styles.addressInput} />
-            <TextInput accessibilityLabel="State or region" value={addressDraft.state} onChangeText={(value) => setAddressDraft((current) => ({ ...current, state: value }))} placeholder="State / region" style={styles.addressInput} />
-            <TextInput accessibilityLabel="Postal code" value={addressDraft.postalCode} onChangeText={(value) => setAddressDraft((current) => ({ ...current, postalCode: value }))} placeholder="Postal code (optional)" style={styles.addressInput} />
-            <TextInput accessibilityLabel="Country" value={addressDraft.country} onChangeText={(value) => setAddressDraft((current) => ({ ...current, country: value }))} placeholder="Country" style={styles.addressInput} />
+            <View style={styles.addressField}><Text style={styles.addressLabel}>Full name</Text><TextInput accessibilityLabel="Address full name" autoCapitalize="words" value={addressDraft.fullName} onChangeText={(value) => setAddressDraft((current) => ({ ...current, fullName: value }))} placeholder="Enter your full name" placeholderTextColor="#858091" style={styles.addressInput} /></View>
+            <View style={styles.addressField}><Text style={styles.addressLabel}>Phone number</Text><TextInput accessibilityLabel="Address phone number" value={addressDraft.phone} onChangeText={(value) => setAddressDraft((current) => ({ ...current, phone: value }))} placeholder="e.g. +234 800 000 0000" placeholderTextColor="#858091" keyboardType="phone-pad" style={styles.addressInput} /></View>
+            <View style={styles.addressField}><Text style={styles.addressLabel}>Street address</Text><TextInput accessibilityLabel="Street address" value={addressDraft.addressLine1} onChangeText={(value) => setAddressDraft((current) => ({ ...current, addressLine1: value }))} placeholder="House number and street name" placeholderTextColor="#858091" style={styles.addressInput} /></View>
+            <View style={styles.addressField}><Text style={styles.addressLabel}>Apartment or landmark <Text style={styles.optionalLabel}>(optional)</Text></Text><TextInput accessibilityLabel="Apartment or landmark" value={addressDraft.addressLine2} onChangeText={(value) => setAddressDraft((current) => ({ ...current, addressLine2: value }))} placeholder="Apartment, suite or nearby landmark" placeholderTextColor="#858091" style={styles.addressInput} /></View>
+            <View style={styles.addressField}><Text style={styles.addressLabel}>City</Text><TextInput accessibilityLabel="City" value={addressDraft.city} onChangeText={(value) => setAddressDraft((current) => ({ ...current, city: value }))} placeholder="Enter your city" placeholderTextColor="#858091" style={styles.addressInput} /></View>
+            <View style={styles.addressField}><Text style={styles.addressLabel}>State or region</Text><TextInput accessibilityLabel="State or region" value={addressDraft.state} onChangeText={(value) => setAddressDraft((current) => ({ ...current, state: value }))} placeholder="Enter your state or region" placeholderTextColor="#858091" style={styles.addressInput} /></View>
+            <View style={styles.addressField}><Text style={styles.addressLabel}>Postal code <Text style={styles.optionalLabel}>(optional)</Text></Text><TextInput accessibilityLabel="Postal code" value={addressDraft.postalCode} onChangeText={(value) => setAddressDraft((current) => ({ ...current, postalCode: value }))} placeholder="Enter postal code" placeholderTextColor="#858091" style={styles.addressInput} /></View>
+            <View style={styles.addressField}><Text style={styles.addressLabel}>Country</Text><TextInput accessibilityLabel="Country" value={addressDraft.country} onChangeText={(value) => setAddressDraft((current) => ({ ...current, country: value }))} placeholder="Enter your country" placeholderTextColor="#858091" style={styles.addressInput} /></View>
             {addressError ? <Text accessibilityRole="alert" style={styles.error}>{addressError}</Text> : null}
             <Pressable accessibilityRole="button" disabled={!user || addressBusy} onPress={() => void saveAddress()} style={[styles.primaryButton, (!user || addressBusy) && styles.sendButtonDisabled]}>
               {addressBusy ? <ActivityIndicator color={palette.white} /> : <Text style={styles.primaryButtonText}>{deliveryAddress ? 'Save address' : 'Add address'}</Text>}
@@ -937,7 +945,7 @@ const styles = StyleSheet.create({
   cropMoveControls: { width: 142, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 4 },
   cropMoveSpacer: { width: 42, height: 42 },
   cropActions: { width: '100%', marginTop: 22, flexDirection: 'row', justifyContent: 'center', gap: 10 },
-  modalHeader: { minHeight: 58, paddingHorizontal: 15, borderBottomWidth: 1, borderBottomColor: '#ebe7f1', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: palette.white },
+  modalHeader: { minHeight: 58, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0, paddingHorizontal: 15, borderBottomWidth: 1, borderBottomColor: '#ebe7f1', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: palette.white },
   modalBack: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
   modalTitle: { flex: 1, marginHorizontal: 10, color: palette.ink, fontSize: 15, fontWeight: '900' },
   headerSpacer: { width: 34 },
@@ -950,9 +958,11 @@ const styles = StyleSheet.create({
   orderStatus: { color: palette.green, fontSize: 9, fontWeight: '800', textTransform: 'capitalize' },
   orderItem: { marginTop: 5, color: palette.muted, fontSize: 10 },
   conversationCard: { minHeight: 62, marginBottom: 8, padding: 11, borderWidth: 1, borderColor: '#ebe7f1', borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: palette.white },
+  expiredConversationCard: { opacity: 0.65 },
   conversationIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: '#eaf4ef' },
   conversationCopy: { flex: 1 },
   conversationPreview: { marginTop: 4, color: palette.ink, fontSize: 10 },
+  newMessageButton: { minHeight: 42, marginBottom: 12, paddingHorizontal: 15, borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: palette.green },
   newConversationCard: { marginTop: 10, padding: 20, alignItems: 'center', borderWidth: 1, borderColor: '#ebe7f1', borderRadius: 14, backgroundColor: palette.white },
   newConversationForm: { width: '100%', gap: 9 },
   newMessageInput: { minHeight: 86, textAlignVertical: 'top' },
@@ -981,9 +991,12 @@ const styles = StyleSheet.create({
   infoContent: { flex: 1, padding: 26, alignItems: 'center', justifyContent: 'center' },
   infoHeading: { marginTop: 13, color: palette.ink, fontSize: 18, fontWeight: '900' },
   infoCopy: { marginTop: 8, marginBottom: 17, color: palette.muted, fontSize: 12, lineHeight: 19, textAlign: 'center' },
-  addressContent: { width: '100%', maxWidth: 520, paddingHorizontal: 18, paddingTop: 18, paddingBottom: 36, alignSelf: 'center', gap: 10 },
+  addressContent: { width: '100%', maxWidth: 520, paddingHorizontal: 18, paddingTop: 18, paddingBottom: 36, alignSelf: 'center', gap: 12 },
   addressIntro: { alignItems: 'center', marginBottom: 8 },
-  addressInput: { width: '100%', minWidth: 0, minHeight: 42, paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderColor: '#ebe7f1', borderRadius: 10, color: palette.ink, backgroundColor: palette.white, fontSize: 12 },
+  addressField: { width: '100%', gap: 5 },
+  addressLabel: { color: palette.ink, fontSize: 11, fontWeight: '800' },
+  optionalLabel: { color: palette.muted, fontWeight: '400' },
+  addressInput: { width: '100%', minWidth: 0, minHeight: 46, paddingHorizontal: 12, paddingVertical: 11, borderWidth: 1, borderColor: '#d9d3e3', borderRadius: 10, color: palette.ink, backgroundColor: palette.white, fontSize: 14 },
   supportContent: { width: '100%', maxWidth: 520, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 38, alignSelf: 'center', gap: 13 },
   contactIntro: { alignItems: 'center', paddingHorizontal: 2, paddingBottom: 8 },
   contactHeading: { color: palette.ink, fontSize: 22, fontWeight: '900' },

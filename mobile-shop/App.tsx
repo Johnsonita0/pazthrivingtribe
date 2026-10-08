@@ -1045,7 +1045,25 @@ export default function App() {
   useEffect(() => {
     if (!currentUser || !accountPreferences.notificationsEnabled) return;
     void registerCustomerPushToken(currentUser).catch((error) => {
-      setNotice(error instanceof Error ? error.message : 'Phone notifications could not be registered.');
+      const details = error instanceof Error ? error.message : 'Phone notifications could not be registered.';
+      const missingFirebaseConfig = /firebase messaging|google-services\.json/i.test(details);
+      const message = missingFirebaseConfig
+        ? 'Push alerts are not configured for this Android app yet. PAZ needs its Firebase Android configuration before notifications can be enabled.'
+        : `Push alerts could not be enabled: ${details}`;
+      const disabledPreferences = { ...accountPreferences, notificationsEnabled: false };
+      void (async () => {
+        const saved = await saveAccountPreferences(disabledPreferences);
+        const { error: profileError } = await supabase.from('customer_profiles')
+          .update({ expo_push_token: null, notifications_enabled: false, updated_at: new Date().toISOString() })
+          .eq('id', currentUser.id);
+        if (profileError) console.warn('Could not clear the failed PAZ push notification registration:', profileError.message);
+        setNotice(saved
+          ? message
+          : `${message} The notification setting could not be saved on this device.`);
+      })().catch((saveError) => {
+        console.warn('Could not disable the failed PAZ push notification setting:', saveError);
+        setNotice(message);
+      });
     });
   }, [currentUser?.id, accountPreferences.notificationsEnabled]);
 
