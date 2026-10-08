@@ -18,10 +18,12 @@ free order.
    `https://www.pazthrivingtribe.org/shop?account=customer-confirmed` and use a
    verified PAZ website URL as the Site URL. Configure a production SMTP
    provider so verification emails are delivered reliably. Customer sign-ups
-   identify the account as `customer` and redirect back to the shop after
-   confirmation. Supabase confirmation email wording is configured per project,
-   not per app sign-up; use customer-neutral wording in the shared confirmation
-   template so vendor sign-ups do not receive a vendor-only message.
+   identify the account as `customer`, include the customer's name, and redirect
+   back to the shop after confirmation. Supabase has one shared sign-up
+   confirmation template, so use the conditional PAZ template in
+   [`../PAZ_CUSTOMER_CONFIRMATION_EMAIL.md`](../PAZ_CUSTOMER_CONFIRMATION_EMAIL.md)
+   to show customer copy and a personalized greeting for shop accounts while
+   retaining vendor confirmation copy for vendor registrations.
 3. In **SQL Editor**, run [`customer-account-setup.sql`](./customer-account-setup.sql).
    It creates/updates customer profiles, adds the order-to-customer link, and
    installs row-level-security policies for customers' own profile and orders,

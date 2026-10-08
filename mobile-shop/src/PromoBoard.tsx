@@ -30,7 +30,7 @@ export function PromoBoard({ products, storageBaseUrl, onOpen, onCategory, compa
       copy: 'Soaring with peace, influencing the world.',
       image: `${SITE_ROOT}/logo/logo2.jpeg`,
       action: 'Explore PAZ',
-      onPress: () => onCategory('All'),
+      onPress: () => Linking.openURL(`${SITE_ROOT}/care-counseling`),
     },
     {
       eyebrow: 'FEATURED BOOK',

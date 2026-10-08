@@ -825,20 +825,22 @@ export default function App() {
       const isPhone = !identifier.includes('@');
       const email = identifier.toLowerCase();
       const password = passwordInput;
+      const fullName = name.trim();
+      const firstName = fullName.split(/\s+/)[0] || '';
       const result = mode === 'signIn'
         ? await supabase.auth.signInWithPassword(isPhone ? { phone: identifier.replace(/[\s()-]/g, ''), password } : { email, password })
         : isPhone
           ? await supabase.auth.signUp({
               phone: identifier.replace(/[\s()-]/g, ''),
               password,
-              options: { data: { full_name: name.trim(), account_type: 'customer', account_role: 'customer', app_source: 'paz-shop' } },
+              options: { data: { full_name: fullName, first_name: firstName, account_type: 'customer', account_role: 'customer', app_source: 'paz-shop' } },
             })
           : await supabase.auth.signUp({
               email,
               password,
               options: {
                 emailRedirectTo: `${SITE_ROOT}/shop?account=customer-confirmed`,
-                data: { full_name: name.trim(), account_type: 'customer', account_role: 'customer', app_source: 'paz-shop' },
+                data: { full_name: fullName, first_name: firstName, account_type: 'customer', account_role: 'customer', app_source: 'paz-shop' },
               },
             });
       if (result.error) throw new Error(result.error.message);
