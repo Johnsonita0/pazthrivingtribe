@@ -7,10 +7,13 @@
 
 import http from 'http';
 import url from 'url';
+import process from 'node:process';
 import adminAuthHandler from './server-handlers/admin-auth.js';
 import adminAccessHandler from './server-handlers/admin-access.js';
 import adminHealthHandler from './server-handlers/admin-health.js';
 import adminUpdateHandler from './server-handlers/admin-update.js';
+import adminCustomersHandler from './server-handlers/admin-customers.js';
+import customerNotificationsHandler from './server-handlers/customer-notifications.js';
 import fetchMetaHandler from './server-handlers/fetch-meta.js';
 import paystackWebhookHandler from './server-handlers/paystack-webhook.js';
 import trackVisitorHandler from './server-handlers/track-visitor.js';
@@ -75,6 +78,18 @@ const server = http.createServer((req, res) => {
       if (pathname === '/api/admin-update' && req.method === 'POST') {
         req.body = body;
         await adminUpdateHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/admin-customers' && req.method === 'POST') {
+        req.body = body ? JSON.parse(body) : {};
+        await adminCustomersHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/customer-notifications' && req.method === 'POST') {
+        req.body = body ? JSON.parse(body) : {};
+        await customerNotificationsHandler(req, res);
         return;
       }
 

@@ -147,7 +147,7 @@ export function HomeView({
                   {!signedIn ? <Text accessibilityRole="link" onPress={onCreateAccount} style={styles.createAccountLink}>Sign in</Text> : null}
                 </Text>
               </View>
-              <Pressable accessibilityRole="button" accessibilityLabel={notificationCount ? `Open notifications, ${notificationCount} unread chats` : 'Open notifications'} onPress={onNotifications} style={styles.notificationButton}>
+              <Pressable accessibilityRole="button" accessibilityLabel={notificationCount ? `Open notifications, ${notificationCount} unread items` : 'Open notifications'} onPress={onNotifications} style={styles.notificationButton}>
                 <FontAwesome5 name="bell" size={17} color={palette.darkGreen} />
                 {notificationCount > 0 ? <View style={styles.notificationBadge}><Text style={styles.notificationBadgeText}>{notificationCount > 99 ? '99+' : notificationCount}</Text></View> : null}
               </Pressable>

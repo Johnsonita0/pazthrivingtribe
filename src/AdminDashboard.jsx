@@ -257,6 +257,20 @@ export default function AdminDashboard(props) {
   const [coverFileDragActive, setCoverFileDragActive] = useState(false);
 
   const [activeDashboardView, setActiveDashboardView] = useState("visitors");
+  const [customerProfiles, setCustomerProfiles] = useState([]);
+  const [customerCount, setCustomerCount] = useState(null);
+  const [customerLoading, setCustomerLoading] = useState(false);
+  const [customerError, setCustomerError] = useState("");
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [customerPage, setCustomerPage] = useState(1);
+  const [customerTab, setCustomerTab] = useState("users");
+  const [selectedCustomerId, setSelectedCustomerId] = useState("");
+  const [customerDraft, setCustomerDraft] = useState(null);
+  const [customerSubject, setCustomerSubject] = useState("");
+  const [customerMessage, setCustomerMessage] = useState("");
+  const [customerBroadcastSubject, setCustomerBroadcastSubject] = useState("");
+  const [customerBroadcastMessage, setCustomerBroadcastMessage] = useState("");
+  const [customerActionBusy, setCustomerActionBusy] = useState("");
   const [commerceSubTab, setCommerceSubTab] = useState("storefront");
   const [paymentHistoryTab, setPaymentHistoryTab] = useState("booking");
   const [tableFilters, setTableFilters] = useState({});
@@ -484,6 +498,118 @@ export default function AdminDashboard(props) {
 
   const showAdminToast = (type, title, message, actions = []) => {
     setAdminToast({ type, title, message, actions });
+  };
+
+  const customerAdminRequest = async (request) => {
+    const token = session?.access_token || session?.accessToken || "";
+    const response = await fetch("/api/admin-customers", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(request),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || "Customer admin request failed.");
+    return payload;
+  };
+
+  useEffect(() => {
+    if (mode !== "dashboard" || !isAdmin || activeDashboardView !== "users") return undefined;
+    let active = true;
+    const token = session?.access_token || session?.accessToken || "";
+    void Promise.resolve().then(() => {
+      if (!active) return null;
+      setCustomerLoading(true);
+      setCustomerError("");
+      return fetch("/api/admin-customers", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ action: "list_customers", page: customerPage, pageSize: 25, search: customerSearch }),
+      });
+    }).then(async (response) => {
+      if (!response) return;
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || "Customer accounts could not be loaded.");
+      if (active) {
+        setCustomerProfiles(Array.isArray(payload.customers) ? payload.customers : []);
+        setCustomerCount(Number(payload.count) || 0);
+      }
+    }).catch((error) => {
+      if (active) setCustomerError(error.message || "Customer accounts could not be loaded.");
+    }).finally(() => {
+      if (active) setCustomerLoading(false);
+    });
+    return () => { active = false; };
+  }, [activeDashboardView, customerPage, customerSearch, isAdmin, mode, session?.accessToken, session?.access_token]);
+
+  const saveCustomerProfile = async () => {
+    if (!customerDraft) return;
+    setCustomerActionBusy("save");
+    try {
+      const payload = await customerAdminRequest({
+        action: "save_customer",
+        id: customerDraft.id,
+        profile: {
+          first_name: customerDraft.first_name || "",
+          last_name: customerDraft.last_name || "",
+          full_name: customerDraft.full_name || "",
+          phone: customerDraft.phone || "",
+          delivery_address: customerDraft.delivery_address || {},
+          country_code: customerDraft.country_code || "",
+          language: customerDraft.language || "",
+          currency: customerDraft.currency || "",
+          notifications_enabled: Boolean(customerDraft.notifications_enabled),
+        },
+      });
+      const saved = payload.customer;
+      setCustomerProfiles((current) => current.map((profile) => profile.id === saved.id ? saved : profile));
+      setCustomerDraft(saved);
+      showAdminToast("success", "Customer updated", "The customer profile changes were saved.");
+    } catch (error) {
+      showAdminToast("error", "Save failed", error.message || "The customer profile could not be saved.");
+    } finally {
+      setCustomerActionBusy("");
+    }
+  };
+
+  const sendCustomerNotification = async (bulk) => {
+    const subject = bulk ? customerBroadcastSubject : customerSubject;
+    const messageText = bulk ? customerBroadcastMessage : customerMessage;
+    if (!String(subject).trim() || !String(messageText).trim()) {
+      showAdminToast("error", "Message required", "Enter both a subject and message before sending.");
+      return;
+    }
+    if (bulk && !window.confirm(`Send this in-app notification to all ${customerCount || 0} customer accounts? This will not send email or notify vendor accounts.`)) return;
+    if (!bulk && !customerDraft) return;
+    setCustomerActionBusy(bulk ? "bulk" : "single");
+    try {
+      const payload = await customerAdminRequest({
+        action: bulk ? "send_bulk_customer_notification" : "send_customer_notification",
+        ...(bulk ? {} : { id: customerDraft.id }),
+        subject,
+        message: messageText,
+      });
+      const message = bulk
+        ? `Delivered in the PAZ app to ${payload.sent} customers${payload.failed ? `; ${payload.failed} failed` : ""}.`
+        : `In-app notification delivered to ${customerDraft.full_name || customerDraft.email}.`;
+      showAdminToast(payload.failed ? "error" : "success", payload.failed ? "Partially sent" : "Message sent", message);
+      if (bulk) {
+        setCustomerBroadcastSubject("");
+        setCustomerBroadcastMessage("");
+      } else {
+        setCustomerSubject("");
+        setCustomerMessage("");
+      }
+    } catch (error) {
+      showAdminToast("error", "Message failed", error.message || "The customer message could not be sent.");
+    } finally {
+      setCustomerActionBusy("");
+    }
   };
 
   useEffect(() => {
@@ -2487,6 +2613,12 @@ export default function AdminDashboard(props) {
       label: "Parent Feedback",
       color: "#e88767",
       value: Math.max(parentFeedback.length || 0, 0),
+    },
+    {
+      id: "users",
+      label: "Users",
+      color: "#0f766e",
+      value: customerCount ?? "?",
     },
     {
       id: "vendors",
@@ -5456,6 +5588,152 @@ export default function AdminDashboard(props) {
                     </div>
                   )}
               </>
+            ) : activeDashboardView === "users" ? (
+              <div className="commerce-panel-shell" style={{ background: "#fff", border: "1px solid #dfe7ef", borderRadius: "20px", padding: "22px", boxSizing: "border-box" }}>
+                <style>{`
+                  @media (max-width: 760px) {
+                    .customer-management-layout { grid-template-columns: minmax(0, 1fr) !important; gap: 12px !important; }
+                    .customer-list-items { max-height: 280px !important; }
+                    .customer-profile-panel { padding: 12px !important; }
+                    .customer-profile-fields { grid-template-columns: minmax(0, 1fr) !important; }
+                    .customer-search-input { flex: 1 1 100%; width: 100% !important; max-width: none; box-sizing: border-box; }
+                    .customer-bulk-send-button { justify-self: stretch !important; }
+                    .customer-monitor-tabs { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px !important; overflow: visible !important; }
+                    .customer-monitor-tab { min-width: 0; justify-content: center; padding: 9px 5px !important; border-radius: 10px !important; font-size: .76rem; line-height: 1.15; white-space: normal; text-align: center; }
+                    .customer-notification-panel { width: 100%; max-width: 760px; box-sizing: border-box; padding: 14px !important; }
+                    .customer-recipient-select { display: block; width: 100% !important; min-width: 0 !important; max-width: 100% !important; box-sizing: border-box !important; font-size: 16px !important; }
+                  }
+                `}</style>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: "16px", flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0, flex: "1 1 220px" }}>
+                    <p style={{ margin: 0, color: "#0f766e", textTransform: "uppercase", letterSpacing: ".12em", fontSize: ".72rem", fontWeight: 800 }}>Customer accounts</p>
+                    <h3 style={{ margin: "8px 0", fontSize: "1.5rem" }}>Users</h3>
+                    <p style={{ margin: 0, color: "#64748b" }}>Customer profiles only. Vendor accounts and vendor conversations remain in the Vendors monitor.</p>
+                  </div>
+                  {(customerTab === "users" || customerTab === "messages") && <input className="customer-search-input" type="search" value={customerSearch} onChange={(event) => { setCustomerSearch(event.target.value); setCustomerPage(1); }} placeholder={customerTab === "messages" ? "Find a customer to message" : "Search name, email, or phone"} aria-label={customerTab === "messages" ? "Search customers to message" : "Search customer accounts"} style={{ width: "min(100%, 340px)", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "9px", font: "inherit" }} />}
+                </div>
+                <div className="customer-monitor-tabs" role="tablist" aria-label="Customer monitor sections" style={{ display: "flex", gap: "8px", marginTop: "18px", paddingBottom: "8px", borderBottom: "1px solid #e2e8f0", overflowX: "auto" }}>
+                  {[
+                    { id: "users", label: "Users", count: customerCount },
+                    { id: "messages", label: "Messages" },
+                    { id: "general", label: "Broadcast" },
+                  ].map((tab) => (
+                    <button className="customer-monitor-tab" key={tab.id} type="button" role="tab" aria-selected={customerTab === tab.id} onClick={() => setCustomerTab(tab.id)} style={{ flex: "0 0 auto", display: "inline-flex", alignItems: "center", gap: "7px", padding: "10px 14px", border: `1px solid ${customerTab === tab.id ? "#0f766e" : "#dbe3ea"}`, borderRadius: "999px", background: customerTab === tab.id ? "#0f766e" : "#fff", color: customerTab === tab.id ? "#fff" : "#475569", fontWeight: 800, cursor: "pointer" }}>
+                      {tab.label}
+                      {tab.count != null && <span style={{ minWidth: "22px", padding: "2px 6px", borderRadius: "999px", background: customerTab === tab.id ? "rgba(255,255,255,.18)" : "#f1f5f9", fontSize: ".76rem", textAlign: "center" }}>{tab.count}</span>}
+                    </button>
+                  ))}
+                </div>
+                {customerError && <p role="alert" style={{ color: "#b91c1c", background: "#fef2f2", border: "1px solid #fecaca", padding: "10px 12px", borderRadius: "9px" }}>{customerError}</p>}
+                {customerTab === "users" && <div className="customer-management-layout" style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr)", gap: "18px", marginTop: "20px" }}>
+                  <section aria-label="Customer list" style={{ minWidth: 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", color: "#64748b", fontSize: ".88rem" }}>
+                      <span>{customerCount ?? 0} customer accounts</span>
+                      <span>{customerLoading ? "Loading..." : `Page ${customerPage}`}</span>
+                    </div>
+                    <div className="customer-list-items" style={{ display: "grid", gap: "8px" }}>
+                      {customerProfiles.map((customer) => (
+                        <div key={customer.id} style={{ display: "grid", gap: "8px" }}>
+                          <button type="button" onClick={() => {
+                            if (selectedCustomerId === customer.id) {
+                              setSelectedCustomerId("");
+                              setCustomerDraft(null);
+                              return;
+                            }
+                            setSelectedCustomerId(customer.id);
+                            setCustomerDraft({ ...customer, delivery_address: customer.delivery_address && typeof customer.delivery_address === "object" ? { ...customer.delivery_address } : {} });
+                          }} aria-expanded={selectedCustomerId === customer.id} style={{ width: "100%", boxSizing: "border-box", textAlign: "left", padding: "12px", border: `1px solid ${selectedCustomerId === customer.id ? "#0f766e" : "#e2e8f0"}`, borderRadius: "10px", background: selectedCustomerId === customer.id ? "#f0fdfa" : "#fff", cursor: "pointer", font: "inherit" }}>
+                            <strong style={{ display: "block", color: "#0f172a" }}>{customer.full_name || [customer.first_name, customer.last_name].filter(Boolean).join(" ") || "Unnamed customer"}</strong>
+                            <span style={{ display: "block", marginTop: "3px", color: "#475569", overflowWrap: "anywhere", fontSize: ".88rem" }}>{customer.email || "No email on profile"}</span>
+                            <span style={{ display: "block", marginTop: "3px", color: "#64748b", fontSize: ".82rem" }}>{customer.phone || "No phone"}</span>
+                          </button>
+                          {selectedCustomerId === customer.id && customerDraft && (
+                            <section className="customer-profile-panel" aria-label={`Edit ${customer.full_name || customer.email || "customer"} profile`} style={{ minWidth: 0, border: "1px solid #b7ded5", borderRadius: "12px", padding: "16px", background: "#fbfffd" }}>
+                              <h4 style={{ margin: "0 0 12px", fontSize: "1.1rem" }}>Edit customer profile</h4>
+                              <p style={{ margin: "0 0 12px", color: "#64748b", fontSize: ".85rem" }}>Account email is read-only here; changing it requires a separate Supabase Auth email-change flow.</p>
+                              {customerDraft.avatar_url ? <p style={{ margin: "0 0 12px", color: "#64748b", fontSize: ".85rem" }}>Profile photo: <a href={customerDraft.avatar_url} target="_blank" rel="noreferrer">View customer photo</a></p> : null}
+                              <div className="customer-profile-fields" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "10px" }}>
+                                {[["Full name", "full_name"], ["First name", "first_name"], ["Last name", "last_name"], ["Phone", "phone"], ["Country code", "country_code"], ["Language", "language"], ["Currency", "currency"]].map(([label, field]) => (
+                                  <label key={field} style={{ display: "grid", gap: "5px", color: "#334155", fontSize: ".86rem", fontWeight: 700 }}>{label}<input value={customerDraft[field] || ""} onChange={(event) => setCustomerDraft((current) => ({ ...current, [field]: event.target.value }))} style={{ minWidth: 0, padding: "9px 10px", border: "1px solid #cbd5e1", borderRadius: "8px", font: "inherit", fontWeight: 400 }} /></label>
+                                ))}
+                                <label style={{ display: "grid", gap: "5px", color: "#334155", fontSize: ".86rem", fontWeight: 700 }}>Email<input readOnly value={customerDraft.email || ""} style={{ minWidth: 0, padding: "9px 10px", border: "1px solid #e2e8f0", borderRadius: "8px", background: "#f8fafc", font: "inherit", fontWeight: 400 }} /></label>
+                              </div>
+                              <h5 style={{ margin: "18px 0 10px", fontSize: ".98rem" }}>Delivery address</h5>
+                              <div className="customer-profile-fields" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "10px" }}>
+                                {[["Address name", "fullName"], ["Address phone", "phone"], ["Street address", "addressLine1"], ["Address line 2", "addressLine2"], ["City", "city"], ["State", "state"], ["Postal code", "postalCode"], ["Country", "country"]].map(([label, field]) => (
+                                  <label key={field} style={{ display: "grid", gap: "5px", color: "#334155", fontSize: ".86rem", fontWeight: 700 }}>{label}<input value={customerDraft.delivery_address?.[field] || ""} onChange={(event) => setCustomerDraft((current) => ({ ...current, delivery_address: { ...(current.delivery_address || {}), [field]: event.target.value } }))} style={{ minWidth: 0, padding: "9px 10px", border: "1px solid #cbd5e1", borderRadius: "8px", font: "inherit", fontWeight: 400 }} /></label>
+                                ))}
+                              </div>
+                              <label style={{ display: "flex", alignItems: "center", gap: "9px", marginTop: "12px", color: "#334155", fontSize: ".9rem" }}><input type="checkbox" checked={Boolean(customerDraft.notifications_enabled)} onChange={(event) => setCustomerDraft((current) => ({ ...current, notifications_enabled: event.target.checked }))} />Customer has enabled app notifications</label>
+                              <button type="button" onClick={saveCustomerProfile} disabled={customerActionBusy === "save"} style={{ marginTop: "14px", padding: "10px 14px", border: 0, borderRadius: "8px", background: "#0f766e", color: "#fff", fontWeight: 800, cursor: customerActionBusy === "save" ? "wait" : "pointer" }}>{customerActionBusy === "save" ? "Saving..." : "Save profile"}</button>
+                            </section>
+                          )}
+                        </div>
+                      ))}
+                      {!customerLoading && !customerProfiles.length && <p style={{ color: "#64748b" }}>No customer accounts matched this search.</p>}
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", marginTop: "12px" }}>
+                      <button type="button" disabled={customerPage <= 1 || customerLoading} onClick={() => setCustomerPage((page) => Math.max(1, page - 1))} style={{ padding: "8px 11px", border: "1px solid #cbd5e1", borderRadius: "8px", background: "#fff", cursor: "pointer" }}>Previous</button>
+                      <button type="button" disabled={customerLoading || customerPage * 25 >= (customerCount || 0)} onClick={() => setCustomerPage((page) => page + 1)} style={{ padding: "8px 11px", border: "1px solid #cbd5e1", borderRadius: "8px", background: "#fff", cursor: "pointer" }}>Next</button>
+                    </div>
+                  </section>
+                </div>}
+                {customerTab === "messages" && (
+                  <section className="customer-notification-panel" aria-label="Send message to one customer" style={{ width: "100%", maxWidth: "760px", margin: "20px auto 0", padding: "20px", border: "1px solid #dbe7ed", borderRadius: "16px", background: "linear-gradient(145deg, #f8fffd, #ffffff 55%)", boxShadow: "0 8px 24px rgba(15, 23, 42, .04)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: "12px", flexWrap: "wrap" }}>
+                      <div>
+                        <h4 style={{ margin: "0 0 5px", fontSize: "1.12rem" }}>Message one customer</h4>
+                        <p style={{ margin: 0, color: "#64748b", fontSize: ".9rem" }}>Send a private in-app notification. It will not send an email.</p>
+                      </div>
+                      <span style={{ padding: "5px 9px", borderRadius: "999px", background: "#e6f5ef", color: "#0f766e", fontSize: ".76rem", fontWeight: 800 }}>IN-APP ONLY</span>
+                    </div>
+                    <label style={{ display: "grid", gap: "6px", marginTop: "18px", color: "#334155", fontSize: ".88rem", fontWeight: 700 }}>
+                      Customer
+                      <select className="customer-recipient-select" value={selectedCustomerId} onChange={(event) => {
+                        const selected = customerProfiles.find((customer) => customer.id === event.target.value);
+                        setSelectedCustomerId(event.target.value);
+                        setCustomerDraft(selected ? { ...selected, delivery_address: selected.delivery_address && typeof selected.delivery_address === "object" ? { ...selected.delivery_address } : {} } : null);
+                      }} style={{ display: "block", width: "100%", minWidth: 0, maxWidth: "100%", boxSizing: "border-box", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "9px", background: "#fff", font: "inherit" }}>
+                        <option value="">{customerLoading ? "Loading customers…" : customerProfiles.length ? "Choose a customer" : "No matching customers"}</option>
+                        {customerProfiles.map((customer) => <option key={customer.id} value={customer.id}>{customer.full_name || [customer.first_name, customer.last_name].filter(Boolean).join(" ") || customer.email || "Unnamed customer"}{customer.email ? ` — ${customer.email}` : ""}</option>)}
+                      </select>
+                    </label>
+                    {customerDraft ? (
+                      <div style={{ display: "grid", gap: "12px", marginTop: "16px" }}>
+                        <div style={{ padding: "11px 12px", borderRadius: "10px", background: "#f1f5f9", color: "#334155", overflowWrap: "anywhere" }}>
+                          <strong>{customerDraft.full_name || [customerDraft.first_name, customerDraft.last_name].filter(Boolean).join(" ") || "Unnamed customer"}</strong>
+                          <span style={{ display: "block", marginTop: "3px", color: "#64748b", fontSize: ".86rem" }}>{customerDraft.email || "No email on profile"}{customerDraft.phone ? ` · ${customerDraft.phone}` : ""}</span>
+                        </div>
+                        <label style={{ display: "grid", gap: "6px", color: "#334155", fontSize: ".88rem", fontWeight: 700 }}>Notification title<input value={customerSubject} onChange={(event) => setCustomerSubject(event.target.value)} maxLength={180} placeholder="e.g. Your order is ready" style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "9px", font: "inherit", fontWeight: 400 }} /></label>
+                        <label style={{ display: "grid", gap: "6px", color: "#334155", fontSize: ".88rem", fontWeight: 700 }}>Message<textarea value={customerMessage} onChange={(event) => setCustomerMessage(event.target.value)} maxLength={5000} rows={5} placeholder="Write a message for this customer" style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "9px", resize: "vertical", font: "inherit", fontWeight: 400 }} /></label>
+                        <button type="button" onClick={() => sendCustomerNotification(false)} disabled={customerActionBusy === "single"} style={{ justifySelf: "start", padding: "11px 16px", border: 0, borderRadius: "9px", background: "#0f766e", color: "#fff", fontWeight: 800, cursor: customerActionBusy === "single" ? "wait" : "pointer" }}>{customerActionBusy === "single" ? "Sending..." : "Send in-app message"}</button>
+                      </div>
+                    ) : (
+                      <div style={{ marginTop: "16px", padding: "16px", border: "1px dashed #cbd5e1", borderRadius: "10px", color: "#64748b", textAlign: "center" }}>
+                        <p style={{ margin: "0 0 10px" }}>{customerLoading ? "Loading customer accounts…" : customerProfiles.length ? "Choose a customer to compose a private message." : "No customers matched. Try another search."}</p>
+                        {customerProfiles.length ? <button type="button" onClick={() => setCustomerTab("users")} style={{ padding: "8px 12px", border: "1px solid #cbd5e1", borderRadius: "8px", background: "#fff", color: "#0f766e", fontWeight: 800, cursor: "pointer" }}>Browse customer list</button> : null}
+                      </div>
+                    )}
+                  </section>
+                )}
+                {customerTab === "general" && (
+                  <section className="customer-notification-panel" aria-label="General notification to all customers" style={{ width: "100%", maxWidth: "760px", margin: "20px auto 0", padding: "20px", border: "1px solid #d9d6fe", borderRadius: "16px", background: "linear-gradient(145deg, #f7f7ff, #ffffff 55%)", boxShadow: "0 8px 24px rgba(15, 23, 42, .04)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", gap: "12px", flexWrap: "wrap" }}>
+                      <div>
+                        <h4 style={{ margin: "0 0 5px", fontSize: "1.12rem" }}>Notify all customers</h4>
+                        <p style={{ margin: 0, color: "#64748b", fontSize: ".9rem" }}>Send a general in-app announcement to every customer account. Vendor accounts are excluded.</p>
+                      </div>
+                      <span style={{ padding: "5px 9px", borderRadius: "999px", background: "#eeedff", color: "#4338ca", fontSize: ".76rem", fontWeight: 800 }}>{customerCount ?? 0} CUSTOMERS</span>
+                    </div>
+                    <div style={{ display: "grid", gap: "12px", marginTop: "18px" }}>
+                      <label style={{ display: "grid", gap: "6px", color: "#334155", fontSize: ".88rem", fontWeight: 700 }}>Notification title<input aria-label="General notification title" value={customerBroadcastSubject} onChange={(event) => setCustomerBroadcastSubject(event.target.value)} maxLength={180} placeholder="e.g. New update from PAZ" style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "9px", font: "inherit", fontWeight: 400 }} /></label>
+                      <label style={{ display: "grid", gap: "6px", color: "#334155", fontSize: ".88rem", fontWeight: 700 }}>Announcement<textarea aria-label="General notification message" value={customerBroadcastMessage} onChange={(event) => setCustomerBroadcastMessage(event.target.value)} maxLength={5000} rows={5} placeholder="Write your announcement for all customers" style={{ width: "100%", boxSizing: "border-box", padding: "10px 12px", border: "1px solid #cbd5e1", borderRadius: "9px", resize: "vertical", font: "inherit", fontWeight: 400 }} /></label>
+                      <p style={{ margin: 0, color: "#64748b", fontSize: ".82rem" }}>This creates an in-app notification for {customerCount ?? 0} customers. No email is sent.</p>
+                      <button className="customer-bulk-send-button" type="button" onClick={() => sendCustomerNotification(true)} disabled={customerActionBusy === "bulk" || !customerCount} style={{ justifySelf: "start", padding: "11px 16px", border: 0, borderRadius: "9px", background: "#4338ca", color: "#fff", fontWeight: 800, cursor: customerActionBusy === "bulk" ? "wait" : "pointer" }}>{customerActionBusy === "bulk" ? "Sending to customers..." : `Send to all ${customerCount || 0} customers`}</button>
+                    </div>
+                  </section>
+                )}
+              </div>
             ) : activeDashboardView === "support" ? (
               <div
                 className="commerce-panel-shell"

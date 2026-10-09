@@ -247,6 +247,7 @@ alter table public.customer_profiles add column if not exists email text;
 alter table public.customer_profiles add column if not exists first_name text;
 alter table public.customer_profiles add column if not exists last_name text;
 alter table public.customer_profiles add column if not exists full_name text;
+alter table public.customer_profiles add column if not exists avatar_url text;
 alter table public.customer_profiles add column if not exists phone text;
 alter table public.customer_profiles add column if not exists delivery_address jsonb;
 alter table public.customer_profiles add column if not exists created_at timestamptz not null default now();
@@ -835,6 +836,35 @@ create policy shop_order_items_select_customer_or_admin
 
 grant select, insert, update on public.customer_profiles to authenticated;
 grant select on public.shop_orders, public.shop_order_items to authenticated;
+
+create table if not exists public.customer_notifications (
+  id uuid primary key default gen_random_uuid(),
+  recipient_id uuid not null references auth.users(id) on delete cascade,
+  sender_id uuid references auth.users(id) on delete set null,
+  title text not null check (length(trim(title)) between 1 and 180),
+  message text not null check (length(trim(message)) between 1 and 5000),
+  created_at timestamptz not null default now(),
+  read_at timestamptz
+);
+create index if not exists customer_notifications_recipient_created_idx
+  on public.customer_notifications(recipient_id, created_at desc);
+create index if not exists customer_notifications_unread_idx
+  on public.customer_notifications(recipient_id)
+  where read_at is null;
+alter table public.customer_notifications enable row level security;
+drop policy if exists customer_notifications_select_own on public.customer_notifications;
+drop policy if exists customer_notifications_update_own on public.customer_notifications;
+create policy customer_notifications_select_own
+  on public.customer_notifications for select to authenticated
+  using (recipient_id = auth.uid());
+create policy customer_notifications_update_own
+  on public.customer_notifications for update to authenticated
+  using (recipient_id = auth.uid())
+  with check (recipient_id = auth.uid());
+revoke all on public.customer_notifications from public, anon, authenticated;
+grant select on public.customer_notifications to authenticated;
+grant update (read_at) on public.customer_notifications to authenticated;
+grant all on public.customer_notifications to service_role;
 
 -- Keep vendor identity documents private while allowing trusted admins to preview them.
 DO $$

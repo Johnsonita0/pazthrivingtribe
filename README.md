@@ -64,3 +64,10 @@ Recommended step: create a `site_admins` table in Supabase and add your admin us
 Use the SQL script in `supabase-admin-setup.sql` to create the admin table and to add a sample RLS policy for applicant submissions.
 
 If you want to lock down other tables too, add Supabase policies that allow only the server-side endpoint to mutate admin-controlled tables and allow public insert for applicant forms.
+
+
+### Admin customer Users monitor
+
+The dashboard's Users card lists and edits customer profiles from `public.customer_profiles`; vendor accounts and vendor conversations remain in the separate Vendors monitor. Profile email is read-only in this screen because changing a sign-in address requires a separate Supabase Auth flow. The API at `/api/admin-customers` validates the signed-in admin using the existing `site_admins` / configured admin allowlist pattern and keeps the Supabase service-role key server-side.
+
+Individual and all-customer messages are written to `public.customer_notifications` and appear in the signed-in customer's app; this monitor does not send email or push notifications. The server authenticates each customer request and scopes notification reads and updates to that customer's account. Before sending notifications, run `supabase-customer-notifications.sql` in the Supabase SQL Editor for the project's database. The migration creates the table, indexes, customer-only row-level security policies, and requests a PostgREST schema refresh. The table also appears in the broader `supabase-admin-setup.sql` and `mobile-shop/customer-account-setup.sql` setup scripts.

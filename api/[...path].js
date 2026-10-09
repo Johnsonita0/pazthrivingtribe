@@ -1,7 +1,9 @@
-import adminAuthHandler from '../server-handlers/admin-auth.js';
+﻿import adminAuthHandler from '../server-handlers/admin-auth.js';
 import adminAccessHandler from '../server-handlers/admin-access.js';
 import adminHealthHandler from '../server-handlers/admin-health.js';
 import adminUpdateHandler from '../server-handlers/admin-update.js';
+import adminCustomersHandler from '../server-handlers/admin-customers.js';
+import customerNotificationsHandler from '../server-handlers/customer-notifications.js';
 import completeShopPaymentHandler from '../server-handlers/complete-shop-payment.js';
 import initializeShopPaymentHandler from '../server-handlers/initialize-shop-payment.js';
 import currencyRatesHandler from '../server-handlers/currency-rates.js';
@@ -36,6 +38,8 @@ const handlers = {
   '/admin-access': adminAccessHandler,
   '/admin-health': adminHealthHandler,
   '/admin-update': adminUpdateHandler,
+  '/admin-customers': adminCustomersHandler,
+  '/customer-notifications': customerNotificationsHandler,
   '/complete-shop-payment': completeShopPaymentHandler,
   '/initialize-shop-payment': initializeShopPaymentHandler,
   '/product-release-notification': productReleaseNotificationHandler,
@@ -68,6 +72,7 @@ const handlers = {
 const mobileShopCorsRoutes = new Set([
   '/complete-shop-payment',
   '/customer-support',
+  '/customer-notifications',
   '/initialize-shop-payment',
   '/product-chat',
   '/product-metrics',

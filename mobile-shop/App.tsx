@@ -142,7 +142,9 @@ export default function App() {
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
   const [deliveryAddress, setDeliveryAddress] = useState<DeliveryAddress | null>(null);
   const [unreadChatCount, setUnreadChatCount] = useState(0);
+  const [unreadCustomerNotificationCount, setUnreadCustomerNotificationCount] = useState(0);
   const [openChatsRequest, setOpenChatsRequest] = useState(0);
+  const [openNotificationsRequest, setOpenNotificationsRequest] = useState(0);
   const [openAddressRequest, setOpenAddressRequest] = useState(0);
   const unreadChatErrorReportedRef = useRef(false);
   const [chatVisible, setChatVisible] = useState(false);
@@ -310,6 +312,32 @@ export default function App() {
     };
     void refreshUnreadChats();
     const timer = setInterval(() => void refreshUnreadChats(), 20000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [currentUser?.id, screen]);
+
+  useEffect(() => {
+    if (!currentUser) {
+      setUnreadCustomerNotificationCount(0);
+      return;
+    }
+    if (screen === 'profile') return;
+    let active = true;
+    const refreshUnreadNotifications = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw new Error(error.message);
+        if (!data.session?.access_token) throw new Error('The customer session is no longer available.');
+        const payload = await apiRequest('/customer-notifications', 'POST', { action: 'unread_count' }, data.session.access_token);
+        if (active) setUnreadCustomerNotificationCount(Number(payload.unreadCount) || 0);
+      } catch (error) {
+        if (active) console.warn('Could not refresh PAZ unread notifications:', error);
+      }
+    };
+    void refreshUnreadNotifications();
+    const timer = setInterval(() => void refreshUnreadNotifications(), 60000);
     return () => {
       active = false;
       clearInterval(timer);
@@ -1136,7 +1164,7 @@ export default function App() {
       </View> : null}
       {notice && screen !== 'success' ? <Pressable onPress={() => setNotice('')} style={styles.notice}><Text style={styles.noticeText}>{notice}</Text><Text style={styles.noticeClose}>×</Text></Pressable> : null}
 
-      {screen === 'home' ? <HomeView products={products} signedIn={Boolean(currentUser)} accountName={currentUser?.user_metadata?.first_name || currentUser?.user_metadata?.full_name?.split(' ')[0] || currentUser?.email?.split('@')[0]} profileImageUrl={profileAvatarUrl} storageBaseUrl={storageBaseUrl} loading={loading} error={pageError} notificationCount={unreadChatCount} onRefresh={() => void loadProducts()} onNotifications={() => { setOpenChatsRequest((request) => request + 1); setScreen('profile'); }} onProfile={() => setScreen('profile')} onCreateAccount={() => openAccount('signUp')} onCategory={(selectedCategory) => {
+      {screen === 'home' ? <HomeView products={products} signedIn={Boolean(currentUser)} accountName={currentUser?.user_metadata?.first_name || currentUser?.user_metadata?.full_name?.split(' ')[0] || currentUser?.email?.split('@')[0]} profileImageUrl={profileAvatarUrl} storageBaseUrl={storageBaseUrl} loading={loading} error={pageError} notificationCount={unreadChatCount + unreadCustomerNotificationCount} onRefresh={() => void loadProducts()} onNotifications={() => { setOpenNotificationsRequest((request) => request + 1); setScreen('profile'); }} onProfile={() => setScreen('profile')} onCreateAccount={() => openAccount('signUp')} onCategory={(selectedCategory) => {
         if (/^grocer(?:y|ies)$/i.test(selectedCategory)) {
           setInitialComingSoonCategory('Groceries');
           setScreen('categories');
@@ -1153,7 +1181,7 @@ export default function App() {
       }} onMoreCategories={() => { setInitialComingSoonCategory(null); setScreen('categories'); }} onOpen={(product) => void openProduct(product)} onAddToCart={addToCart} /> : null}
       {screen === 'listing' || screen === 'favorites' ? <BooksListingView products={products} loading={loading} error={pageError} storageBaseUrl={storageBaseUrl} category={category} favoriteIds={favoriteIds} favoritesOnly={screen === 'favorites'} onCategory={setCategory} onToggleFavorite={toggleFavorite} onBack={() => { setCategory('All'); setScreen('home'); }} onRefresh={() => void loadProducts()} onOpen={(product) => void openProduct(product)} onAddToCart={addToCart} /> : null}
       {screen === 'categories' ? <CategoriesView products={products} loading={loading} initialComingSoonCategory={initialComingSoonCategory} onBack={() => { setInitialComingSoonCategory(null); setScreen('home'); }} onSelect={(selectedCategory) => { setInitialComingSoonCategory(null); setCategory(selectedCategory); setScreen('listing'); }} /> : null}
-      {screen === 'profile' ? <ProfileView user={currentUser} notificationsEnabled={accountPreferences.notificationsEnabled} openChatsRequest={openChatsRequest} openAddressRequest={openAddressRequest} deliveryAddress={deliveryAddress} onUnreadChange={setUnreadChatCount} onDeliveryAddressChange={(address) => { setDeliveryAddress(address); if (address?.fullName) setCustomerName(address.fullName); }} onWishlist={() => setScreen('favorites')} onCheckout={openCheckout} onToggleNotifications={(enabled) => void toggleProfileNotifications(enabled)} onSignIn={() => openAccount('signIn')} onCreateAccount={() => openAccount('signUp')} onSignOut={() => void signOutAccount()} onAvatarChange={setProfileAvatarUrl} /> : null}
+      {screen === 'profile' ? <ProfileView user={currentUser} notificationsEnabled={accountPreferences.notificationsEnabled} openChatsRequest={openChatsRequest} openNotificationsRequest={openNotificationsRequest} openAddressRequest={openAddressRequest} deliveryAddress={deliveryAddress} onUnreadChange={setUnreadChatCount} onNotificationUnreadChange={setUnreadCustomerNotificationCount} onDeliveryAddressChange={(address) => { setDeliveryAddress(address); if (address?.fullName) setCustomerName(address.fullName); }} onWishlist={() => setScreen('favorites')} onCheckout={openCheckout} onToggleNotifications={(enabled) => void toggleProfileNotifications(enabled)} onSignIn={() => openAccount('signIn')} onCreateAccount={() => openAccount('signUp')} onSignOut={() => void signOutAccount()} onAvatarChange={setProfileAvatarUrl} /> : null}
       {screen === 'detail' && selectedProduct ? <ProductDetailView product={selectedProduct} storageBaseUrl={storageBaseUrl} metrics={metrics} ratings={ratings} loading={detailLoading} ratingValue={ratingValue} ratingName={ratingName} ratingEmail={ratingEmail} ratingComment={ratingComment} ratingBusy={ratingBusy} cartCount={cartCount} isFavorite={favoriteIds.has(selectedProduct.id)} onBack={() => setScreen(previousScreenRef.current)} onCart={openCheckout} onAdd={() => addToCart(selectedProduct)} onBuyNow={() => buyNow(selectedProduct)} onShare={() => void shareProduct(selectedProduct)} onToggleFavorite={() => toggleFavorite(selectedProduct)} onChat={() => void openChat()} onRatingValue={setRatingValue} onRatingName={setRatingName} onRatingEmail={setRatingEmail} onRatingComment={setRatingComment} onSubmitRating={() => void submitRating()} /> : null}
       {screen === 'checkout' ? <CheckoutView cart={cart} storageBaseUrl={storageBaseUrl} totalLabel={totalLabel} freeOrder={allFree} customerName={customerName} customerEmail={customerEmail} deliveryAddress={deliveryAddress} busy={checkoutBusy} error={checkoutError} pendingPayment={Boolean(pendingCheckout)} onName={setCustomerName} onEmail={setCustomerEmail} onManageAddress={() => { setOpenAddressRequest((request) => request + 1); setScreen('profile'); }} onQuantity={updateQuantity} onRemove={(id) => setCart((current) => current.filter((line) => line.product.id !== id))} onBack={() => setScreen(checkoutReturnScreenRef.current)} onPlaceOrder={(method) => void startPaidCheckout(method)} onRequestFreeProduct={() => void completeFreeOrder()} onConfirmPayment={confirmPayment} onContinueShopping={() => { setCategory('All'); setScreen('home'); }} /> : null}
       {screen === 'success' && completedOrder ? <View style={styles.success}><View style={styles.successMark}><Text style={styles.successMarkText}>✓</Text></View><Text style={styles.successKicker}>ORDER CONFIRMED</Text><Text style={styles.successTitle}>Your next chapter starts here.</Text><Text style={styles.successCopy}>We sent your product to {completedOrder.email}. Check your inbox for order {completedOrder.orderNumber}.</Text><Button title="Back to the shop" onPress={() => { setCompletedOrder(null); setCategory('All'); setScreen('home'); }} /></View> : null}

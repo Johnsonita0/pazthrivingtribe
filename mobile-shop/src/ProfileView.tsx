@@ -11,9 +11,11 @@ type Props = {
   user: AccountUser;
   notificationsEnabled: boolean;
   openChatsRequest: number;
+  openNotificationsRequest: number;
   openAddressRequest: number;
   deliveryAddress: DeliveryAddress | null;
   onUnreadChange: (count: number) => void;
+  onNotificationUnreadChange: (count: number) => void;
   onDeliveryAddressChange: (address: DeliveryAddress | null) => void;
   onWishlist: () => void;
   onCheckout: () => void;
@@ -67,12 +69,21 @@ type ChatMessage = {
   created_at: string;
 };
 
-type ModalPage = 'orders' | 'chats' | 'about' | 'address' | 'payments' | 'support' | null;
+type CustomerNotification = {
+  id: string;
+  title: string;
+  message: string;
+  created_at: string;
+  read_at: string | null;
+};
+
+type ModalPage = 'orders' | 'chats' | 'notifications' | 'about' | 'address' | 'payments' | 'support' | null;
 
 const menuRows = [
   { key: 'orders', title: 'My Orders', subtitle: 'View your order history', icon: 'receipt', color: '#6227c8' },
   { key: 'wishlist', title: 'My Wishlist', subtitle: 'Your saved books and guides', icon: 'heart', color: '#dc4c87' },
   { key: 'chats', title: 'Messages', subtitle: 'Your conversations with PAZ', icon: 'comments', color: '#3682c5' },
+  { key: 'notices', title: 'In-app notifications', subtitle: 'Updates from PAZ', icon: 'bell', color: '#e09b38' },
   { key: 'address', title: 'Address Book', subtitle: 'Digital delivery details', icon: 'map-marker-alt', color: '#348c70' },
   { key: 'payments', title: 'Payment Methods', subtitle: 'Secure payment options', icon: 'credit-card', color: '#3682c5' },
   { key: 'notifications', title: 'Notifications', subtitle: 'Manage device notifications', icon: 'bell', color: '#e09b38' },
@@ -113,9 +124,11 @@ export function ProfileView({
   user,
   notificationsEnabled,
   openChatsRequest,
+  openNotificationsRequest,
   openAddressRequest,
   deliveryAddress,
   onUnreadChange,
+  onNotificationUnreadChange,
   onDeliveryAddressChange,
   onWishlist,
   onCheckout,
@@ -139,6 +152,9 @@ export function ProfileView({
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [chatsBusy, setChatsBusy] = useState(false);
   const [chatsError, setChatsError] = useState('');
+  const [notifications, setNotifications] = useState<CustomerNotification[]>([]);
+  const [notificationsBusy, setNotificationsBusy] = useState(false);
+  const [notificationsError, setNotificationsError] = useState('');
   const [activeChat, setActiveChat] = useState<Conversation | null>(null);
   const [reply, setReply] = useState('');
   const [chatBusy, setChatBusy] = useState(false);
@@ -166,6 +182,7 @@ export function ProfileView({
   const [contactMessage, setContactMessage] = useState('');
   const [contactBusy, setContactBusy] = useState(false);
   const [contactNotice, setContactNotice] = useState('');
+  const [notificationUnreadCount, setNotificationUnreadCount] = useState(0);
   const { width: windowWidth } = useWindowDimensions();
   const cropFrameSize = Math.max(220, Math.min(280, windowWidth - 48));
   const cropAspect = avatarCropAsset ? avatarCropAsset.width / avatarCropAsset.height : 1;
@@ -322,6 +339,55 @@ export function ProfileView({
     }
   }, [onUnreadChange, user?.id]);
 
+  const loadNotifications = useCallback(async (silent = false) => {
+    if (!user) {
+      setNotifications([]);
+      setNotificationUnreadCount(0);
+      onNotificationUnreadChange(0);
+      return;
+    }
+    if (!silent) setNotificationsBusy(true);
+    setNotificationsError('');
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw new Error(error.message);
+      if (!data.session?.access_token) throw new Error('Sign in again to view your notifications.');
+      const payload = await apiRequest('/customer-notifications', 'POST', { action: 'list' }, data.session.access_token);
+      const items = Array.isArray(payload.notifications) ? payload.notifications as CustomerNotification[] : [];
+      const unread = Number(payload.unreadCount) || 0;
+      setNotifications(items);
+      setNotificationUnreadCount(unread);
+      onNotificationUnreadChange(unread);
+    } catch (error) {
+      setNotificationsError(error instanceof Error ? error.message : 'Your notifications could not be loaded.');
+    } finally {
+      if (!silent) setNotificationsBusy(false);
+    }
+  }, [onNotificationUnreadChange, user?.id]);
+
+  const markNotificationRead = async (notification?: CustomerNotification) => {
+    if (!user || (notification && notification.read_at)) return;
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw new Error(error.message);
+      if (!data.session?.access_token) throw new Error('Sign in again to update your notifications.');
+      await apiRequest('/customer-notifications', 'POST', {
+        action: 'mark_read',
+        ...(notification ? { id: notification.id } : {}),
+      }, data.session.access_token);
+      setNotifications((current) => current.map((item) => !notification || item.id === notification.id
+        ? { ...item, read_at: item.read_at || new Date().toISOString() }
+        : item));
+      const nextCount = notification
+        ? Math.max(0, notificationUnreadCount - 1)
+        : 0;
+      setNotificationUnreadCount(nextCount);
+      onNotificationUnreadChange(nextCount);
+    } catch (error) {
+      setNotificationsError(error instanceof Error ? error.message : 'Your notification could not be marked as read.');
+    }
+  };
+
   useEffect(() => { void loadProfile(); }, [loadProfile]);
   useEffect(() => {
     if (!user) {
@@ -333,6 +399,17 @@ export function ProfileView({
     const timer = setInterval(() => void loadChats(), 20000);
     return () => clearInterval(timer);
   }, [loadChats, onUnreadChange, user?.id]);
+  useEffect(() => {
+    if (page === 'notifications') void loadNotifications();
+  }, [loadNotifications, page]);
+  useEffect(() => {
+    if (page !== 'notifications' || !user) return;
+    const timer = setInterval(() => void loadNotifications(true), 20000);
+    return () => clearInterval(timer);
+  }, [loadNotifications, page, user?.id]);
+  useEffect(() => {
+    if (openNotificationsRequest > 0) setPage('notifications');
+  }, [openNotificationsRequest]);
   useEffect(() => {
     if (!activeChat?.token) return;
     let active = true;
@@ -616,6 +693,7 @@ export function ProfileView({
       if (user) void loadOrders();
     } else if (key === 'wishlist') onWishlist();
     else if (key === 'chats') setPage('chats');
+    else if (key === 'notices') setPage('notifications');
     else if (key === 'address') setPage('address');
     else if (key === 'payments') setPage('payments');
     else if (key === 'notifications') onToggleNotifications(!notificationsEnabled);
@@ -623,7 +701,7 @@ export function ProfileView({
     else if (key === 'about') setPage('about');
   };
 
-  const pageTitle = activeChat ? activeChat.product_title : page === 'orders' ? 'My Orders' : page === 'chats' ? 'Messages' : page === 'about' ? 'About PAZ' : page === 'address' ? 'Digital delivery' : page === 'support' ? 'Contact Us' : 'Secure payments';
+  const pageTitle = activeChat ? activeChat.product_title : page === 'orders' ? 'My Orders' : page === 'chats' ? 'Messages' : page === 'notifications' ? 'PAZ Notifications' : page === 'about' ? 'About PAZ' : page === 'address' ? 'Digital delivery' : page === 'support' ? 'Contact Us' : 'Secure payments';
 
   return (
     <View style={styles.screen}>
@@ -650,13 +728,15 @@ export function ProfileView({
         <View style={styles.menuCard}>
           {menuRows.map((row) => (
             <Row key={row.key} icon={row.icon} color={row.color} title={row.title}
-              subtitle={row.key === 'chats' && unreadCount ? `${unreadCount} unread message${unreadCount === 1 ? '' : 's'}` : row.subtitle}
+              subtitle={row.key === 'chats' && unreadCount ? `${unreadCount} unread message${unreadCount === 1 ? '' : 's'}` : row.key === 'notices' && notificationUnreadCount ? `${notificationUnreadCount} unread update${notificationUnreadCount === 1 ? '' : 's'}` : row.subtitle}
               onPress={() => handleRow(row.key)}
               trailing={row.key === 'notifications' ? (
                 <Switch accessibilityLabel="Enable PAZ notifications" value={notificationsEnabled} onValueChange={onToggleNotifications}
                   trackColor={{ false: '#d8d2e0', true: '#c5afea' }} thumbColor={notificationsEnabled ? palette.green : '#fff'} />
               ) : row.key === 'chats' && unreadCount > 0 ? (
                 <View style={styles.unreadBadge}><Text style={styles.unreadBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text></View>
+              ) : row.key === 'notices' && notificationUnreadCount > 0 ? (
+                <View style={styles.unreadBadge}><Text style={styles.unreadBadgeText}>{notificationUnreadCount > 99 ? '99+' : notificationUnreadCount}</Text></View>
               ) : undefined}
             />
           ))}
@@ -675,8 +755,32 @@ export function ProfileView({
               <FontAwesome5 name={activeChat ? 'arrow-left' : 'times'} size={17} color={palette.ink} />
             </Pressable>
             <Text numberOfLines={1} style={styles.modalTitle}>{pageTitle}</Text>
-            {page === 'orders' || page === 'chats' ? <Pressable accessibilityRole="button" accessibilityLabel={`Refresh ${page}`} disabled={page === 'orders' ? ordersBusy : chatsBusy} onPress={() => void (page === 'orders' ? loadOrders() : loadChats())}><FontAwesome5 name="sync-alt" size={15} color={palette.green} /></Pressable> : <View style={styles.headerSpacer} />}
+            {page === 'orders' ? <Pressable accessibilityRole="button" accessibilityLabel="Refresh orders" disabled={ordersBusy} onPress={() => void loadOrders()}><FontAwesome5 name="sync-alt" size={15} color={palette.green} /></Pressable> : <View style={styles.headerSpacer} />}
           </View>
+
+          {page === 'notifications' ? (
+            <ScrollView contentContainerStyle={styles.modalContent}>
+              {!user ? <Text style={styles.emptyText}>Sign in to view PAZ updates.</Text> : null}
+              {notificationsBusy ? <ActivityIndicator color={palette.green} style={styles.largeLoader} /> : null}
+              {notificationsError ? <Text accessibilityRole="alert" style={styles.error}>{notificationsError}</Text> : null}
+              {user && notificationUnreadCount > 0 ? (
+                <Pressable accessibilityRole="button" onPress={() => void markNotificationRead()} style={styles.markAllReadButton}>
+                  <Text style={styles.markAllReadText}>Mark all as read</Text>
+                </Pressable>
+              ) : null}
+              {!notificationsBusy && !notificationsError && user && notifications.length === 0 ? <Text style={styles.emptyText}>You’re all caught up. PAZ updates will appear here.</Text> : null}
+              {notifications.map((item) => (
+                <Pressable key={item.id} accessibilityRole="button" accessibilityLabel={`${item.read_at ? 'Read' : 'Unread'} notification: ${item.title}`} onPress={() => void markNotificationRead(item)} style={[styles.notificationCard, !item.read_at && styles.unreadNotificationCard]}>
+                  <View style={styles.notificationHeading}>
+                    <Text style={styles.notificationTitle}>{item.title}</Text>
+                    {!item.read_at ? <View style={styles.notificationDot} /> : null}
+                  </View>
+                  <Text style={styles.notificationMessage}>{item.message}</Text>
+                  <Text style={styles.notificationTime}>{new Date(item.created_at).toLocaleString()}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          ) : null}
 
           {page === 'orders' ? (
             <ScrollView contentContainerStyle={styles.modalContent}>
@@ -928,6 +1032,15 @@ const styles = StyleSheet.create({
   rowSubtitle: { marginTop: 2, color: palette.muted, fontSize: 8 },
   unreadBadge: { minWidth: 20, height: 20, paddingHorizontal: 5, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.red },
   unreadBadgeText: { color: palette.white, fontSize: 9, fontWeight: '900' },
+  markAllReadButton: { alignSelf: 'flex-end', paddingVertical: 8, paddingHorizontal: 12, marginBottom: 8, borderRadius: 9, backgroundColor: '#e9f4ee' },
+  markAllReadText: { color: palette.green, fontSize: 10, fontWeight: '900' },
+  notificationCard: { marginBottom: 10, padding: 13, borderWidth: 1, borderColor: '#ebe7f1', borderRadius: 12, backgroundColor: palette.white },
+  unreadNotificationCard: { borderColor: '#b7d9c5', backgroundColor: '#f3faf5' },
+  notificationHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  notificationTitle: { flex: 1, color: palette.ink, fontSize: 12, fontWeight: '900' },
+  notificationDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: palette.green },
+  notificationMessage: { marginTop: 7, color: palette.ink, fontSize: 11, lineHeight: 17 },
+  notificationTime: { marginTop: 8, color: palette.muted, fontSize: 9 },
   signOut: { minHeight: 42, marginTop: 13, borderWidth: 1, borderColor: '#f0dce4', borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: palette.white },
   signOutText: { color: palette.red, fontSize: 10, fontWeight: '900' },
   version: { marginTop: 15, color: '#9b94a6', fontSize: 8, textAlign: 'center' },
