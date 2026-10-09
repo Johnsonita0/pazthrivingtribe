@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Image, Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
+import Svg, { Circle, Ellipse, Line, Path, Rect } from 'react-native-svg';
 import { palette } from './ShopComponents';
 
 type Props = { visible: boolean; onGetStarted: () => void; onContinueAsGuest: () => void };
@@ -34,7 +35,7 @@ export function OnboardingFlow({ visible, onGetStarted, onContinueAsGuest }: Pro
         <Text style={styles.title}>{slide.title}</Text>
         <Text style={styles.copy}>{slide.copy}</Text>
       </View>
-      <View style={styles.illustrationStage}><ShoppingIllustration /></View>
+      <View style={styles.illustrationStage}><OnboardingIllustration activeIndex={activeIndex} /></View>
 
       <View style={styles.footer}>
         <View style={styles.pagination} accessibilityLabel={`Page ${activeIndex + 1} of ${slides.length}`}>
@@ -54,64 +55,96 @@ export function OnboardingFlow({ visible, onGetStarted, onContinueAsGuest }: Pro
   );
 }
 
-function ShoppingIllustration() {
+function OnboardingIllustration({ activeIndex }: { activeIndex: number }) {
   return (
     <View style={styles.illustration} accessibilityElementsHidden>
-      <View style={[styles.leaf, styles.leafA]} />
-      <View style={[styles.leaf, styles.leafB]} />
-      <View style={[styles.leaf, styles.leafC]} />
-      <View style={[styles.leaf, styles.leafD]} />
-      <View style={[styles.leaf, styles.leafE]} />
-      <View style={[styles.leaf, styles.leafF]} />
-      <View style={styles.tabletLeft}>
-        <View style={styles.tabletScreen}>
-          <View style={styles.bookCover}>
-            <View style={styles.coverMark} />
-            <View style={styles.coverLine} />
-            <View style={[styles.coverLine, styles.coverLineShort]} />
-          </View>
-          <View style={styles.screenLine} />
-          <View style={[styles.screenLine, styles.screenLineShort]} />
-          <View style={styles.screenLine} />
-        </View>
-      </View>
-      <View style={styles.tabletRight}>
-        <View style={styles.tabletScreenRight}>
-          <View style={styles.rightScreenHeader} />
-          <View style={styles.rightScreenImage} />
-          <View style={styles.screenLine} />
-          <View style={[styles.screenLine, styles.screenLineShort]} />
-        </View>
-      </View>
-      <View style={styles.phoneLeft}>
-        <View style={styles.phoneSpeaker} />
-        <View style={styles.phonePage}>
-          <View style={styles.phonePageHeading} />
-          <View style={styles.phonePageLine} />
-          <View style={[styles.phonePageLine, styles.phonePageLineShort]} />
-          <View style={styles.phonePageLine} />
-        </View>
-      </View>
-      <View style={styles.phoneRight}>
-        <View style={styles.phoneSpeaker} />
-        <View style={styles.phonePageRight}>
-          <View style={styles.rightScreenHeader} />
-          <View style={styles.phonePageLine} />
-          <View style={[styles.phonePageLine, styles.phonePageLineShort]} />
-        </View>
-      </View>
-      <View style={styles.cartHandle} />
-      <View style={styles.cartNeck} />
-      <View style={styles.cartBasket}>
-        <View style={[styles.cartItem, styles.cartItemGold]} />
-        <View style={[styles.cartItem, styles.cartItemTeal]} />
-        <View style={styles.cartBar} />
-        <View style={[styles.cartBar, styles.cartBarLower]} />
-        <View style={styles.cartBarVertical} />
-      </View>
-      <View style={styles.cartWheelLeft} />
-      <View style={styles.cartWheelRight} />
+      {activeIndex === 0 ? <WelcomeIllustration /> : activeIndex === 1 ? <DeliveryIllustration /> : <ProductsIllustration />}
     </View>
+  );
+}
+
+function WelcomeIllustration() {
+  return (
+    <Svg viewBox="0 0 360 250" width="100%" height="100%">
+      <Ellipse cx="180" cy="220" rx="133" ry="14" fill="#eee8dc" />
+      <Path d="M47 166c9-54 49-91 104-87 38 3 59 29 92 17 29-11 53-4 70 18 17 22 9 57-7 83H61z" fill="#e7f3e8" />
+      <Circle cx="63" cy="75" r="18" fill="#f8d367" />
+      <Rect x="65" y="92" width="83" height="104" rx="8" fill="#fffdf8" stroke="#333a35" strokeWidth="4" transform="rotate(-8 106 144)" />
+      <Rect x="75" y="102" width="63" height="56" rx="4" fill="#ea6f50" transform="rotate(-8 106 130)" />
+      <Path d="M87 146c8-17 16-17 22-4 8-20 16-18 25-4v20H87z" fill="#f8d367" />
+      <Path d="M92 119h29M91 126h18" stroke="#fff7e9" strokeWidth="3" strokeLinecap="round" />
+      <Rect x="153" y="42" width="91" height="160" rx="17" fill="#2f3934" />
+      <Rect x="159" y="49" width="79" height="146" rx="12" fill="#fffdf8" />
+      <Rect x="185" y="55" width="28" height="4" rx="2" fill="#59645c" />
+      <Rect x="170" y="68" width="23" height="4" rx="2" fill="#df5f42" />
+      <Rect x="170" y="75" width="40" height="3" rx="2" fill="#d9ded4" />
+      <Rect x="169" y="83" width="59" height="48" rx="6" fill="#f6e5c2" />
+      <Path d="M172 119c10-19 17-22 27-9 8-13 18-12 26-3v24h-53z" fill="#7ca987" />
+      <Circle cx="185" cy="102" r="7" fill="#f2ad45" />
+      <Rect x="169" y="138" width="36" height="4" rx="2" fill="#d9ded4" />
+      <Rect x="169" y="147" width="49" height="4" rx="2" fill="#d9ded4" />
+      <Rect x="169" y="160" width="59" height="23" rx="7" fill="#df5f42" />
+      <Circle cx="278" cy="121" r="38" fill="#f2c64f" />
+      <Path d="M260 112h36l-4 36h-28z" fill="#d76d49" />
+      <Path d="M268 112c0-14 20-14 20 0M272 124c-5 6-5 12 0 17M286 122c5 8 4 13-1 18" fill="none" stroke="#78533a" strokeWidth="4" strokeLinecap="round" />
+      <Path d="m287 54 4 8 9 1-7 6 2 9-8-5-8 5 2-9-7-6 9-1z" fill="#df5f42" />
+      <Circle cx="115" cy="54" r="4" fill="#7ca987" />
+      <Circle cx="305" cy="88" r="5" fill="#df5f42" />
+    </Svg>
+  );
+}
+
+function DeliveryIllustration() {
+  return (
+    <Svg viewBox="0 0 360 250" width="100%" height="100%">
+      <Ellipse cx="180" cy="220" rx="135" ry="14" fill="#eee8dc" />
+      <Path d="M46 180c24-34 52-44 84-31 33 13 66 7 92-22 31-35 75-24 92 17v58H46z" fill="#e7f3e8" />
+      <Rect x="51" y="71" width="77" height="131" rx="13" fill="#2f3934" />
+      <Rect x="57" y="78" width="65" height="116" rx="9" fill="#fffdf8" />
+      <Rect x="75" y="84" width="29" height="4" rx="2" fill="#59645c" />
+      <Rect x="66" y="99" width="47" height="39" rx="5" fill="#f5e7ca" />
+      <Circle cx="89" cy="117" r="11" fill="#df5f42" />
+      <Path d="M84 117h10M89 112v10" stroke="#fff8e8" strokeWidth="2" strokeLinecap="round" />
+      <Rect x="67" y="147" width="42" height="4" rx="2" fill="#d9ded4" />
+      <Rect x="67" y="156" width="34" height="4" rx="2" fill="#d9ded4" />
+      <Rect x="66" y="168" width="47" height="17" rx="6" fill="#7ca987" />
+      <Path d="M181 50 238 71v47c0 42-25 66-57 83-32-17-57-41-57-83V71z" fill="#7ca987" stroke="#2f3934" strokeWidth="4" strokeLinejoin="round" />
+      <Path d="m154 119 18 18 38-42" fill="none" stroke="#fffdf8" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="m267 126 38 16v48l-38 19-39-19v-48z" fill="#df5f42" stroke="#2f3934" strokeWidth="4" strokeLinejoin="round" />
+      <Path d="m229 143 38 18 38-18M267 161v48M248 135l39 18v9" fill="none" stroke="#f8dca2" strokeWidth="3" strokeLinejoin="round" />
+      <Path d="M248 129v-9c0-25 38-25 38 0v10" fill="none" stroke="#2f3934" strokeWidth="5" strokeLinecap="round" />
+      <Circle cx="275" cy="128" r="4" fill="#fffdf8" />
+      <Path d="M273 128h4v7h-4z" fill="#fffdf8" />
+      <Path d="M143 185c-7 6-12 15-13 23M217 47l8-10m14 18 11-5M40 112l9 2" fill="none" stroke="#df5f42" strokeWidth="4" strokeLinecap="round" />
+      <Circle cx="146" cy="64" r="5" fill="#f2c64f" />
+    </Svg>
+  );
+}
+
+function ProductsIllustration() {
+  return (
+    <Svg viewBox="0 0 360 250" width="100%" height="100%">
+      <Ellipse cx="180" cy="220" rx="135" ry="14" fill="#eee8dc" />
+      <Path d="M45 177c16-43 47-66 83-50 29 12 46 5 71-21 30-31 79-14 103 18 12 17 16 38 13 65H48z" fill="#e7f3e8" />
+      <Rect x="49" y="119" width="74" height="82" rx="8" fill="#f2c64f" stroke="#2f3934" strokeWidth="4" />
+      <Path d="M65 119c0-27 42-27 42 0" fill="none" stroke="#2f3934" strokeWidth="4" strokeLinecap="round" />
+      <Path d="M63 162c11-17 22-17 31-2 9-17 19-16 29-2v39H63z" fill="#7ca987" />
+      <Circle cx="78" cy="146" r="10" fill="#df5f42" />
+      <Circle cx="104" cy="148" r="9" fill="#f3a943" />
+      <Rect x="137" y="71" width="76" height="107" rx="7" fill="#fffdf8" stroke="#2f3934" strokeWidth="4" transform="rotate(-7 175 124)" />
+      <Rect x="151" y="89" width="45" height="41" rx="3" fill="#df5f42" transform="rotate(-7 173 109)" />
+      <Path d="M158 120c8-16 14-14 20-3 6-13 12-12 19-3v12h-39z" fill="#f2c64f" />
+      <Path d="M159 140h37M157 148h31M156 156h36" stroke="#cbd3c9" strokeWidth="3" strokeLinecap="round" />
+      <Rect x="232" y="94" width="75" height="82" rx="8" fill="#7ca987" stroke="#2f3934" strokeWidth="4" />
+      <Path d="M250 94c0-26 39-26 39 0" fill="none" stroke="#2f3934" strokeWidth="4" strokeLinecap="round" />
+      <Path d="M252 113h35v42h-35z" fill="#e7f3e8" />
+      <Path d="M259 121c-7 8-7 18 0 26m19-26c7 8 7 18 0 26" fill="none" stroke="#df5f42" strokeWidth="4" strokeLinecap="round" />
+      <Circle cx="270" cy="134" r="7" fill="#f2c64f" />
+      <Path d="M77 81c11-10 19-11 29-1m150-28c8-8 15-9 23-3" fill="none" stroke="#df5f42" strokeWidth="4" strokeLinecap="round" />
+      <Path d="m111 62 4-9 4 9 9 2-7 6 2 9-8-5-8 5 2-9-7-6z" fill="#f2c64f" />
+      <Circle cx="217" cy="59" r="5" fill="#df5f42" />
+      <Line x1="134" y1="197" x2="226" y2="197" stroke="#2f3934" strokeWidth="4" strokeLinecap="round" />
+    </Svg>
   );
 }
 
@@ -122,45 +155,7 @@ const styles = StyleSheet.create({
   title: { marginTop: 5, color: '#301276', fontSize: 25, lineHeight: 29, fontWeight: '900', textAlign: 'center' },
   copy: { maxWidth: 300, marginTop: 7, color: '#554979', fontSize: 14, lineHeight: 19, textAlign: 'center' },
   illustrationStage: { flex: 1, width: '100%', alignItems: 'center', justifyContent: 'center' },
-  illustration: { width: '100%', maxWidth: 355, height: 220, position: 'relative', alignSelf: 'center', transform: [{ scale: 1.16 }] },
-  leaf: { position: 'absolute', width: 27, height: 13, borderTopLeftRadius: 15, borderBottomRightRadius: 15, borderTopRightRadius: 3, borderBottomLeftRadius: 3 },
-  leafA: { left: '6%', top: '44%', backgroundColor: '#18b8a7', transform: [{ rotate: '36deg' }] },
-  leafB: { left: '12%', top: '57%', backgroundColor: '#e74369', transform: [{ rotate: '-35deg' }] },
-  leafC: { left: '18%', top: '70%', backgroundColor: '#7d35da', transform: [{ rotate: '25deg' }] },
-  leafD: { right: '7%', top: '39%', backgroundColor: '#ef4b97', transform: [{ rotate: '-38deg' }] },
-  leafE: { right: '11%', top: '55%', backgroundColor: '#20aa77', transform: [{ rotate: '32deg' }] },
-  leafF: { right: '16%', top: '68%', backgroundColor: '#f0aa20', transform: [{ rotate: '-24deg' }] },
-  tabletLeft: { position: 'absolute', left: '20%', top: '15%', width: '31%', height: '61%', padding: 5, borderWidth: 4, borderColor: '#5525c2', borderRadius: 9, backgroundColor: '#b9a0f4', transform: [{ rotate: '-2deg' }] },
-  tabletScreen: { flex: 1, padding: 5, alignItems: 'center', backgroundColor: '#fff' },
-  bookCover: { width: '79%', height: '58%', marginBottom: 5, alignItems: 'center', justifyContent: 'center', backgroundColor: '#eee8ff' },
-  coverMark: { width: 18, height: 18, marginBottom: 4, borderRadius: 9, backgroundColor: '#6936cb' },
-  coverLine: { width: '72%', height: 3, marginTop: 3, borderRadius: 2, backgroundColor: '#9b7ce3' },
-  coverLineShort: { width: '48%' },
-  screenLine: { width: '84%', height: 3, marginTop: 4, borderRadius: 2, backgroundColor: '#c8bedc' },
-  screenLineShort: { width: '54%', alignSelf: 'flex-start', marginLeft: '8%' },
-  tabletRight: { position: 'absolute', right: '19%', top: '19%', width: '31%', height: '56%', padding: 5, borderWidth: 4, borderColor: '#129a9d', borderRadius: 9, backgroundColor: '#95e0d6', transform: [{ rotate: '2deg' }] },
-  tabletScreenRight: { flex: 1, padding: 5, alignItems: 'center', backgroundColor: '#fff' },
-  rightScreenHeader: { width: '100%', height: 15, marginBottom: 4, borderRadius: 3, backgroundColor: '#14aeb0' },
-  rightScreenImage: { width: '75%', height: '43%', marginBottom: 3, backgroundColor: '#d5f3ef' },
-  phoneLeft: { position: 'absolute', left: '14%', bottom: '6%', width: '23%', height: '48%', padding: 4, borderWidth: 4, borderColor: '#4d20ba', borderRadius: 9, backgroundColor: '#aa8df1', transform: [{ rotate: '-5deg' }] },
-  phoneRight: { position: 'absolute', right: '13%', bottom: '7%', width: '23%', height: '45%', padding: 4, borderWidth: 4, borderColor: '#4d20ba', borderRadius: 9, backgroundColor: '#aa8df1', transform: [{ rotate: '4deg' }] },
-  phoneSpeaker: { width: '34%', height: 2, marginBottom: 4, alignSelf: 'center', borderRadius: 2, backgroundColor: '#381477' },
-  phonePage: { flex: 1, padding: 4, alignItems: 'center', backgroundColor: '#fff' },
-  phonePageRight: { flex: 1, padding: 4, backgroundColor: '#fff' },
-  phonePageHeading: { width: '80%', height: '29%', marginBottom: 4, backgroundColor: '#e9e0ff' },
-  phonePageLine: { width: '85%', height: 3, marginTop: 4, borderRadius: 2, backgroundColor: '#9b7ce3' },
-  phonePageLineShort: { width: '55%', alignSelf: 'flex-start' },
-  cartHandle: { position: 'absolute', left: '32%', bottom: '51%', width: 48, height: 7, borderRadius: 4, backgroundColor: '#5723ca', transform: [{ rotate: '-14deg' }] },
-  cartNeck: { position: 'absolute', left: '42%', bottom: '33%', width: 7, height: '25%', borderRadius: 4, backgroundColor: '#5723ca', transform: [{ rotate: '-11deg' }] },
-  cartBasket: { position: 'absolute', left: '39%', bottom: '14%', width: '35%', height: '28%', overflow: 'hidden', borderWidth: 5, borderColor: '#5723ca', borderBottomLeftRadius: 10, borderBottomRightRadius: 10, backgroundColor: '#eee8ff', transform: [{ skewX: '-9deg' }] },
-  cartItem: { position: 'absolute', bottom: '14%', width: 22, height: 48, borderWidth: 2, borderColor: '#5723ca', borderRadius: 4 },
-  cartItemGold: { left: '18%', backgroundColor: '#ffc94a' },
-  cartItemTeal: { left: '56%', height: 54, backgroundColor: '#27c2b3' },
-  cartBar: { position: 'absolute', top: '35%', left: 0, right: 0, height: 4, backgroundColor: '#9875e4' },
-  cartBarLower: { top: '66%' },
-  cartBarVertical: { position: 'absolute', top: 0, bottom: 0, left: '48%', width: 4, backgroundColor: '#9875e4' },
-  cartWheelLeft: { position: 'absolute', left: '44%', bottom: '7%', width: 13, height: 13, borderWidth: 3, borderColor: '#5723ca', borderRadius: 7, backgroundColor: '#ffffff' },
-  cartWheelRight: { position: 'absolute', left: '65%', bottom: '7%', width: 13, height: 13, borderWidth: 3, borderColor: '#5723ca', borderRadius: 7, backgroundColor: '#ffffff' },
+  illustration: { width: '100%', maxWidth: 355, height: 230, alignSelf: 'center' },
   footer: { width: '100%', maxWidth: 440, alignSelf: 'center', paddingBottom: 1 },
   pagination: { height: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   pageDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#d4cde4' },
