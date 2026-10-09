@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "869679547422",
+    "project_id": "paz-shop",
+    "storage_bucket": "paz-shop.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:869679547422:android:b45901f0097943f53f9a0f",
+        "android_client_info": {
+          "package_name": "org.pazthrivingtribe.shop"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBJy02pdDe8cPdZZ7bR6dJpfcPls3Uyyu8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

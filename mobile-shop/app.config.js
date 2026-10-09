@@ -8,6 +8,10 @@ const rootEnv = parseProjectEnv(path.resolve(__dirname, '..'), {
 
 module.exports = ({ config }) => ({
   ...config,
+  android: {
+    ...config.android,
+    googleServicesFile: './google-services.json',
+  },
   plugins: [
     ...(config.plugins || []),
     ['expo-image-picker', { photosPermission: 'PAZ uses your selected photo as your customer profile picture.' }],

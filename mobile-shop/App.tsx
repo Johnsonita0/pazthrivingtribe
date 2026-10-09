@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
+import * as Network from 'expo-network';
 import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
@@ -19,6 +20,7 @@ import { Button, Field, palette } from './src/ShopComponents';
 import { ensureCustomerProfile, isSupabaseConfigured, supabase } from './src/supabaseClient';
 import { AccountPreferences, AccountStep, AccountUser, CustomerAccountFlow } from './src/CustomerAccountFlow';
 import { OnboardingFlow } from './src/OnboardingFlow';
+import { OfflineState } from './src/OfflineState';
 import { SplashScreen } from './src/SplashScreen';
 
 if (Platform.OS === 'web') WebBrowser.maybeCompleteAuthSession();
@@ -109,6 +111,7 @@ export default function App() {
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState('');
+  const [networkOffline, setNetworkOffline] = useState(false);
   const [notice, setNotice] = useState('');
   const [ratings, setRatings] = useState<Rating[]>([]);
   const [metrics, setMetrics] = useState<ProductMetrics | null>(null);
@@ -163,6 +166,8 @@ export default function App() {
   const checkoutAuthRequiredRef = useRef(false);
   const completedReferencesRef = useRef(new Set<string>());
   const processPaymentRef = useRef<(reference: string) => Promise<void>>(async () => {});
+  const lastOfflineState = useRef<boolean | null>(null);
+  const reloadProductsRef = useRef<() => Promise<void>>(async () => {});
   const flightProgress = useRef(new Animated.Value(0)).current;
   const { width: windowWidth } = useWindowDimensions();
 
@@ -365,12 +370,35 @@ export default function App() {
       setProducts((Array.isArray(payload.data) ? payload.data : []).map(normalizeProduct).filter((product: Product) => product.id));
       setStorageBaseUrl(String(payload.storageBaseUrl || ''));
     } catch (error) {
-      setPageError(error instanceof Error ? error.message : 'The shop could not be loaded.');
+      console.warn('Could not load PAZ shop products:', error);
+      setPageError('unavailable');
     } finally {
       setLoading(false);
       setInitialLoadComplete(true);
     }
   };
+  reloadProductsRef.current = loadProducts;
+
+  useEffect(() => {
+    let active = true;
+    const updateNetworkState = (state: Network.NetworkState) => {
+      if (!active) return;
+      const offline = state.isConnected === false || state.isInternetReachable === false;
+      if (lastOfflineState.current === true && !offline) void reloadProductsRef.current();
+      lastOfflineState.current = offline;
+      setNetworkOffline(offline);
+    };
+
+    const subscription = Network.addNetworkStateListener(updateNetworkState);
+    void Network.getNetworkStateAsync().then(updateNetworkState).catch((error) => {
+      console.warn('Could not check PAZ network status:', error);
+    });
+
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -1150,6 +1178,10 @@ export default function App() {
 
   if (!splashElapsed || !initialLoadComplete || onboardingStatus === 'loading' || !accountSetupLoaded) {
     return <SplashScreen />;
+  }
+
+  if (networkOffline || pageError) {
+    return <OfflineState offline={networkOffline} onRetry={() => void loadProducts()} />;
   }
 
   return (
