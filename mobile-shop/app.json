@@ -24,6 +24,7 @@
     "android": {
       "package": "org.pazthrivingtribe.shop",
       "minSdkVersion": 24,
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#f2f8f3",
         "foregroundImage": "./assets/paz-app-icon.png",

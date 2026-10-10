@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { ImageBackground, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Product, productImageUrl, SITE_ROOT } from './api';
-import { palette } from './ShopComponents';
+import { palette, registerShopThemeStyles, ShopGradient } from './ShopComponents';
 
 type Props = {
   products: Product[];
@@ -133,13 +133,15 @@ export function PromoBoard({ products, storageBaseUrl, onOpen, onCategory, compa
     return (
       <ImageBackground source={promoImage} style={styles.compactBoard} imageStyle={styles.compactBackground}>
         <View style={styles.compactShade} />
+        <ShopGradient opacity={palette.paper === '#171613' ? 0.3 : 0.16} />
         <View style={styles.compactCopy}>
           <Text numberOfLines={1} style={styles.compactKicker}>{promo.eyebrow}</Text>
           <Text numberOfLines={2} style={styles.compactTitle}>{promo.title}</Text>
           <Text numberOfLines={1} style={styles.compactDescription}>{promo.copy}</Text>
           <Pressable accessibilityRole="button" onPress={promo.onPress} style={({ pressed }) => [styles.compactAction, pressed && styles.promoActionPressed]}>
+            <ShopGradient />
             <Text style={styles.compactActionText}>{promo.action}</Text>
-            <FontAwesome5 name="arrow-right" size={9} color={palette.darkGreen} />
+            <FontAwesome5 name="arrow-right" size={9} color={palette.white} />
           </Pressable>
         </View>
         <View style={styles.compactDots}>
@@ -161,13 +163,15 @@ export function PromoBoard({ products, storageBaseUrl, onOpen, onCategory, compa
   return (
     <ImageBackground source={promoImage} style={styles.promoBoard} imageStyle={styles.promoImage}>
       <View style={styles.promoShade} />
+      <ShopGradient opacity={palette.paper === '#171613' ? 0.28 : 0.14} />
       <View style={styles.promoCopy}>
         <Text style={styles.promoKicker}>{promo.eyebrow}</Text>
         <Text numberOfLines={2} style={styles.promoTitle}>{promo.title}</Text>
         <Text numberOfLines={2} style={styles.promoDescription}>{promo.copy}</Text>
         <Pressable accessibilityRole="button" onPress={promo.onPress} style={({ pressed }) => [styles.promoAction, pressed && styles.promoActionPressed]}>
+          <ShopGradient />
           <Text style={styles.promoActionText}>{promo.action}</Text>
-          <FontAwesome5 name="chevron-right" size={10} color="#173f30" />
+          <FontAwesome5 name="chevron-right" size={10} color={palette.white} />
         </Pressable>
       </View>
       <View style={styles.promoDots}>
@@ -185,30 +189,35 @@ export function PromoBoard({ products, storageBaseUrl, onOpen, onCategory, compa
   );
 }
 
-const styles = StyleSheet.create({
-  promoBoard: { height: 140, marginTop: 10, marginBottom: 5, marginHorizontal: 14, overflow: 'hidden', justifyContent: 'center', borderRadius: 12, backgroundColor: palette.darkGreen },
-  compactBoard: { height: 90, marginHorizontal: 9, marginTop: 8, marginBottom: 6, paddingLeft: 10, paddingRight: 8, overflow: 'hidden', borderRadius: 11, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#4816b2' },
+function createStyles() {
+  return StyleSheet.create({
+  promoBoard: { height: 140, marginTop: 10, marginBottom: 5, marginHorizontal: 14, overflow: 'hidden', justifyContent: 'center', borderRadius: 12, backgroundColor: palette.actionGreen },
+  compactBoard: { height: 90, marginHorizontal: 9, marginTop: 8, marginBottom: 6, paddingLeft: 10, paddingRight: 8, overflow: 'hidden', borderRadius: 11, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: palette.actionGreen },
   compactBackground: { borderRadius: 11 },
-  compactShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(42, 9, 101, 0.62)' },
+  compactShade: { ...StyleSheet.absoluteFill, backgroundColor: palette.paper === '#171613' ? 'rgba(0, 0, 0, 0.24)' : 'rgba(0, 0, 0, 0.48)' },
   compactCopy: { zIndex: 1, maxWidth: '83%', alignItems: 'flex-start' },
-  compactKicker: { color: '#eadfff', fontSize: 6, fontWeight: '900', letterSpacing: 0.7 },
+  compactKicker: { color: palette.white, fontSize: 6, fontWeight: '900', letterSpacing: 0.7 },
   compactTitle: { marginTop: 2, color: palette.white, fontSize: 13, lineHeight: 15, fontWeight: '900' },
-  compactDescription: { marginTop: 2, color: '#eee6ff', fontSize: 7, fontWeight: '600' },
-  compactAction: { minHeight: 20, marginTop: 5, paddingHorizontal: 8, borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: palette.white },
-  compactActionText: { color: palette.darkGreen, fontSize: 7, fontWeight: '900' },
+  compactDescription: { marginTop: 2, color: palette.white, fontSize: 7, fontWeight: '600' },
+  compactAction: { minHeight: 20, marginTop: 5, paddingHorizontal: 8, overflow: 'hidden', borderRadius: 10, flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: palette.actionGreen },
+  compactActionText: { zIndex: 1, color: palette.white, fontSize: 7, fontWeight: '900' },
   compactDots: { position: 'absolute', right: 9, bottom: 5, flexDirection: 'row', alignItems: 'center', gap: 2 },
   compactDot: { width: 3, height: 3 },
-  compactDotActive: { width: 7, backgroundColor: '#f1c77f' },
+  compactDotActive: { width: 7, backgroundColor: palette.orange },
   promoImage: { borderRadius: 12 },
-  promoShade: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(10, 35, 25, 0.66)' },
+  promoShade: { ...StyleSheet.absoluteFill, backgroundColor: palette.paper === '#171613' ? 'rgba(0, 0, 0, 0.32)' : 'rgba(0, 0, 0, 0.55)' },
   promoCopy: { maxWidth: 390, paddingHorizontal: 16, paddingVertical: 10, alignItems: 'flex-start' },
-  promoKicker: { color: '#f1c77f', fontSize: 8, fontWeight: '900', letterSpacing: 1 },
+  promoKicker: { color: palette.orange, fontSize: 8, fontWeight: '900', letterSpacing: 1 },
   promoTitle: { maxWidth: '100%', marginTop: 4, color: palette.white, fontSize: 18, lineHeight: 22, fontWeight: '900' },
-  promoDescription: { maxWidth: 340, marginTop: 3, color: '#f4f5ef', fontSize: 10, lineHeight: 14 },
-  promoAction: { minHeight: 29, marginTop: 6, paddingHorizontal: 10, flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 7, backgroundColor: '#edb767' },
+  promoDescription: { maxWidth: 340, marginTop: 3, color: palette.white, fontSize: 10, lineHeight: 14 },
+  promoAction: { minHeight: 29, marginTop: 6, paddingHorizontal: 10, overflow: 'hidden', flexDirection: 'row', alignItems: 'center', gap: 5, borderRadius: 7, backgroundColor: palette.actionGreen },
   promoActionPressed: { opacity: 0.78 },
-  promoActionText: { color: '#173f30', fontSize: 9, fontWeight: '900' },
+  promoActionText: { zIndex: 1, color: palette.white, fontSize: 9, fontWeight: '900' },
   promoDots: { position: 'absolute', right: 13, bottom: 10, flexDirection: 'row', alignItems: 'center', gap: 5 },
   promoDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.55)' },
-  promoDotActive: { width: 16, backgroundColor: '#f1c77f' },
-});
+  promoDotActive: { width: 16, backgroundColor: palette.orange },
+  });
+}
+
+let styles = createStyles();
+registerShopThemeStyles(() => { styles = createStyles(); });

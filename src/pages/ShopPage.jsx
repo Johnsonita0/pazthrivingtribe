@@ -1,17 +1,26 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import { getCountries, getCountryCallingCode, isValidPhoneNumber, parsePhoneNumberFromString } from 'libphonenumber-js';
-import { supabase } from '../supabaseClient';
+import { isSupabaseStub, setWebAuthRememberMe, supabase } from '../supabaseClient';
 import ProductCover, { resolveProductCover } from '../components/ProductCover';
 import ProductChat from '../components/ProductChat';
+import LegalDocumentModal from '../components/LegalDocumentModal';
 import { notifyAdminActivity } from '../utils/notifyAdminActivity';
 import { getIndependenceDaySlides } from '../utils/independenceDaySlides';
 import { getProductAvailability } from '../utils/productAvailability';
+import { legalDocuments } from '../legalDocuments';
 
 const isStorefrontProduct = (product) =>
   product.status === 'published' ||
   (!product.vendor_id && product.status === 'approved');
+
+const canonicalShopCategory = (category) => {
+  const value = String(category || '').trim();
+  if (/\b(groceries|grocery|food|supermarket)\b/i.test(value)) return 'Groceries';
+  if (/\b(gadgets?|electronics?|technology|devices?|accessories)\b/i.test(value)) return 'Gadgets';
+  return value || 'Other';
+};
 
 const defaultBankAccount = {
   accountName: 'Paz Thriving Tribe',
@@ -645,8 +654,189 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const [releaseNotificationProduct, setReleaseNotificationProduct] = useState(null);
   const [releaseNotificationSubmitting, setReleaseNotificationSubmitting] = useState(false);
   const [releaseNotificationError, setReleaseNotificationError] = useState('');
+  const [shopAuthSession, setShopAuthSession] = useState(null);
+  const [shopAccountOpen, setShopAccountOpen] = useState(false);
+  const [shopAuthMode, setShopAuthMode] = useState('signIn');
+  const [shopAuthName, setShopAuthName] = useState('');
+  const [shopAuthEmail, setShopAuthEmail] = useState('');
+  const [shopAuthPassword, setShopAuthPassword] = useState('');
+  const [shopAuthConfirmPassword, setShopAuthConfirmPassword] = useState('');
+  const [shopAuthPasswordVisible, setShopAuthPasswordVisible] = useState(false);
+  const [shopAuthConfirmPasswordVisible, setShopAuthConfirmPasswordVisible] = useState(false);
+  const [shopAuthRemember, setShopAuthRemember] = useState(false);
+  const [shopAuthConsent, setShopAuthConsent] = useState(false);
+  const [shopLegalPolicy, setShopLegalPolicy] = useState(null);
+  const [shopAuthBusy, setShopAuthBusy] = useState(false);
+  const [shopAuthError, setShopAuthError] = useState('');
+  const [shopAuthNotice, setShopAuthNotice] = useState('');
+  const [shopAuthProfile, setShopAuthProfile] = useState(null);
+  const [shopAccountPage, setShopAccountPage] = useState(null);
+  const [shopAccountMenuOpen, setShopAccountMenuOpen] = useState(false);
+  const [shopNotificationsOpen, setShopNotificationsOpen] = useState(false);
+  const [shopOrders, setShopOrders] = useState([]);
+  const [shopConversations, setShopConversations] = useState([]);
+  const [activeShopConversation, setActiveShopConversation] = useState(null);
+  const [shopNotifications, setShopNotifications] = useState([]);
+  const [shopAccountDataBusy, setShopAccountDataBusy] = useState(false);
+  const [shopAccountDataError, setShopAccountDataError] = useState('');
+  const [shopAddress, setShopAddress] = useState({ fullName: '', phone: '', addressLine1: '', addressLine2: '', city: '', state: '', postalCode: '', country: 'Nigeria' });
+  const [shopAddressNotice, setShopAddressNotice] = useState('');
+  const [shopAccountTheme, setShopAccountTheme] = useState(() => window.localStorage.getItem('paz-shop-account-theme') || 'light');
 
   const descriptionRef = useRef(null);
+  const shopAccountMenuCloseTimer = useRef(null);
+  const shopAccountDrawerRef = useRef(null);
+
+  useEffect(() => () => window.clearTimeout(shopAccountMenuCloseTimer.current), []);
+
+  useEffect(() => {
+    if (!isSmallScreen || !shopAccountMenuOpen) return undefined;
+    const closeDrawerOnOutsideClick = (event) => {
+      if (!shopAccountDrawerRef.current?.contains(event.target)) setShopAccountMenuOpen(false);
+    };
+    window.addEventListener('pointerdown', closeDrawerOnOutsideClick, true);
+    return () => window.removeEventListener('pointerdown', closeDrawerOnOutsideClick, true);
+  }, [isSmallScreen, shopAccountMenuOpen]);
+
+  useEffect(() => {
+    window.localStorage.setItem('paz-shop-account-theme', shopAccountTheme);
+  }, [shopAccountTheme]);
+
+  useEffect(() => {
+    let active = true;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setShopAuthSession(session);
+    });
+
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (!active) return;
+      if (error) {
+        console.error('Could not load the shop customer session:', error);
+        return;
+      }
+      setShopAuthSession(data.session);
+    }).catch((error) => {
+      if (active) console.error('Could not load the shop customer session:', error);
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!shopAccountOpen) return undefined;
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape' && !shopAuthBusy) {
+        setShopAccountOpen(false);
+        setShopAuthPassword('');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [shopAccountOpen, shopAuthBusy]);
+
+  useEffect(() => {
+    if (!shopAccountMenuOpen && !shopNotificationsOpen) return undefined;
+    const handleEscape = (event) => {
+      if (event.key !== 'Escape') return;
+      window.clearTimeout(shopAccountMenuCloseTimer.current);
+      setShopAccountMenuOpen(false);
+      setShopNotificationsOpen(false);
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [shopAccountMenuOpen, shopNotificationsOpen]);
+
+  useEffect(() => {
+    let active = true;
+    if (!shopAuthSession?.user?.id) {
+      setShopAuthProfile(null);
+      return () => { active = false; };
+    }
+    supabase.from('customer_profiles')
+      .select('first_name,last_name,full_name,email,phone,avatar_url,delivery_address')
+      .eq('id', shopAuthSession.user.id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) {
+          console.error('Could not load the shop customer profile:', error);
+          setShopAccountDataError('Your profile details could not be loaded. Please retry.');
+          return;
+        }
+        setShopAuthProfile(data || null);
+        const address = data?.delivery_address;
+        if (address && typeof address === 'object') {
+          setShopAddress((current) => ({ ...current, ...address }));
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          console.error('Could not load the shop customer profile:', error);
+          setShopAccountDataError('Your profile details could not be loaded. Please retry.');
+        }
+      });
+    return () => { active = false; };
+  }, [shopAuthSession?.user?.id]);
+
+  useEffect(() => {
+    if (!shopAuthSession?.user?.id || !shopAccountPage || !['orders', 'notifications', 'messages'].includes(shopAccountPage)) return undefined;
+    let active = true;
+    setShopAccountDataBusy(true);
+    setShopAccountDataError('');
+    const loadData = async () => {
+      if (shopAccountPage === 'orders') {
+        const queryOrders = () => supabase.from('shop_orders')
+          .select('id,order_number,total,currency,status,created_at,shop_order_items(title,quantity)')
+          .order('created_at', { ascending: false })
+          .limit(50);
+        const [byCustomer, byEmail] = await Promise.all([
+          queryOrders().eq('customer_id', shopAuthSession.user.id),
+          shopAuthSession.user.email
+            ? queryOrders().eq('email', shopAuthSession.user.email.toLowerCase())
+            : Promise.resolve({ data: [], error: null })
+        ]);
+        if (byCustomer.error) throw byCustomer.error;
+        if (byEmail.error) throw byEmail.error;
+        if (active) setShopOrders([...new Map([...(byCustomer.data || []), ...(byEmail.data || [])].map((order) => [order.id, order])).values()]);
+      } else if (shopAccountPage === 'messages') {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        if (!data.session?.access_token) throw new Error('Sign in again to view your messages.');
+        const response = await fetch('/api/product-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session.access_token}` },
+          body: JSON.stringify({ action: 'list-account' })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || 'Messages could not be loaded.');
+        if (active) setShopConversations(Array.isArray(payload.data) ? payload.data : []);
+      } else {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        if (!data.session?.access_token) throw new Error('Sign in again to view your notifications.');
+        const response = await fetch('/api/customer-notifications', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session.access_token}` },
+          body: JSON.stringify({ action: 'list' })
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || 'Notifications could not be loaded.');
+        if (active) setShopNotifications(Array.isArray(payload.notifications) ? payload.notifications : []);
+      }
+    };
+    loadData()
+      .catch((error) => {
+        if (active) {
+          console.error(`Could not load customer ${shopAccountPage}:`, error);
+          setShopAccountDataError(error?.message || 'Your account information could not be loaded. Please retry.');
+        }
+      })
+      .finally(() => { if (active) setShopAccountDataBusy(false); });
+    return () => { active = false; };
+  }, [shopAccountPage, shopAuthSession?.user?.id]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => setAvailabilityNow(Date.now()), 15000);
@@ -985,7 +1175,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   useEffect(() => {
     const handleResize = () => {
       const small = window.innerWidth <= 900;
-      const verySmall = window.innerWidth <= 360;
+      const verySmall = window.innerWidth <= 380;
       setIsSmallScreen(small);
       setIsVerySmallScreen(verySmall);
       if (!small) {
@@ -1092,7 +1282,12 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     setCurrentPage(1);
   }, [selectedCategory, searchTerm, priceRange, minRating, sortBy]);
 
-  const categories = ['All', ...new Set((storeData.products || []).map((product) => product.category))];
+  const categories = [...new Set([
+    'All',
+    'Groceries',
+    'Gadgets',
+    ...(storeData.products || []).map((product) => canonicalShopCategory(product.category))
+  ])];
   const getProductRating = (product) => Number(productRatingSummaries[String(product.id)]?.rating ?? product.rating ?? 0);
   const getProductReviewCount = (product) => Number(productRatingSummaries[String(product.id)]?.reviews ?? product.reviews ?? 0);
 
@@ -1112,7 +1307,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
 
   const filteredByCategory = selectedCategory === 'All'
     ? filteredBySearch
-    : filteredBySearch.filter((product) => product.category === selectedCategory);
+    : filteredBySearch.filter((product) => canonicalShopCategory(product.category) === selectedCategory);
 
   const allVisibleProducts = filteredByCategory.filter((product) => {
     const inPriceRange = productNgnPrice(product) >= priceRange[0] && productNgnPrice(product) <= priceRange[1];
@@ -1714,6 +1909,266 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
       </div>
     );
   };
+  const openShopAccount = () => {
+    setShopAuthError('');
+    setShopAuthNotice('');
+    setShopAccountOpen(true);
+  };
+  const closeShopAccount = () => {
+    if (shopAuthBusy) return;
+    setShopAccountOpen(false);
+    setShopAuthPassword('');
+    setShopAuthConfirmPassword('');
+    setShopAuthPasswordVisible(false);
+    setShopAuthConfirmPasswordVisible(false);
+    setShopAuthConsent(false);
+  };
+  const submitShopAuth = async (event) => {
+    event.preventDefault();
+    setShopAuthBusy(true);
+    setShopAuthError('');
+    setShopAuthNotice('');
+    try {
+      if (isSupabaseStub) throw new Error('Customer accounts are unavailable because Supabase is not configured.');
+      if (shopAuthMode === 'signUp' && shopAuthPassword !== shopAuthConfirmPassword) {
+        throw new Error('Your passwords do not match.');
+      }
+      if (shopAuthMode === 'signUp' && !shopAuthConsent) {
+        throw new Error('Please agree to the System Terms and acknowledge the Privacy Policy before creating an account.');
+      }
+      setWebAuthRememberMe(shopAuthRemember);
+      const identifier = shopAuthEmail.trim();
+      const isPhone = !identifier.includes('@');
+      if (shopAuthMode === 'signUp') {
+        const { data, error } = await supabase.auth.signUp({
+          ...(isPhone ? { phone: identifier.replace(/[\s()-]/g, '') } : { email: identifier.toLowerCase() }),
+          password: shopAuthPassword,
+          options: {
+            ...(isPhone ? {} : { emailRedirectTo: `${window.location.origin}/shop?account=customer-confirmed` }),
+            data: {
+              full_name: shopAuthName.trim(),
+              first_name: shopAuthName.trim().split(/\s+/)[0] || '',
+              account_type: 'customer',
+              account_role: 'customer',
+              app_source: 'paz-shop',
+              legal_terms_accepted_at: new Date().toISOString(),
+              privacy_policy_acknowledged_at: new Date().toISOString()
+            }
+          }
+        });
+        if (error) throw error;
+        if (data.session) {
+          setShopAccountOpen(false);
+          setShopAuthPassword('');
+          setShopAuthConfirmPassword('');
+        } else {
+          setShopAuthNotice(isPhone ? 'Account created. Check your phone for a verification code, then sign in.' : 'Account created. Check your email to confirm your account, then sign in.');
+          setShopAuthMode('signIn');
+          setShopAuthPassword('');
+          setShopAuthConfirmPassword('');
+        }
+      } else {
+        const credentials = isPhone
+          ? { phone: identifier.replace(/[\s()-]/g, ''), password: shopAuthPassword }
+          : { email: identifier.toLowerCase(), password: shopAuthPassword };
+        const { data, error } = await supabase.auth.signInWithPassword(credentials);
+        if (error) throw error;
+        if (!data.session) throw new Error('Sign-in did not return an active session. Please try again.');
+        setShopAccountOpen(false);
+        setShopAuthPassword('');
+        setShopAuthConfirmPassword('');
+        setShopAuthPasswordVisible(false);
+        setShopAuthConfirmPasswordVisible(false);
+        setShopAccountPage(null);
+        navigate('/shop', { replace: true });
+      }
+    } catch (error) {
+      setShopAuthError(error?.message || 'Unable to complete account sign-in. Please try again.');
+    } finally {
+      setShopAuthBusy(false);
+    }
+  };
+  const resetShopPassword = async () => {
+    setShopAuthError('');
+    setShopAuthNotice('');
+    if (isSupabaseStub) {
+      setShopAuthError('Customer accounts are unavailable because Supabase is not configured.');
+      return;
+    }
+    if (!shopAuthEmail.includes('@')) {
+      setShopAuthError('Enter your email address first so we can send a reset link.');
+      return;
+    }
+    setShopAuthBusy(true);
+    try {
+      const redirectTo = new URL('/shop', window.location.origin).toString();
+      const { error } = await supabase.auth.resetPasswordForEmail(shopAuthEmail.trim().toLowerCase(), { redirectTo });
+      if (error) throw error;
+      setShopAuthNotice('If an account exists for that email, a password reset link is on its way.');
+    } catch (error) {
+      setShopAuthError(error?.message || 'Unable to send a password reset link. Please try again.');
+    } finally {
+      setShopAuthBusy(false);
+    }
+  };
+  const signOutShopAccount = async () => {
+    setShopAuthBusy(true);
+    setShopAuthError('');
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      setShopAccountOpen(false);
+      setShopAccountPage(null);
+      setShopAccountMenuOpen(false);
+      setShopNotificationsOpen(false);
+    } catch (error) {
+      setShopAuthError(error?.message || 'Unable to sign out. Please try again.');
+    } finally {
+      setShopAuthBusy(false);
+    }
+  };
+  const signInWithShopProvider = async (provider) => {
+    if (isSupabaseStub) {
+      setShopAuthError('Customer accounts are unavailable because Supabase is not configured.');
+      return;
+    }
+    setShopAuthBusy(true);
+    setShopAuthError('');
+    setShopAuthNotice('');
+    try {
+      if (shopAuthMode === 'signUp' && !shopAuthConsent) {
+        throw new Error('Please agree to the System Terms and acknowledge the Privacy Policy before creating an account.');
+      }
+      setWebAuthRememberMe(shopAuthRemember);
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/shop?account=customer-confirmed`,
+          skipBrowserRedirect: true
+        }
+      });
+      if (error) throw error;
+      if (!data.url) throw new Error(`${provider} sign-in could not be started.`);
+      window.location.assign(data.url);
+    } catch (error) {
+      setShopAuthError(error?.message || `${provider} sign-in could not be completed.`);
+      setShopAuthBusy(false);
+    }
+  };
+  const openShopAccountPage = (page) => {
+    setShopAccountPage(page);
+    setShopAccountMenuOpen(false);
+    window.clearTimeout(shopAccountMenuCloseTimer.current);
+    setShopNotificationsOpen(false);
+    setShopAddressNotice('');
+  };
+  const openShopAccountMenu = () => {
+    window.clearTimeout(shopAccountMenuCloseTimer.current);
+    setShopAccountMenuOpen(true);
+  };
+  const scheduleShopAccountMenuClose = () => {
+    window.clearTimeout(shopAccountMenuCloseTimer.current);
+    shopAccountMenuCloseTimer.current = window.setTimeout(() => setShopAccountMenuOpen(false), 300);
+  };
+  const loadShopNotificationPreview = async () => {
+    if (!shopAuthSession?.user) return;
+    setShopAccountDataError('');
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      if (!data.session?.access_token) throw new Error('Sign in again to view your notifications.');
+      const response = await fetch('/api/customer-notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session.access_token}` },
+        body: JSON.stringify({ action: 'list' })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || 'Notifications could not be loaded.');
+      setShopNotifications(Array.isArray(payload.notifications) ? payload.notifications : []);
+    } catch (error) {
+      setShopAccountDataError(error?.message || 'Notifications could not be loaded.');
+    }
+  };
+  const markShopNotificationRead = async (notification) => {
+    if (!shopAuthSession?.user || notification.read_at) return;
+    try {
+      const { data, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      if (!data.session?.access_token) throw new Error('Sign in again to update your notifications.');
+      const response = await fetch('/api/customer-notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session.access_token}` },
+        body: JSON.stringify({ action: 'mark_read', id: notification.id })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.error || 'Notification could not be marked as read.');
+      setShopNotifications((current) => current.map((item) => item.id === notification.id ? { ...item, read_at: new Date().toISOString() } : item));
+    } catch (error) {
+      setShopAccountDataError(error?.message || 'Notification could not be marked as read.');
+    }
+  };
+  const saveShopAddress = async (event) => {
+    event.preventDefault();
+    if (!shopUser) {
+      setShopAddressNotice('Sign in to save your delivery address.');
+      return;
+    }
+    if (!shopAddress.fullName.trim() || !shopAddress.phone.trim() || !shopAddress.addressLine1.trim() || !shopAddress.city.trim() || !shopAddress.state.trim() || !shopAddress.country.trim()) {
+      setShopAddressNotice('Fill in your name, phone, street, city, state, and country.');
+      return;
+    }
+    setShopAccountDataBusy(true);
+    setShopAddressNotice('');
+    try {
+      const { error } = await supabase.from('customer_profiles').upsert({
+        id: shopUser.id,
+        email: shopUser.email || null,
+        full_name: shopAddress.fullName.trim(),
+        phone: shopAddress.phone.trim(),
+        delivery_address: shopAddress,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' });
+      if (error) throw error;
+      setShopAuthProfile((current) => ({ ...current, full_name: shopAddress.fullName.trim(), phone: shopAddress.phone.trim(), delivery_address: shopAddress }));
+      setShopAddressNotice('Your delivery address has been saved.');
+    } catch (error) {
+      setShopAddressNotice(error?.message || 'Your delivery address could not be saved.');
+    } finally {
+      setShopAccountDataBusy(false);
+    }
+  };
+  const shopUser = shopAuthSession?.user || null;
+  const shopUserName = shopAuthProfile?.full_name
+    || [shopAuthProfile?.first_name, shopAuthProfile?.last_name].filter(Boolean).join(' ')
+    || shopUser?.user_metadata?.full_name
+    || shopUser?.user_metadata?.name
+    || shopUser?.email
+    || 'PAZ customer';
+  const shopAvatarUrl = shopAuthProfile?.avatar_url || shopUser?.user_metadata?.avatar_url || shopUser?.user_metadata?.picture || '';
+  const shopProfileMenu = [
+    ['account', 'My profile', 'user'],
+    ['orders', 'My orders', 'receipt'],
+    ['wishlist', 'My wishlist', 'heart'],
+    ['messages', 'Messages', 'comments'],
+    ['notifications', 'Notifications', 'bell'],
+    ['address', 'Address book', 'map-marker-alt'],
+    ['payments', 'Payment methods', 'credit-card'],
+    ['preferences', 'Preferences', 'sliders-h'],
+    ['support', 'Help & support', 'question-circle'],
+    ['about', 'About PAZ', 'info-circle']
+  ];
+  const wishlistIds = (() => {
+    try {
+      const parsed = JSON.parse(window.localStorage.getItem('paz-shop-favorite-books-v1') || '[]');
+      return Array.isArray(parsed) ? parsed.map(String) : [];
+    } catch {
+      return [];
+    }
+  })();
+  const wishlistProducts = storeData.products.filter((product) => wishlistIds.includes(String(product.id)));
+  const accountThemeColors = shopAccountTheme === 'dark'
+    ? { surface: '#17231d', card: '#22332a', text: '#f3f7f4', muted: '#c0cec4', border: '#3c5144', accent: '#a5e2ba', softAccent: '#294936' }
+    : { surface: '#f5f8f5', card: '#ffffff', text: '#25352b', muted: '#5d6e63', border: '#dce7dd', accent: '#176b3a', softAccent: '#e7f2e9' };
 
   return (
     <div style={{ minHeight: '100vh', background: '#ffffff', color: '#1b1b1b', fontFamily: "'Amazon Ember', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
@@ -1737,75 +2192,307 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
         top: 0,
         zIndex: 100
       }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0 14px' }}>
-          {/* Top row: Logo and Search */}
-          <div style={{ display: 'grid', gridTemplateColumns: isSmallScreen ? '96px 1fr 64px' : '138px 1fr 120px', gap: isSmallScreen ? '8px' : '16px', alignItems: 'center' }}>
-            {/* Logo */}
-            <div aria-label="PAZ Store" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'default' }}>
-              <span aria-hidden="true" style={{ width: '38px', height: '38px', flex: '0 0 38px', borderRadius: '7px', background: '#008751', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                <i className="fa-solid fa-bag-shopping" style={{ fontSize: '22px' }}></i>
-                <i className="fa-solid fa-cart-shopping" style={{ position: 'absolute', right: '-3px', bottom: '-3px', fontSize: '13px', color: '#ff9900', WebkitTextStroke: '1px #131921' }}></i>
+        <div style={{ maxWidth: '1400px', margin: '0 auto', padding: isVerySmallScreen ? '0 6px' : '0 14px' }}>
+          <div style={{ display: isSmallScreen ? 'flex' : 'grid', gridTemplateColumns: isSmallScreen ? undefined : `120px minmax(280px, 1fr) ${shopUser ? '42px 42px 42px' : '148px'}`, gap: isSmallScreen ? isVerySmallScreen ? '3px' : '6px' : '10px', alignItems: 'center' }}>
+            <button type="button" aria-label={`Open cart, ${cart.reduce((count, item) => count + item.quantity, 0)} items`} style={{ position: 'relative', order: 0, gridColumn: isSmallScreen ? undefined : '1', flex: isVerySmallScreen ? '0 0 32px' : undefined, width: isSmallScreen ? isVerySmallScreen ? '32px' : '38px' : '120px', border: 0, background: 'transparent', color: '#fff', cursor: 'pointer', textAlign: isSmallScreen ? 'center' : 'left', minHeight: isVerySmallScreen ? '34px' : '40px', padding: 0 }} onClick={() => setCartOpen(!cartOpen)}>
+              <i className="fa-solid fa-cart-shopping" style={{ fontSize: isVerySmallScreen ? '19px' : '24px', marginRight: isSmallScreen ? 0 : '8px' }}></i>
+              <span style={{ position: 'absolute', top: isVerySmallScreen ? '0' : '-2px', left: isSmallScreen ? isVerySmallScreen ? '19px' : '23px' : '24px', background: '#ff9900', color: '#111', borderRadius: '50%', width: isVerySmallScreen ? '16px' : '19px', height: isVerySmallScreen ? '16px' : '19px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isVerySmallScreen ? '9px' : '11px', fontWeight: 'bold' }}>
+                {cart.reduce((count, item) => count + item.quantity, 0)}
               </span>
-              <span style={{ fontSize: '14px', fontWeight: 900, lineHeight: 1.05, color: '#fff' }}>PAZ<br />STORE</span>
-            </div>
+            </button>
 
-            {/* Search Bar */}
-            <div style={{ display: 'flex', alignItems: 'center', background: '#fff', borderRadius: '4px', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', flex: isSmallScreen ? '1 1 auto' : undefined, order: 1, gridColumn: isSmallScreen ? undefined : '2', minWidth: 0, alignItems: 'center', background: '#fff', borderRadius: '6px', overflow: 'hidden' }}>
               <input
                 className="shop-product-search-input"
-                type="text"
+                type="search"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search Paz products..."
+                onChange={(event) => setSearchTerm(event.target.value)}
+                placeholder="Search products..."
+                aria-label="Search PAZ products"
                 style={{
                   flex: 1,
-                  border: '3px solid #008751',
-                  borderRadius: '4px',
+                  minWidth: 0,
+                  height: isVerySmallScreen ? '34px' : isSmallScreen ? '38px' : '42px',
+                  boxSizing: 'border-box',
+                  border: '2px solid #008751',
+                  borderRadius: '6px 0 0 6px',
                   outline: 'none',
-                  padding: '10px 14px',
-                  fontSize: '14px',
+                  padding: isVerySmallScreen ? '0 5px' : isSmallScreen ? '0 8px' : '0 14px',
+                  fontSize: isVerySmallScreen ? '10px' : isSmallScreen ? '12px' : '14px',
                   color: '#111'
                 }}
               />
-              <button style={{
+              <button type="button" aria-label="Search" style={{
+                height: isVerySmallScreen ? '34px' : isSmallScreen ? '38px' : '42px',
                 background: '#FF9900',
                 border: 'none',
-                padding: '8px 14px',
+                padding: isVerySmallScreen ? '0 7px' : isSmallScreen ? '0 10px' : '0 14px',
                 cursor: 'pointer',
                 color: '#111',
                 fontWeight: 'bold'
-              }}>
-                <i className="fa-solid fa-magnifying-glass"></i>
+              }} onClick={() => document.querySelector('.shop-product-search-input')?.focus()}>
+                <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
               </button>
             </div>
 
-            {/* Cart Icon */}
-            <div style={{ position: 'relative', cursor: 'pointer', textAlign: 'right' }} onClick={() => setCartOpen(!cartOpen)}>
-              <i className="fa-solid fa-cart-shopping" style={{ fontSize: '24px', marginRight: '8px' }}></i>
-              <span style={{
-                position: 'absolute',
-                top: '-8px',
-                right: '0px',
-                background: '#FF9900',
-                color: '#111',
-                borderRadius: '50%',
-                width: '22px',
-                height: '22px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '12px',
-                fontWeight: 'bold'
-              }}>
-                {cart.reduce((count, item) => count + item.quantity, 0)}
-              </span>
-            </div>
+            <button
+              type="button"
+              aria-label={shopUser ? `Open account for ${shopUserName}` : 'Sign in to PAZ Shop'}
+              onClick={() => shopUser ? openShopAccountPage('account') : openShopAccount()}
+              style={{ width: shopUser ? isVerySmallScreen ? '34px' : '42px' : isSmallScreen ? '36px' : '148px', height: shopUser ? isVerySmallScreen ? '34px' : '42px' : isVerySmallScreen ? '34px' : '40px', flex: isSmallScreen ? `0 0 ${shopUser ? isVerySmallScreen ? '34px' : '42px' : '36px'}` : undefined, marginLeft: isSmallScreen && !shopUser ? 'auto' : undefined, order: 4, gridColumn: isSmallScreen ? undefined : shopUser ? '5' : '3', justifySelf: 'center', padding: shopUser ? 0 : isSmallScreen ? 0 : '0 12px', border: shopUser ? '2px solid #b7e3c8' : '1px solid rgba(255,255,255,.42)', borderRadius: shopUser ? '50%' : '8px', background: shopUser && shopAvatarUrl ? '#243449' : shopUser ? '#176b3a' : '#243449', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '7px', fontSize: '13px', fontWeight: 900, cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', boxShadow: shopUser ? '0 0 0 2px rgba(255,255,255,.12)' : undefined }}
+            >
+              {shopUser
+                ? shopAvatarUrl
+                  ? <img src={shopAvatarUrl} alt={`${shopUserName}'s profile`} style={{ display: 'block', width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', objectPosition: 'center' }} />
+                  : <span aria-hidden="true">{shopUserName.slice(0, 1).toUpperCase()}</span>
+                : <><i className="fa-solid fa-user" aria-hidden="true" />{!isSmallScreen ? <span>Sign in / Sign up</span> : null}</>}
+            </button>
+
+            {shopUser ? (
+              <div
+                style={{ position: 'relative', order: 2, gridColumn: isSmallScreen ? undefined : '3', justifySelf: 'center' }}
+                onMouseEnter={() => { if (!isSmallScreen) openShopAccountMenu(); }}
+                onMouseLeave={() => { if (!isSmallScreen) scheduleShopAccountMenuClose(); }}
+              >
+                <button type="button" aria-label="Profile settings" aria-expanded={shopAccountMenuOpen} onClick={() => { if (isSmallScreen) setShopAccountMenuOpen((open) => !open); else openShopAccountMenu(); }} style={{ width: isVerySmallScreen ? '32px' : '38px', height: isVerySmallScreen ? '32px' : '38px', padding: 0, border: '1px solid rgba(255,255,255,.35)', borderRadius: '10px', background: shopAccountMenuOpen ? '#008751' : 'transparent', color: '#fff', fontSize: isVerySmallScreen ? '13px' : '16px', cursor: 'pointer' }}>
+                  <i className="fa-solid fa-gear" aria-hidden="true" />
+                </button>
+                {isSmallScreen && shopAccountMenuOpen ? (
+                  <button type="button" aria-label="Close account settings" onClick={() => setShopAccountMenuOpen(false)} style={{ position: 'fixed', top: '64px', right: 0, bottom: 0, left: 0, zIndex: 1000, border: 0, background: 'rgba(15, 23, 42, .48)', cursor: 'pointer' }} />
+                ) : null}
+                {shopUser && shopAccountMenuOpen ? (
+                  <>
+                  {isSmallScreen ? <style>{'@keyframes pazShopAccountDrawerIn { from { transform: translateX(100%); } to { transform: translateX(0); } }'}</style> : null}
+                  <div
+                    ref={isSmallScreen ? shopAccountDrawerRef : undefined}
+                    role={isSmallScreen ? 'dialog' : 'menu'}
+                    aria-label="Profile and account settings"
+                    aria-modal={isSmallScreen ? 'true' : undefined}
+                    onMouseEnter={() => { if (!isSmallScreen) openShopAccountMenu(); }}
+                    onMouseLeave={() => { if (!isSmallScreen) scheduleShopAccountMenuClose(); }}
+                    style={isSmallScreen
+                      ? { position: 'fixed', top: '64px', right: 0, bottom: 0, width: 'min(340px, 88vw)', maxHeight: 'calc(100dvh - 64px)', overflowY: 'auto', padding: '8px 9px', borderLeft: '1px solid #e2e8f0', borderRadius: '14px 0 0 14px', background: '#fff', color: '#1b1b1b', boxShadow: '-16px 0 42px rgba(15,23,42,.24)', zIndex: 1001, animation: 'pazShopAccountDrawerIn 220ms ease-out' }
+                      : { position: 'absolute', top: 'calc(100% - 1px)', right: 0, width: 'min(290px, calc(100vw - 20px))', maxHeight: 'min(70vh, 520px)', overflowY: 'auto', padding: '9px', border: '1px solid #e2e8f0', borderRadius: '13px', background: '#fff', color: '#1b1b1b', boxShadow: '0 16px 42px rgba(15,23,42,.22)', zIndex: 300 }
+                    }
+                  >
+                    {isSmallScreen ? <button type="button" aria-label="Close account settings" onClick={() => setShopAccountMenuOpen(false)} style={{ display: 'grid', placeItems: 'center', marginLeft: 'auto', width: '34px', height: '34px', border: '1px solid #e2e8f0', borderRadius: '50%', background: '#f8fafc', color: '#334155', fontSize: '22px', cursor: 'pointer' }}>×</button> : null}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px', borderBottom: '1px solid #e2e8f0', marginBottom: '5px' }}>
+                      {shopAvatarUrl ? <img src={shopAvatarUrl} alt={`${shopUserName}'s profile`} style={{ display: 'block', width: '44px', height: '44px', flex: '0 0 44px', border: '2px solid #d1ead8', borderRadius: '50%', objectFit: 'cover', objectPosition: 'center' }} /> : <span style={{ display: 'grid', placeItems: 'center', width: '44px', height: '44px', flex: '0 0 44px', border: '2px solid #d1ead8', borderRadius: '50%', background: '#e7f2ee', color: '#356656', fontWeight: 900 }}>{shopUserName.slice(0, 1).toUpperCase()}</span>}
+                      <span style={{ minWidth: 0 }}><strong style={{ display: 'block', fontSize: '13px', color: '#2e2a26' }}>{shopUserName}</strong><small style={{ display: 'block', marginTop: '3px', color: '#665f5a', overflowWrap: 'anywhere' }}>{shopUser.email}</small></span>
+                    </div>
+                    {shopProfileMenu.map(([page, label, icon]) => (
+                      <button key={page} type="button" role="menuitem" onClick={() => openShopAccountPage(page)} style={{ display: 'flex', width: '100%', alignItems: 'center', gap: '11px', minHeight: '40px', padding: '0 10px', border: 0, borderRadius: '8px', background: 'transparent', color: '#334155', textAlign: 'left', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }} onMouseEnter={(event) => { event.currentTarget.style.background = '#f0fdf4'; }} onMouseLeave={(event) => { event.currentTarget.style.background = 'transparent'; }}>
+                        <i className={`fa-solid fa-${icon}`} aria-hidden="true" style={{ width: '17px', color: '#356656', textAlign: 'center' }} />{label}
+                      </button>
+                    ))}
+                    <button type="button" onClick={() => void signOutShopAccount()} style={{ display: 'flex', width: '100%', alignItems: 'center', gap: '11px', minHeight: '40px', marginTop: '5px', padding: '0 10px', border: 0, borderTop: '1px solid #e2e8f0', borderRadius: '8px', background: 'transparent', color: '#b42318', textAlign: 'left', fontSize: '13px', fontWeight: 800, cursor: 'pointer' }}><i className="fa-solid fa-right-from-bracket" aria-hidden="true" />Sign out</button>
+                  </div>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
+
+            {shopUser ? (
+              <div style={{ position: 'relative', order: 3, gridColumn: isSmallScreen ? undefined : '4', justifySelf: 'center' }}>
+                <button type="button" aria-label="Notifications" aria-expanded={shopNotificationsOpen} onClick={() => { const open = !shopNotificationsOpen; setShopNotificationsOpen(open); if (open) void loadShopNotificationPreview(); }} style={{ position: 'relative', width: isVerySmallScreen ? '32px' : '38px', height: isVerySmallScreen ? '32px' : '38px', padding: 0, border: '1px solid rgba(255,255,255,.35)', borderRadius: '10px', background: shopNotificationsOpen ? '#008751' : 'transparent', color: '#fff', fontSize: isVerySmallScreen ? '13px' : '15px', cursor: 'pointer' }}>
+                  <i className="fa-solid fa-bell" aria-hidden="true" />
+                  {shopNotifications.some((notification) => !notification.read_at) ? <span style={{ position: 'absolute', top: '-4px', right: '-4px', width: '9px', height: '9px', border: '2px solid #182333', borderRadius: '50%', background: '#ff9900' }} /> : null}
+                </button>
+                {shopNotificationsOpen ? (
+                  <div role="region" aria-label="Recent notifications" style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: 'min(330px, calc(100vw - 20px))', maxHeight: 'min(65vh, 440px)', overflowY: 'auto', padding: '12px', border: '1px solid #e2e8f0', borderRadius: '13px', background: '#fff', color: '#1b1b1b', boxShadow: '0 16px 42px rgba(15,23,42,.22)', zIndex: 300 }}>
+                    <strong style={{ display: 'block', padding: '2px 4px 10px', color: '#2e2a26' }}>Notifications</strong>
+                    {shopAccountDataError ? <p role="alert" style={{ margin: 0, padding: '9px', borderRadius: '8px', background: '#fff1f2', color: '#9f1239', fontSize: '12px' }}>{shopAccountDataError}</p> : null}
+                    {shopNotifications.length ? shopNotifications.slice(0, 5).map((notification) => (
+                      <button key={notification.id} type="button" onClick={() => { void markShopNotificationRead(notification); openShopAccountPage('notifications'); }} style={{ display: 'block', width: '100%', padding: '10px', border: 0, borderRadius: '8px', background: notification.read_at ? '#fff' : '#f0fdf4', color: '#334155', textAlign: 'left', cursor: 'pointer' }}>
+                        <strong style={{ display: 'block', fontSize: '12px' }}>{notification.title || 'PAZ update'}</strong>
+                        <span style={{ display: 'block', marginTop: '4px', fontSize: '11px', lineHeight: 1.4 }}>{notification.message || notification.body || 'You have a new update.'}</span>
+                      </button>
+                    )) : <p style={{ margin: 0, padding: '8px 4px', color: '#665f5a', fontSize: '12px' }}>No notifications yet.</p>}
+                    <button type="button" onClick={() => openShopAccountPage('notifications')} style={{ width: '100%', minHeight: '36px', marginTop: '7px', border: 0, borderRadius: '8px', background: '#e7f2ee', color: '#356656', fontWeight: 800, cursor: 'pointer' }}>View all notifications</button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
       </header>
 
+      {shopAccountOpen ? (
+        <div
+          onClick={closeShopAccount}
+          style={{ position: 'fixed', top: 'var(--app-visual-viewport-offset-top, 0px)', left: 0, right: 0, height: 'var(--app-visual-viewport-height, 100dvh)', zIndex: 1200, display: isSmallScreen ? 'block' : 'grid', placeItems: 'center', overflowY: isSmallScreen ? 'auto' : 'hidden', boxSizing: 'border-box', padding: isSmallScreen ? 'max(10px, env(safe-area-inset-top)) 12px max(10px, env(safe-area-inset-bottom))' : '18px', background: 'rgba(15, 23, 42, .66)' }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="shop-account-title"
+            onClick={(event) => event.stopPropagation()}
+            style={{ width: 'min(430px, 100%)', maxHeight: isSmallScreen ? 'calc(var(--app-visual-viewport-height, 100dvh) - 20px)' : '90dvh', margin: isSmallScreen ? '0 auto' : undefined, overflowY: 'auto', overscrollBehavior: 'contain', padding: isSmallScreen ? '18px' : '24px', boxSizing: 'border-box', borderRadius: '16px', background: '#fff', color: '#1b1b1b', boxShadow: '0 24px 70px rgba(0,0,0,.35)' }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '14px' }}>
+              <div>
+                <span style={{ display: 'inline-flex', width: '38px', height: '38px', alignItems: 'center', justifyContent: 'center', borderRadius: '12px', background: '#e7f2ee', color: '#356656' }}>
+                  <i className={`fa-solid ${shopUser ? 'fa-user-check' : 'fa-user'}`} aria-hidden="true" />
+                </span>
+                <h2 id="shop-account-title" style={{ margin: '14px 0 4px', fontSize: '22px', lineHeight: 1.2, color: '#2e2a26' }}>
+                  {shopUser ? 'Your PAZ account' : shopAuthMode === 'signIn' ? 'Welcome back' : 'Create your account'}
+                </h2>
+                <p style={{ margin: 0, color: '#665f5a', fontSize: '13px', lineHeight: 1.5 }}>
+                  {shopUser ? 'Manage your shop sign-in.' : 'Sign in or create an account to shop with PAZ.'}
+                </p>
+              </div>
+              <button type="button" aria-label="Close account dialog" onClick={closeShopAccount} disabled={shopAuthBusy} style={{ width: '34px', height: '34px', border: 0, borderRadius: '50%', background: '#f3f4f6', color: '#334155', fontSize: '21px', lineHeight: 1, cursor: shopAuthBusy ? 'wait' : 'pointer' }}>×</button>
+            </div>
+
+            {isSupabaseStub ? <p role="alert" style={{ margin: '18px 0 0', padding: '10px 12px', borderRadius: '9px', background: '#fff1f2', color: '#9f1239', fontSize: '13px', lineHeight: 1.45 }}>Customer accounts are unavailable because Supabase is not configured.</p> : null}
+            {shopAuthError ? <p role="alert" style={{ margin: '18px 0 0', padding: '10px 12px', borderRadius: '9px', background: '#fff1f2', color: '#9f1239', fontSize: '13px', lineHeight: 1.45 }}>{shopAuthError}</p> : null}
+            {shopAuthNotice ? <p role="status" style={{ margin: '18px 0 0', padding: '10px 12px', borderRadius: '9px', background: '#ecfdf5', color: '#166534', fontSize: '13px', lineHeight: 1.45 }}>{shopAuthNotice}</p> : null}
+
+            {shopUser ? (
+              <div style={{ display: 'grid', gap: '12px', marginTop: '20px' }}>
+                <div style={{ padding: '13px', border: '1px solid #eadfd5', borderRadius: '10px', background: '#f7f2ec' }}>
+                  <strong style={{ display: 'block', color: '#2e2a26', fontSize: '14px' }}>{shopUserName}</strong>
+                  {shopUser.email ? <span style={{ display: 'block', marginTop: '4px', color: '#665f5a', fontSize: '12px', overflowWrap: 'anywhere' }}>{shopUser.email}</span> : null}
+                </div>
+                <button type="button" onClick={() => void signOutShopAccount()} disabled={shopAuthBusy} style={{ minHeight: '46px', border: 0, borderRadius: '9px', background: '#356656', color: '#fff', fontWeight: 800, cursor: shopAuthBusy ? 'wait' : 'pointer' }}>{shopAuthBusy ? 'Please wait…' : 'Sign out'}</button>
+              </div>
+            ) : (
+              <form onSubmit={(event) => void submitShopAuth(event)} style={{ display: 'grid', gap: '12px', marginTop: '20px' }}>
+                {shopAuthMode === 'signUp' ? (
+                  <label style={{ display: 'grid', gap: '6px', color: '#2e2a26', fontSize: '12px', fontWeight: 800 }}>
+                    Full name
+                    <input autoComplete="name" value={shopAuthName} onChange={(event) => setShopAuthName(event.target.value)} required maxLength={120} style={{ minHeight: '44px', boxSizing: 'border-box', padding: '0 12px', border: '1px solid #cbd5e1', borderRadius: '8px', color: '#1b1b1b', fontSize: '14px' }} />
+                  </label>
+                ) : null}
+                <label style={{ display: 'grid', gap: '6px', color: '#2e2a26', fontSize: '12px', fontWeight: 800 }}>
+                  Email or phone number
+                  <input type="text" autoComplete="username" value={shopAuthEmail} onChange={(event) => setShopAuthEmail(event.target.value)} required maxLength={254} style={{ minHeight: '44px', boxSizing: 'border-box', padding: '0 12px', border: '1px solid #cbd5e1', borderRadius: '8px', color: '#1b1b1b', fontSize: '14px' }} />
+                </label>
+                <label style={{ display: 'grid', gap: '6px', color: '#2e2a26', fontSize: '12px', fontWeight: 800 }}>
+                  Password
+                  <span style={{ position: 'relative', display: 'block' }}>
+                    <input type={shopAuthPasswordVisible ? 'text' : 'password'} autoComplete={shopAuthMode === 'signIn' ? 'current-password' : 'new-password'} value={shopAuthPassword} onChange={(event) => setShopAuthPassword(event.target.value)} required minLength={8} style={{ width: '100%', minHeight: '44px', boxSizing: 'border-box', padding: '0 42px 0 12px', border: '1px solid #cbd5e1', borderRadius: '8px', color: '#1b1b1b', fontSize: '14px' }} />
+                    <button type="button" aria-label={shopAuthPasswordVisible ? 'Hide password' : 'Show password'} aria-pressed={shopAuthPasswordVisible} onClick={() => setShopAuthPasswordVisible((visible) => !visible)} style={{ position: 'absolute', top: '50%', right: '5px', transform: 'translateY(-50%)', display: 'grid', placeItems: 'center', width: '34px', height: '34px', border: 0, borderRadius: '6px', background: 'transparent', color: '#475569', cursor: 'pointer' }}>
+                      <i className={`fa-solid ${shopAuthPasswordVisible ? 'fa-eye-slash' : 'fa-eye'}`} aria-hidden="true" />
+                    </button>
+                  </span>
+                </label>
+                {shopAuthMode === 'signUp' ? (
+                  <label style={{ display: 'grid', gap: '6px', color: '#2e2a26', fontSize: '12px', fontWeight: 800 }}>
+                    Confirm password
+                    <span style={{ position: 'relative', display: 'block' }}>
+                      <input type={shopAuthConfirmPasswordVisible ? 'text' : 'password'} autoComplete="new-password" value={shopAuthConfirmPassword} onChange={(event) => setShopAuthConfirmPassword(event.target.value)} required minLength={8} style={{ width: '100%', minHeight: '44px', boxSizing: 'border-box', padding: '0 42px 0 12px', border: '1px solid #cbd5e1', borderRadius: '8px', color: '#1b1b1b', fontSize: '14px' }} />
+                      <button type="button" aria-label={shopAuthConfirmPasswordVisible ? 'Hide confirm password' : 'Show confirm password'} aria-pressed={shopAuthConfirmPasswordVisible} onClick={() => setShopAuthConfirmPasswordVisible((visible) => !visible)} style={{ position: 'absolute', top: '50%', right: '5px', transform: 'translateY(-50%)', display: 'grid', placeItems: 'center', width: '34px', height: '34px', border: 0, borderRadius: '6px', background: 'transparent', color: '#475569', cursor: 'pointer' }}>
+                        <i className={`fa-solid ${shopAuthConfirmPasswordVisible ? 'fa-eye-slash' : 'fa-eye'}`} aria-hidden="true" />
+                      </button>
+                    </span>
+                  </label>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', color: '#475569', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>
+                      <input type="checkbox" checked={shopAuthRemember} onChange={(event) => setShopAuthRemember(event.target.checked)} />
+                      Remember me
+                    </label>
+                    <button type="button" onClick={() => void resetShopPassword()} disabled={shopAuthBusy || isSupabaseStub} style={{ border: 0, background: 'transparent', color: '#356656', fontSize: '12px', fontWeight: 800, cursor: shopAuthBusy || isSupabaseStub ? 'not-allowed' : 'pointer' }}>Forgot password?</button>
+                  </div>
+                )}
+                {shopAuthMode === 'signUp' ? (
+                  <div role="group" aria-label="Legal consent" style={{ display: 'flex', alignItems: 'flex-start', gap: '9px', marginTop: '2px', color: '#475569', fontSize: '12px', lineHeight: 1.5 }}>
+                    <input type="checkbox" aria-label="Agree to the System Terms and acknowledge the Privacy Policy" checked={shopAuthConsent} onChange={(event) => setShopAuthConsent(event.target.checked)} style={{ width: '17px', height: '17px', flex: '0 0 17px', margin: '2px 0 0', accentColor: '#176b3a' }} />
+                    <span>I agree to the <button type="button" onClick={() => setShopLegalPolicy('terms')} style={{ padding: 0, border: 0, background: 'transparent', color: '#176b3a', font: 'inherit', fontWeight: 800, textDecoration: 'underline', cursor: 'pointer' }}>System Terms</button> and acknowledge the <button type="button" onClick={() => setShopLegalPolicy('privacy')} style={{ padding: 0, border: 0, background: 'transparent', color: '#176b3a', font: 'inherit', fontWeight: 800, textDecoration: 'underline', cursor: 'pointer' }}>Privacy Policy</button>, including how PAZ uses account and order information.</span>
+                  </div>
+                ) : null}
+                <button type="submit" disabled={shopAuthBusy || isSupabaseStub || (shopAuthMode === 'signUp' && !shopAuthConsent)} style={{ minHeight: '46px', marginTop: '4px', border: 0, borderRadius: '9px', background: '#356656', color: '#fff', fontWeight: 900, cursor: shopAuthBusy || isSupabaseStub || (shopAuthMode === 'signUp' && !shopAuthConsent) ? 'not-allowed' : 'pointer', opacity: shopAuthBusy || isSupabaseStub || (shopAuthMode === 'signUp' && !shopAuthConsent) ? 0.65 : 1 }}>
+                  {shopAuthBusy ? 'Please wait…' : shopAuthMode === 'signIn' ? 'Sign in' : 'Create account'}
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#94a3b8', fontSize: '11px' }}><span style={{ height: '1px', flex: 1, background: '#e2e8f0' }} />or<span style={{ height: '1px', flex: 1, background: '#e2e8f0' }} /></div>
+                <button type="button" onClick={() => void signInWithShopProvider('google')} disabled={shopAuthBusy || isSupabaseStub || (shopAuthMode === 'signUp' && !shopAuthConsent)} style={{ minHeight: '44px', border: '1px solid #cbd5e1', borderRadius: '9px', background: '#fff', color: '#334155', fontWeight: 800, cursor: shopAuthBusy || isSupabaseStub || (shopAuthMode === 'signUp' && !shopAuthConsent) ? 'not-allowed' : 'pointer', opacity: shopAuthMode === 'signUp' && !shopAuthConsent ? 0.65 : 1 }}>G&nbsp;&nbsp; Continue with Google</button>
+                <button type="button" onClick={() => void signInWithShopProvider('facebook')} disabled={shopAuthBusy || isSupabaseStub || (shopAuthMode === 'signUp' && !shopAuthConsent)} style={{ minHeight: '44px', border: '1px solid #cbd5e1', borderRadius: '9px', background: '#fff', color: '#334155', fontWeight: 800, cursor: shopAuthBusy || isSupabaseStub || (shopAuthMode === 'signUp' && !shopAuthConsent) ? 'not-allowed' : 'pointer', opacity: shopAuthMode === 'signUp' && !shopAuthConsent ? 0.65 : 1 }}><span style={{ color: '#1877f2', marginRight: '10px' }}>f</span>Continue with Facebook</button>
+                <p style={{ margin: '4px 0 0', textAlign: 'center', color: '#665f5a', fontSize: '12px' }}>
+                  {shopAuthMode === 'signIn' ? 'New to PAZ? ' : 'Already have an account? '}
+                  <button type="button" onClick={() => { setShopAuthMode((mode) => mode === 'signIn' ? 'signUp' : 'signIn'); setShopAuthConsent(false); setShopAuthConfirmPassword(''); setShopAuthPasswordVisible(false); setShopAuthConfirmPasswordVisible(false); setShopAuthError(''); setShopAuthNotice(''); }} style={{ padding: 0, border: 0, background: 'transparent', color: '#356656', fontWeight: 900, cursor: 'pointer' }}>
+                    {shopAuthMode === 'signIn' ? 'Create an account' : 'Sign in'}
+                  </button>
+                </p>
+              </form>
+            )}
+          </section>
+        </div>
+      ) : null}
+
+      {shopLegalPolicy ? <LegalDocumentModal policy={legalDocuments[shopLegalPolicy]} onClose={setShopLegalPolicy} /> : null}
+
+      {shopAccountPage ? (
+        <main style={{ minHeight: 'calc(100vh - 76px)', padding: isSmallScreen ? '18px 14px 40px' : '32px 24px 56px', background: accountThemeColors.surface, color: accountThemeColors.text }}>
+          <div style={{ width: 'min(1160px, 100%)', margin: '0 auto' }}>
+            <button type="button" onClick={() => { setShopAccountPage(null); navigate('/shop'); window.scrollTo({ top: 0, behavior: 'smooth' }); }} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', minHeight: '40px', padding: '0 13px', border: `1px solid ${accountThemeColors.border}`, borderRadius: '9px', background: accountThemeColors.card, color: accountThemeColors.text, fontWeight: 800, cursor: 'pointer' }}>
+              <i className="fa-solid fa-arrow-left" aria-hidden="true" /> Back to shop
+            </button>
+            <div style={{ display: 'grid', gridTemplateColumns: isSmallScreen ? '1fr' : '230px minmax(0, 1fr)', gap: '20px', marginTop: '20px', alignItems: 'start' }}>
+              <aside aria-label="Account sections" style={{ display: isSmallScreen ? 'flex' : 'grid', gap: isSmallScreen ? '7px' : '4px', overflowX: isSmallScreen ? 'auto' : 'visible', padding: isSmallScreen ? '4px 0 9px' : '12px', border: `1px solid ${accountThemeColors.border}`, borderRadius: '13px', background: accountThemeColors.card }}>
+                {shopProfileMenu.map(([page, label, icon]) => (
+                  <button key={page} type="button" onClick={() => openShopAccountPage(page)} aria-current={shopAccountPage === page ? 'page' : undefined} style={{ display: 'flex', flex: isSmallScreen ? '0 0 auto' : undefined, alignItems: 'center', gap: '9px', minHeight: '39px', padding: '0 10px', border: 0, borderRadius: '8px', background: shopAccountPage === page ? accountThemeColors.softAccent : 'transparent', color: shopAccountPage === page ? accountThemeColors.accent : accountThemeColors.text, fontWeight: 750, whiteSpace: 'nowrap', textAlign: 'left', cursor: 'pointer' }}>
+                    <i className={`fa-solid fa-${icon}`} aria-hidden="true" style={{ width: '17px' }} />{label}
+                  </button>
+                ))}
+              </aside>
+
+              <section aria-labelledby="shop-account-page-title" style={{ minWidth: 0, minHeight: '360px', padding: isSmallScreen ? '18px 14px' : '26px', border: `1px solid ${accountThemeColors.border}`, borderRadius: '14px', background: accountThemeColors.card, boxShadow: '0 8px 24px rgba(20, 45, 29, .06)' }}>
+                <h1 id="shop-account-page-title" style={{ margin: '0 0 18px', fontSize: isSmallScreen ? '23px' : '28px', lineHeight: 1.2, color: accountThemeColors.text }}>
+                  {shopProfileMenu.find(([page]) => page === shopAccountPage)?.[1] || 'My profile'}
+                </h1>
+                {shopAccountDataError ? <p role="alert" style={{ margin: '0 0 16px', padding: '11px 13px', borderRadius: '9px', background: shopAccountTheme === 'dark' ? '#4b2727' : '#fff1f2', color: shopAccountTheme === 'dark' ? '#ffdada' : '#9f1239' }}>{shopAccountDataError}</p> : null}
+                {shopAccountDataBusy ? <p role="status" style={{ color: accountThemeColors.muted }}>Loading your account details…</p> : null}
+
+                {shopAccountPage === 'account' ? (
+                  <div style={{ display: 'grid', gap: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '18px', border: `1px solid ${accountThemeColors.border}`, borderRadius: '12px', background: accountThemeColors.surface }}>
+                      {shopAvatarUrl ? <img src={shopAvatarUrl} alt={`${shopUserName}'s profile`} style={{ width: '76px', height: '76px', borderRadius: '50%', objectFit: 'cover' }} /> : <span aria-hidden="true" style={{ display: 'grid', placeItems: 'center', width: '76px', height: '76px', flex: '0 0 76px', borderRadius: '50%', background: accountThemeColors.softAccent, color: accountThemeColors.accent, fontSize: '28px', fontWeight: 900 }}>{shopUserName.slice(0, 1).toUpperCase()}</span>}
+                      <div style={{ minWidth: 0 }}><strong style={{ display: 'block', fontSize: '19px', overflowWrap: 'anywhere' }}>{shopUserName}</strong><span style={{ display: 'block', marginTop: '5px', color: accountThemeColors.muted, overflowWrap: 'anywhere' }}>{shopUser?.email || shopUser?.phone || 'Customer account'}</span></div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: isSmallScreen ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: '12px' }}>
+                      {[['Email address', shopUser?.email || 'Not provided'], ['Phone number', shopAuthProfile?.phone || shopUser?.phone || 'Not provided'], ['Account name', shopAuthProfile?.full_name || shopUserName], ['Member since', shopUser?.created_at ? new Date(shopUser.created_at).toLocaleDateString() : '—']].map(([label, value]) => <div key={label} style={{ padding: '14px', border: `1px solid ${accountThemeColors.border}`, borderRadius: '10px' }}><span style={{ display: 'block', marginBottom: '5px', color: accountThemeColors.muted, fontSize: '12px', fontWeight: 700 }}>{label}</span><strong style={{ overflowWrap: 'anywhere' }}>{value}</strong></div>)}
+                    </div>
+                  </div>
+                ) : null}
+
+                {shopAccountPage === 'orders' ? (
+                  shopOrders.length ? <div style={{ display: 'grid', gap: '12px' }}>{shopOrders.map((order) => <article key={order.id} style={{ padding: '15px', border: `1px solid ${accountThemeColors.border}`, borderRadius: '10px' }}><div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}><strong>Order {order.order_number || order.id}</strong><span>{order.status || 'Processing'}</span></div><p style={{ margin: '8px 0', color: accountThemeColors.muted }}>{(order.shop_order_items || []).map((item) => `${item.title} × ${item.quantity}`).join(', ') || 'Order items'}</p><small style={{ color: accountThemeColors.muted }}>{order.created_at ? new Date(order.created_at).toLocaleDateString() : ''}</small><strong style={{ display: 'block', marginTop: '8px' }}>{order.currency || 'NGN'} {Number(order.total || 0).toLocaleString()}</strong></article>)}</div> : !shopAccountDataBusy && !shopAccountDataError ? <p style={{ color: accountThemeColors.muted }}>Your orders will appear here after you place an order.</p> : null
+                ) : null}
+
+                {shopAccountPage === 'wishlist' ? (
+                  wishlistProducts.length ? <div style={{ display: 'grid', gridTemplateColumns: isSmallScreen ? 'repeat(2, minmax(0, 1fr))' : 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>{wishlistProducts.map((product) => <button key={product.id} type="button" onClick={() => { setShopAccountPage(null); setSelectedProduct(product); navigate(`/shop?product=${encodeURIComponent(productSlug(product))}`); }} style={{ padding: '12px', border: `1px solid ${accountThemeColors.border}`, borderRadius: '10px', background: accountThemeColors.card, color: accountThemeColors.text, textAlign: 'left', cursor: 'pointer' }}><strong>{product.title}</strong><span style={{ display: 'block', marginTop: '8px', color: accountThemeColors.accent }}>View product</span></button>)}</div> : <p style={{ color: accountThemeColors.muted }}>Your saved products will appear here.</p>
+                ) : null}
+
+                {shopAccountPage === 'messages' ? (
+                  activeShopConversation ? <div><button type="button" onClick={() => setActiveShopConversation(null)} style={{ marginBottom: '12px', border: 0, background: 'transparent', color: accountThemeColors.accent, fontWeight: 800, cursor: 'pointer' }}>← All messages</button><ProductChat product={{ id: activeShopConversation.product_id, title: activeShopConversation.product_title || 'Product conversation' }} /></div>
+                    : shopConversations.length ? <div style={{ display: 'grid', gap: '11px' }}>{shopConversations.map((conversation) => <article key={conversation.id} style={{ padding: '15px', border: `1px solid ${accountThemeColors.border}`, borderRadius: '10px' }}><strong>{conversation.product_title || 'Product conversation'}</strong><p style={{ margin: '7px 0', color: accountThemeColors.muted }}>{conversation.last_message || 'No messages yet.'}</p><small style={{ display: 'block', marginBottom: '9px', color: accountThemeColors.muted }}>Status: {conversation.status || 'open'}{conversation.unread_count ? ` · ${conversation.unread_count} unread` : ''}</small><button type="button" onClick={() => { try { window.localStorage.setItem(`paz-product-chat-${String(conversation.product_id || '')}`, conversation.token || ''); } catch (error) { console.error('Could not store the customer conversation token:', error); setShopAccountDataError('This conversation could not be opened on this device.'); return; } setActiveShopConversation(conversation); }} style={{ minHeight: '36px', padding: '0 11px', border: `1px solid ${accountThemeColors.border}`, borderRadius: '8px', background: accountThemeColors.softAccent, color: accountThemeColors.accent, fontWeight: 800, cursor: 'pointer' }}>Open conversation</button></article>)}</div> : !shopAccountDataBusy && !shopAccountDataError ? <p style={{ color: accountThemeColors.muted }}>You do not have any product messages yet.</p> : null
+                ) : null}
+
+                {shopAccountPage === 'notifications' ? (
+                  shopNotifications.length ? <div style={{ display: 'grid', gap: '9px' }}>{shopNotifications.map((notification) => <article key={notification.id} style={{ padding: '13px', border: `1px solid ${accountThemeColors.border}`, borderRadius: '10px', background: notification.read_at ? accountThemeColors.card : accountThemeColors.softAccent }}><strong>{notification.title || 'PAZ update'}</strong><p style={{ margin: '6px 0', color: accountThemeColors.muted }}>{notification.message || notification.body || 'You have a new update.'}</p>{!notification.read_at ? <button type="button" onClick={() => void markShopNotificationRead(notification)} style={{ padding: 0, border: 0, background: 'transparent', color: accountThemeColors.accent, fontWeight: 800, cursor: 'pointer' }}>Mark as read</button> : null}</article>)}</div> : !shopAccountDataBusy && !shopAccountDataError ? <p style={{ color: accountThemeColors.muted }}>You are all caught up. New notifications will appear here.</p> : null
+                ) : null}
+
+                {shopAccountPage === 'address' ? (
+                  <form onSubmit={(event) => void saveShopAddress(event)} style={{ display: 'grid', gridTemplateColumns: isSmallScreen ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: '12px' }}>
+                    {[[['fullName', 'Full name'], ['phone', 'Phone number'], ['addressLine1', 'Street address'], ['addressLine2', 'Apartment, unit (optional)'], ['city', 'City'], ['state', 'State / province'], ['postalCode', 'Postal code'], ['country', 'Country']]].flat().map(([field, label]) => <label key={field} style={{ display: 'grid', gap: '5px', color: accountThemeColors.muted, fontSize: '12px', fontWeight: 750 }}>{label}<input value={shopAddress[field] || ''} onChange={(event) => setShopAddress((current) => ({ ...current, [field]: event.target.value }))} required={!['addressLine2', 'postalCode'].includes(field)} style={{ minHeight: '42px', boxSizing: 'border-box', padding: '0 11px', border: `1px solid ${accountThemeColors.border}`, borderRadius: '8px', background: accountThemeColors.surface, color: accountThemeColors.text }} /></label>)}
+                    <button type="submit" disabled={shopAccountDataBusy} style={{ gridColumn: isSmallScreen ? undefined : '1 / -1', minHeight: '44px', border: 0, borderRadius: '9px', background: accountThemeColors.accent, color: '#fff', fontWeight: 850, cursor: shopAccountDataBusy ? 'wait' : 'pointer' }}>Save address</button>
+                    {shopAddressNotice ? <p role="status" style={{ gridColumn: isSmallScreen ? undefined : '1 / -1', margin: 0, color: accountThemeColors.accent }}>{shopAddressNotice}</p> : null}
+                  </form>
+                ) : null}
+
+                {shopAccountPage === 'payments' ? <div style={{ padding: '16px', border: `1px solid ${accountThemeColors.border}`, borderRadius: '10px', background: accountThemeColors.surface }}><strong>Secure checkout</strong><p style={{ margin: '8px 0 0', color: accountThemeColors.muted, lineHeight: 1.6 }}>Payment details are handled securely when you check out. PAZ does not store full card numbers in your account.</p></div> : null}
+                {shopAccountPage === 'preferences' ? <div><p style={{ marginTop: 0, color: accountThemeColors.muted }}>Choose how the account area looks on this device.</p><div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>{[['light', 'Light theme'], ['dark', 'Dark theme']].map(([theme, label]) => <button key={theme} type="button" aria-pressed={shopAccountTheme === theme} onClick={() => setShopAccountTheme(theme)} style={{ minHeight: '42px', padding: '0 14px', border: `1px solid ${shopAccountTheme === theme ? accountThemeColors.accent : accountThemeColors.border}`, borderRadius: '9px', background: shopAccountTheme === theme ? accountThemeColors.softAccent : accountThemeColors.card, color: accountThemeColors.text, fontWeight: 800, cursor: 'pointer' }}>{label}</button>)}</div></div> : null}
+                {shopAccountPage === 'support' ? <div style={{ display: 'grid', gap: '10px', color: accountThemeColors.muted }}><p style={{ marginTop: 0 }}>Need help with an order or your account? Contact the PAZ team.</p><a href="mailto:support@pazthrivingtribe.com" style={{ color: accountThemeColors.accent, fontWeight: 800 }}>Email customer support</a><button type="button" onClick={() => navigate('/shop')} style={{ justifySelf: 'start', minHeight: '40px', padding: '0 12px', border: `1px solid ${accountThemeColors.border}`, borderRadius: '8px', background: accountThemeColors.surface, color: accountThemeColors.text, fontWeight: 750, cursor: 'pointer' }}>Browse the shop</button></div> : null}
+                {shopAccountPage === 'about' ? <div style={{ maxWidth: '680px', color: accountThemeColors.muted, lineHeight: 1.7 }}><p style={{ marginTop: 0 }}><strong style={{ color: accountThemeColors.text }}>PAZ Thriving Tribe</strong> brings books, helpful resources, groceries, and gadgets together in one marketplace.</p><p>Explore the shop, manage your customer account, and contact support whenever you need help.</p></div> : null}
+              </section>
+            </div>
+          </div>
+        </main>
+      ) : null}
+
       {/* Main Content */}
-      <div style={{ display: isProductPage ? 'contents' : 'block', maxWidth: '1400px', margin: '0 auto', padding: isSmallScreen ? '16px 14px 50px' : '20px 14px 50px', paddingLeft: isSmallScreen ? '14px' : '268px' }}>
+      <div style={{ display: shopAccountPage ? 'none' : isProductPage ? 'contents' : 'block', maxWidth: '1400px', margin: '0 auto', padding: isSmallScreen ? '16px 14px 50px' : '20px 14px 50px', paddingLeft: isSmallScreen ? '14px' : '268px' }}>
         <div style={{ display: isProductPage ? 'none' : 'grid', gridTemplateColumns: '1fr', gap: '20px' }}>
           {!isSmallScreen && (
             <aside style={{ 
@@ -2038,14 +2725,14 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
           {/* Main Content Area */}
           <main>
             {/* Sort and Results Count */}
-            <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-              <div style={{ fontSize: '14px', color: '#666' }}>
-                Showing <strong>{allVisibleProducts.length === 0 ? 0 : startIndex + 1}</strong>-<strong>{Math.min(startIndex + productsPerPage, allVisibleProducts.length)}</strong> of <strong>{allVisibleProducts.length}</strong> results
+            <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: isSmallScreen ? 'nowrap' : 'wrap', gap: isSmallScreen ? '6px' : '12px' }}>
+              <div aria-label={`Showing products ${allVisibleProducts.length === 0 ? 0 : startIndex + 1} to ${Math.min(startIndex + productsPerPage, allVisibleProducts.length)} of ${allVisibleProducts.length}`} style={{ minWidth: 0, fontSize: isSmallScreen ? '11px' : '14px', color: '#666', whiteSpace: 'nowrap' }}>
+                {isSmallScreen ? <>Showing <strong>{allVisibleProducts.length === 0 ? 0 : startIndex + 1}-{Math.min(startIndex + productsPerPage, allVisibleProducts.length)}/{allVisibleProducts.length}</strong></> : <>Showing <strong>{allVisibleProducts.length === 0 ? 0 : startIndex + 1}</strong>-<strong>{Math.min(startIndex + productsPerPage, allVisibleProducts.length)}</strong> of <strong>{allVisibleProducts.length}</strong> results</>}
               </div>
-              <div>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px' }}>
+              <div style={{ flexShrink: 0 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: isSmallScreen ? '4px' : '8px', fontSize: isSmallScreen ? '11px' : '14px', whiteSpace: 'nowrap' }}>
                   Sort by:
-                  <div style={{ width: isSmallScreen ? '150px' : '180px', flexShrink: 0 }}>
+                  <div style={{ width: isVerySmallScreen ? '104px' : isSmallScreen ? '128px' : '180px', flexShrink: 0 }}>
                     <SearchableOptionPicker value={sortBy} options={['relevant', 'price-low', 'price-high', 'rating', 'newest']} onChange={setSortBy} label="Sort products" />
                   </div>
                 </label>

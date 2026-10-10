@@ -3,6 +3,7 @@ import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as Network from 'expo-network';
 import * as Notifications from 'expo-notifications';
+import { useAudioPlayer } from 'expo-audio';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
 import type { User as SupabaseUser } from '@supabase/supabase-js';
@@ -16,8 +17,8 @@ import { HomeView } from './src/HomeView';
 import { ProfileView } from './src/ProfileView';
 import { apiRequest, CartLine, categoryMatches, DeliveryAddress, formatPrice, normalizeProduct, Product, productAvailability, productImageUrl, productSlug, Rating, SITE_ROOT } from './src/api';
 import { ProductDetailView, ProductMetrics } from './src/ProductDetailView';
-import { Button, Field, palette } from './src/ShopComponents';
-import { ensureCustomerProfile, isSupabaseConfigured, supabase } from './src/supabaseClient';
+import { Button, Field, isShopThemeName, palette, registerShopThemeStyles, setShopTheme, ShopThemeName, TapPoint } from './src/ShopComponents';
+import { ensureCustomerProfile, isSupabaseConfigured, setAuthSessionPersistence, supabase } from './src/supabaseClient';
 import { AccountPreferences, AccountStep, AccountUser, CustomerAccountFlow } from './src/CustomerAccountFlow';
 import { OnboardingFlow } from './src/OnboardingFlow';
 import { OfflineState } from './src/OfflineState';
@@ -35,6 +36,7 @@ Notifications.setNotificationHandler({
 
 const CART_KEY = 'paz-shop-cart-v1';
 const FAVORITES_KEY = 'paz-shop-favorite-books-v1';
+const SHOP_THEME_KEY = 'paz-shop-color-theme-v1';
 const VISITOR_KEY = 'paz-shop-visitor-id';
 const ACCOUNT_PREFERENCES_KEY = 'paz-shop-account-preferences-v1';
 const ONBOARDING_KEY = 'paz-shop-onboarding-v2';
@@ -47,6 +49,16 @@ const DEFAULT_ACCOUNT_PREFERENCES: AccountPreferences = {
   currency: 'NGN',
   notificationsEnabled: false,
   setupComplete: false,
+};
+
+const prepareAndroidNotificationChannel = async () => {
+  if (Platform.OS !== 'android') return;
+  await Notifications.setNotificationChannelAsync('default', {
+    name: 'PAZ updates',
+    importance: Notifications.AndroidImportance.DEFAULT,
+    vibrationPattern: [0, 250, 250, 250],
+    lightColor: '#145c3d',
+  });
 };
 
 function LoadingBars() {
@@ -62,7 +74,7 @@ function LoadingBars() {
     return () => animations.forEach((animation) => animation.stop());
   }, [bars]);
 
-  const colors = [palette.green, palette.orange, palette.darkGreen, '#f3c98e'];
+  const colors = [palette.green, palette.orange, palette.darkGreen, palette.gold];
 
   return (
     <View style={styles.appLoaderBars} accessibilityElementsHidden>
@@ -83,7 +95,7 @@ function LoadingBars() {
   );
 }
 
-function TabButton({ icon, label, active, badge, onPress }: { icon: 'home' | 'th-large' | 'shopping-bag' | 'shopping-cart' | 'user-circle' | 'heart'; label: string; active: boolean; badge?: number; onPress: () => void }) {
+function TabButton({ icon, label, active, badge, onPress }: { icon: 'home' | 'th-large' | 'shopping-cart' | 'user-circle' | 'heart'; label: string; active: boolean; badge?: number; onPress: () => void }) {
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={badge ? `${label}, ${badge} items` : label} accessibilityState={{ selected: active }} onPress={onPress} style={({ pressed }) => [styles.tabButton, pressed && styles.tabButtonPressed]}>
       <View style={[styles.tabIconWrap, active && styles.tabIconWrapActive]}>
@@ -96,16 +108,20 @@ function TabButton({ icon, label, active, badge, onPress }: { icon: 'home' | 'th
 }
 
 export default function App() {
+  const cartSound = useAudioPlayer(require('./assets/cart-add.wav'));
   const [products, setProducts] = useState<Product[]>([]);
   const [storageBaseUrl, setStorageBaseUrl] = useState('');
   const [screen, setScreen] = useState<Screen>('home');
   const [splashElapsed, setSplashElapsed] = useState(false);
   const [onboardingStatus, setOnboardingStatus] = useState<'loading' | 'pending' | 'done'>('loading');
+  const [themeName, setThemeName] = useState<ShopThemeName>('sage');
+  const [themeLoaded, setThemeLoaded] = useState(false);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [cartLoaded, setCartLoaded] = useState(false);
   const [flyingProduct, setFlyingProduct] = useState<Product | null>(null);
+  const [flightOrigin, setFlightOrigin] = useState<TapPoint | null>(null);
   const [category, setCategory] = useState('All');
   const [initialComingSoonCategory, setInitialComingSoonCategory] = useState<'Groceries' | 'Gadgets' | null>(null);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
@@ -169,7 +185,13 @@ export default function App() {
   const lastOfflineState = useRef<boolean | null>(null);
   const reloadProductsRef = useRef<() => Promise<void>>(async () => {});
   const flightProgress = useRef(new Animated.Value(0)).current;
-  const { width: windowWidth } = useWindowDimensions();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+
+  useEffect(() => {
+    if (!notice) return;
+    const timeout = setTimeout(() => setNotice(''), 8000);
+    return () => clearTimeout(timeout);
+  }, [notice]);
 
   const cartCount = cart.reduce((sum, line) => sum + line.quantity, 0);
   const cartTotal = cart.reduce((sum, line) => sum + (line.product.isFree ? 0 : line.product.price) * line.quantity, 0);
@@ -362,6 +384,29 @@ export default function App() {
     return () => { active = false; };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    void AsyncStorage.getItem(SHOP_THEME_KEY)
+      .then((savedTheme) => {
+        if (!active) return;
+        if (isShopThemeName(savedTheme)) {
+          setShopTheme(savedTheme);
+          setThemeName(savedTheme);
+        }
+      })
+      .catch((error) => console.warn('Could not load PAZ color preference:', error))
+      .finally(() => {
+        if (active) setThemeLoaded(true);
+      });
+    return () => { active = false; };
+  }, []);
+
+  const saveThemePreference = async (theme: ShopThemeName) => {
+    await AsyncStorage.setItem(SHOP_THEME_KEY, theme);
+    setShopTheme(theme);
+    setThemeName(theme);
+  };
+
   const loadProducts = async () => {
     setLoading(true);
     setPageError('');
@@ -429,9 +474,9 @@ export default function App() {
       }
 
       if (isSupabaseConfigured) {
-        if (await AsyncStorage.getItem(REMEMBER_ACCOUNT_KEY) === 'false') {
-          await supabase.auth.signOut();
-        }
+        const rememberAccount = await AsyncStorage.getItem(REMEMBER_ACCOUNT_KEY) === 'true';
+        setAuthSessionPersistence(rememberAccount);
+        if (!rememberAccount) await supabase.auth.signOut();
         const { data: { session }, error } = await supabase.auth.getSession();
         if (error) throw new Error(error.message);
         if (session?.user) {
@@ -469,14 +514,14 @@ export default function App() {
       if (!active) return;
       setAccountPreferences(preferences);
       if (!preferences.setupComplete) {
-        setAccountStep('preferences');
+        setAccountStep('notifications');
       }
     };
     void loadAccountSetup().catch((error) => {
       console.warn('Could not load saved PAZ account preferences:', error);
       if (active) {
         setAccountPreferences(DEFAULT_ACCOUNT_PREFERENCES);
-        setAccountStep('preferences');
+        setAccountStep('notifications');
       }
     }).finally(() => {
       if (active) setAccountSetupLoaded(true);
@@ -612,7 +657,7 @@ export default function App() {
     setDetailLoading(false);
   };
 
-  const addToCart = (product: Product): boolean => {
+  const addToCart = (product: Product, point: TapPoint): boolean => {
     const availability = productAvailability(product);
     if (!availability.available) {
       if (availability.reason === 'not-released') {
@@ -627,7 +672,7 @@ export default function App() {
     }
     const conflict = cart.find((line) => !line.product.isFree && !product.isFree && line.product.currency !== product.currency);
     if (conflict) {
-      setNotice(`Your bag uses ${conflict.product.currency}. Complete that order before adding ${product.currency} products.`);
+      setNotice(`Your cart uses ${conflict.product.currency}. Complete that order before adding ${product.currency} products.`);
       return false;
     }
     setCart((current) => {
@@ -635,16 +680,25 @@ export default function App() {
       return existing ? current.map((line) => line.product.id === product.id ? { ...line, quantity: line.quantity + 1 } : line) : [...current, { product, quantity: 1 }];
     });
     setFlyingProduct(product);
-    flightProgress.setValue(0);
-    Animated.timing(flightProgress, { toValue: 1, duration: 620, easing: Easing.inOut(Easing.cubic), useNativeDriver: Platform.OS !== 'web' }).start(({ finished }) => {
-      if (finished) setFlyingProduct(null);
+    setFlightOrigin({
+      x: Math.max(0, point.x - 21),
+      y: Math.max(0, point.y - (NativeStatusBar.currentHeight || 0) - 24),
     });
-    setNotice(`${product.title} added to your bag.`);
+    flightProgress.setValue(0);
+    void cartSound.seekTo(0);
+    cartSound.play();
+    Animated.timing(flightProgress, { toValue: 1, duration: 620, easing: Easing.inOut(Easing.cubic), useNativeDriver: Platform.OS !== 'web' }).start(({ finished }) => {
+      if (finished) {
+        setFlyingProduct(null);
+        setFlightOrigin(null);
+      }
+    });
+    setNotice(`${product.title} added to your cart.`);
     return true;
   };
 
-  const buyNow = (product: Product) => {
-    if (addToCart(product)) openCheckout();
+  const buyNow = (product: Product, point: TapPoint) => {
+    if (addToCart(product, point)) openCheckout();
   };
 
   const toggleFavorite = (product: Product) => {
@@ -786,18 +840,6 @@ export default function App() {
     }
   };
 
-  const continuePreferences = async () => {
-    const wasSetupComplete = accountPreferences.setupComplete;
-    const nextPreferences = { ...accountPreferences, setupComplete: true };
-    if (!await saveAccountPreferences(nextPreferences)) return;
-    if (wasSetupComplete && currentUser) {
-      setAccountVisible(false);
-      setScreen('profile');
-      return;
-    }
-    setAccountStep(wasSetupComplete ? 'auth' : 'notifications');
-  };
-
   const finishNotificationStep = async (notificationsEnabled: boolean) => {
     const nextPreferences = { ...accountPreferences, setupComplete: true, notificationsEnabled };
     if (!await saveAccountPreferences(nextPreferences)) return;
@@ -810,7 +852,11 @@ export default function App() {
   const allowNotifications = async () => {
     setAuthError('');
     try {
-      const permission = await Notifications.requestPermissionsAsync();
+      await prepareAndroidNotificationChannel();
+      const currentPermission = await Notifications.getPermissionsAsync();
+      const permission = currentPermission.granted || currentPermission.status === 'granted'
+        ? currentPermission
+        : await Notifications.requestPermissionsAsync();
       const enabled = permission.granted || permission.status === 'granted';
       await finishNotificationStep(enabled);
     } catch (error) {
@@ -842,7 +888,7 @@ export default function App() {
     setAuthError('');
     setAuthNotice('');
     setAccountAuthMode(authMode);
-    setAccountStep('auth');
+    setAccountStep(accountPreferences.setupComplete ? 'auth' : 'notifications');
     setAccountVisible(true);
   };
 
@@ -856,7 +902,7 @@ export default function App() {
     markOnboardingComplete();
   };
 
-  const submitAuth = async (mode: 'signIn' | 'signUp', name: string, identifierInput: string, passwordInput: string, remember: boolean) => {
+  const submitAuth = async (mode: 'signIn' | 'signUp', name: string, identifierInput: string, passwordInput: string, remember: boolean, legalConsentAccepted: boolean) => {
     if (!isSupabaseConfigured) {
       setAuthError('Supabase is not configured yet for mobile sign-in.');
       return;
@@ -869,10 +915,16 @@ export default function App() {
       setAuthError('Enter your name to create your account.');
       return;
     }
+    if (mode === 'signUp' && !legalConsentAccepted) {
+      setAuthError('Agree to the System Terms and acknowledge the Privacy Policy to create your account.');
+      return;
+    }
     if (checkoutAuthRequiredRef.current && !identifierInput.includes('@')) {
       setAuthError('Use an email address for your account so PAZ can deliver your digital books.');
       return;
     }
+
+    setAuthSessionPersistence(remember);
     setAuthBusy(true);
     setAuthError('');
     setAuthNotice('');
@@ -883,20 +935,30 @@ export default function App() {
       const password = passwordInput;
       const fullName = name.trim();
       const firstName = fullName.split(/\s+/)[0] || '';
+      const legalConsentAt = new Date().toISOString();
+      const signupMetadata = {
+        full_name: fullName,
+        first_name: firstName,
+        account_type: 'customer',
+        account_role: 'customer',
+        app_source: 'paz-shop',
+        legal_terms_accepted_at: legalConsentAt,
+        privacy_policy_acknowledged_at: legalConsentAt,
+      };
       const result = mode === 'signIn'
         ? await supabase.auth.signInWithPassword(isPhone ? { phone: identifier.replace(/[\s()-]/g, ''), password } : { email, password })
         : isPhone
           ? await supabase.auth.signUp({
               phone: identifier.replace(/[\s()-]/g, ''),
               password,
-              options: { data: { full_name: fullName, first_name: firstName, account_type: 'customer', account_role: 'customer', app_source: 'paz-shop' } },
+              options: { data: signupMetadata },
             })
           : await supabase.auth.signUp({
               email,
               password,
               options: {
                 emailRedirectTo: `${SITE_ROOT}/shop?account=customer-confirmed`,
-                data: { full_name: fullName, first_name: firstName, account_type: 'customer', account_role: 'customer', app_source: 'paz-shop' },
+                data: signupMetadata,
               },
             });
       if (result.error) throw new Error(result.error.message);
@@ -948,6 +1010,7 @@ export default function App() {
     setAuthError('');
     setAuthNotice('');
     try {
+      setAuthSessionPersistence(remember);
       const redirectTo = Platform.OS === 'web' && typeof window !== 'undefined'
         ? `${window.location.origin}/auth/callback`
         : 'pazshop://auth/callback';
@@ -1080,14 +1143,7 @@ export default function App() {
     }
     const projectId = Constants.easConfig?.projectId || Constants.expoConfig?.extra?.eas?.projectId;
     if (!projectId) throw new Error('Set the EAS project ID before registering phone notifications.');
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'PAZ updates',
-        importance: Notifications.AndroidImportance.DEFAULT,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#145c3d',
-      });
-    }
+    await prepareAndroidNotificationChannel();
     const token = await Notifications.getExpoPushTokenAsync({ projectId });
     const { data: updatedProfile, error } = await supabase.from('customer_profiles')
       .update({ expo_push_token: token.data, notifications_enabled: true, updated_at: new Date().toISOString() })
@@ -1176,7 +1232,7 @@ export default function App() {
 
   const confirmPayment = () => { if (pendingCheckout?.reference) void finishPayment(pendingCheckout.reference); };
 
-  if (!splashElapsed || !initialLoadComplete || onboardingStatus === 'loading' || !accountSetupLoaded) {
+  if (!splashElapsed || !initialLoadComplete || onboardingStatus === 'loading' || !accountSetupLoaded || !themeLoaded) {
     return <SplashScreen />;
   }
 
@@ -1185,16 +1241,16 @@ export default function App() {
   }
 
   return (
-    <View style={styles.app}>
-      <StatusBar style="dark" />
+    <View style={[styles.app, { backgroundColor: palette.paper }]}>
+      <StatusBar style={themeName === 'dark' ? 'light' : 'dark'} />
       {screen !== 'detail' && screen !== 'checkout' && screen !== 'home' && screen !== 'listing' && screen !== 'categories' && screen !== 'favorites' && screen !== 'profile' ? <View style={styles.header}>
         <View style={styles.brandBlock}><Image source={require('./assets/paz-logo.png')} style={styles.brandLogo} resizeMode="contain" /><View><Text style={styles.brandEyebrow}>PAZ THRIVING TRIBE</Text><Text style={styles.brandTitle}>{screen === 'success' ? 'Order confirmed' : 'PAZ Shop'}</Text></View></View>
         {screen !== 'success' ? <View style={styles.headerActions}>
           <Pressable accessibilityRole="button" accessibilityLabel="Open account" onPress={() => openAccount()} style={styles.accountButton}><Text style={styles.accountButtonText}>{currentUser ? `Hi, ${accountLabel}` : 'Account'}</Text></Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel={`Open bag, ${cartCount} items`} onPress={openCheckout} style={styles.bagButton}><Text style={styles.bagText}>Bag</Text><View style={styles.bagCount}><Text style={styles.bagCountText}>{cartCount}</Text></View></Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel={`Open cart, ${cartCount} items`} onPress={openCheckout} style={styles.cartButton}><Text style={styles.cartText}>Cart</Text><View style={styles.cartCountBadge}><Text style={styles.cartCountText}>{cartCount}</Text></View></Pressable>
         </View> : null}
       </View> : null}
-      {notice && screen !== 'success' ? <Pressable onPress={() => setNotice('')} style={styles.notice}><Text style={styles.noticeText}>{notice}</Text><Text style={styles.noticeClose}>×</Text></Pressable> : null}
+      {notice && screen !== 'success' ? <Pressable accessibilityRole="button" accessibilityLabel="Dismiss notification" onPress={() => setNotice('')} style={styles.notice}><Text style={styles.noticeText}>{notice}</Text><Text style={styles.noticeClose}>×</Text></Pressable> : null}
 
       {screen === 'home' ? <HomeView products={products} signedIn={Boolean(currentUser)} accountName={currentUser?.user_metadata?.first_name || currentUser?.user_metadata?.full_name?.split(' ')[0] || currentUser?.email?.split('@')[0]} profileImageUrl={profileAvatarUrl} storageBaseUrl={storageBaseUrl} loading={loading} error={pageError} notificationCount={unreadChatCount + unreadCustomerNotificationCount} onRefresh={() => void loadProducts()} onNotifications={() => { setOpenNotificationsRequest((request) => request + 1); setScreen('profile'); }} onProfile={() => setScreen('profile')} onCreateAccount={() => openAccount('signUp')} onCategory={(selectedCategory) => {
         if (/^grocer(?:y|ies)$/i.test(selectedCategory)) {
@@ -1213,12 +1269,12 @@ export default function App() {
       }} onMoreCategories={() => { setInitialComingSoonCategory(null); setScreen('categories'); }} onOpen={(product) => void openProduct(product)} onAddToCart={addToCart} /> : null}
       {screen === 'listing' || screen === 'favorites' ? <BooksListingView products={products} loading={loading} error={pageError} storageBaseUrl={storageBaseUrl} category={category} favoriteIds={favoriteIds} favoritesOnly={screen === 'favorites'} onCategory={setCategory} onToggleFavorite={toggleFavorite} onBack={() => { setCategory('All'); setScreen('home'); }} onRefresh={() => void loadProducts()} onOpen={(product) => void openProduct(product)} onAddToCart={addToCart} /> : null}
       {screen === 'categories' ? <CategoriesView products={products} loading={loading} initialComingSoonCategory={initialComingSoonCategory} onBack={() => { setInitialComingSoonCategory(null); setScreen('home'); }} onSelect={(selectedCategory) => { setInitialComingSoonCategory(null); setCategory(selectedCategory); setScreen('listing'); }} /> : null}
-      {screen === 'profile' ? <ProfileView user={currentUser} notificationsEnabled={accountPreferences.notificationsEnabled} openChatsRequest={openChatsRequest} openNotificationsRequest={openNotificationsRequest} openAddressRequest={openAddressRequest} deliveryAddress={deliveryAddress} onUnreadChange={setUnreadChatCount} onNotificationUnreadChange={setUnreadCustomerNotificationCount} onDeliveryAddressChange={(address) => { setDeliveryAddress(address); if (address?.fullName) setCustomerName(address.fullName); }} onWishlist={() => setScreen('favorites')} onCheckout={openCheckout} onToggleNotifications={(enabled) => void toggleProfileNotifications(enabled)} onSignIn={() => openAccount('signIn')} onCreateAccount={() => openAccount('signUp')} onSignOut={() => void signOutAccount()} onAvatarChange={setProfileAvatarUrl} /> : null}
-      {screen === 'detail' && selectedProduct ? <ProductDetailView product={selectedProduct} storageBaseUrl={storageBaseUrl} metrics={metrics} ratings={ratings} loading={detailLoading} ratingValue={ratingValue} ratingName={ratingName} ratingEmail={ratingEmail} ratingComment={ratingComment} ratingBusy={ratingBusy} cartCount={cartCount} isFavorite={favoriteIds.has(selectedProduct.id)} onBack={() => setScreen(previousScreenRef.current)} onCart={openCheckout} onAdd={() => addToCart(selectedProduct)} onBuyNow={() => buyNow(selectedProduct)} onShare={() => void shareProduct(selectedProduct)} onToggleFavorite={() => toggleFavorite(selectedProduct)} onChat={() => void openChat()} onRatingValue={setRatingValue} onRatingName={setRatingName} onRatingEmail={setRatingEmail} onRatingComment={setRatingComment} onSubmitRating={() => void submitRating()} /> : null}
+      {screen === 'profile' ? <ProfileView user={currentUser} notificationsEnabled={accountPreferences.notificationsEnabled} openChatsRequest={openChatsRequest} openNotificationsRequest={openNotificationsRequest} openAddressRequest={openAddressRequest} deliveryAddress={deliveryAddress} onUnreadChange={setUnreadChatCount} onNotificationUnreadChange={setUnreadCustomerNotificationCount} onDeliveryAddressChange={(address) => { setDeliveryAddress(address); if (address?.fullName) setCustomerName(address.fullName); }} onWishlist={() => setScreen('favorites')} onCheckout={openCheckout} onToggleNotifications={(enabled) => void toggleProfileNotifications(enabled)} onSignIn={() => openAccount('signIn')} onCreateAccount={() => openAccount('signUp')} onSignOut={() => void signOutAccount()} onAvatarChange={setProfileAvatarUrl} themeName={themeName} onThemeChange={saveThemePreference} /> : null}
+      {screen === 'detail' && selectedProduct ? <ProductDetailView product={selectedProduct} storageBaseUrl={storageBaseUrl} metrics={metrics} ratings={ratings} loading={detailLoading} ratingValue={ratingValue} ratingName={ratingName} ratingEmail={ratingEmail} ratingComment={ratingComment} ratingBusy={ratingBusy} cartCount={cartCount} isFavorite={favoriteIds.has(selectedProduct.id)} onBack={() => setScreen(previousScreenRef.current)} onCart={openCheckout} onAdd={(point) => addToCart(selectedProduct, point)} onBuyNow={(point) => buyNow(selectedProduct, point)} onShare={() => void shareProduct(selectedProduct)} onToggleFavorite={() => toggleFavorite(selectedProduct)} onChat={() => void openChat()} onRatingValue={setRatingValue} onRatingName={setRatingName} onRatingEmail={setRatingEmail} onRatingComment={setRatingComment} onSubmitRating={() => void submitRating()} /> : null}
       {screen === 'checkout' ? <CheckoutView cart={cart} storageBaseUrl={storageBaseUrl} totalLabel={totalLabel} freeOrder={allFree} customerName={customerName} customerEmail={customerEmail} deliveryAddress={deliveryAddress} busy={checkoutBusy} error={checkoutError} pendingPayment={Boolean(pendingCheckout)} onName={setCustomerName} onEmail={setCustomerEmail} onManageAddress={() => { setOpenAddressRequest((request) => request + 1); setScreen('profile'); }} onQuantity={updateQuantity} onRemove={(id) => setCart((current) => current.filter((line) => line.product.id !== id))} onBack={() => setScreen(checkoutReturnScreenRef.current)} onPlaceOrder={(method) => void startPaidCheckout(method)} onRequestFreeProduct={() => void completeFreeOrder()} onConfirmPayment={confirmPayment} onContinueShopping={() => { setCategory('All'); setScreen('home'); }} /> : null}
       {screen === 'success' && completedOrder ? <View style={styles.success}><View style={styles.successMark}><Text style={styles.successMarkText}>✓</Text></View><Text style={styles.successKicker}>ORDER CONFIRMED</Text><Text style={styles.successTitle}>Your next chapter starts here.</Text><Text style={styles.successCopy}>We sent your product to {completedOrder.email}. Check your inbox for order {completedOrder.orderNumber}.</Text><Button title="Back to the shop" onPress={() => { setCompletedOrder(null); setCategory('All'); setScreen('home'); }} /></View> : null}
 
-      {screen !== 'detail' && screen !== 'checkout' && screen !== 'success' ? <View style={styles.tabBar}>
+      {screen !== 'detail' && screen !== 'checkout' && screen !== 'success' ? <View style={[styles.tabBar, { backgroundColor: palette.white, borderColor: palette.line }]}>
         <TabButton icon="home" label="Home" active={screen === 'home'} onPress={() => { setCategory('All'); setScreen('home'); }} />
         <TabButton icon="th-large" label="Categories" active={screen === 'categories' || screen === 'listing'} onPress={() => setScreen('categories')} />
         <TabButton icon="shopping-cart" label="Cart" active={false} badge={cartCount} onPress={openCheckout} />
@@ -1226,7 +1282,7 @@ export default function App() {
         <TabButton icon="user-circle" label="Profile" active={screen === 'profile'} onPress={() => setScreen('profile')} />
       </View> : null}
 
-      {flyingProduct ? <Animated.View style={[styles.flightToken, { transform: [{ translateX: flightProgress.interpolate({ inputRange: [0, 1], outputRange: [windowWidth * 0.62, windowWidth * 0.08] }) }, { translateY: flightProgress.interpolate({ inputRange: [0, 1], outputRange: [0, -5] }) }, { scale: flightProgress.interpolate({ inputRange: [0, 1], outputRange: [1, 0.34] }) }], opacity: flightProgress.interpolate({ inputRange: [0, 0.72, 1], outputRange: [1, 1, 0] }), pointerEvents: 'none' }]}>
+      {flyingProduct && flightOrigin ? <Animated.View style={[styles.flightToken, { left: flightOrigin.x, top: flightOrigin.y, transform: [{ translateX: flightProgress.interpolate({ inputRange: [0, 1], outputRange: [0, windowWidth * 0.5 - 21 - flightOrigin.x] }) }, { translateY: flightProgress.interpolate({ inputRange: [0, 1], outputRange: [0, windowHeight - (NativeStatusBar.currentHeight || 0) - 58 - flightOrigin.y] }) }, { scale: flightProgress.interpolate({ inputRange: [0, 1], outputRange: [1, 0.34] }) }], opacity: flightProgress.interpolate({ inputRange: [0, 0.72, 1], outputRange: [1, 1, 0] }), pointerEvents: 'none' }]}>
         {productImageUrl(flyingProduct.cover, storageBaseUrl) ? <Image source={{ uri: productImageUrl(flyingProduct.cover, storageBaseUrl) }} style={styles.flightImage} resizeMode="cover" /> : <Text style={styles.flightLetter}>{flyingProduct.title.slice(0, 1)}</Text>}
       </Animated.View> : null}
 
@@ -1234,7 +1290,6 @@ export default function App() {
         visible={accountVisible && accountSetupLoaded}
         step={accountStep}
         initialAuthMode={accountAuthMode}
-        preferences={accountPreferences}
         busy={authBusy}
         error={authError}
         notice={authNotice}
@@ -1246,11 +1301,9 @@ export default function App() {
           }
           setAccountVisible(false);
         }}
-        onPreferencesChange={setAccountPreferences}
-        onContinuePreferences={() => void continuePreferences()}
         onAllowNotifications={() => void allowNotifications()}
         onSkipNotifications={() => void finishNotificationStep(false)}
-        onSubmitAuth={(mode, name, identifier, password, remember) => void submitAuth(mode, name, identifier, password, remember)}
+        onSubmitAuth={(mode, name, identifier, password, remember, legalConsentAccepted) => void submitAuth(mode, name, identifier, password, remember, legalConsentAccepted)}
         onSocialSignIn={(provider, remember) => void signInWithSocialProvider(provider, remember)}
         onResetPassword={(identifier) => void resetPassword(identifier)}
         onBrowseAsGuest={() => void browseAsGuest()}
@@ -1263,21 +1316,38 @@ export default function App() {
       />
 
       <Modal visible={Boolean(notifyProduct)} transparent animationType="slide" onRequestClose={() => setNotifyProduct(null)}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalShade}><View style={styles.modalSheet}><View style={styles.modalHandle} /><Pressable onPress={() => setNotifyProduct(null)} style={styles.modalClose}><Text style={styles.modalCloseText}>×</Text></Pressable><Text style={styles.modalKicker}>RELEASE ALERT</Text><Text style={styles.modalTitle}>Get notified</Text><Text style={styles.modalCopy}>{notifyProduct?.title} isn’t available yet. We’ll email you when it opens.</Text><Field label="Full name" value={notifyName} onChangeText={setNotifyName} placeholder="Your name" maxLength={120} /><Field label="Email address" value={notifyEmail} onChangeText={setNotifyEmail} placeholder="you@example.com" keyboardType="email-address" maxLength={254} /><Field label="Phone (optional)" value={notifyPhone} onChangeText={setNotifyPhone} placeholder="Phone number" keyboardType="phone-pad" maxLength={40} />{notifyError ? <Text style={styles.formError}>{notifyError}</Text> : null}<Button title={notifyBusy ? 'Saving…' : 'Notify me'} disabled={notifyBusy} onPress={() => void submitNotify()} /></View></KeyboardAvoidingView>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalShade}>
+          <ScrollView style={styles.modalSheet} contentContainerStyle={styles.modalSheetContent} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
+            <View style={styles.modalHandle} />
+            <Pressable onPress={() => setNotifyProduct(null)} style={styles.modalClose}><Text style={styles.modalCloseText}>×</Text></Pressable>
+            <Text style={styles.modalKicker}>RELEASE ALERT</Text>
+            <Text style={styles.modalTitle}>Get notified</Text>
+            <Text style={styles.modalCopy}>{notifyProduct?.title} isn’t available yet. We’ll email you when it opens.</Text>
+            <Field label="Full name" value={notifyName} onChangeText={setNotifyName} placeholder="Your name" maxLength={120} />
+            <Field label="Email address" value={notifyEmail} onChangeText={setNotifyEmail} placeholder="you@example.com" keyboardType="email-address" maxLength={254} />
+            <Field label="Phone (optional)" value={notifyPhone} onChangeText={setNotifyPhone} placeholder="Phone number" keyboardType="phone-pad" maxLength={40} />
+            {notifyError ? <Text style={styles.formError}>{notifyError}</Text> : null}
+            <Button title={notifyBusy ? 'Saving…' : 'Notify me'} disabled={notifyBusy} onPress={() => void submitNotify()} />
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal visible={chatVisible} transparent animationType="slide" onRequestClose={() => setChatVisible(false)}>
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalShade}><View style={styles.modalSheet}><View style={styles.modalHandle} /><Pressable onPress={() => setChatVisible(false)} style={styles.modalClose}><Text style={styles.modalCloseText}>×</Text></Pressable><Text style={styles.modalKicker}>PRODUCT QUESTIONS</Text><Text style={styles.modalTitle}>Chat with PAZ</Text><Text style={styles.modalCopy}>{selectedProduct?.title}</Text>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.modalShade}>
+          <ScrollView style={styles.modalSheet} contentContainerStyle={styles.modalSheetContent} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
+          <View style={styles.modalHandle} /><Pressable onPress={() => setChatVisible(false)} style={styles.modalClose}><Text style={styles.modalCloseText}>×</Text></Pressable><Text style={styles.modalKicker}>PRODUCT QUESTIONS</Text><Text style={styles.modalTitle}>Chat with PAZ</Text><Text style={styles.modalCopy}>{selectedProduct?.title}</Text>
           {chatBusy && !chatMessages.length ? <ActivityIndicator color={palette.green} style={{ margin: 12 }} /> : null}
-          {chatToken ? <><ScrollView style={styles.chatMessages} contentContainerStyle={styles.chatMessagesContent}>{chatMessages.map((message, index) => <View key={String(message.id || index)} style={[styles.chatMessage, message.sender_role === 'customer' && styles.chatMessageCustomer]}><Text style={styles.chatSender}>{message.sender_role === 'customer' ? 'You' : String(message.sender_name || 'PAZ team')}</Text><Text style={styles.chatText}>{String(message.message || '')}</Text></View>)}</ScrollView><Field label="Your reply" value={chatReply} onChangeText={setChatReply} placeholder="Write a message" multiline maxLength={4000} /><Button title={chatBusy ? 'Sending…' : 'Send reply'} disabled={chatBusy || !chatReply.trim()} onPress={() => void sendChatReply()} /></> : <><Field label="Your name" value={chatName} onChangeText={setChatName} placeholder="Name" maxLength={120} /><Field label="Email address" value={chatEmail} onChangeText={setChatEmail} placeholder="you@example.com" keyboardType="email-address" maxLength={254} /><Field label="Phone number" value={chatPhone} onChangeText={setChatPhone} placeholder="Include country code" keyboardType="phone-pad" maxLength={40} /><Field label="Message" value={chatMessage} onChangeText={setChatMessage} placeholder="What would you like to know?" multiline maxLength={4000} /><Button title={chatBusy ? 'Sending…' : 'Send message'} disabled={chatBusy} onPress={() => void startChat()} /></>}
+          {chatToken ? <><ScrollView style={styles.chatMessages} contentContainerStyle={styles.chatMessagesContent} keyboardShouldPersistTaps="handled">{chatMessages.map((message, index) => <View key={String(message.id || index)} style={[styles.chatMessage, message.sender_role === 'customer' && styles.chatMessageCustomer]}><Text style={styles.chatSender}>{message.sender_role === 'customer' ? 'You' : String(message.sender_name || 'PAZ team')}</Text><Text style={styles.chatText}>{String(message.message || '')}</Text></View>)}</ScrollView><Field label="Your reply" value={chatReply} onChangeText={setChatReply} placeholder="Write a message" multiline maxLength={4000} /><Button title={chatBusy ? 'Sending…' : 'Send reply'} disabled={chatBusy || !chatReply.trim()} onPress={() => void sendChatReply()} /></> : <><Field label="Your name" value={chatName} onChangeText={setChatName} placeholder="Name" maxLength={120} /><Field label="Email address" value={chatEmail} onChangeText={setChatEmail} placeholder="you@example.com" keyboardType="email-address" maxLength={254} /><Field label="Phone number" value={chatPhone} onChangeText={setChatPhone} placeholder="Include country code" keyboardType="phone-pad" maxLength={40} /><Field label="Message" value={chatMessage} onChangeText={setChatMessage} placeholder="What would you like to know?" multiline maxLength={4000} /><Button title={chatBusy ? 'Sending…' : 'Send message'} disabled={chatBusy} onPress={() => void startChat()} /></>}
           {chatNotice ? <Text style={styles.chatNotice}>{chatNotice}</Text> : null}
-        </View></KeyboardAvoidingView>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles() {
+  return StyleSheet.create({
   app: { flex: 1, paddingTop: NativeStatusBar.currentHeight || 0, backgroundColor: palette.paper },
   appLoader: { ...StyleSheet.absoluteFill, zIndex: 1000, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.paper },
   appLoaderLogo: { width: 104, height: 104 },
@@ -1292,34 +1362,35 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   accountButton: { minHeight: 42, paddingHorizontal: 12, borderWidth: 1, borderColor: palette.line, borderRadius: 12, justifyContent: 'center', backgroundColor: palette.greenWash },
   accountButtonText: { color: palette.darkGreen, fontSize: 11, fontWeight: '900' },
-  bagButton: { minWidth: 76, minHeight: 42, paddingHorizontal: 11, borderWidth: 1, borderColor: palette.line, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: palette.white },
-  bagText: { color: palette.ink, fontSize: 12, fontWeight: '800' },
-  bagCount: { minWidth: 21, height: 21, paddingHorizontal: 4, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.orange },
-  bagCountText: { color: palette.ink, fontSize: 10, fontWeight: '900' },
+  cartButton: { minWidth: 76, minHeight: 42, paddingHorizontal: 11, borderWidth: 1, borderColor: palette.line, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: palette.white },
+  cartText: { color: palette.ink, fontSize: 12, fontWeight: '800' },
+  cartCountBadge: { minWidth: 21, height: 21, paddingHorizontal: 4, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.actionGreen },
+  cartCountText: { color: palette.white, fontSize: 10, fontWeight: '900' },
   notice: { minHeight: 40, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: palette.greenWash },
   noticeText: { flex: 1, paddingVertical: 7, color: palette.darkGreen, fontSize: 11, fontWeight: '700' },
-  noticeClose: { paddingLeft: 10, color: palette.green, fontSize: 20 },
+  noticeClose: { paddingLeft: 10, color: palette.darkGreen, fontSize: 20 },
   tabBar: { minHeight: 68, paddingTop: 6, paddingBottom: Platform.OS === 'ios' ? 18 : 5, borderTopWidth: 1, borderColor: palette.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', backgroundColor: palette.white },
   tabButton: { flex: 1, minHeight: 52, alignItems: 'center', justifyContent: 'center', gap: 2 },
   tabButtonPressed: { opacity: 0.68 },
   tabIconWrap: { width: 42, height: 27, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   tabIconWrapActive: { backgroundColor: palette.greenWash },
   tabBadge: { position: 'absolute', top: -3, right: 1, minWidth: 16, height: 16, paddingHorizontal: 3, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.orange, borderWidth: 1, borderColor: palette.white },
-  tabBadgeText: { color: palette.white, fontSize: 8, lineHeight: 10, fontWeight: '900' },
+  tabBadgeText: { color: '#2e2a26', fontSize: 8, lineHeight: 10, fontWeight: '900' },
   tabLabel: { color: palette.muted, fontSize: 10, fontWeight: '700' },
   tabLabelActive: { color: palette.green, fontWeight: '900' },
-  flightToken: { position: 'absolute', left: 0, bottom: 38, zIndex: 20, width: 42, height: 48, overflow: 'hidden', borderWidth: 2, borderColor: palette.white, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.green, elevation: 8 },
+  flightToken: { position: 'absolute', left: 0, top: 0, zIndex: 20, width: 42, height: 48, overflow: 'hidden', borderWidth: 2, borderColor: palette.white, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.actionGreen, elevation: 8 },
   flightImage: { width: '100%', height: '100%' },
   flightLetter: { color: palette.white, fontSize: 18, fontWeight: '900' },
   success: { flex: 1, padding: 28, alignItems: 'center', justifyContent: 'center' },
-  successMark: { width: 68, height: 68, borderRadius: 34, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.green },
+  successMark: { width: 68, height: 68, borderRadius: 34, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.actionGreen },
   successMarkText: { color: palette.white, fontSize: 36, fontWeight: '700' },
   successKicker: { marginTop: 20, color: palette.green, fontSize: 10, fontWeight: '900', letterSpacing: 1.3 },
   successTitle: { marginTop: 8, color: palette.ink, fontSize: 26, lineHeight: 32, fontWeight: '900', textAlign: 'center' },
   successCopy: { marginTop: 10, marginBottom: 23, color: palette.muted, fontSize: 13, lineHeight: 20, textAlign: 'center' },
   modalShade: { flex: 1, justifyContent: 'flex-end', backgroundColor: '#101a14aa' },
-  modalSheet: { maxHeight: '92%', paddingHorizontal: 19, paddingTop: 10, paddingBottom: 23, borderTopLeftRadius: 15, borderTopRightRadius: 15, backgroundColor: palette.paper },
-  modalHandle: { width: 38, height: 4, alignSelf: 'center', borderRadius: 2, backgroundColor: '#bfcac1' },
+  modalSheet: { maxHeight: '92%', paddingHorizontal: 19, paddingTop: 10, borderTopLeftRadius: 15, borderTopRightRadius: 15, backgroundColor: palette.paper },
+  modalSheetContent: { paddingBottom: 23 },
+  modalHandle: { width: 38, height: 4, alignSelf: 'center', borderRadius: 2, backgroundColor: palette.line },
   modalClose: { position: 'absolute', top: 15, right: 17, width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
   modalCloseText: { color: palette.muted, fontSize: 26 },
   modalKicker: { marginTop: 17, color: palette.green, fontSize: 9, fontWeight: '900', letterSpacing: 1.1 },
@@ -1329,8 +1400,12 @@ const styles = StyleSheet.create({
   chatMessages: { maxHeight: 210, marginTop: 8 },
   chatMessagesContent: { gap: 7, paddingVertical: 5 },
   chatMessage: { maxWidth: '88%', alignSelf: 'flex-start', padding: 9, borderWidth: 1, borderColor: palette.line, borderRadius: 7, backgroundColor: palette.white },
-  chatMessageCustomer: { alignSelf: 'flex-end', borderColor: '#bdd8c4', backgroundColor: palette.greenWash },
+  chatMessageCustomer: { alignSelf: 'flex-end', borderColor: palette.green, backgroundColor: palette.greenWash },
   chatSender: { color: palette.muted, fontSize: 9, fontWeight: '800' },
   chatText: { marginTop: 3, color: palette.ink, fontSize: 11, lineHeight: 16 },
   chatNotice: { marginTop: 9, color: palette.green, fontSize: 11, lineHeight: 16 },
-});
+  });
+}
+
+let styles = createStyles();
+registerShopThemeStyles(() => { styles = createStyles(); });

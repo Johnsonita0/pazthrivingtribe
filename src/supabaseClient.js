@@ -4,6 +4,31 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
 const isValidSupabaseUrl = (value) => typeof value === 'string' && value.includes('supabase.co')
+const rememberPreferenceKey = 'paz-shop-auth-remember-me'
+let rememberAuthSession = typeof window === 'undefined'
+  ? true
+  : window.localStorage.getItem(rememberPreferenceKey) !== 'false'
+
+const authStorage = {
+  getItem(key) {
+    if (typeof window === 'undefined') return null
+    return rememberAuthSession
+      ? window.localStorage.getItem(key) ?? window.sessionStorage.getItem(key)
+      : window.sessionStorage.getItem(key)
+  },
+  setItem(key, value) {
+    if (typeof window === 'undefined') return
+    const preferred = rememberAuthSession ? window.localStorage : window.sessionStorage
+    const other = rememberAuthSession ? window.sessionStorage : window.localStorage
+    other.removeItem(key)
+    preferred.setItem(key, value)
+  },
+  removeItem(key) {
+    if (typeof window === 'undefined') return
+    window.localStorage.removeItem(key)
+    window.sessionStorage.removeItem(key)
+  }
+}
 
 let supabase
 
@@ -12,7 +37,8 @@ if (isValidSupabaseUrl(supabaseUrl)) {
     auth: {
       persistSession: true,
       detectSessionInUrl: true,
-      autoRefreshToken: true
+      autoRefreshToken: true,
+      storage: authStorage
     }
   })
 } else {
@@ -55,3 +81,9 @@ if (isValidSupabaseUrl(supabaseUrl)) {
 
 export const isSupabaseStub = !isValidSupabaseUrl(supabaseUrl)
 export { supabase }
+export function setWebAuthRememberMe(remember) {
+  rememberAuthSession = Boolean(remember)
+  if (typeof window !== 'undefined') {
+    window.localStorage.setItem(rememberPreferenceKey, String(rememberAuthSession))
+  }
+}

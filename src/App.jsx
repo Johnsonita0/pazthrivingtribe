@@ -292,6 +292,38 @@ export default function App() {
   const isShopMenuActive = isStoreRoute;
 
   useEffect(() => {
+    let scrollTimer;
+    const initialViewportHeight = window.visualViewport?.height || window.innerHeight;
+    const viewport = window.visualViewport;
+    const syncVisualViewport = () => {
+      document.documentElement.style.setProperty('--app-visual-viewport-height', `${viewport?.height || window.innerHeight}px`);
+      document.documentElement.style.setProperty('--app-visual-viewport-offset-top', `${viewport?.offsetTop || 0}px`);
+    };
+    const keepFocusedFieldVisible = () => {
+      syncVisualViewport();
+      window.clearTimeout(scrollTimer);
+      scrollTimer = window.setTimeout(() => {
+        const field = document.activeElement;
+        if (!(field instanceof HTMLElement) || !field.matches('input, textarea, select, [contenteditable="true"]')) return;
+        if (viewport && viewport.height >= initialViewportHeight * 0.8) return;
+        field.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+      }, 120);
+    };
+    syncVisualViewport();
+    document.addEventListener('focusin', keepFocusedFieldVisible);
+    viewport?.addEventListener('resize', keepFocusedFieldVisible);
+    viewport?.addEventListener('scroll', syncVisualViewport);
+    return () => {
+      window.clearTimeout(scrollTimer);
+      document.removeEventListener('focusin', keepFocusedFieldVisible);
+      viewport?.removeEventListener('resize', keepFocusedFieldVisible);
+      viewport?.removeEventListener('scroll', syncVisualViewport);
+      document.documentElement.style.removeProperty('--app-visual-viewport-height');
+      document.documentElement.style.removeProperty('--app-visual-viewport-offset-top');
+    };
+  }, []);
+
+  useEffect(() => {
     const dateRefresh = window.setInterval(() => {
       const nextDate = getNigeriaDateInfo();
       setNigeriaDate((currentDate) => (

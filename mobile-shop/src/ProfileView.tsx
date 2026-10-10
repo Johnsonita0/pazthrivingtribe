@@ -1,11 +1,11 @@
 import { FontAwesome5 } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useCallback, useEffect, useState, type ComponentProps, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import { ActivityIndicator, Image, KeyboardAvoidingView, Linking, Modal, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Switch, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { apiRequest, DeliveryAddress } from './api';
 import { AccountUser } from './CustomerAccountFlow';
 import { supabase } from './supabaseClient';
-import { palette } from './ShopComponents';
+import { palette, registerShopThemeStyles, SHOP_THEMES, ShopThemeName } from './ShopComponents';
 
 type Props = {
   user: AccountUser;
@@ -24,6 +24,8 @@ type Props = {
   onCreateAccount: () => void;
   onSignOut: () => void;
   onAvatarChange: (avatarUrl: string | null) => void;
+  themeName: ShopThemeName;
+  onThemeChange: (theme: ShopThemeName) => Promise<void>;
 };
 
 type Profile = {
@@ -77,18 +79,18 @@ type CustomerNotification = {
   read_at: string | null;
 };
 
-type ModalPage = 'orders' | 'chats' | 'notifications' | 'about' | 'address' | 'payments' | 'support' | null;
+type ModalPage = 'orders' | 'chats' | 'notifications' | 'about' | 'address' | 'payments' | 'support' | 'preferences' | null;
 
 const menuRows = [
-  { key: 'orders', title: 'My Orders', subtitle: 'View your order history', icon: 'receipt', color: '#6227c8' },
-  { key: 'wishlist', title: 'My Wishlist', subtitle: 'Your saved books and guides', icon: 'heart', color: '#dc4c87' },
-  { key: 'chats', title: 'Messages', subtitle: 'Your conversations with PAZ', icon: 'comments', color: '#3682c5' },
-  { key: 'notices', title: 'In-app notifications', subtitle: 'Updates from PAZ', icon: 'bell', color: '#e09b38' },
-  { key: 'address', title: 'Address Book', subtitle: 'Digital delivery details', icon: 'map-marker-alt', color: '#348c70' },
-  { key: 'payments', title: 'Payment Methods', subtitle: 'Secure payment options', icon: 'credit-card', color: '#3682c5' },
-  { key: 'notifications', title: 'Notifications', subtitle: 'Manage device notifications', icon: 'bell', color: '#e09b38' },
-  { key: 'support', title: 'Help & Support', subtitle: 'Contact PAZ customer care', icon: 'question-circle', color: '#7b55c3' },
-  { key: 'about', title: 'About PAZ', subtitle: 'PAZ Thriving Tribe', icon: 'info-circle', color: '#7b55c3' },
+  { key: 'orders', title: 'My Orders', subtitle: 'View your order history', icon: 'receipt' },
+  { key: 'wishlist', title: 'My Wishlist', subtitle: 'Your saved books and guides', icon: 'heart' },
+  { key: 'chats', title: 'Messages', subtitle: 'Your conversations with PAZ', icon: 'comments' },
+  { key: 'notices', title: 'In-app notifications', subtitle: 'Updates from PAZ', icon: 'bell' },
+  { key: 'address', title: 'Address Book', subtitle: 'Digital delivery details', icon: 'map-marker-alt' },
+  { key: 'payments', title: 'Payment Methods', subtitle: 'Secure payment options', icon: 'credit-card' },
+  { key: 'notifications', title: 'Notifications', subtitle: 'Manage device notifications', icon: 'bell' },
+  { key: 'support', title: 'Help & Support', subtitle: 'Contact PAZ customer care', icon: 'question-circle' },
+  { key: 'about', title: 'About PAZ', subtitle: 'PAZ Thriving Tribe', icon: 'info-circle' },
 ] as const;
 
 function Row({
@@ -115,7 +117,7 @@ function Row({
         <Text style={styles.rowTitle}>{title}</Text>
         <Text style={styles.rowSubtitle}>{subtitle}</Text>
       </View>
-      {trailing || <FontAwesome5 name="chevron-right" size={11} color="#938ba0" />}
+      {trailing || <FontAwesome5 name="chevron-right" size={11} color={palette.muted} />}
     </Pressable>
   );
 }
@@ -137,8 +139,12 @@ export function ProfileView({
   onCreateAccount,
   onSignOut,
   onAvatarChange,
+  themeName,
+  onThemeChange,
 }: Props) {
   const [page, setPage] = useState<ModalPage>(null);
+  const [themeBusy, setThemeBusy] = useState<ShopThemeName | null>(null);
+  const [themeError, setThemeError] = useState('');
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileBusy, setProfileBusy] = useState(false);
   const [profileError, setProfileError] = useState('');
@@ -176,6 +182,8 @@ export function ProfileView({
   });
   const [addressBusy, setAddressBusy] = useState(false);
   const [addressError, setAddressError] = useState('');
+  const deliveryAddressChangeRef = useRef(onDeliveryAddressChange);
+  deliveryAddressChangeRef.current = onDeliveryAddressChange;
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [contactSubject, setContactSubject] = useState('');
@@ -247,14 +255,14 @@ export function ProfileView({
       onAvatarChange(data?.avatar_url || null);
       const savedAddress = data?.delivery_address;
       if (savedAddress && typeof savedAddress === 'object') {
-        onDeliveryAddressChange(savedAddress as DeliveryAddress);
+        deliveryAddressChangeRef.current(savedAddress as DeliveryAddress);
       }
     } catch (error) {
       setProfileError(error instanceof Error ? error.message : 'Your customer profile could not be loaded.');
     } finally {
       setProfileBusy(false);
     }
-  }, [onAvatarChange, onDeliveryAddressChange, user?.id]);
+  }, [onAvatarChange, user?.id]);
 
   useEffect(() => {
     setAddressDraft(deliveryAddress || {
@@ -701,10 +709,22 @@ export function ProfileView({
     else if (key === 'about') setPage('about');
   };
 
-  const pageTitle = activeChat ? activeChat.product_title : page === 'orders' ? 'My Orders' : page === 'chats' ? 'Messages' : page === 'notifications' ? 'PAZ Notifications' : page === 'about' ? 'About PAZ' : page === 'address' ? 'Digital delivery' : page === 'support' ? 'Contact Us' : 'Secure payments';
+  const pageTitle = activeChat ? activeChat.product_title : page === 'orders' ? 'My Orders' : page === 'chats' ? 'Messages' : page === 'notifications' ? 'PAZ Notifications' : page === 'about' ? 'About PAZ' : page === 'address' ? 'Digital delivery' : page === 'support' ? 'Contact Us' : page === 'preferences' ? 'Preferences' : 'Secure payments';
+  const chooseTheme = async (theme: ShopThemeName) => {
+    if (theme === themeName || themeBusy) return;
+    setThemeBusy(theme);
+    setThemeError('');
+    try {
+      await onThemeChange(theme);
+    } catch (error) {
+      setThemeError(error instanceof Error ? error.message : 'Your color preference could not be saved.');
+    } finally {
+      setThemeBusy(null);
+    }
+  };
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { backgroundColor: palette.paper }]}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.profileCard}>
           <Pressable accessibilityRole="button" accessibilityLabel="Change profile picture" disabled={!user || profileBusy} onPress={() => void changeAvatar()} style={styles.avatarButton}>
@@ -725,14 +745,16 @@ export function ProfileView({
           ) : null}
         </View>
 
-        <View style={styles.menuCard}>
+        <View style={[styles.menuCard, { borderColor: palette.line, backgroundColor: palette.white }]}>
           {menuRows.map((row) => (
-            <Row key={row.key} icon={row.icon} color={row.color} title={row.title}
+            <Row key={row.key} icon={row.icon}
+              color={row.key === 'wishlist' ? palette.orange : row.key === 'chats' || row.key === 'payments' ? palette.blue : row.key === 'notices' || row.key === 'notifications' ? palette.gold : palette.green}
+              title={row.title}
               subtitle={row.key === 'chats' && unreadCount ? `${unreadCount} unread message${unreadCount === 1 ? '' : 's'}` : row.key === 'notices' && notificationUnreadCount ? `${notificationUnreadCount} unread update${notificationUnreadCount === 1 ? '' : 's'}` : row.subtitle}
               onPress={() => handleRow(row.key)}
               trailing={row.key === 'notifications' ? (
                 <Switch accessibilityLabel="Enable PAZ notifications" value={notificationsEnabled} onValueChange={onToggleNotifications}
-                  trackColor={{ false: '#d8d2e0', true: '#c5afea' }} thumbColor={notificationsEnabled ? palette.green : '#fff'} />
+                  trackColor={{ false: palette.line, true: palette.greenWash }} thumbColor={notificationsEnabled ? palette.green : palette.white} />
               ) : row.key === 'chats' && unreadCount > 0 ? (
                 <View style={styles.unreadBadge}><Text style={styles.unreadBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text></View>
               ) : row.key === 'notices' && notificationUnreadCount > 0 ? (
@@ -742,6 +764,12 @@ export function ProfileView({
           ))}
         </View>
 
+        <Text style={styles.sectionHeading}>SETTINGS</Text>
+        <View style={[styles.menuCard, { borderColor: palette.line, backgroundColor: palette.white }]}>
+          <Row icon="sliders-h" color={palette.green} title="Preferences" subtitle="Choose your app colors"
+            onPress={() => { setThemeError(''); setPage('preferences'); }} />
+        </View>
+
         {user ? <Pressable accessibilityRole="button" onPress={onSignOut} style={styles.signOut}>
           <FontAwesome5 name="sign-out-alt" size={14} color={palette.red} /><Text style={styles.signOutText}>Sign out</Text>
         </Pressable> : null}
@@ -749,7 +777,7 @@ export function ProfileView({
       </ScrollView>
 
       <Modal visible={Boolean(page)} animationType="slide" onRequestClose={() => { setPage(null); setActiveChat(null); }}>
-        <View style={styles.modalPage}>
+        <View style={[styles.modalPage, { backgroundColor: palette.paper }]}>
           <View style={styles.modalHeader}>
             <Pressable accessibilityRole="button" accessibilityLabel={activeChat ? 'Back to messages' : 'Close'} onPress={() => activeChat ? setActiveChat(null) : setPage(null)} style={styles.modalBack}>
               <FontAwesome5 name={activeChat ? 'arrow-left' : 'times'} size={17} color={palette.ink} />
@@ -757,6 +785,31 @@ export function ProfileView({
             <Text numberOfLines={1} style={styles.modalTitle}>{pageTitle}</Text>
             {page === 'orders' ? <Pressable accessibilityRole="button" accessibilityLabel="Refresh orders" disabled={ordersBusy} onPress={() => void loadOrders()}><FontAwesome5 name="sync-alt" size={15} color={palette.green} /></Pressable> : <View style={styles.headerSpacer} />}
           </View>
+
+          {page === 'preferences' ? <ScrollView contentContainerStyle={styles.modalContent}>
+            <Text style={styles.preferenceIntro}>Choose a color theme for the PAZ shop. Each one uses colors from our website logo.</Text>
+            {(Object.keys(SHOP_THEMES) as ShopThemeName[]).map((theme) => {
+              const colors = SHOP_THEMES[theme].colors;
+              const selected = themeName === theme;
+              return (
+                <Pressable key={theme} accessibilityRole="button" accessibilityState={{ selected }}
+                  disabled={Boolean(themeBusy)} onPress={() => void chooseTheme(theme)}
+                  style={[styles.themeOption, selected && { borderColor: palette.green, backgroundColor: palette.greenWash }]}>
+                  <View style={styles.themeSwatches}>
+                    {[colors.green, colors.orange, colors.paper].map((color, index) => (
+                      <View key={`${theme}-${index}`} style={[styles.themeSwatch, { backgroundColor: color }]} />
+                    ))}
+                  </View>
+                  <View style={styles.themeOptionCopy}>
+                    <Text style={styles.themeOptionTitle}>{SHOP_THEMES[theme].label}</Text>
+                    <Text style={styles.themeOptionSubtitle}>{selected ? 'Currently selected' : 'Tap to use this theme'}</Text>
+                  </View>
+                  {themeBusy === theme ? <ActivityIndicator color={palette.green} /> : selected ? <FontAwesome5 name="check-circle" size={18} color={palette.green} /> : null}
+                </Pressable>
+              );
+            })}
+            {themeError ? <Text accessibilityRole="alert" style={styles.error}>{themeError}</Text> : null}
+          </ScrollView> : null}
 
           {page === 'notifications' ? (
             <ScrollView contentContainerStyle={styles.modalContent}>
@@ -798,7 +851,7 @@ export function ProfileView({
 
           {page === 'chats' ? activeChat ? (
             <KeyboardAvoidingView style={styles.chatPage} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-              <ScrollView contentContainerStyle={styles.chatMessages}>
+              <ScrollView contentContainerStyle={styles.chatMessages} automaticallyAdjustKeyboardInsets>
                 <Text style={styles.roomParticipant}>
                   {activeChat.assigned_to === 'vendor'
                     ? `This conversation includes ${activeChat.vendor_name || 'the product vendor'} and PAZ Customer Care.`
@@ -823,7 +876,7 @@ export function ProfileView({
                 </Pressable>
               </View>
             </KeyboardAvoidingView>
-          ) : <ScrollView contentContainerStyle={styles.modalContent}>
+          ) : <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
             {!user ? <Text style={styles.emptyText}>Sign in to see all your conversations.</Text> : null}
             {chatsBusy ? <ActivityIndicator color={palette.green} style={styles.largeLoader} /> : null}
             {chatsError ? <Text accessibilityRole="alert" style={styles.error}>{chatsError}</Text> : null}
@@ -878,21 +931,21 @@ export function ProfileView({
             <Pressable accessibilityRole="button" onPress={() => setPage(null)} style={styles.primaryButton}><Text style={styles.primaryButtonText}>Close</Text></Pressable>
           </ScrollView> : null}
 
-          {page === 'address' ? <ScrollView contentContainerStyle={styles.addressContent} keyboardShouldPersistTaps="handled">
+          {page === 'address' ? <ScrollView contentContainerStyle={styles.addressContent} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
             <View style={styles.addressIntro}>
               <View style={styles.aboutMark}><FontAwesome5 name="map-marker-alt" size={22} color={palette.white} /></View>
               <Text style={styles.infoHeading}>{deliveryAddress ? 'Your saved address' : 'Add a delivery address'}</Text>
               <Text style={styles.infoCopy}>Save your contact and delivery details here. PAZ will prefill them at checkout.</Text>
             </View>
             {!user ? <Text style={styles.error}>Sign in to save an address to your profile.</Text> : null}
-            <View style={styles.addressField}><Text style={styles.addressLabel}>Full name</Text><TextInput accessibilityLabel="Address full name" autoCapitalize="words" value={addressDraft.fullName} onChangeText={(value) => setAddressDraft((current) => ({ ...current, fullName: value }))} placeholder="Enter your full name" placeholderTextColor="#858091" style={styles.addressInput} /></View>
-            <View style={styles.addressField}><Text style={styles.addressLabel}>Phone number</Text><TextInput accessibilityLabel="Address phone number" value={addressDraft.phone} onChangeText={(value) => setAddressDraft((current) => ({ ...current, phone: value }))} placeholder="e.g. +234 800 000 0000" placeholderTextColor="#858091" keyboardType="phone-pad" style={styles.addressInput} /></View>
-            <View style={styles.addressField}><Text style={styles.addressLabel}>Street address</Text><TextInput accessibilityLabel="Street address" value={addressDraft.addressLine1} onChangeText={(value) => setAddressDraft((current) => ({ ...current, addressLine1: value }))} placeholder="House number and street name" placeholderTextColor="#858091" style={styles.addressInput} /></View>
-            <View style={styles.addressField}><Text style={styles.addressLabel}>Apartment or landmark <Text style={styles.optionalLabel}>(optional)</Text></Text><TextInput accessibilityLabel="Apartment or landmark" value={addressDraft.addressLine2} onChangeText={(value) => setAddressDraft((current) => ({ ...current, addressLine2: value }))} placeholder="Apartment, suite or nearby landmark" placeholderTextColor="#858091" style={styles.addressInput} /></View>
-            <View style={styles.addressField}><Text style={styles.addressLabel}>City</Text><TextInput accessibilityLabel="City" value={addressDraft.city} onChangeText={(value) => setAddressDraft((current) => ({ ...current, city: value }))} placeholder="Enter your city" placeholderTextColor="#858091" style={styles.addressInput} /></View>
-            <View style={styles.addressField}><Text style={styles.addressLabel}>State or region</Text><TextInput accessibilityLabel="State or region" value={addressDraft.state} onChangeText={(value) => setAddressDraft((current) => ({ ...current, state: value }))} placeholder="Enter your state or region" placeholderTextColor="#858091" style={styles.addressInput} /></View>
-            <View style={styles.addressField}><Text style={styles.addressLabel}>Postal code <Text style={styles.optionalLabel}>(optional)</Text></Text><TextInput accessibilityLabel="Postal code" value={addressDraft.postalCode} onChangeText={(value) => setAddressDraft((current) => ({ ...current, postalCode: value }))} placeholder="Enter postal code" placeholderTextColor="#858091" style={styles.addressInput} /></View>
-            <View style={styles.addressField}><Text style={styles.addressLabel}>Country</Text><TextInput accessibilityLabel="Country" value={addressDraft.country} onChangeText={(value) => setAddressDraft((current) => ({ ...current, country: value }))} placeholder="Enter your country" placeholderTextColor="#858091" style={styles.addressInput} /></View>
+            <View style={styles.addressField}><Text style={styles.addressLabel}>Full name</Text><TextInput accessibilityLabel="Address full name" autoCapitalize="words" value={addressDraft.fullName} onChangeText={(value) => setAddressDraft((current) => ({ ...current, fullName: value }))} placeholder="Enter your full name" placeholderTextColor={palette.muted} style={styles.addressInput} /></View>
+            <View style={styles.addressField}><Text style={styles.addressLabel}>Phone number</Text><TextInput accessibilityLabel="Address phone number" value={addressDraft.phone} onChangeText={(value) => setAddressDraft((current) => ({ ...current, phone: value }))} placeholder="e.g. +234 800 000 0000" placeholderTextColor={palette.muted} keyboardType="phone-pad" style={styles.addressInput} /></View>
+            <View style={styles.addressField}><Text style={styles.addressLabel}>Street address</Text><TextInput accessibilityLabel="Street address" value={addressDraft.addressLine1} onChangeText={(value) => setAddressDraft((current) => ({ ...current, addressLine1: value }))} placeholder="House number and street name" placeholderTextColor={palette.muted} style={styles.addressInput} /></View>
+            <View style={styles.addressField}><Text style={styles.addressLabel}>Apartment or landmark <Text style={styles.optionalLabel}>(optional)</Text></Text><TextInput accessibilityLabel="Apartment or landmark" value={addressDraft.addressLine2} onChangeText={(value) => setAddressDraft((current) => ({ ...current, addressLine2: value }))} placeholder="Apartment, suite or nearby landmark" placeholderTextColor={palette.muted} style={styles.addressInput} /></View>
+            <View style={styles.addressField}><Text style={styles.addressLabel}>City</Text><TextInput accessibilityLabel="City" value={addressDraft.city} onChangeText={(value) => setAddressDraft((current) => ({ ...current, city: value }))} placeholder="Enter your city" placeholderTextColor={palette.muted} style={styles.addressInput} /></View>
+            <View style={styles.addressField}><Text style={styles.addressLabel}>State or region</Text><TextInput accessibilityLabel="State or region" value={addressDraft.state} onChangeText={(value) => setAddressDraft((current) => ({ ...current, state: value }))} placeholder="Enter your state or region" placeholderTextColor={palette.muted} style={styles.addressInput} /></View>
+            <View style={styles.addressField}><Text style={styles.addressLabel}>Postal code <Text style={styles.optionalLabel}>(optional)</Text></Text><TextInput accessibilityLabel="Postal code" value={addressDraft.postalCode} onChangeText={(value) => setAddressDraft((current) => ({ ...current, postalCode: value }))} placeholder="Enter postal code" placeholderTextColor={palette.muted} style={styles.addressInput} /></View>
+            <View style={styles.addressField}><Text style={styles.addressLabel}>Country</Text><TextInput accessibilityLabel="Country" value={addressDraft.country} onChangeText={(value) => setAddressDraft((current) => ({ ...current, country: value }))} placeholder="Enter your country" placeholderTextColor={palette.muted} style={styles.addressInput} /></View>
             {addressError ? <Text accessibilityRole="alert" style={styles.error}>{addressError}</Text> : null}
             <Pressable accessibilityRole="button" disabled={!user || addressBusy} onPress={() => void saveAddress()} style={[styles.primaryButton, (!user || addressBusy) && styles.sendButtonDisabled]}>
               {addressBusy ? <ActivityIndicator color={palette.white} /> : <Text style={styles.primaryButtonText}>{deliveryAddress ? 'Save address' : 'Add address'}</Text>}
@@ -900,7 +953,7 @@ export function ProfileView({
             {deliveryAddress ? <Pressable accessibilityRole="button" onPress={() => { setPage(null); onCheckout(); }} style={styles.secondaryButton}><Text style={styles.secondaryButtonText}>Continue to checkout</Text></Pressable> : null}
           </ScrollView> : null}
 
-          {page === 'support' ? <ScrollView contentContainerStyle={styles.supportContent} keyboardShouldPersistTaps="handled">
+          {page === 'support' ? <ScrollView contentContainerStyle={styles.supportContent} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
             <View style={styles.contactIntro}>
               <Text style={styles.contactHeading}>Contact Us</Text>
               <Text style={styles.contactIntroCopy}>Have questions or ready to start your journey? We're here to help. Reach out to our team and we'll get back to you as soon as possible.</Text>
@@ -1004,26 +1057,35 @@ export function ProfileView({
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#f7f5fc' },
+function createStyles() {
+  return StyleSheet.create({
+  screen: { flex: 1, backgroundColor: palette.paper },
   content: { width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 15, paddingTop: 15, paddingBottom: 22 },
   profileCard: { alignItems: 'center', paddingTop: 11, paddingBottom: 17 },
+  sectionHeading: { marginTop: 17, marginBottom: 7, color: palette.muted, fontSize: 9, fontWeight: '900', letterSpacing: 1.1 },
   avatarButton: { width: 100, height: 100, alignItems: 'center', justifyContent: 'center' },
-  avatar: { width: 94, height: 94, borderRadius: 47, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.green, shadowColor: palette.green, shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
+  avatar: { width: 94, height: 94, borderRadius: 47, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.actionGreen, shadowColor: palette.green, shadowOpacity: 0.2, shadowRadius: 8, shadowOffset: { width: 0, height: 4 }, elevation: 3 },
   avatarPhotoClip: { width: 94, height: 94, borderRadius: 47, overflow: 'hidden', backgroundColor: palette.white },
   avatarImage: { width: 94, height: 94, borderRadius: 47, backgroundColor: palette.white },
   avatarText: { color: palette.white, fontSize: 24, fontWeight: '900' },
-  cameraBadge: { position: 'absolute', right: 0, bottom: 0, width: 23, height: 23, borderRadius: 12, borderWidth: 2, borderColor: '#f7f5fc', alignItems: 'center', justifyContent: 'center', backgroundColor: palette.green },
+  cameraBadge: { position: 'absolute', right: 0, bottom: 0, width: 23, height: 23, borderRadius: 12, borderWidth: 2, borderColor: palette.paper, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.actionGreen },
   name: { marginTop: 8, color: palette.ink, fontSize: 17, fontWeight: '900' },
   email: { marginTop: 3, color: palette.muted, fontSize: 10 },
   inlineLoader: { marginTop: 5 },
   error: { marginVertical: 9, color: palette.red, fontSize: 11, lineHeight: 16 },
   guestActions: { flexDirection: 'row', gap: 9, marginTop: 12 },
-  primaryButton: { minHeight: 40, paddingHorizontal: 16, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.green },
+  primaryButton: { minHeight: 40, paddingHorizontal: 16, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.actionGreen },
   primaryButtonText: { color: palette.white, fontSize: 11, fontWeight: '900' },
   secondaryButton: { minHeight: 40, paddingHorizontal: 16, borderWidth: 1, borderColor: palette.green, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.white },
-  secondaryButtonText: { color: palette.green, fontSize: 11, fontWeight: '900' },
-  menuCard: { paddingHorizontal: 11, borderWidth: 1, borderColor: '#ebe7f1', borderRadius: 14, backgroundColor: palette.white },
+  secondaryButtonText: { color: palette.darkGreen, fontSize: 11, fontWeight: '900' },
+  menuCard: { paddingHorizontal: 11, borderWidth: 1, borderColor: palette.line, borderRadius: 14, backgroundColor: palette.white },
+  preferenceIntro: { marginBottom: 15, color: palette.muted, fontSize: 12, lineHeight: 18 },
+  themeOption: { minHeight: 68, marginBottom: 9, padding: 12, borderWidth: 1, borderColor: palette.line, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 11, backgroundColor: palette.white },
+  themeSwatches: { flexDirection: 'row', alignItems: 'center' },
+  themeSwatch: { width: 21, height: 21, marginRight: -5, borderWidth: 2, borderColor: palette.white, borderRadius: 11 },
+  themeOptionCopy: { flex: 1 },
+  themeOptionTitle: { color: palette.ink, fontSize: 12, fontWeight: '900' },
+  themeOptionSubtitle: { marginTop: 3, color: palette.muted, fontSize: 9 },
   row: { minHeight: 51, flexDirection: 'row', alignItems: 'center', gap: 10 },
   rowPressed: { opacity: 0.65 },
   rowIcon: { width: 27, height: 27, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
@@ -1032,70 +1094,70 @@ const styles = StyleSheet.create({
   rowSubtitle: { marginTop: 2, color: palette.muted, fontSize: 8 },
   unreadBadge: { minWidth: 20, height: 20, paddingHorizontal: 5, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.red },
   unreadBadgeText: { color: palette.white, fontSize: 9, fontWeight: '900' },
-  markAllReadButton: { alignSelf: 'flex-end', paddingVertical: 8, paddingHorizontal: 12, marginBottom: 8, borderRadius: 9, backgroundColor: '#e9f4ee' },
+  markAllReadButton: { alignSelf: 'flex-end', paddingVertical: 8, paddingHorizontal: 12, marginBottom: 8, borderRadius: 9, backgroundColor: palette.greenWash },
   markAllReadText: { color: palette.green, fontSize: 10, fontWeight: '900' },
-  notificationCard: { marginBottom: 10, padding: 13, borderWidth: 1, borderColor: '#ebe7f1', borderRadius: 12, backgroundColor: palette.white },
-  unreadNotificationCard: { borderColor: '#b7d9c5', backgroundColor: '#f3faf5' },
+  notificationCard: { marginBottom: 10, padding: 13, borderWidth: 1, borderColor: palette.line, borderRadius: 12, backgroundColor: palette.white },
+  unreadNotificationCard: { borderColor: palette.green, backgroundColor: palette.greenWash },
   notificationHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
   notificationTitle: { flex: 1, color: palette.ink, fontSize: 12, fontWeight: '900' },
   notificationDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: palette.green },
   notificationMessage: { marginTop: 7, color: palette.ink, fontSize: 11, lineHeight: 17 },
   notificationTime: { marginTop: 8, color: palette.muted, fontSize: 9 },
-  signOut: { minHeight: 42, marginTop: 13, borderWidth: 1, borderColor: '#f0dce4', borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: palette.white },
+  signOut: { minHeight: 42, marginTop: 13, borderWidth: 1, borderColor: palette.line, borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: palette.white },
   signOutText: { color: palette.red, fontSize: 10, fontWeight: '900' },
-  version: { marginTop: 15, color: '#9b94a6', fontSize: 8, textAlign: 'center' },
-  modalPage: { flex: 1, backgroundColor: '#f8f6fc' },
-  cropPage: { flex: 1, backgroundColor: '#f8f6fc' },
+  version: { marginTop: 15, color: palette.muted, fontSize: 8, textAlign: 'center' },
+  modalPage: { flex: 1, backgroundColor: palette.paper },
+  cropPage: { flex: 1, backgroundColor: palette.paper },
   cropContent: { width: '100%', maxWidth: 440, paddingHorizontal: 20, paddingTop: 20, paddingBottom: 36, alignSelf: 'center', alignItems: 'center' },
   cropInstructions: { maxWidth: 330, marginBottom: 18, color: palette.muted, fontSize: 13, lineHeight: 20, textAlign: 'center' },
-  cropFrame: { overflow: 'hidden', alignSelf: 'center', backgroundColor: '#e9e5ef' },
+  cropFrame: { overflow: 'hidden', alignSelf: 'center', backgroundColor: palette.line },
   cropPreviewImage: { position: 'absolute' },
   cropCircleGuide: { position: 'absolute', left: 2, top: 2, borderWidth: 2, borderColor: palette.white },
   cropControlTitle: { marginTop: 20, marginBottom: 8, color: palette.ink, fontSize: 12, fontWeight: '900' },
   cropZoomControls: { flexDirection: 'row', alignItems: 'center', gap: 20 },
   cropZoomValue: { minWidth: 48, color: palette.ink, fontSize: 12, fontWeight: '800', textAlign: 'center' },
-  cropControlButton: { width: 42, height: 42, borderWidth: 1, borderColor: '#e7e1ee', borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.white },
+  cropControlButton: { width: 42, height: 42, borderWidth: 1, borderColor: palette.line, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.white },
   cropMoveControls: { width: 142, flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 4 },
   cropMoveSpacer: { width: 42, height: 42 },
   cropActions: { width: '100%', marginTop: 22, flexDirection: 'row', justifyContent: 'center', gap: 10 },
-  modalHeader: { minHeight: 58, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0, paddingHorizontal: 15, borderBottomWidth: 1, borderBottomColor: '#ebe7f1', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: palette.white },
+  modalHeader: { minHeight: 58, paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : 0, paddingHorizontal: 15, borderBottomWidth: 1, borderBottomColor: palette.line, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: palette.white },
   modalBack: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
   modalTitle: { flex: 1, marginHorizontal: 10, color: palette.ink, fontSize: 15, fontWeight: '900' },
   headerSpacer: { width: 34 },
   modalContent: { width: '100%', maxWidth: 560, padding: 16, paddingBottom: 36, alignSelf: 'center' },
   largeLoader: { marginVertical: 24 },
   emptyText: { padding: 20, color: palette.muted, fontSize: 12, lineHeight: 19, textAlign: 'center' },
-  orderCard: { marginBottom: 10, padding: 13, borderWidth: 1, borderColor: '#ebe7f1', borderRadius: 12, backgroundColor: palette.white },
+  orderCard: { marginBottom: 10, padding: 13, borderWidth: 1, borderColor: palette.line, borderRadius: 12, backgroundColor: palette.white },
   orderHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   orderNumber: { color: palette.ink, fontSize: 11, fontWeight: '900' },
   orderStatus: { color: palette.green, fontSize: 9, fontWeight: '800', textTransform: 'capitalize' },
   orderItem: { marginTop: 5, color: palette.muted, fontSize: 10 },
-  conversationCard: { minHeight: 62, marginBottom: 8, padding: 11, borderWidth: 1, borderColor: '#ebe7f1', borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: palette.white },
+  conversationCard: { minHeight: 62, marginBottom: 8, padding: 11, borderWidth: 1, borderColor: palette.line, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: palette.white },
   expiredConversationCard: { opacity: 0.65 },
-  conversationIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: '#eaf4ef' },
+  conversationIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.greenWash },
   conversationCopy: { flex: 1 },
   conversationPreview: { marginTop: 4, color: palette.ink, fontSize: 10 },
-  newMessageButton: { minHeight: 42, marginBottom: 12, paddingHorizontal: 15, borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: palette.green },
-  newConversationCard: { marginTop: 10, padding: 20, alignItems: 'center', borderWidth: 1, borderColor: '#ebe7f1', borderRadius: 14, backgroundColor: palette.white },
+  newMessageButton: { minHeight: 42, marginBottom: 12, paddingHorizontal: 15, borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: palette.actionGreen },
+  newConversationCard: { marginTop: 10, padding: 20, alignItems: 'center', borderWidth: 1, borderColor: palette.line, borderRadius: 14, backgroundColor: palette.white },
   newConversationForm: { width: '100%', gap: 9 },
   newMessageInput: { minHeight: 86, textAlignVertical: 'top' },
   newMessageActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 9 },
   chatPage: { flex: 1 },
   chatMessages: { flexGrow: 1, padding: 14, gap: 10 },
   messageBubble: { maxWidth: '84%', padding: 11, borderRadius: 13 },
-  ownMessage: { alignSelf: 'flex-end', backgroundColor: palette.green },
-  replyMessage: { alignSelf: 'flex-start', backgroundColor: palette.white, borderWidth: 1, borderColor: '#ebe7f1' },
+  ownMessage: { alignSelf: 'flex-end', backgroundColor: palette.actionGreen },
+  replyMessage: { alignSelf: 'flex-start', backgroundColor: palette.white, borderWidth: 1, borderColor: palette.line },
   messageSender: { marginBottom: 4, color: palette.green, fontSize: 9, fontWeight: '900' },
   messageText: { color: palette.ink, fontSize: 12, lineHeight: 18 },
   messageTime: { marginTop: 5, color: palette.muted, fontSize: 8 },
   ownMessageText: { color: palette.white },
-  replyBar: { padding: 11, borderTopWidth: 1, borderTopColor: '#ebe7f1', flexDirection: 'row', alignItems: 'flex-end', gap: 8, backgroundColor: palette.white },
+  replyBar: { padding: 11, borderTopWidth: 1, borderTopColor: palette.line, flexDirection: 'row', alignItems: 'flex-end', gap: 8, backgroundColor: palette.white },
   roomParticipant: { alignSelf: 'center', maxWidth: '92%', marginBottom: 4, color: palette.muted, fontSize: 10, lineHeight: 15, textAlign: 'center' },
-  replyInput: { flex: 1, maxHeight: 100, minHeight: 42, paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderColor: '#ebe7f1', borderRadius: 12, color: palette.ink, fontSize: 12 },
-  sendButton: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.green },
+  replyInput: { flex: 1, maxHeight: 100, minHeight: 42, paddingHorizontal: 12, paddingVertical: 10, borderWidth: 1, borderColor: palette.line, borderRadius: 12, color: palette.ink, backgroundColor: palette.white, fontSize: 12 },
+  sendButton: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.actionGreen },
   sendButtonDisabled: { opacity: 0.5 },
   aboutContent: { width: '100%', maxWidth: 520, padding: 22, paddingBottom: 40, alignSelf: 'center', alignItems: 'center' },
-  aboutMark: { width: 64, height: 64, marginTop: 12, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.green },
+  aboutMark: { width: 64, height: 64, marginTop: 12, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.actionGreen },
   aboutLogo: { width: 82, height: 82, marginTop: 5, borderRadius: 41, backgroundColor: palette.white },
   aboutEyebrow: { marginTop: 16, color: palette.green, fontSize: 10, fontWeight: '900', letterSpacing: 2 },
   aboutHeading: { marginTop: 8, color: palette.ink, fontSize: 22, fontWeight: '900', lineHeight: 29, textAlign: 'center' },
@@ -1109,18 +1171,22 @@ const styles = StyleSheet.create({
   addressField: { width: '100%', gap: 5 },
   addressLabel: { color: palette.ink, fontSize: 11, fontWeight: '800' },
   optionalLabel: { color: palette.muted, fontWeight: '400' },
-  addressInput: { width: '100%', minWidth: 0, minHeight: 46, paddingHorizontal: 12, paddingVertical: 11, borderWidth: 1, borderColor: '#d9d3e3', borderRadius: 10, color: palette.ink, backgroundColor: palette.white, fontSize: 14 },
+  addressInput: { width: '100%', minWidth: 0, minHeight: 46, paddingHorizontal: 12, paddingVertical: 11, borderWidth: 1, borderColor: palette.line, borderRadius: 10, color: palette.ink, backgroundColor: palette.white, fontSize: 14 },
   supportContent: { width: '100%', maxWidth: 520, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 38, alignSelf: 'center', gap: 13 },
   contactIntro: { alignItems: 'center', paddingHorizontal: 2, paddingBottom: 8 },
   contactHeading: { color: palette.ink, fontSize: 22, fontWeight: '900' },
   contactIntroCopy: { marginTop: 12, color: palette.muted, fontSize: 14, lineHeight: 22, textAlign: 'center' },
   contactDetail: { minHeight: 61, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 14 },
-  contactIcon: { width: 50, height: 50, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: '#e0f6eb' },
+  contactIcon: { width: 50, height: 50, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.greenWash },
   contactValue: { marginTop: 4, color: palette.muted, fontSize: 13, lineHeight: 19 },
-  contactForm: { width: '100%', minWidth: 0, marginTop: 8, padding: 14, borderWidth: 1, borderColor: '#ebe7f1', borderRadius: 14, gap: 9, backgroundColor: palette.white },
+  contactForm: { width: '100%', minWidth: 0, marginTop: 8, padding: 14, borderWidth: 1, borderColor: palette.line, borderRadius: 14, gap: 9, backgroundColor: palette.white },
   contactFormTitle: { marginBottom: 2, color: palette.ink, fontSize: 14, fontWeight: '900' },
   contactMessage: { minHeight: 110, textAlignVertical: 'top' },
   successNotice: { color: palette.green, fontSize: 11, lineHeight: 16 },
   dismissButton: { minHeight: 40, marginTop: 5, paddingHorizontal: 15, alignItems: 'center', justifyContent: 'center' },
   dismissText: { color: palette.green, fontSize: 11, fontWeight: '900' },
-});
+  });
+}
+
+let styles = createStyles();
+registerShopThemeStyles(() => { styles = createStyles(); });

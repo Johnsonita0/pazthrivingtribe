@@ -2,7 +2,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { categoryMatches, formatPrice, Product, productAvailability, productImageUrl } from './api';
-import { palette, Stars } from './ShopComponents';
+import { getTapPoint, palette, registerShopThemeStyles, Stars, TapPoint } from './ShopComponents';
 import { PromoBoard } from './PromoBoard';
 
 type Props = {
@@ -18,7 +18,7 @@ type Props = {
   onBack: () => void;
   onRefresh: () => void;
   onOpen: (product: Product) => void;
-  onAddToCart: (product: Product) => void;
+  onAddToCart: (product: Product, point: TapPoint) => void;
 };
 
 function isBook(product: Product) {
@@ -77,10 +77,12 @@ export function BooksListingView({
   });
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { backgroundColor: palette.paper }]}>
       <ScrollView
         contentContainerStyle={styles.pageContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
         refreshControl={<RefreshControl refreshing={loading} onRefresh={onRefresh} tintColor={palette.green} />}
       >
         <View style={styles.header}>
@@ -105,7 +107,7 @@ export function BooksListingView({
             value={search}
             onChangeText={setSearch}
             placeholder={`Search ${title.toLowerCase()}...`}
-            placeholderTextColor="#8b8794"
+            placeholderTextColor={palette.muted}
             style={styles.searchInput}
             returnKeyType="search"
           />
@@ -202,7 +204,7 @@ export function BooksListingView({
                   accessibilityRole="button"
                   accessibilityLabel={canAdd ? `Add ${product.title} to cart` : availability.message || 'Book unavailable'}
                   disabled={!canAdd}
-                  onPress={() => onAddToCart(product)}
+                  onPress={(event) => onAddToCart(product, getTapPoint(event))}
                   style={({ pressed }) => [styles.addButton, !canAdd && styles.addButtonDisabled, pressed && canAdd && styles.addButtonPressed]}
                 >
                   <Text numberOfLines={1} style={[styles.addButtonText, !canAdd && styles.addButtonTextDisabled]}>{canAdd ? 'Add to Cart' : 'Unavailable'}</Text>
@@ -233,25 +235,26 @@ export function BooksListingView({
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#f8f7fb' },
+function createStyles() {
+  return StyleSheet.create({
+  screen: { flex: 1, backgroundColor: palette.paper },
   header: { height: 42, marginHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 8 },
   backButton: { width: 24, height: 34, alignItems: 'center', justifyContent: 'center' },
   title: { flex: 1, color: palette.ink, fontSize: 16, fontWeight: '900' },
   searchAction: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
-  searchBox: { height: 36, marginHorizontal: 14, marginTop: 1, paddingHorizontal: 11, borderWidth: 1, borderColor: '#eceaf1', borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: palette.white },
+  searchBox: { height: 36, marginHorizontal: 14, marginTop: 1, paddingHorizontal: 11, borderWidth: 1, borderColor: palette.line, borderRadius: 12, flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: palette.white },
   searchInput: { flex: 1, paddingVertical: 6, color: palette.ink, fontSize: 11 },
   categoryScroll: { height: 45, flexGrow: 0, flexShrink: 0 },
   categoryRail: { height: 45, flexGrow: 0, paddingHorizontal: 14, alignItems: 'center', gap: 7 },
-  categoryChip: { minHeight: 26, paddingHorizontal: 13, borderWidth: 1, borderColor: '#e9e5ef', borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.white },
-  categoryChipSelected: { borderColor: palette.green, backgroundColor: palette.green },
+  categoryChip: { minHeight: 26, paddingHorizontal: 13, borderWidth: 1, borderColor: palette.line, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.white },
+  categoryChipSelected: { borderColor: palette.green, backgroundColor: palette.actionGreen },
   categoryChipText: { color: palette.ink, fontSize: 9, fontWeight: '700' },
   categoryChipTextSelected: { color: palette.white, fontWeight: '900' },
   pageContent: { paddingBottom: 18 },
-  productRow: { minHeight: 79, marginHorizontal: 13, marginBottom: 8, padding: 7, borderWidth: 1, borderColor: '#efedf3', borderRadius: 11, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: palette.white },
+  productRow: { minHeight: 79, marginHorizontal: 13, marginBottom: 8, padding: 7, borderWidth: 1, borderColor: palette.line, borderRadius: 11, flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: palette.white },
   coverButton: { width: 43, height: 57, overflow: 'hidden', borderRadius: 5, backgroundColor: palette.greenWash },
   coverImage: { width: '100%', height: '100%' },
-  coverFallback: { flex: 1, padding: 4, alignItems: 'center', justifyContent: 'center', gap: 4, backgroundColor: palette.green },
+  coverFallback: { flex: 1, padding: 4, alignItems: 'center', justifyContent: 'center', gap: 4, backgroundColor: palette.actionGreen },
   coverFallbackTitle: { color: palette.white, fontSize: 6, lineHeight: 8, fontWeight: '800', textAlign: 'center' },
   productCopy: { flex: 1, minWidth: 0, justifyContent: 'center' },
   productCategory: { color: palette.muted, fontSize: 8, fontWeight: '700' },
@@ -261,8 +264,8 @@ const styles = StyleSheet.create({
   ratingText: { color: palette.muted, fontSize: 8 },
   productActions: { width: 66, height: 61, alignItems: 'flex-end', justifyContent: 'space-between' },
   favoriteButton: { width: 25, height: 24, alignItems: 'center', justifyContent: 'center' },
-  addButton: { minWidth: 62, minHeight: 22, paddingHorizontal: 6, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.green },
-  addButtonDisabled: { backgroundColor: '#ece9f0' },
+  addButton: { minWidth: 62, minHeight: 22, paddingHorizontal: 6, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.actionGreen },
+  addButtonDisabled: { backgroundColor: palette.line },
   addButtonPressed: { opacity: 0.75 },
   addButtonText: { color: palette.white, fontSize: 7, fontWeight: '900' },
   addButtonTextDisabled: { color: palette.muted },
@@ -270,6 +273,10 @@ const styles = StyleSheet.create({
   emptyState: { minHeight: 180, paddingHorizontal: 22, alignItems: 'center', justifyContent: 'center', gap: 8 },
   emptyTitle: { color: palette.ink, fontSize: 15, fontWeight: '900', textAlign: 'center' },
   emptyCopy: { color: palette.muted, fontSize: 10, lineHeight: 15, textAlign: 'center' },
-  retryButton: { minHeight: 31, marginTop: 4, paddingHorizontal: 16, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.green },
+  retryButton: { minHeight: 31, marginTop: 4, paddingHorizontal: 16, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.actionGreen },
   retryText: { color: palette.white, fontSize: 9, fontWeight: '900' },
-});
+  });
+}
+
+let styles = createStyles();
+registerShopThemeStyles(() => { styles = createStyles(); });

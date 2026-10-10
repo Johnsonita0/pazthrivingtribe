@@ -2,7 +2,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { formatPrice, Product, productAvailability, productImageUrl } from './api';
-import { palette, Stars } from './ShopComponents';
+import { getTapPoint, palette, registerShopThemeStyles, Stars, TapPoint } from './ShopComponents';
 import { PromoBoard } from './PromoBoard';
 
 type Props = {
@@ -21,15 +21,15 @@ type Props = {
   onCategory: (category: string) => void;
   onMoreCategories: () => void;
   onOpen: (product: Product) => void;
-  onAddToCart: (product: Product) => void;
+  onAddToCart: (product: Product, point: TapPoint) => void;
 };
 
 const quickCategories = [
-  { name: 'Ebooks', filter: 'Ebooks', icon: 'book-open', color: '#692ad2', wash: '#efe7ff' },
-  { name: 'Journals', filter: 'Journals', icon: 'book', color: '#a342c9', wash: '#f7e9ff' },
-  { name: 'Digital Products', filter: 'Digital Products', icon: 'camera', color: '#2679c9', wash: '#e8f2ff' },
-  { name: 'Groceries', filter: 'Groceries', icon: 'shopping-basket', color: '#e87916', wash: '#fff1e2' },
-  { name: 'Gadgets', filter: 'Gadgets', icon: 'camera', color: '#2679c9', wash: '#e8f2ff' },
+  { name: 'Ebooks', filter: 'Ebooks', icon: 'book-open' },
+  { name: 'Journals', filter: 'Journals', icon: 'book' },
+  { name: 'Digital Products', filter: 'Digital Products', icon: 'camera' },
+  { name: 'Groceries', filter: 'Groceries', icon: 'shopping-basket' },
+  { name: 'Gadgets', filter: 'Gadgets', icon: 'camera' },
 ];
 
 function isBook(product: Product) {
@@ -45,7 +45,7 @@ function HomeProductCard({
   product: Product;
   storageBaseUrl: string;
   onOpen: () => void;
-  onAdd: () => void;
+  onAdd: (point: TapPoint) => void;
 }) {
   const cover = productImageUrl(product.cover, storageBaseUrl);
   const availability = productAvailability(product);
@@ -78,7 +78,7 @@ function HomeProductCard({
           accessibilityRole="button"
           accessibilityLabel={canAdd ? `Add ${product.title} to cart` : availability.message || 'Product unavailable'}
           disabled={!canAdd}
-          onPress={onAdd}
+          onPress={(event) => onAdd(getTapPoint(event))}
           style={({ pressed }) => [styles.addButton, !canAdd && styles.addButtonDisabled, pressed && canAdd && styles.pressed]}
         >
           <Text style={[styles.addButtonText, !canAdd && styles.addButtonTextDisabled]}>{canAdd ? 'Add to Cart' : 'Unavailable'}</Text>
@@ -120,9 +120,51 @@ export function HomeView({
   }, [products, search]);
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { backgroundColor: palette.paper }]}>
+      <View style={styles.stickyHeader}>
+        <View style={styles.greetingRow}>
+          <View style={styles.greetingCopy}>
+            <Text style={styles.greeting}>Hello, {signedIn ? accountName || 'there' : 'Guest'}</Text>
+            <Text style={styles.welcomeCopy}>
+              {signedIn ? 'Good to see you again!' : 'Browsing as a guest? '}
+              {!signedIn ? <Text accessibilityRole="link" onPress={onCreateAccount} style={styles.createAccountLink}>Sign in</Text> : null}
+            </Text>
+          </View>
+          <Pressable accessibilityRole="button" accessibilityLabel={notificationCount ? `Open notifications, ${notificationCount} unread items` : 'Open notifications'} onPress={onNotifications} style={styles.notificationButton}>
+            <FontAwesome5 name="bell" size={17} color={palette.darkGreen} />
+            {notificationCount > 0 ? <View style={styles.notificationBadge}><Text style={styles.notificationBadgeText}>{notificationCount > 99 ? '99+' : notificationCount}</Text></View> : null}
+          </Pressable>
+          <Pressable accessibilityRole="button" accessibilityLabel="Open profile" onPress={onProfile} style={styles.profileButton}>
+            {signedIn && profileImageUrl && !profileImageError
+              ? <View style={styles.profilePhotoClip}><Image source={{ uri: profileImageUrl }} style={styles.profileImage} resizeMode="cover" onError={() => setProfileImageError(true)} /></View>
+              : signedIn
+                ? <View style={styles.profileInitial}><Text style={styles.profileInitialText}>{accountInitial}</Text></View>
+                : <FontAwesome5 name="user-circle" size={22} color={palette.darkGreen} />}
+          </Pressable>
+        </View>
+        <View style={styles.searchBox}>
+          <FontAwesome5 name="search" size={13} color={palette.green} />
+          <TextInput
+            ref={searchRef}
+            accessibilityLabel="Search books and products"
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search for products, ebooks, etc..."
+            placeholderTextColor={palette.muted}
+            style={styles.searchInput}
+            returnKeyType="search"
+          />
+          {search ? (
+            <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setSearch('')}>
+              <FontAwesome5 name="times" size={14} color={palette.muted} />
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
       <FlatList
         data={loading || error ? [] : recommended}
+        automaticallyAdjustKeyboardInsets
+        keyboardShouldPersistTaps="handled"
         keyExtractor={(product) => product.id}
         numColumns={2}
         columnWrapperStyle={styles.productRow}
@@ -134,49 +176,11 @@ export function HomeView({
             product={item}
             storageBaseUrl={storageBaseUrl}
             onOpen={() => onOpen(item)}
-            onAdd={() => onAddToCart(item)}
+            onAdd={(point) => onAddToCart(item, point)}
           />
         )}
         ListHeaderComponent={(
           <>
-            <View style={styles.greetingRow}>
-              <View style={styles.greetingCopy}>
-                <Text style={styles.greeting}>Hello, {signedIn ? accountName || 'there' : 'Guest'}</Text>
-                <Text style={styles.welcomeCopy}>
-                  {signedIn ? 'Good to see you again!' : 'Browsing as a guest? '}
-                  {!signedIn ? <Text accessibilityRole="link" onPress={onCreateAccount} style={styles.createAccountLink}>Sign in</Text> : null}
-                </Text>
-              </View>
-              <Pressable accessibilityRole="button" accessibilityLabel={notificationCount ? `Open notifications, ${notificationCount} unread items` : 'Open notifications'} onPress={onNotifications} style={styles.notificationButton}>
-                <FontAwesome5 name="bell" size={17} color={palette.darkGreen} />
-                {notificationCount > 0 ? <View style={styles.notificationBadge}><Text style={styles.notificationBadgeText}>{notificationCount > 99 ? '99+' : notificationCount}</Text></View> : null}
-              </Pressable>
-              <Pressable accessibilityRole="button" accessibilityLabel="Open profile" onPress={onProfile} style={styles.profileButton}>
-                {signedIn && profileImageUrl && !profileImageError
-                  ? <View style={styles.profilePhotoClip}><Image source={{ uri: profileImageUrl }} style={styles.profileImage} resizeMode="cover" onError={() => setProfileImageError(true)} /></View>
-                  : signedIn
-                    ? <View style={styles.profileInitial}><Text style={styles.profileInitialText}>{accountInitial}</Text></View>
-                    : <FontAwesome5 name="user-circle" size={22} color={palette.darkGreen} />}
-              </Pressable>
-            </View>
-            <View style={styles.searchBox}>
-              <FontAwesome5 name="search" size={13} color={palette.green} />
-              <TextInput
-                ref={searchRef}
-                accessibilityLabel="Search books and products"
-                value={search}
-                onChangeText={setSearch}
-                placeholder="Search for products, ebooks, etc..."
-                placeholderTextColor="#8b8794"
-                style={styles.searchInput}
-                returnKeyType="search"
-              />
-              {search ? (
-                <Pressable accessibilityRole="button" accessibilityLabel="Clear search" onPress={() => setSearch('')}>
-                  <FontAwesome5 name="times" size={14} color={palette.muted} />
-                </Pressable>
-              ) : null}
-            </View>
             <PromoBoard
               products={products}
               storageBaseUrl={storageBaseUrl}
@@ -193,8 +197,8 @@ export function HomeView({
                   onPress={() => onCategory(category.filter)}
                   style={({ pressed }) => [styles.categoryButton, pressed && styles.pressed]}
                 >
-                  <View style={[styles.categoryIcon, { backgroundColor: category.wash }]}>
-                    <FontAwesome5 name={category.icon} size={15} color={category.color} solid />
+                  <View style={[styles.categoryIcon, { backgroundColor: category.name === 'Groceries' ? palette.orangeWash : category.name === 'Digital Products' || category.name === 'Gadgets' ? palette.blueWash : palette.greenWash }]}>
+                    <FontAwesome5 name={category.icon} size={15} color={category.name === 'Groceries' ? palette.orange : category.name === 'Digital Products' || category.name === 'Gadgets' ? palette.blue : palette.green} solid />
                   </View>
                   <Text numberOfLines={1} style={styles.categoryLabel}>{category.name}</Text>
                 </Pressable>
@@ -236,8 +240,10 @@ export function HomeView({
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#f8f7fb' },
+function createStyles() {
+  return StyleSheet.create({
+  screen: { flex: 1, backgroundColor: palette.paper },
+  stickyHeader: { zIndex: 2, paddingTop: 4, paddingBottom: 8, backgroundColor: palette.paper },
   listContent: { paddingBottom: 12 },
   greetingRow: { minHeight: 49, marginHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   greetingCopy: { flex: 1 },
@@ -248,36 +254,36 @@ const styles = StyleSheet.create({
   profileButton: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   profilePhotoClip: { width: 30, height: 30, borderRadius: 15, overflow: 'hidden' },
   profileImage: { width: 30, height: 30, borderRadius: 15 },
-  profileInitial: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.green },
+  profileInitial: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.actionGreen },
   profileInitialText: { color: palette.white, fontSize: 13, fontWeight: '900' },
   notificationBadge: { position: 'absolute', top: 0, right: 0, minWidth: 15, height: 15, paddingHorizontal: 3, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.red },
   notificationBadgeText: { color: palette.white, fontSize: 8, fontWeight: '900' },
-  searchBox: { height: 34, marginHorizontal: 14, paddingHorizontal: 11, borderWidth: 1, borderColor: '#eceaf1', borderRadius: 11, flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: palette.white },
+  searchBox: { height: 34, marginHorizontal: 14, paddingHorizontal: 11, borderWidth: 1, borderColor: palette.line, borderRadius: 11, flexDirection: 'row', alignItems: 'center', gap: 9, backgroundColor: palette.white },
   searchInput: { flex: 1, paddingVertical: 5, color: palette.ink, fontSize: 10 },
   categoryGrid: { paddingHorizontal: 14, paddingTop: 4, paddingBottom: 3, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: 4 },
   categoryButton: { width: '31.5%', minHeight: 53, alignItems: 'center', justifyContent: 'flex-start', gap: 2 },
   categoryIcon: { width: 32, height: 32, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
-  moreIcon: { backgroundColor: '#f0ecf7' },
+  moreIcon: { backgroundColor: palette.greenWash },
   categoryLabel: { maxWidth: '100%', color: palette.muted, fontSize: 7, fontWeight: '700' },
   sectionHeader: { minHeight: 25, marginTop: 0, marginHorizontal: 15, marginBottom: 3, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitle: { color: palette.ink, fontSize: 10, fontWeight: '900' },
   seeAll: { color: palette.green, fontSize: 9, fontWeight: '800' },
   productRow: { paddingHorizontal: 13, justifyContent: 'space-between', gap: 8, marginBottom: 8 },
-  productCard: { width: '48.5%', overflow: 'hidden', borderWidth: 1, borderColor: '#efedf3', borderRadius: 10, backgroundColor: palette.white },
-  productCoverButton: { height: 95, overflow: 'hidden', backgroundColor: '#f1eef6' },
+  productCard: { width: '48.5%', overflow: 'hidden', borderWidth: 1, borderColor: palette.line, borderRadius: 10, backgroundColor: palette.white },
+  productCoverButton: { height: 95, overflow: 'hidden', backgroundColor: palette.greenWash },
   productCover: { width: '100%', height: '100%' },
-  productCoverFallback: { flex: 1, padding: 9, justifyContent: 'space-between', backgroundColor: palette.green },
-  coverCategory: { color: '#e3d8fc', fontSize: 7, fontWeight: '900', textTransform: 'uppercase' },
+  productCoverFallback: { flex: 1, padding: 9, justifyContent: 'space-between', backgroundColor: palette.actionGreen },
+  coverCategory: { color: palette.white, fontSize: 7, fontWeight: '900', textTransform: 'uppercase' },
   coverTitle: { color: palette.white, fontSize: 12, lineHeight: 15, fontWeight: '900' },
-  coverBrand: { color: '#e3d8fc', fontSize: 6, fontWeight: '800', letterSpacing: 0.4 },
+  coverBrand: { color: palette.white, fontSize: 6, fontWeight: '800', letterSpacing: 0.4 },
   productDetails: { padding: 7 },
   productCategory: { color: palette.muted, fontSize: 7, fontWeight: '700' },
   productTitle: { minHeight: 26, marginTop: 2, color: palette.ink, fontSize: 9, lineHeight: 12, fontWeight: '800' },
   productPrice: { marginTop: 2, color: palette.ink, fontSize: 9, fontWeight: '900' },
   ratingRow: { marginTop: 2, flexDirection: 'row', alignItems: 'center', gap: 3 },
   ratingText: { color: palette.muted, fontSize: 7 },
-  addButton: { minHeight: 23, marginTop: 5, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.green },
-  addButtonDisabled: { backgroundColor: '#ebe8ef' },
+  addButton: { minHeight: 23, marginTop: 5, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.actionGreen },
+  addButtonDisabled: { backgroundColor: palette.line },
   addButtonText: { color: palette.white, fontSize: 8, fontWeight: '900' },
   addButtonTextDisabled: { color: palette.muted },
   pressed: { opacity: 0.76 },
@@ -285,4 +291,8 @@ const styles = StyleSheet.create({
   emptyTitle: { color: palette.ink, fontSize: 12, fontWeight: '900' },
   emptyCopy: { color: palette.muted, fontSize: 9, lineHeight: 14, textAlign: 'center' },
   retry: { padding: 8, color: palette.green, fontSize: 10, fontWeight: '900' },
-});
+  });
+}
+
+let styles = createStyles();
+registerShopThemeStyles(() => { styles = createStyles(); });

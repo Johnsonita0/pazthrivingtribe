@@ -14,6 +14,12 @@ module.exports = ({ config }) => ({
   },
   plugins: [
     ...(config.plugins || []),
+    ['expo-audio', {
+      microphonePermission: false,
+      recordAudioAndroid: false,
+      enableBackgroundPlayback: false,
+      enableBackgroundRecording: false,
+    }],
     ['expo-image-picker', { photosPermission: 'PAZ uses your selected photo as your customer profile picture.' }],
     ['expo-build-properties', {
       android: {

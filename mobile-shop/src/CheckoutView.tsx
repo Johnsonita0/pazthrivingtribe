@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { CartLine, DeliveryAddress, formatPrice, productImageUrl } from './api';
-import { Button, palette } from './ShopComponents';
+import { Button, palette, registerShopThemeStyles } from './ShopComponents';
 
 export type CheckoutPaymentMethod = 'card' | 'bank_transfer';
 
@@ -91,7 +91,7 @@ export function CheckoutView({
   const deliveryReady = Boolean(customerName.trim() && customerEmail.trim());
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, { backgroundColor: palette.paper }]}>
       <View style={styles.header}>
         <Pressable accessibilityRole="button" accessibilityLabel="Back to shop" onPress={onBack} style={styles.backButton}>
           <FontAwesome5 name="arrow-left" size={17} color={palette.darkGreen} />
@@ -99,7 +99,7 @@ export function CheckoutView({
         <Text style={styles.headerTitle}>Checkout</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         {cart.length ? <View style={styles.card}>
           <View style={styles.sectionHeading}>
             <Text style={styles.sectionTitle}>Delivery details</Text>
@@ -233,8 +233,8 @@ export function CheckoutView({
             </View>
             <Text style={styles.taxNote}>Digital delivery by email · No shipping fees</Text>
           </> : <View style={styles.emptyState}>
-            <FontAwesome5 name="shopping-bag" size={23} color={palette.green} />
-            <Text style={styles.emptyTitle}>Your bag is empty</Text>
+            <FontAwesome5 name="shopping-cart" size={23} color={palette.green} />
+            <Text style={styles.emptyTitle}>Your cart is empty</Text>
             <Text style={styles.taxNote}>Browse available books and add one to continue.</Text>
           </View>}
         </View>
@@ -258,20 +258,21 @@ export function CheckoutView({
   );
 }
 
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#f7f5fc' },
+function createStyles() {
+  return StyleSheet.create({
+  screen: { flex: 1, backgroundColor: palette.paper },
   header: { height: 54, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: palette.white },
   backButton: { width: 32, height: 38, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { color: palette.ink, fontSize: 18, fontWeight: '900' },
   scrollContent: { width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 14, paddingTop: 10, paddingBottom: 12, gap: 10 },
-  card: { padding: 14, borderWidth: 1, borderColor: '#ebe7f1', borderRadius: 14, backgroundColor: palette.white, shadowColor: '#261342', shadowOpacity: 0.04, shadowRadius: 9, shadowOffset: { width: 0, height: 3 }, elevation: 1 },
+  card: { padding: 14, borderWidth: 1, borderColor: palette.line, borderRadius: 14, backgroundColor: palette.white, shadowColor: palette.ink, shadowOpacity: 0.04, shadowRadius: 9, shadowOffset: { width: 0, height: 3 }, elevation: 1 },
   sectionHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitle: { color: palette.ink, fontSize: 14, fontWeight: '900' },
   editText: { color: palette.green, fontSize: 11, fontWeight: '900' },
   deliverySummary: { marginTop: 10, flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
   deliveryIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: palette.greenWash },
   deliveryFields: { flex: 1, gap: 7 },
-  input: { minHeight: 38, paddingHorizontal: 10, borderWidth: 1, borderColor: palette.line, borderRadius: 8, color: palette.ink, backgroundColor: '#fff', fontSize: 11 },
+  input: { minHeight: 38, paddingHorizontal: 10, borderWidth: 1, borderColor: palette.line, borderRadius: 8, color: palette.ink, backgroundColor: palette.white, fontSize: 11 },
   deliveryCopy: { flex: 1, paddingTop: 2, gap: 3 },
   deliveryName: { color: palette.ink, fontSize: 11, fontWeight: '800' },
   deliveryEmail: { color: palette.muted, fontSize: 10 },
@@ -281,15 +282,15 @@ const styles = StyleSheet.create({
   validationHint: { marginTop: 5, color: palette.red, fontSize: 10 },
   paymentList: { marginTop: 8, gap: 6 },
   paymentOption: { minHeight: 48, paddingHorizontal: 10, paddingVertical: 7, borderWidth: 1, borderColor: palette.line, borderRadius: 9, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  paymentOptionDisabled: { backgroundColor: '#f8f7fa' },
-  radio: { width: 17, height: 17, borderWidth: 1.5, borderColor: '#a69bb9', borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  paymentOptionDisabled: { backgroundColor: palette.paper },
+  radio: { width: 17, height: 17, borderWidth: 1.5, borderColor: palette.muted, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   radioSelected: { borderColor: palette.green },
-  radioDisabled: { borderColor: '#d4cfda' },
-  radioDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: palette.green },
+  radioDisabled: { borderColor: palette.line },
+  radioDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: palette.actionGreen },
   paymentCopy: { flex: 1 },
   paymentTitle: { color: palette.ink, fontSize: 10, fontWeight: '800' },
   paymentDetail: { marginTop: 2, color: palette.muted, fontSize: 8 },
-  disabledText: { color: '#aaa4b1' },
+  disabledText: { color: palette.muted },
   secureNote: { marginTop: 9, flexDirection: 'row', alignItems: 'center', gap: 7 },
   secureText: { flex: 1, color: palette.muted, fontSize: 9 },
   itemCount: { marginTop: 4, color: palette.muted, fontSize: 9 },
@@ -314,4 +315,8 @@ const styles = StyleSheet.create({
   emptyState: { minHeight: 120, alignItems: 'center', justifyContent: 'center', gap: 8 },
   emptyTitle: { color: palette.ink, fontSize: 13, fontWeight: '900' },
   footer: { width: '100%', maxWidth: 560, alignSelf: 'center', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 10, borderTopWidth: 1, borderColor: palette.line, backgroundColor: palette.white, gap: 7 },
-});
+  });
+}
+
+let styles = createStyles();
+registerShopThemeStyles(() => { styles = createStyles(); });
