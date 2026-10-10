@@ -2320,14 +2320,14 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
       {shopAccountOpen ? (
         <div
           onClick={closeShopAccount}
-          style={{ position: 'fixed', top: 'var(--app-visual-viewport-offset-top, 0px)', left: 0, right: 0, height: 'var(--app-visual-viewport-height, 100dvh)', zIndex: 1200, display: isSmallScreen ? 'block' : 'grid', placeItems: 'center', overflowY: isSmallScreen ? 'auto' : 'hidden', boxSizing: 'border-box', padding: isSmallScreen ? 'max(10px, env(safe-area-inset-top)) 12px max(10px, env(safe-area-inset-bottom))' : '18px', background: 'rgba(15, 23, 42, .66)' }}
+          style={{ position: 'fixed', top: 'var(--app-visual-viewport-offset-top, 0px)', left: 0, right: 0, height: 'var(--app-visual-viewport-height, 100dvh)', zIndex: 20000, display: 'grid', placeItems: 'center', overflowY: 'auto', boxSizing: 'border-box', padding: isSmallScreen ? 'max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom))' : '18px', background: 'rgba(15, 23, 42, .66)' }}
         >
           <section
             role="dialog"
             aria-modal="true"
             aria-labelledby="shop-account-title"
             onClick={(event) => event.stopPropagation()}
-            style={{ width: 'min(430px, 100%)', maxHeight: isSmallScreen ? 'calc(var(--app-visual-viewport-height, 100dvh) - 20px)' : '90dvh', margin: isSmallScreen ? '0 auto' : undefined, overflowY: 'auto', overscrollBehavior: 'contain', padding: isSmallScreen ? '18px' : '24px', boxSizing: 'border-box', borderRadius: '16px', background: '#fff', color: '#1b1b1b', boxShadow: '0 24px 70px rgba(0,0,0,.35)' }}
+            style={{ width: 'min(430px, 100%)', maxHeight: 'calc(var(--app-visual-viewport-height, 100dvh) - 24px)', overflowY: 'auto', overscrollBehavior: 'contain', padding: isSmallScreen ? '18px' : '24px', boxSizing: 'border-box', borderRadius: '16px', background: '#fff', color: '#1b1b1b', boxShadow: '0 24px 70px rgba(0,0,0,.35)' }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '14px' }}>
               <div>
