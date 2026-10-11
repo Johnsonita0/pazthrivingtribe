@@ -660,7 +660,7 @@ export default function AdminDashboard(props) {
         action: "select",
         table: "vendor_profiles",
         columns:
-          "id,company_name,logo_url,contact_email,id_type,id_document_path,status,payout_account_name,payout_account_number,payout_bank_name,payout_currency,rejection_reason,created_at,approved_at",
+          "id,company_name,logo_url,contact_email,id_type,id_document_path,status,vendor_type,payout_account_name,payout_account_number,payout_bank_name,payout_currency,rejection_reason,created_at,approved_at",
       }),
     })
       .then(async (response) => {
@@ -1013,7 +1013,7 @@ export default function AdminDashboard(props) {
             action: "select",
             table: "store_products",
             match: { vendor_id: vendor.id },
-            columns: "id,vendor_id,title,description,price,currency,category,file_url,cover,status,name_verified,description_verified,cover_verified,attachment_verified,name_verified_at,published_at,created_at,updated_at",
+            columns: "id,vendor_id,title,description,price,currency,category,vendor_type,stock_count,stock_unit,expiry_date,brand,model,condition,warranty_period,file_url,cover,status,name_verified,description_verified,cover_verified,attachment_verified,name_verified_at,published_at,created_at,updated_at",
           }),
         }),
         fetch("/api/admin-update", {
@@ -1100,6 +1100,7 @@ export default function AdminDashboard(props) {
           company_name: vendorEditForm.company_name?.trim(),
           contact_email: vendorEditForm.contact_email?.trim(),
           id_type: vendorEditForm.id_type,
+          vendor_type: vendorEditForm.vendor_type || "books",
           payout_account_name: vendorEditForm.payout_account_name?.trim(),
           payout_account_number: vendorEditForm.payout_account_number?.trim(),
           payout_bank_name: vendorEditForm.payout_bank_name?.trim(),
@@ -2015,9 +2016,9 @@ export default function AdminDashboard(props) {
   };
 
   const openProductReview = async (product) => {
-    setProductReviewModal({ ...product, cover: resolveProductCover(product), filePreviewUrl: "", filePreviewLoading: Boolean(product.file_url) });
-    if (!product.file_url) {
-      setProductReviewModal((current) => current ? { ...current, filePreviewLoading: false, filePreviewError: "This product has no book attachment." } : current);
+    setProductReviewModal({ ...product, cover: resolveProductCover(product), filePreviewUrl: "", filePreviewLoading: Boolean(product.file_url && (product.vendor_type || "books") === "books") });
+    if (!product.file_url || (product.vendor_type || "books") !== "books") {
+      setProductReviewModal((current) => current ? { ...current, filePreviewLoading: false, filePreviewError: (product.vendor_type || "books") === "books" ? "This product has no book attachment." : "" } : current);
       return;
     }
     const token = session?.access_token || session?.accessToken || "";
@@ -5977,6 +5978,9 @@ export default function AdminDashboard(props) {
                             {selectedVendor.contact_email ||
                               "No email supplied"}
                           </p>
+                          <p style={{ margin: "5px 0 0", color: "#475569", fontSize: ".85rem" }}>
+                            Sells: <strong>{selectedVendor.vendor_type === "groceries" ? "Groceries" : selectedVendor.vendor_type === "gadgets" ? "Gadgets & electronics" : "Books & digital products"}</strong>
+                          </p>
                         </div>
                         <div
                           style={{
@@ -6433,6 +6437,36 @@ export default function AdminDashboard(props) {
                             fontWeight: 800,
                           }}
                         >
+                          Vendor type
+                          <select
+                            value={vendorEditForm.vendor_type || "books"}
+                            onChange={(event) =>
+                              setVendorEditForm((current) => ({
+                                ...current,
+                                vendor_type: event.target.value,
+                              }))
+                            }
+                            style={{
+                              padding: "9px 10px",
+                              border: "1px solid #cbd5e1",
+                              borderRadius: "8px",
+                              background: "#fff",
+                            }}
+                          >
+                            <option value="books">Books & digital products</option>
+                            <option value="groceries">Groceries</option>
+                            <option value="gadgets">Gadgets & electronics</option>
+                          </select>
+                        </label>
+                        <label
+                          style={{
+                            display: "grid",
+                            gap: "4px",
+                            color: "#334155",
+                            fontSize: ".8rem",
+                            fontWeight: 800,
+                          }}
+                        >
                           Contact email
                           <input
                             type="email"
@@ -6803,6 +6837,9 @@ export default function AdminDashboard(props) {
                               style={{ color: "#64748b", fontSize: ".84rem" }}
                             >
                               {vendor.contact_email} · {vendor.id_type}
+                            </div>
+                            <div style={{ color: "#475569", fontSize: ".82rem" }}>
+                              Sells: {vendor.vendor_type === "groceries" ? "Groceries" : vendor.vendor_type === "gadgets" ? "Gadgets & electronics" : "Books & digital products"}
                             </div>
                             <div
                               style={{ color: "#475569", fontSize: ".82rem" }}
@@ -7238,8 +7275,41 @@ export default function AdminDashboard(props) {
                                         </div>
                                         <div className="product-review-content">
                                           <label><strong>Approval status</strong><select value={productReviewModal.status || "in_review"} onChange={(event) => setProductReviewModal((current) => ({ ...current, status: event.target.value }))} style={{ display: "block", width: "100%", marginTop: "5px", padding: "10px", border: "1px solid #cbd5e1", borderRadius: "8px" }}><option value="in_review">In review</option><option value="approved">Approved</option><option value="rejected">Rejected</option><option value="published">Published</option></select></label>
-                                          <div className="product-verification-list">{[{ key: "name_verified", label: "Product name", icon: "N", content: <strong className="product-verification-value">{productReviewModal.title || "No product name supplied"}</strong> }, { key: "description_verified", label: "Description", icon: "D", content: <span className="product-verification-value">{productReviewModal.description || "No description supplied"}</span> }, { key: "amount_verified", label: "Amount", icon: "$", content: <strong className="product-verification-value">{productReviewModal.currency || "NGN"} {productReviewModal.price ?? 0}</strong> }, { key: "cover_verified", label: "Cover image", icon: "C", content: productReviewModal.cover ? <img className="product-verification-cover" src={productReviewModal.cover} alt={`${productReviewModal.title} cover`} /> : <span className="product-verification-value">No cover image supplied</span> }, { key: "attachment_verified", label: "Book preview", icon: "A", content: productReviewModal.filePreviewLoading ? <span className="product-verification-value">Loading book preview...</span> : productReviewModal.filePreviewUrl ? <a className="product-verification-value product-verification-link" href={productReviewModal.filePreviewUrl} target="_blank" rel="noreferrer">Preview book</a> : <span className="product-verification-value">{productReviewModal.filePreviewError || "Book preview unavailable"}</span> }].map((check) => { const verified = Boolean(productReviewModal[check.key]); return <div className={`product-verification-row ${verified ? "is-verified" : ""}`} key={check.key}><span className="product-verification-copy"><span className="product-verification-icon" aria-hidden="true">{check.icon}</span><span><strong>{check.label}</strong><span className="product-verification-preview">{check.content}</span></span></span><button className="product-verification-toggle" type="button" role="switch" aria-checked={verified} title={`${verified ? "Turn off" : "Turn on"} ${check.label.toLowerCase()} verification`} onClick={() => setProductReviewModal((current) => ({ ...current, [check.key]: !current[check.key] }))}><span className="product-verification-toggle-knob" aria-hidden="true" />{verified ? "On" : "Off"}</button></div>; })}</div>
-                                          <div className="product-review-actions">{(() => { const checks = ["name_verified", "description_verified", "cover_verified", "attachment_verified", "amount_verified"]; const allVerified = checks.every((key) => productReviewModal[key]); const reviewStatus = productReviewModal.status || "in_review"; return <><button className="product-review-save" type="button" onClick={() => updateStoreProductReviewStatus(productReviewModal, reviewStatus, Object.fromEntries(checks.map((key) => [key, Boolean(productReviewModal[key])] )))}><span aria-hidden="true">✓</span> Save review</button><button className="product-review-again" type="button" onClick={() => requestProductReviewAgain(productReviewModal)}><span aria-hidden="true">↻</span> Review again</button><button className="product-review-publish" type="button" disabled={!allVerified} onClick={() => updateStoreProductReviewStatus(productReviewModal, "published", Object.fromEntries(checks.map((key) => [key, true])))}><span aria-hidden="true">↗</span> Publish to shop</button></>; })()}</div>
+                                          {(() => {
+                                            const isBook = (productReviewModal.vendor_type || "books") === "books";
+                                            const checks = [
+                                              { key: "name_verified", label: "Product name", icon: "N", content: <strong className="product-verification-value">{productReviewModal.title || "No product name supplied"}</strong> },
+                                              { key: "description_verified", label: "Description", icon: "D", content: <span className="product-verification-value">{productReviewModal.description || "No description supplied"}</span> },
+                                              { key: "amount_verified", label: "Amount", icon: "$", content: <strong className="product-verification-value">{productReviewModal.currency || "NGN"} {productReviewModal.price ?? 0}</strong> },
+                                              { key: "cover_verified", label: "Cover image", icon: "C", content: productReviewModal.cover ? <img className="product-verification-cover" src={productReviewModal.cover} alt={`${productReviewModal.title} cover`} /> : <span className="product-verification-value">No cover image supplied</span> },
+                                              ...(isBook ? [{ key: "attachment_verified", label: "Book preview", icon: "A", content: productReviewModal.filePreviewLoading ? <span className="product-verification-value">Loading book preview...</span> : productReviewModal.filePreviewUrl ? <a className="product-verification-value product-verification-link" href={productReviewModal.filePreviewUrl} target="_blank" rel="noreferrer">Preview book</a> : <span className="product-verification-value">{productReviewModal.filePreviewError || "Book preview unavailable"}</span> }] : []),
+                                            ];
+                                            const requiredChecks = [...checks.map((check) => check.key)];
+                                            const allVerified = requiredChecks.every((key) => productReviewModal[key]);
+                                            const verificationPayload = (value) => Object.fromEntries(requiredChecks.map((key) => [key, value ? true : Boolean(productReviewModal[key])]));
+                                            return <>
+                                              <div className="product-verification-list">
+                                                {checks.map((check) => {
+                                                  const verified = Boolean(productReviewModal[check.key]);
+                                                  return <div className={`product-verification-row ${verified ? "is-verified" : ""}`} key={check.key}>
+                                                    <span className="product-verification-copy"><span className="product-verification-icon" aria-hidden="true">{check.icon}</span><span><strong>{check.label}</strong><span className="product-verification-preview">{check.content}</span></span></span>
+                                                    <button className="product-verification-toggle" type="button" role="switch" aria-checked={verified} title={`${verified ? "Turn off" : "Turn on"} ${check.label.toLowerCase()} verification`} onClick={() => setProductReviewModal((current) => ({ ...current, [check.key]: !current[check.key] }))}><span className="product-verification-toggle-knob" aria-hidden="true" />{verified ? "On" : "Off"}</button>
+                                                  </div>;
+                                                })}
+                                              </div>
+                                              {!isBook && <div className="product-verification-list">
+                                                <strong>Inventory details</strong>
+                                                {productReviewModal.vendor_type === "groceries"
+                                                  ? <span>{productReviewModal.stock_count ?? 0} {productReviewModal.stock_unit || "piece"}{productReviewModal.expiry_date ? ` · Expires ${productReviewModal.expiry_date}` : ""}</span>
+                                                  : <span>{[productReviewModal.brand, productReviewModal.model, productReviewModal.condition, productReviewModal.warranty_period ? `Warranty: ${productReviewModal.warranty_period}` : ""].filter(Boolean).join(" · ") || "No gadget details supplied"}</span>}
+                                              </div>}
+                                              <div className="product-review-actions">
+                                                <button className="product-review-save" type="button" onClick={() => updateStoreProductReviewStatus(productReviewModal, productReviewModal.status || "in_review", verificationPayload(false))}><span aria-hidden="true">✓</span> Save review</button>
+                                                <button className="product-review-again" type="button" onClick={() => requestProductReviewAgain(productReviewModal)}><span aria-hidden="true">↻</span> Review again</button>
+                                                <button className="product-review-publish" type="button" disabled={!allVerified} onClick={() => updateStoreProductReviewStatus(productReviewModal, "published", verificationPayload(true))}><span aria-hidden="true">↗</span> Publish to shop</button>
+                                              </div>
+                                            </>;
+                                          })()}
                                         </div>
                                       </div>
                                     </div>

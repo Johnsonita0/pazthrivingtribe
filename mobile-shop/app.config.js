@@ -23,9 +23,10 @@ module.exports = ({ config }) => ({
     ['expo-image-picker', { photosPermission: 'PAZ uses your selected photo as your customer profile picture.' }],
     ['expo-build-properties', {
       android: {
-        buildArchs: ['armeabi-v7a', 'arm64-v8a'],
+        buildArchs: ['arm64-v8a'],
         enableMinifyInReleaseBuilds: true,
         enableShrinkResourcesInReleaseBuilds: true,
+        useLegacyPackaging: true,
       },
     }],
   ],

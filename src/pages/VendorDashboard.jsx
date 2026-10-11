@@ -134,7 +134,18 @@ const clearCredentialLockout = (key) => {
   }
 };
 const productReviewColumns = "id,vendor_id,title,price,currency,status,name_verified,description_verified,cover_verified,attachment_verified,updated_at";
-const vendorProfileColumns = "id,company_name,logo_url,contact_email,id_type,id_document_path,status,payout_account_name,payout_account_number,payout_bank_name,payout_currency,rejection_reason,approved_at,approved_by,created_at,updated_at,phone,username,payout_accounts,selected_payout_account_id,vendor_terms_version,vendor_terms_accepted_at";
+const vendorProfileColumns = "id,company_name,logo_url,contact_email,id_type,id_document_path,status,payout_account_name,payout_account_number,payout_bank_name,payout_currency,rejection_reason,approved_at,approved_by,created_at,updated_at,phone,username,vendor_type,payout_accounts,selected_payout_account_id,vendor_terms_version,vendor_terms_accepted_at";
+const vendorTypeOptions = [
+  { value: "books", label: "Books & digital products" },
+  { value: "groceries", label: "Groceries" },
+  { value: "gadgets", label: "Gadgets & electronics" },
+];
+const vendorProductCategories = {
+  books: ["Ebook", "Planner", "Guide", "Workbook", "Journal", "Course", "Audio", "Bundle"],
+  groceries: ["Fresh produce", "Pantry & packaged foods", "Beverages", "Bakery", "Dairy & eggs", "Household essentials"],
+  gadgets: ["Phones & tablets", "Computers", "Audio", "Home appliances", "Accessories", "Smart home", "Other electronics"],
+};
+const vendorTypeLabel = (type) => vendorTypeOptions.find((option) => option.value === type)?.label || vendorTypeOptions[0].label;
 const vendorTourSteps = [
   {
     eyebrow: "START HERE",
@@ -190,6 +201,7 @@ export default function VendorDashboard() {
   const [signupConfirmationEmail, setSignupConfirmationEmail] = useState("");
   const [signupPasswordConfirm, setSignupPasswordConfirm] = useState("");
   const [profileForm, setProfileForm] = useState({
+    vendorType: "books",
     username: "",
     companyName: "",
     phone: "",
@@ -216,6 +228,12 @@ export default function VendorDashboard() {
     cover: "",
     isFree: false,
     stockCount: "1",
+    stockUnit: "piece",
+    expiryDate: "",
+    brand: "",
+    model: "",
+    condition: "New",
+    warrantyPeriod: "",
     inStock: true,
     releaseEnabled: false,
     releaseAt: "",
@@ -257,6 +275,8 @@ export default function VendorDashboard() {
   const vendorPinInputRefs = React.useRef([]);
   const vendorPinFormRef = React.useRef(null);
   const dashboardContentRef = React.useRef(null);
+  const vendorType = profile?.vendor_type || profileForm.vendorType || "books";
+  const productCategories = vendorProductCategories[vendorType] || vendorProductCategories.books;
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
@@ -519,6 +539,7 @@ export default function VendorDashboard() {
       setProfileForm((current) => ({
         ...current,
         companyName: vendor.company_name || "",
+        vendorType: vendor.vendor_type || "books",
         username: vendor.username || "",
         phone: vendor.phone || "",
         logoUrl: vendor.logo_url || "",
@@ -537,7 +558,12 @@ export default function VendorDashboard() {
             : [],
         selectedPayoutAccountId: vendor.selected_payout_account_id || (vendor.payout_account_number ? "legacy-primary" : ""),
       }));
-    setProductForm((current) => ({ ...current, currency: vendor?.payout_currency || "NGN" }));
+    const categories = vendorProductCategories[vendor?.vendor_type] || vendorProductCategories.books;
+    setProductForm((current) => ({
+      ...current,
+      currency: vendor?.payout_currency || "NGN",
+      category: categories.includes(current.category) ? current.category : categories[0],
+    }));
     setLoading(false);
   };
 
@@ -765,6 +791,7 @@ export default function VendorDashboard() {
       ...(current.find((product) => product.id === freshProduct.id) || {}),
       ...freshProduct,
       currency: accountCurrency,
+
     })) : current);
     setNotice({ type: "success", text: "Product verification statuses refreshed." });
   };
@@ -932,6 +959,7 @@ export default function VendorDashboard() {
       .upsert({
         id: user.id,
         username: normalizeUsername(values.username),
+        vendor_type: vendorTypeOptions.some((option) => option.value === values.vendorType) ? values.vendorType : "books",
         company_name: values.companyName.trim(),
         phone: values.phone.trim(),
         logo_url: logoUrl,
@@ -1069,6 +1097,7 @@ export default function VendorDashboard() {
           email: authForm.email,
           profile: {
             username: profileForm.username,
+            vendorType: profileForm.vendorType,
             companyName: profileForm.companyName,
             logoUrl: profileForm.logoUrl,
             phone: profileForm.phone,
@@ -1279,7 +1308,7 @@ export default function VendorDashboard() {
 
   const editProduct = (product) => {
     setEditingProductId(product.id);
-    setProductForm({ title: product.title || "", description: product.description || "", price: product.price || "", currency: accountCurrency, category: product.category || "Ebook", fileUrl: product.file_url || "", cover: product.cover || "", isFree: Boolean(product.is_free), stockCount: String(product.stock_count ?? 1), inStock: product.in_stock !== false, releaseEnabled: Boolean(product.release_enabled), releaseAt: toDateTimeLocalValue(product.release_at), closeAt: toDateTimeLocalValue(product.close_at), allowAfterClose: Boolean(product.allow_after_close) });
+    setProductForm({ title: product.title || "", description: product.description || "", price: product.price || "", currency: accountCurrency, category: product.category || productCategories[0], fileUrl: product.file_url || "", cover: product.cover || "", isFree: Boolean(product.is_free), stockCount: String(product.stock_count ?? 1), stockUnit: product.stock_unit || "piece", expiryDate: product.expiry_date || "", brand: product.brand || "", model: product.model || "", condition: product.condition || "New", warrantyPeriod: product.warranty_period || "", inStock: product.in_stock !== false, releaseEnabled: Boolean(product.release_enabled), releaseAt: toDateTimeLocalValue(product.release_at), closeAt: toDateTimeLocalValue(product.close_at), allowAfterClose: Boolean(product.allow_after_close) });
     setReleaseSettingsOpen(Boolean(product.release_enabled));
     setProductFile(null);
     setCoverFile(null);
@@ -1329,8 +1358,9 @@ export default function VendorDashboard() {
         description: productForm.description.trim(),
         price: Number(productForm.price || 0),
         currency: accountCurrency,
+        vendor_type: vendorType,
         category: productForm.category,
-        file_url: productForm.fileUrl,
+        file_url: vendorType === "books" ? productForm.fileUrl : null,
         cover: productForm.cover || "",
         is_free: Boolean(productForm.isFree),
         vendor_id: session.user.id,
@@ -1345,6 +1375,12 @@ export default function VendorDashboard() {
         published_at: null,
         in_stock: productForm.inStock !== false,
         stock_count: Math.max(Number(productForm.stockCount || 0), 0),
+        stock_unit: vendorType === "groceries" ? productForm.stockUnit.trim() || "piece" : null,
+        expiry_date: vendorType === "groceries" ? productForm.expiryDate || null : null,
+        brand: vendorType === "gadgets" ? productForm.brand.trim() || null : null,
+        model: vendorType === "gadgets" ? productForm.model.trim() || null : null,
+        condition: vendorType === "gadgets" ? productForm.condition || "New" : null,
+        warranty_period: vendorType === "gadgets" ? productForm.warrantyPeriod.trim() || null : null,
         release_enabled: Boolean(productForm.releaseEnabled),
         release_at: productForm.releaseEnabled ? toIsoDateTime(productForm.releaseAt) : null,
         close_at: productForm.releaseEnabled ? toIsoDateTime(productForm.closeAt) : null,
@@ -1369,6 +1405,12 @@ export default function VendorDashboard() {
         cover: "",
         isFree: false,
         stockCount: "1",
+        stockUnit: "piece",
+        expiryDate: "",
+        brand: "",
+        model: "",
+        condition: "New",
+        warrantyPeriod: "",
         inStock: true,
         releaseEnabled: false,
         releaseAt: "",
@@ -1801,6 +1843,16 @@ export default function VendorDashboard() {
             {authMode === "sign-up" && (
               <>
                 <input required placeholder="Business name" value={profileForm.companyName} onChange={(event) => setProfileForm({ ...profileForm, companyName: event.target.value })} style={fieldStyle} />
+                <label style={{ display: "grid", gap: "6px", color: "#334155", fontSize: ".82rem", fontWeight: 700 }}>
+                  What do you sell?
+                  <select
+                    value={profileForm.vendorType}
+                    onChange={(event) => setProfileForm((current) => ({ ...current, vendorType: event.target.value }))}
+                    style={fieldStyle}
+                  >
+                    {vendorTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+                  </select>
+                </label>
                 <div style={{ display: "grid", gap: "5px" }}>
                   <input required minLength="3" maxLength="30" pattern="[A-Za-z0-9._-]+" placeholder="Username (shown in your vendor dashboard)" value={profileForm.username} onChange={(event) => { setProfileForm({ ...profileForm, username: normalizeUsername(event.target.value) }); setUsernameAvailability("unknown"); setUsernameSuggestion(""); }} onBlur={checkVendorAvailability} style={fieldStyle} />
                   <small style={{ color: usernameAvailability === "taken" ? "#b91c1c" : "#64748b" }}>{usernameAvailability === "checking" ? "Checking username..." : usernameAvailability === "available" ? "Username is available." : usernameSuggestion ? `Suggested username: ${usernameSuggestion}` : "3-30 letters, numbers, dots, underscores, or hyphens."}</small>
@@ -2082,7 +2134,7 @@ export default function VendorDashboard() {
         )}
         <section className="vendor-dashboard-monitor-grid">
           {[
-            ["Products", products.length, "products"],
+            [vendorType === "groceries" ? "Inventory" : vendorType === "gadgets" ? "Devices" : "Products", products.length, "products"],
             ["Sales", sales.length, "sales"],
             [
               "Earnings",
@@ -2174,7 +2226,7 @@ export default function VendorDashboard() {
           <section style={{ display: "grid", gap: "10px", padding: "14px", border: "1px solid #dbe7df", borderRadius: "12px", background: "#f8fffb" }}>
             <div>
               <strong>Preferences</strong>
-              <p style={{ margin: "4px 0 0", fontSize: ".8rem" }}>Choose your vendor dashboard theme. This preference is saved on this browser.</p>
+              <p style={{ margin: "4px 0 0", fontSize: ".8rem" }}>Business type: <strong>{vendorTypeLabel(vendorType)}</strong>. Choose your vendor dashboard theme. This preference is saved on this browser.</p>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(145px, 1fr))", gap: "8px" }}>
               {vendorThemes.map((theme) => (
@@ -2401,7 +2453,7 @@ export default function VendorDashboard() {
               boxShadow: "0 12px 28px rgba(15, 23, 42, .06)",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "18px" }}><div><p style={{ margin: 0, color: "#f59e0b", textTransform: "uppercase", letterSpacing: ".12em", fontSize: ".7rem", fontWeight: 800 }}>Storefront</p><h2 style={{ margin: "6px 0 0", color: "#111827", fontSize: "1.35rem" }}>Product manager</h2></div><span className="vendor-product-count-badge" style={{ background: "#fff7ed", color: "#b45309", border: "1px solid #fed7aa", borderRadius: "999px", padding: "7px 11px", fontSize: ".74rem", fontWeight: 800 }}>{products.length} products</span></div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", marginBottom: "18px" }}><div><p style={{ margin: 0, color: "#f59e0b", textTransform: "uppercase", letterSpacing: ".12em", fontSize: ".7rem", fontWeight: 800 }}>{vendorTypeLabel(vendorType)}</p><h2 style={{ margin: "6px 0 0", color: "#111827", fontSize: "1.35rem" }}>{vendorType === "groceries" ? "Grocery inventory" : vendorType === "gadgets" ? "Gadget inventory" : "Product manager"}</h2></div><span className="vendor-product-count-badge" style={{ background: "#fff7ed", color: "#b45309", border: "1px solid #fed7aa", borderRadius: "999px", padding: "7px 11px", fontSize: ".74rem", fontWeight: 800 }}>{products.length} {vendorType === "groceries" ? "items" : vendorType === "gadgets" ? "devices" : "products"}</span></div>
             {profile?.status === "approved" ? (
               <form
                 onSubmit={publishProduct}
@@ -2473,12 +2525,31 @@ export default function VendorDashboard() {
                   }
                   style={{ ...productFieldStyle, gridColumn: "2", gridRow: "1" }}
                 >
-                  {["Ebook", "Planner", "Guide", "Workbook", "Journal", "Course", "Audio", "Bundle"].map((category) => <option key={category}>{category}</option>)}
+                  {productCategories.map((category) => <option key={category}>{category}</option>)}
                 </select>
-                <label className="vendor-product-free-label" style={{ display: "flex", alignItems: "center", gap: "7px", color: "#334155", fontWeight: 700, fontSize: ".7rem", gridColumn: "1 / -1", gridRow: "4" }}>
+                {vendorType === "groceries" && (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "10px", gridColumn: "1 / -1", gridRow: "4" }}>
+                    <input aria-label="Unit sold" placeholder="Unit (e.g. kg, pack, piece)" value={productForm.stockUnit} onChange={(event) => setProductForm((current) => ({ ...current, stockUnit: event.target.value }))} style={productFieldStyle} />
+                    <label style={{ display: "grid", gap: "5px", color: "#475569", fontSize: ".72rem", fontWeight: 700 }}>
+                      Expiry date (if applicable)
+                      <input type="date" value={productForm.expiryDate} onChange={(event) => setProductForm((current) => ({ ...current, expiryDate: event.target.value }))} style={productFieldStyle} />
+                    </label>
+                  </div>
+                )}
+                {vendorType === "gadgets" && (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "10px", gridColumn: "1 / -1", gridRow: "4" }}>
+                    <input aria-label="Brand" placeholder="Brand (optional)" value={productForm.brand} onChange={(event) => setProductForm((current) => ({ ...current, brand: event.target.value }))} style={productFieldStyle} />
+                    <input aria-label="Model" placeholder="Model (optional)" value={productForm.model} onChange={(event) => setProductForm((current) => ({ ...current, model: event.target.value }))} style={productFieldStyle} />
+                    <select aria-label="Condition" value={productForm.condition} onChange={(event) => setProductForm((current) => ({ ...current, condition: event.target.value }))} style={productFieldStyle}>
+                      {["New", "Used - like new", "Used - good", "Refurbished"].map((condition) => <option key={condition}>{condition}</option>)}
+                    </select>
+                    <input aria-label="Warranty" placeholder="Warranty (e.g. 12 months)" value={productForm.warrantyPeriod} onChange={(event) => setProductForm((current) => ({ ...current, warrantyPeriod: event.target.value }))} style={productFieldStyle} />
+                  </div>
+                )}
+                {vendorType === "books" && <label className="vendor-product-free-label" style={{ display: "flex", alignItems: "center", gap: "7px", color: "#334155", fontWeight: 700, fontSize: ".7rem", gridColumn: "1 / -1", gridRow: "4" }}>
                   <input type="checkbox" checked={productForm.isFree} onChange={(event) => setProductForm({ ...productForm, isFree: event.target.checked, price: event.target.checked ? "0" : (Number(productForm.price) > 0 ? productForm.price : "1") })} />
                   Free product (email delivery without Paystack)
-                </label>
+                </label>}
                 <button type="button" aria-expanded={releaseSettingsOpen} onClick={() => setReleaseSettingsOpen((open) => !open)} style={{ ...productFieldStyle, width: "fit-content", gridColumn: "1 / -1", gridRow: "5", background: "#fff", color: "#334155", fontWeight: 800, cursor: "pointer" }}>
                   <i className={`fa-solid ${releaseSettingsOpen ? "fa-chevron-up" : "fa-chevron-down"}`} aria-hidden="true" /> {releaseSettingsOpen ? "Hide release settings" : "Release settings"}
                 </button>
@@ -2521,7 +2592,7 @@ export default function VendorDashboard() {
                   <option value="out-of-stock">Out of stock</option>
                 </select>
                 <div style={{ display: "grid", gap: "8px", gridColumn: "2", gridRow: "7" }}>
-                  <input type="number" min="0" value={productForm.stockCount} onChange={(event) => setProductForm({ ...productForm, stockCount: event.target.value })} placeholder="Stock count" style={productFieldStyle} />
+                    <input type="number" min="0" value={productForm.stockCount} onChange={(event) => setProductForm({ ...productForm, stockCount: event.target.value })} placeholder={vendorType === "groceries" ? "Quantity in stock" : "Stock count"} style={productFieldStyle} />
                 </div>
                 <label style={{ display: "grid", gap: "4px", color: "#475569", fontSize: ".68rem", fontWeight: 700, gridColumn: "1", gridRow: "8" }}>
                   Cover image
@@ -2531,7 +2602,7 @@ export default function VendorDashboard() {
                     <input type="file" accept="image/*" onChange={uploadCover} style={{ display: "none" }} />
                   </span>
                 </label>
-                <label
+                {vendorType === "books" && <label
                   aria-label="Product file"
                   onDragOver={(event) => { event.preventDefault(); event.dataTransfer.dropEffect = "copy"; }}
                   onDrop={(event) => { event.preventDefault(); const file = event.dataTransfer.files?.[0]; if (file) { setProductFile(file); uploadProduct({ target: { files: [file] } }); } }}
@@ -2542,7 +2613,7 @@ export default function VendorDashboard() {
                   <strong>{productFile?.name || (productForm.fileUrl ? productForm.fileUrl.split("/").pop() : "Drag PDF or ZIP here, or click to choose")}</strong>
                   <span style={{ fontSize: ".66rem", color: "#64748b" }}>{productFile ? `${Math.ceil(productFile.size / 1024)} KB · ready to upload` : productForm.fileUrl ? "Existing product file" : ""}</span>
                   <input type="file" accept=".pdf,.zip" required={!editingProductId && !productForm.fileUrl} onChange={uploadProduct} style={{ display: "none" }} />
-                </label>
+                </label>}
                 <button
                   className="vendor-product-publish"
                   disabled={saving}
@@ -2560,7 +2631,7 @@ export default function VendorDashboard() {
                 >
                   {editingProductId ? "Save product and settings" : "Publish product and settings"}
                 </button>
-                {editingProductId && <button className="vendor-product-cancel" type="button" onClick={() => { setEditingProductId(null); setProductFile(null); setCoverFile(null); setReleaseSettingsOpen(false); setProductForm({ title: "", description: "", price: "", currency: "NGN", category: "Ebook", fileUrl: "", cover: "/logo/logomain.png", isFree: false, stockCount: "1", inStock: true, releaseEnabled: false, releaseAt: "", closeAt: "", allowAfterClose: false }); }} style={{ padding: "11px", border: "1px solid #cbd5e1", borderRadius: "9px", background: "#fff", color: "#334155", fontWeight: 800, gridColumn: "2", gridRow: "9" }}>Cancel edit</button>}
+                {editingProductId && <button className="vendor-product-cancel" type="button" onClick={() => { setEditingProductId(null); setProductFile(null); setCoverFile(null); setReleaseSettingsOpen(false); setProductForm({ title: "", description: "", price: "", currency: "NGN", category: productCategories[0], fileUrl: "", cover: "/logo/logomain.png", isFree: false, stockCount: "1", stockUnit: "piece", expiryDate: "", brand: "", model: "", condition: "New", warrantyPeriod: "", inStock: true, releaseEnabled: false, releaseAt: "", closeAt: "", allowAfterClose: false }); }} style={{ padding: "11px", border: "1px solid #cbd5e1", borderRadius: "9px", background: "#fff", color: "#334155", fontWeight: 800, gridColumn: "2", gridRow: "9" }}>Cancel edit</button>}
               </form>
             ) : (
               <p
@@ -2594,7 +2665,7 @@ export default function VendorDashboard() {
                   }}
                 >
                   <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", alignItems: "flex-start", flexWrap: "wrap" }}>
-                    <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}><ProductCover product={product} style={{ width: "58px", height: "58px", flex: "0 0 58px", objectFit: "cover", borderRadius: "9px", border: "1px solid #e2e8f0" }} /><div style={{ minWidth: 0, flex: 1 }}><div style={{ display: "flex", alignItems: "center", gap: "7px" }}><strong>{product.title}</strong><button className="vendor-product-refresh" type="button" onClick={() => refreshProductStatus(product.id)} disabled={refreshingProductId === product.id} aria-label={`Refresh ${product.title} verification status`} title="Refresh this product verification status" style={{ display: "inline-grid", placeItems: "center", width: "27px", height: "27px", flex: "0 0 27px", border: "1px solid #0f766e", borderRadius: "50%", background: "#fff", color: "#0f766e", fontSize: "1rem", fontWeight: 900, cursor: refreshingProductId === product.id ? "wait" : "pointer", opacity: refreshingProductId === product.id ? .6 : 1 }}>{refreshingProductId === product.id ? "..." : "↻"}</button></div><div className="vendor-product-review-meta" style={{ color: "#64748b", fontSize: ".82rem", marginTop: "3px" }}>{product.is_free ? "Free" : `${product.currency} ${product.price}`} · {product.category || "Product"}</div><div className="vendor-product-review-status" style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}><span style={{ color: product.in_stock === false ? "#b91c1c" : "#166534", fontSize: ".8rem", fontWeight: 800 }}>{product.in_stock === false ? "Sold out" : `Available · ${product.stock_count ?? 0} in stock`}</span><span style={{ color: product.status === "published" ? "#166534" : product.status === "rejected" ? "#b91c1c" : product.status === "approved" ? "#0369a1" : "#b45309", fontSize: ".8rem", fontWeight: 800 }}>· {product.status === "published" ? "Published in shop" : product.status === "approved" ? "Admin approved · awaiting publish" : product.status === "rejected" ? "Rejected by admin" : "Awaiting admin review"}</span><span style={{ color: product.name_verified ? "#166534" : "#64748b", fontSize: ".8rem", fontWeight: 800 }}>· Name {product.name_verified ? "verified" : "not verified yet"}</span><span style={{ color: product.description_verified ? "#166534" : "#64748b", fontSize: ".8rem", fontWeight: 800 }}>· Description {product.description_verified ? "verified" : "not verified yet"}</span><span style={{ color: product.cover_verified ? "#166534" : "#64748b", fontSize: ".8rem", fontWeight: 800 }}>· Cover {product.cover_verified ? "verified" : "not verified yet"}</span><span style={{ color: product.attachment_verified ? "#166534" : "#64748b", fontSize: ".8rem", fontWeight: 800 }}>· Attachment {product.attachment_verified ? "verified" : "not verified yet"}</span></div></div></div>
+                    <div style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}><ProductCover product={product} style={{ width: "58px", height: "58px", flex: "0 0 58px", objectFit: "cover", borderRadius: "9px", border: "1px solid #e2e8f0" }} /><div style={{ minWidth: 0, flex: 1 }}><div style={{ display: "flex", alignItems: "center", gap: "7px" }}><strong>{product.title}</strong><button className="vendor-product-refresh" type="button" onClick={() => refreshProductStatus(product.id)} disabled={refreshingProductId === product.id} aria-label={`Refresh ${product.title} verification status`} title="Refresh this product verification status" style={{ display: "inline-grid", placeItems: "center", width: "27px", height: "27px", flex: "0 0 27px", border: "1px solid #0f766e", borderRadius: "50%", background: "#fff", color: "#0f766e", fontSize: "1rem", fontWeight: 900, cursor: refreshingProductId === product.id ? "wait" : "pointer", opacity: refreshingProductId === product.id ? .6 : 1 }}>{refreshingProductId === product.id ? "..." : "↻"}</button></div><div className="vendor-product-review-meta" style={{ color: "#64748b", fontSize: ".82rem", marginTop: "3px" }}>{product.is_free ? "Free" : `${product.currency} ${product.price}`} · {product.category || "Product"}</div>{vendorType === "groceries" && <div style={{ color: "#475569", fontSize: ".78rem", marginTop: "3px" }}>{product.stock_count ?? 0} {product.stock_unit || "piece"}{product.expiry_date ? ` · Expires ${product.expiry_date}` : ""}</div>}{vendorType === "gadgets" && <div style={{ color: "#475569", fontSize: ".78rem", marginTop: "3px" }}>{[product.brand, product.model, product.condition, product.warranty_period ? `Warranty: ${product.warranty_period}` : ""].filter(Boolean).join(" · ")}</div>}<div className="vendor-product-review-status" style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "4px" }}><span style={{ color: product.in_stock === false ? "#b91c1c" : "#166534", fontSize: ".8rem", fontWeight: 800 }}>{product.in_stock === false ? "Sold out" : `Available · ${product.stock_count ?? 0} in stock`}</span><span style={{ color: product.status === "published" ? "#166534" : product.status === "rejected" ? "#b91c1c" : product.status === "approved" ? "#0369a1" : "#b45309", fontSize: ".8rem", fontWeight: 800 }}>· {product.status === "published" ? "Published in shop" : product.status === "approved" ? "Admin approved · awaiting publish" : product.status === "rejected" ? "Rejected by admin" : "Awaiting admin review"}</span><span style={{ color: product.name_verified ? "#166534" : "#64748b", fontSize: ".8rem", fontWeight: 800 }}>· Name {product.name_verified ? "verified" : "not verified yet"}</span><span style={{ color: product.description_verified ? "#166534" : "#64748b", fontSize: ".8rem", fontWeight: 800 }}>· Description {product.description_verified ? "verified" : "not verified yet"}</span><span style={{ color: product.cover_verified ? "#166534" : "#64748b", fontSize: ".8rem", fontWeight: 800 }}>· Cover {product.cover_verified ? "verified" : "not verified yet"}</span><span style={{ color: product.attachment_verified ? "#166534" : "#64748b", fontSize: ".8rem", fontWeight: 800 }}>· Attachment {product.attachment_verified ? "verified" : "not verified yet"}</span></div></div></div>
                     <div className="vendor-product-review-actions" style={{ display: "flex", gap: "7px", flexWrap: "wrap" }}><button type="button" disabled={saving} onClick={() => toggleProductStock(product)} style={{ border: "1px solid #cbd5e1", borderRadius: "8px", padding: "8px 10px", background: "#f8fafc", color: "#334155", fontWeight: 800 }}>{product.in_stock === false ? "Mark available" : "Mark sold out"}</button><button type="button" onClick={() => editProduct(product)} style={{ border: "1px solid #cbd5e1", borderRadius: "8px", padding: "8px 10px", background: "#fff", color: "#334155", fontWeight: 800 }}>Edit</button><button type="button" onClick={() => copyProductLink(product)} style={{ border: "1px solid #86efac", borderRadius: "8px", padding: "8px 10px", background: "#f0fdf4", color: "#166534", fontWeight: 800 }}>Copy link</button><button type="button" disabled={saving} onClick={() => deleteProduct(product)} style={{ border: "1px solid #fecaca", borderRadius: "8px", padding: "8px 10px", background: "#fef2f2", color: "#b91c1c", fontWeight: 800 }}>Delete</button></div>
                   </div>
                   {product.file_url && <div className="vendor-product-review-file" style={{ color: "#64748b", fontSize: ".78rem", overflowWrap: "anywhere" }}>File: {product.file_url.split("/").pop()}</div>}

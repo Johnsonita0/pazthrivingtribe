@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import confetti from 'canvas-confetti';
 import { getCountries, getCountryCallingCode, isValidPhoneNumber, parsePhoneNumberFromString } from 'libphonenumber-js';
@@ -541,6 +541,13 @@ const normalizeProduct = (product = {}) => ({
   fileUrl: product.file_url || product.fileUrl || '',
   inStock: product.in_stock ?? product.inStock ?? true,
   stockCount: Number(product.stock_count ?? product.stockCount ?? 0),
+  vendorType: product.vendor_type || product.vendorType || 'books',
+  stockUnit: product.stock_unit || product.stockUnit || 'piece',
+  expiryDate: product.expiry_date || product.expiryDate || '',
+  brand: product.brand || '',
+  model: product.model || '',
+  condition: product.condition || '',
+  warrantyPeriod: product.warranty_period || product.warrantyPeriod || '',
   rating: Number(product.rating ?? 0),
   reviews: Number(product.reviews ?? 0),
   vendorId: product.vendor_id || product.vendorId || null,
@@ -655,6 +662,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const [releaseNotificationSubmitting, setReleaseNotificationSubmitting] = useState(false);
   const [releaseNotificationError, setReleaseNotificationError] = useState('');
   const [shopAuthSession, setShopAuthSession] = useState(null);
+  const [shopAuthSessionLoaded, setShopAuthSessionLoaded] = useState(false);
   const [shopAccountOpen, setShopAccountOpen] = useState(false);
   const [shopAuthMode, setShopAuthMode] = useState('signIn');
   const [shopAuthName, setShopAuthName] = useState('');
@@ -682,6 +690,8 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const [shopAddress, setShopAddress] = useState({ fullName: '', phone: '', addressLine1: '', addressLine2: '', city: '', state: '', postalCode: '', country: 'Nigeria' });
   const [shopAddressNotice, setShopAddressNotice] = useState('');
   const [shopAccountTheme, setShopAccountTheme] = useState(() => window.localStorage.getItem('paz-shop-account-theme') || 'light');
+  const [shopAccountThemeLoaded, setShopAccountThemeLoaded] = useState(false);
+  const [shopWishlistIds, setShopWishlistIds] = useState([]);
 
   const descriptionRef = useRef(null);
   const shopAccountMenuCloseTimer = useRef(null);
@@ -699,13 +709,88 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   }, [isSmallScreen, shopAccountMenuOpen]);
 
   useEffect(() => {
-    window.localStorage.setItem('paz-shop-account-theme', shopAccountTheme);
-  }, [shopAccountTheme]);
+    if (!shopAccountThemeLoaded) return;
+    const userId = shopAuthSession?.user?.id;
+    window.localStorage.setItem(userId ? `paz-shop-account-theme:${userId}` : 'paz-shop-account-theme', shopAccountTheme);
+  }, [shopAccountTheme, shopAccountThemeLoaded, shopAuthSession?.user?.id]);
+
+  const saveShopAccountMetadata = useCallback(async (updates) => {
+    const user = shopAuthSession?.user;
+    if (!user) return;
+    const { data, error } = await supabase.auth.updateUser({
+      data: { ...user.user_metadata, ...updates },
+    });
+    if (error) throw error;
+    if (data.user) {
+      setShopAuthSession((current) => current?.user?.id === user.id
+        ? { ...current, user: data.user }
+        : current);
+    }
+  }, [shopAuthSession]);
+
+  useEffect(() => {
+    if (!shopAuthSessionLoaded) return undefined;
+    let active = true;
+    const loadAccountPreferences = async () => {
+      const user = shopAuthSession?.user;
+      const userId = user?.id;
+      const validThemes = ['sage', 'sky', 'sunshine', 'peach', 'teal', 'dark'];
+      const readIds = (key) => {
+        try {
+          const saved = JSON.parse(window.localStorage.getItem(key) || '[]');
+          return Array.isArray(saved) ? [...new Set(saved.map(String))] : [];
+        } catch (error) {
+          console.warn('Could not read PAZ wishlist cache:', error);
+          return [];
+        }
+      };
+
+      if (!userId) {
+        if (!active) return;
+        setShopWishlistIds(readIds('paz-shop-favorite-books-v1'));
+        const savedTheme = window.localStorage.getItem('paz-shop-account-theme');
+        setShopAccountTheme(validThemes.includes(savedTheme) ? savedTheme : 'sage');
+        setShopAccountThemeLoaded(true);
+        return;
+      }
+
+      const settings = user.user_metadata?.paz_shop_settings || {};
+      const remoteTheme = settings.theme;
+      const remoteWishlist = user.user_metadata?.paz_shop_wishlist;
+      const accountTheme = window.localStorage.getItem(`paz-shop-account-theme:${userId}`);
+      const accountWishlist = readIds(`paz-shop-favorite-books-v1:${userId}`);
+      const theme = validThemes.includes(remoteTheme)
+        ? remoteTheme
+        : validThemes.includes(accountTheme) ? accountTheme : 'sage';
+      const wishlist = Array.isArray(remoteWishlist)
+        ? [...new Set(remoteWishlist.filter((id) => typeof id === 'string'))]
+        : accountWishlist;
+      if (!active) return;
+      setShopAccountTheme(theme);
+      setShopWishlistIds(wishlist);
+      setShopAccountThemeLoaded(true);
+      window.localStorage.setItem(`paz-shop-favorite-books-v1:${userId}`, JSON.stringify(wishlist));
+      if (!validThemes.includes(remoteTheme) || !Array.isArray(remoteWishlist)) {
+        await saveShopAccountMetadata({
+          paz_shop_settings: { ...settings, theme },
+          paz_shop_wishlist: wishlist,
+        });
+      }
+    };
+    loadAccountPreferences().catch((error) => {
+      if (!active) return;
+      console.error('Could not load or sync your PAZ account preferences:', error);
+      setShopAccountDataError('Your saved preferences could not be synced. Please check your connection.');
+      setShopAccountThemeLoaded(true);
+    });
+    return () => { active = false; };
+  }, [shopAuthSessionLoaded, shopAuthSession?.user, shopAuthSession?.user?.id, shopAuthSession?.user?.user_metadata?.paz_shop_settings?.theme, shopAuthSession?.user?.user_metadata?.paz_shop_wishlist, saveShopAccountMetadata]);
 
   useEffect(() => {
     let active = true;
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setShopAuthSession(session);
+      setShopAuthSessionLoaded(true);
     });
 
     supabase.auth.getSession().then(({ data, error }) => {
@@ -715,8 +800,12 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
         return;
       }
       setShopAuthSession(data.session);
+      setShopAuthSessionLoaded(true);
     }).catch((error) => {
-      if (active) console.error('Could not load the shop customer session:', error);
+      if (active) {
+        console.error('Could not load the shop customer session:', error);
+        setShopAuthSessionLoaded(true);
+      }
     });
 
     return () => {
@@ -1744,6 +1833,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const handleCheckout = async (event) => {
     event.preventDefault();
     const customerEmail = checkoutForm.email.trim().toLowerCase();
+    const physicalItems = cart.filter((item) => (item.vendorType || item.vendor_type || 'books') !== 'books');
     const selectedCountry = phoneCountries.find((country) => country.code === checkoutForm.countryCode) || phoneCountries[0];
     const localDigits = checkoutForm.phoneNumber.replace(/\D/g, '');
     const parsedPhone = parsePhoneNumberFromString(localDigits, selectedCountry.code);
@@ -1774,6 +1864,25 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
       setToast({ message: `Enter a valid ${selectedCountry.code} phone number for ${selectedCountry.dialCode}.`, type: 'error' });
       setTimeout(() => setToast(null), 3500);
       return;
+    }
+    if (physicalItems.length) {
+      if (!shopAuthSession?.access_token) {
+        setShopAuthMode('signIn');
+        setShopAccountOpen(true);
+        setToast({ message: 'Sign in to place a physical product order and use your saved delivery address.', type: 'error' });
+        return;
+      }
+      if (String(shopAuthSession.user?.email || '').trim().toLowerCase() !== customerEmail) {
+        setToast({ message: 'Use the email address linked to your signed-in account for physical product orders.', type: 'error' });
+        return;
+      }
+      const requiredAddressFields = ['fullName', 'phone', 'addressLine1', 'city', 'state', 'country'];
+      if (requiredAddressFields.some((field) => !String(shopAddress[field] || '').trim())) {
+        setShopAccountPage('address');
+        setShopAccountOpen(true);
+        setToast({ message: 'Save your delivery address in your account before placing this order.', type: 'error' });
+        return;
+      }
     }
     if (!cartIsFree && (!paystackReady || !window.PaystackPop)) {
       setToast({ message: 'Payment checkout is still loading. Please try again shortly.', type: 'error' });
@@ -1843,6 +1952,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
         ref: orderNumber,
         metadata: {
           order_number: orderNumber,
+          customerId: shopAuthSession?.user?.id || null,
           custom_fields: [
             { display_name: 'Customer name', variable_name: 'customer_name', value: newOrder.name },
             { display_name: 'Order number', variable_name: 'order_number', value: orderNumber }
@@ -1853,7 +1963,12 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
           try {
             const completionResponse = await fetch('/api/complete-shop-payment', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                ...(physicalItems.length && shopAuthSession?.access_token
+                  ? { Authorization: `Bearer ${shopAuthSession.access_token}` }
+                  : {}),
+              },
               body: JSON.stringify({
                 reference: response.reference,
                 orderNumber,
@@ -1866,13 +1981,24 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
             const completionData = await completionResponse.json().catch(() => ({}));
             if (!completionResponse.ok) throw new Error(completionData?.error || 'Payment completed, but delivery could not be confirmed.');
 
-            const paidOrder = { ...newOrder, paymentReference: response.reference, deliverySent: true };
+            const paidOrder = {
+              ...newOrder,
+              paymentReference: response.reference,
+              deliverySent: true,
+              physicalDelivery: physicalItems.length > 0,
+              deliveryAddress: physicalItems.length ? shopAddress : null,
+            };
             setSubmittedOrder(paidOrder);
             await persistOrderToSupabase(paidOrder);
             if (typeof onOrderSubmitted === 'function') onOrderSubmitted((current = []) => [paidOrder, ...current]);
             setCheckoutStage('success');
             window.requestAnimationFrame(() => window.setTimeout(triggerSuccessConfetti, 120));
-            setToast({ message: `Payment successful. Your file has been sent to ${customerEmail}.`, type: 'success' });
+            setToast({
+              message: physicalItems.length
+                ? 'Payment successful. Your vendors have been notified to arrange delivery.'
+                : `Payment successful. Your file has been sent to ${customerEmail}.`,
+              type: 'success',
+            });
             setTimeout(() => setToast(null), 5000);
             setCheckoutForm({ name: '', email: '', countryCode: 'NG', phoneNumber: '', notes: '' });
             setCart([]);
@@ -2062,6 +2188,39 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     setShopNotificationsOpen(false);
     setShopAddressNotice('');
   };
+  const chooseShopTheme = async (theme) => {
+    setShopAccountTheme(theme);
+    try {
+      await saveShopAccountMetadata({
+        paz_shop_settings: {
+          ...shopAuthSession?.user?.user_metadata?.paz_shop_settings,
+          theme,
+        },
+      });
+    } catch (error) {
+      console.error('Could not save your PAZ theme preference:', error);
+      setShopAccountDataError('Your theme is saved on this device but could not sync to your account.');
+    }
+  };
+  const toggleShopWishlist = async (product) => {
+    const productId = String(product.id);
+    const next = shopWishlistIds.includes(productId)
+      ? shopWishlistIds.filter((id) => id !== productId)
+      : [...shopWishlistIds, productId];
+    setShopWishlistIds(next);
+    const userId = shopAuthSession?.user?.id;
+    window.localStorage.setItem(
+      userId ? `paz-shop-favorite-books-v1:${userId}` : 'paz-shop-favorite-books-v1',
+      JSON.stringify(next),
+    );
+    if (!userId) return;
+    try {
+      await saveShopAccountMetadata({ paz_shop_wishlist: next });
+    } catch (error) {
+      console.error('Could not sync your PAZ wishlist:', error);
+      setShopAccountDataError('Your wishlist is saved on this device but could not sync to your account.');
+    }
+  };
   const openShopAccountMenu = () => {
     window.clearTimeout(shopAccountMenuCloseTimer.current);
     setShopAccountMenuOpen(true);
@@ -2157,18 +2316,17 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     ['support', 'Help & support', 'question-circle'],
     ['about', 'About PAZ', 'info-circle']
   ];
-  const wishlistIds = (() => {
-    try {
-      const parsed = JSON.parse(window.localStorage.getItem('paz-shop-favorite-books-v1') || '[]');
-      return Array.isArray(parsed) ? parsed.map(String) : [];
-    } catch {
-      return [];
-    }
-  })();
-  const wishlistProducts = storeData.products.filter((product) => wishlistIds.includes(String(product.id)));
-  const accountThemeColors = shopAccountTheme === 'dark'
-    ? { surface: '#17231d', card: '#22332a', text: '#f3f7f4', muted: '#c0cec4', border: '#3c5144', accent: '#a5e2ba', softAccent: '#294936' }
-    : { surface: '#f5f8f5', card: '#ffffff', text: '#25352b', muted: '#5d6e63', border: '#dce7dd', accent: '#176b3a', softAccent: '#e7f2e9' };
+  const wishlistProducts = storeData.products.filter((product) => shopWishlistIds.includes(String(product.id)));
+  const accountThemeColors = {
+    sage: { surface: '#f7f2ec', card: '#fffdfb', text: '#2e2a26', muted: '#665f5a', border: '#eadfd5', accent: '#417e6c', softAccent: '#e7f2ee' },
+    sky: { surface: '#f7f2ec', card: '#fffdfb', text: '#2e2a26', muted: '#665f5a', border: '#eadfd5', accent: '#4c7299', softAccent: '#eaf1f8' },
+    sunshine: { surface: '#f7f2ec', card: '#fffdfb', text: '#2e2a26', muted: '#665f5a', border: '#eadfd5', accent: '#76651f', softAccent: '#f5f0db' },
+    peach: { surface: '#f7f2ec', card: '#fffdfb', text: '#2e2a26', muted: '#665f5a', border: '#eadfd5', accent: '#995c40', softAccent: '#fbede6' },
+    teal: { surface: '#f7f2ec', card: '#fffdfb', text: '#2e2a26', muted: '#665f5a', border: '#eadfd5', accent: '#347a74', softAccent: '#e8f5f3' },
+    dark: { surface: '#171613', card: '#24211e', text: '#f7f2ec', muted: '#c0b8af', border: '#403a33', accent: '#63d59c', softAccent: '#293f34' },
+  }[shopAccountTheme] || {
+    surface: '#f7f2ec', card: '#fffdfb', text: '#2e2a26', muted: '#665f5a', border: '#eadfd5', accent: '#417e6c', softAccent: '#e7f2ee',
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: '#ffffff', color: '#1b1b1b', fontFamily: "'Amazon Ember', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" }}>
@@ -2482,7 +2640,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                 ) : null}
 
                 {shopAccountPage === 'payments' ? <div style={{ padding: '16px', border: `1px solid ${accountThemeColors.border}`, borderRadius: '10px', background: accountThemeColors.surface }}><strong>Secure checkout</strong><p style={{ margin: '8px 0 0', color: accountThemeColors.muted, lineHeight: 1.6 }}>Payment details are handled securely when you check out. PAZ does not store full card numbers in your account.</p></div> : null}
-                {shopAccountPage === 'preferences' ? <div><p style={{ marginTop: 0, color: accountThemeColors.muted }}>Choose how the account area looks on this device.</p><div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>{[['light', 'Light theme'], ['dark', 'Dark theme']].map(([theme, label]) => <button key={theme} type="button" aria-pressed={shopAccountTheme === theme} onClick={() => setShopAccountTheme(theme)} style={{ minHeight: '42px', padding: '0 14px', border: `1px solid ${shopAccountTheme === theme ? accountThemeColors.accent : accountThemeColors.border}`, borderRadius: '9px', background: shopAccountTheme === theme ? accountThemeColors.softAccent : accountThemeColors.card, color: accountThemeColors.text, fontWeight: 800, cursor: 'pointer' }}>{label}</button>)}</div></div> : null}
+                {shopAccountPage === 'preferences' ? <div><p style={{ marginTop: 0, color: accountThemeColors.muted }}>Choose a color theme. Your choice is saved to your account and follows you to the PAZ app.</p><div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>{[['sage', 'Sage'], ['sky', 'Sky'], ['sunshine', 'Sunshine'], ['peach', 'Peach'], ['teal', 'Teal'], ['dark', 'Dark mode']].map(([theme, label]) => <button key={theme} type="button" aria-pressed={shopAccountTheme === theme} onClick={() => void chooseShopTheme(theme)} style={{ minHeight: '42px', padding: '0 14px', border: `1px solid ${shopAccountTheme === theme ? accountThemeColors.accent : accountThemeColors.border}`, borderRadius: '9px', background: shopAccountTheme === theme ? accountThemeColors.softAccent : accountThemeColors.card, color: accountThemeColors.text, fontWeight: 800, cursor: 'pointer' }}>{label}</button>)}</div></div> : null}
                 {shopAccountPage === 'support' ? <div style={{ display: 'grid', gap: '10px', color: accountThemeColors.muted }}><p style={{ marginTop: 0 }}>Need help with an order or your account? Contact the PAZ team.</p><a href="mailto:support@pazthrivingtribe.com" style={{ color: accountThemeColors.accent, fontWeight: 800 }}>Email customer support</a><button type="button" onClick={() => navigate('/shop')} style={{ justifySelf: 'start', minHeight: '40px', padding: '0 12px', border: `1px solid ${accountThemeColors.border}`, borderRadius: '8px', background: accountThemeColors.surface, color: accountThemeColors.text, fontWeight: 750, cursor: 'pointer' }}>Browse the shop</button></div> : null}
                 {shopAccountPage === 'about' ? <div style={{ maxWidth: '680px', color: accountThemeColors.muted, lineHeight: 1.7 }}><p style={{ marginTop: 0 }}><strong style={{ color: accountThemeColors.text }}>PAZ Thriving Tribe</strong> brings books, helpful resources, groceries, and gadgets together in one marketplace.</p><p>Explore the shop, manage your customer account, and contact support whenever you need help.</p></div> : null}
               </section>
@@ -2805,6 +2963,33 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                         height: '100%',
                         objectFit: 'cover'
                       }} />
+                      <button
+                        type="button"
+                        aria-label={shopWishlistIds.includes(String(product.id)) ? `Remove ${product.title} from wishlist` : `Add ${product.title} to wishlist`}
+                        aria-pressed={shopWishlistIds.includes(String(product.id))}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          void toggleShopWishlist(product);
+                        }}
+                        style={{
+                          position: 'absolute',
+                          right: '8px',
+                          bottom: '8px',
+                          display: 'grid',
+                          placeItems: 'center',
+                          width: '34px',
+                          height: '34px',
+                          border: '1px solid rgba(255,255,255,.8)',
+                          borderRadius: '50%',
+                          background: '#fff',
+                          color: shopWishlistIds.includes(String(product.id)) ? '#bd3157' : '#475569',
+                          boxShadow: '0 2px 7px rgba(0,0,0,.18)',
+                          cursor: 'pointer',
+                          zIndex: 2,
+                        }}
+                      >
+                        <i className={`${shopWishlistIds.includes(String(product.id)) ? 'fa-solid' : 'fa-regular'} fa-heart`} aria-hidden="true" />
+                      </button>
                       
                       {/* Prime Badge - Positioned Absolutely */}
                       {product.prime && (
@@ -3128,7 +3313,9 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                   <ProductCover product={selectedProduct} style={{ width: '100%', aspectRatio: '1 / 1', objectFit: 'cover', borderRadius: '14px', border: '1px solid #e5e7eb', boxShadow: '0 8px 18px rgba(15, 23, 42, 0.08)' }} />
                   <div style={{ display: 'grid', gap: '4px', marginTop: '8px', padding: '9px 10px', borderRadius: '11px', background: '#f8fafc', border: '1px solid #e2e8f0', color: '#475569', fontSize: '0.7rem', lineHeight: 1.35 }}>
                     <span><strong style={{ color: '#334155' }}>Category:</strong> {selectedProduct.category || 'Product'}</span>
-                    <span><strong style={{ color: '#334155' }}>Delivery:</strong> Email attachment</span>
+                    <span><strong style={{ color: '#334155' }}>Item:</strong> {selectedProduct.vendorType === 'groceries' ? 'Grocery item' : selectedProduct.vendorType === 'gadgets' ? 'Gadget or electronic' : 'Digital download'}</span>
+                    {selectedProduct.vendorType === 'groceries' && selectedProduct.expiryDate && <span><strong style={{ color: '#334155' }}>Best before:</strong> {selectedProduct.expiryDate}</span>}
+                    {selectedProduct.vendorType === 'gadgets' && [selectedProduct.brand, selectedProduct.model, selectedProduct.condition, selectedProduct.warrantyPeriod ? `Warranty: ${selectedProduct.warrantyPeriod}` : ''].filter(Boolean).map((detail) => <span key={detail}>{detail}</span>)}
                     <span><strong style={{ color: '#334155' }}>Status:</strong> {selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? 'Out of stock' : 'Available'}</span>
                   </div>
                 </div>
@@ -3157,7 +3344,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                   </div>
                   <div style={{ display: 'flex', gap: '10px', alignItems: 'baseline', flexWrap: 'wrap', marginBottom: '10px' }}>
                     <strong style={{ color: selectedProduct.isFree ? '#15803d' : '#b12704', fontSize: '1.35rem' }}>{productPriceLabel(selectedProduct)}</strong>
-                    <span style={{ color: '#64748b', fontSize: '0.82rem' }}>{selectedProduct.isFree ? 'Free email delivery' : 'Digital product'}</span>
+                    <span style={{ color: '#64748b', fontSize: '0.82rem' }}>{selectedProduct.vendorType === 'books' ? (selectedProduct.isFree ? 'Free email delivery' : 'Digital product') : 'Physical product'}</span>
                   </div>
                   {selectedProduct.vendorName && <div style={{ marginBottom: '10px', color: '#475569', fontSize: '0.82rem' }}>Published by <strong>{selectedProduct.vendorName}</strong></div>}
                   <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '10px', color: '#64748b', fontSize: '0.8rem' }}>
@@ -3166,7 +3353,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                         ? `${'★'.repeat(Math.round(productRatingAverage))} ${productRatingAverage.toFixed(1)}/5 (${productRatingPercentage}%)${selectedProduct.reviews ? ` · ${selectedProduct.reviews} reviews` : ''}`
                         : 'No ratings yet'}
                     </span>
-                    <span>{selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? 'Out of stock' : `${selectedProduct.stockCount} available`}</span>
+                    <span>{selectedProduct.inStock === false || Number(selectedProduct.stockCount || 0) <= 0 ? 'Out of stock' : `${selectedProduct.stockCount} ${selectedProduct.vendorType === 'groceries' ? selectedProduct.stockUnit : 'available'}`}</span>
                   </div>
                   <div aria-label="Product interest" style={{ display: 'flex', gap: '18px', flexWrap: 'wrap', marginBottom: '12px', color: '#475569', fontSize: '0.82rem' }}>
                     <span><strong>{productMetrics ? Number(productMetrics.views || 0).toLocaleString('en-NG') : '—'}</strong> Viewed</span>
@@ -3183,10 +3370,10 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                     </div>
                     <div style={{ marginTop: '8px', color: '#64748b', fontSize: '0.76rem' }}>Approximate equivalent based on current currency conversion.</div>
                   </div>}
-                  <div style={{ marginTop: '14px', padding: '13px 14px', border: '1px solid #dbeafe', borderRadius: '12px', background: '#eff6ff', color: '#1e3a8a', fontSize: '0.82rem', lineHeight: 1.6 }}>
+                  {selectedProduct.vendorType === 'books' && <div style={{ marginTop: '14px', padding: '13px 14px', border: '1px solid #dbeafe', borderRadius: '12px', background: '#eff6ff', color: '#1e3a8a', fontSize: '0.82rem', lineHeight: 1.6 }}>
                     <strong style={{ display: 'block', marginBottom: '5px' }}>How delivery works</strong>
                     {selectedProduct.isFree ? 'Enter your details and request the free product. We will email the file directly to you.' : 'After payment is confirmed, we email the file as an attachment to the address you provide.'} Open the email, download the attachment, and use your device PDF or ZIP app to open it.
-                  </div>
+                  </div>}
                   <section style={{ marginTop: '16px', padding: '14px', border: '1px solid #dbe7df', borderRadius: '12px', background: '#fbfdfb' }} aria-labelledby="product-rating-title">
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'baseline', flexWrap: 'wrap' }}>
                       <strong id="product-rating-title" style={{ color: '#166534' }}>Rate this product</strong>
@@ -3556,8 +3743,10 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                 </div>}
 
                 <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: '8px', padding: '12px', fontSize: '12px', color: '#92400e' }}>
-                  <strong style={{ display: 'block', marginBottom: '6px' }}>📧 File delivery</strong>
-                  Your product files have been sent to <strong>{submittedOrder.email}</strong>. Check your inbox and spam folder, open the delivery email, then download and open the attached PDF or ZIP file on your device.
+                  <strong style={{ display: 'block', marginBottom: '6px' }}>{submittedOrder.physicalDelivery ? '📦 Delivery details' : '📧 File delivery'}</strong>
+                  {submittedOrder.physicalDelivery
+                    ? <>Vendors will arrange delivery to your saved address: <strong>{[submittedOrder.deliveryAddress?.addressLine1, submittedOrder.deliveryAddress?.city, submittedOrder.deliveryAddress?.state, submittedOrder.deliveryAddress?.country].filter(Boolean).join(', ')}</strong>. Check your email for the order confirmation.</>
+                    : <>Your product files have been sent to <strong>{submittedOrder.email}</strong>. Check your inbox and spam folder, open the delivery email, then download and open the attached PDF or ZIP file on your device.</>}
                 </div>
 
                 <OrderSuccessActions onShopMore={handleShopMoreAfterOrder} />

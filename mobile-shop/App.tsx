@@ -41,6 +41,8 @@ const VISITOR_KEY = 'paz-shop-visitor-id';
 const ACCOUNT_PREFERENCES_KEY = 'paz-shop-account-preferences-v1';
 const ONBOARDING_KEY = 'paz-shop-onboarding-v2';
 const REMEMBER_ACCOUNT_KEY = 'paz-shop-remember-account-v1';
+const favoritesKeyForUser = (userId?: string) => userId ? `${FAVORITES_KEY}:${userId}` : FAVORITES_KEY;
+const themeKeyForUser = (userId?: string) => userId ? `${SHOP_THEME_KEY}:${userId}` : SHOP_THEME_KEY;
 type Screen = 'home' | 'listing' | 'categories' | 'favorites' | 'profile' | 'detail' | 'checkout' | 'success';
 type OrderRequest = { reference: string; orderNumber: string; email: string; customerName: string; customerId: string; deliveryAddress: DeliveryAddress | null; items: { id: string; quantity: number }[] };
 const DEFAULT_ACCOUNT_PREFERENCES: AccountPreferences = {
@@ -157,6 +159,7 @@ export default function App() {
   const [authNotice, setAuthNotice] = useState('');
   const [authBusy, setAuthBusy] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [authSessionLoaded, setAuthSessionLoaded] = useState(false);
   const [currentUser, setCurrentUser] = useState<AccountUser>(null);
   const [profileAvatarUrl, setProfileAvatarUrl] = useState<string | null>(null);
   const [deliveryAddress, setDeliveryAddress] = useState<DeliveryAddress | null>(null);
@@ -203,6 +206,14 @@ export default function App() {
     || currentUser?.user_metadata?.picture
     || currentUser?.user_metadata?.photo_url
     || null;
+  const updateShopUserMetadata = async (updates: Record<string, unknown>) => {
+    if (!currentUser) return;
+    const { data, error } = await supabase.auth.updateUser({
+      data: { ...currentUser.user_metadata, ...updates },
+    });
+    if (error) throw new Error(error.message);
+    if (data.user) setCurrentUser(data.user);
+  };
 
   useEffect(() => {
     setProfileAvatarUrl(typeof metadataAvatar === 'string' ? metadataAvatar : null);
@@ -372,6 +383,7 @@ export default function App() {
   }, [currentUser?.id, screen]);
 
   useEffect(() => {
+    if (!authSessionLoaded) return undefined;
     let active = true;
     void AsyncStorage.getItem(ONBOARDING_KEY)
       .then((value) => {
@@ -386,12 +398,14 @@ export default function App() {
 
   useEffect(() => {
     let active = true;
-    void AsyncStorage.getItem(SHOP_THEME_KEY)
+    void AsyncStorage.getItem(themeKeyForUser(currentUser?.id))
       .then((savedTheme) => {
         if (!active) return;
-        if (isShopThemeName(savedTheme)) {
-          setShopTheme(savedTheme);
-          setThemeName(savedTheme);
+        const remoteTheme = currentUser?.user_metadata?.paz_shop_settings?.theme;
+        const preferredTheme = isShopThemeName(remoteTheme) ? remoteTheme : savedTheme;
+        if (isShopThemeName(preferredTheme)) {
+          setShopTheme(preferredTheme);
+          setThemeName(preferredTheme);
         }
       })
       .catch((error) => console.warn('Could not load PAZ color preference:', error))
@@ -399,12 +413,24 @@ export default function App() {
         if (active) setThemeLoaded(true);
       });
     return () => { active = false; };
-  }, []);
+  }, [authSessionLoaded, currentUser?.id, currentUser?.user_metadata?.paz_shop_settings?.theme]);
 
   const saveThemePreference = async (theme: ShopThemeName) => {
-    await AsyncStorage.setItem(SHOP_THEME_KEY, theme);
+    await AsyncStorage.setItem(themeKeyForUser(currentUser?.id), theme);
     setShopTheme(theme);
     setThemeName(theme);
+    if (currentUser) {
+      await updateShopUserMetadata({
+        paz_shop_settings: {
+          ...currentUser.user_metadata?.paz_shop_settings,
+          theme,
+          country_code: accountPreferences.countryCode,
+          language: accountPreferences.language,
+          currency: accountPreferences.currency,
+          notifications_enabled: accountPreferences.notificationsEnabled,
+        },
+      });
+    }
   };
 
   const loadProducts = async () => {
@@ -481,6 +507,17 @@ export default function App() {
         if (error) throw new Error(error.message);
         if (session?.user) {
           setCurrentUser(session.user);
+          const remoteSettings = session.user.user_metadata?.paz_shop_settings || {};
+          if (validCountries.includes(String(remoteSettings.country_code)) && validCurrencies.includes(String(remoteSettings.currency))) {
+            preferences = {
+              ...preferences,
+              countryCode: String(remoteSettings.country_code),
+              language: 'English',
+              currency: String(remoteSettings.currency),
+              notificationsEnabled: remoteSettings.notifications_enabled === true,
+              setupComplete: true,
+            };
+          }
           const { data: profile, error: profileError } = await supabase
             .from('customer_profiles')
             .select('country_code,language,currency,notifications_enabled')
@@ -524,7 +561,10 @@ export default function App() {
         setAccountStep('notifications');
       }
     }).finally(() => {
-      if (active) setAccountSetupLoaded(true);
+      if (active) {
+        setAccountSetupLoaded(true);
+        setAuthSessionLoaded(true);
+      }
     });
     return () => { active = false; };
   }, []);
@@ -554,17 +594,38 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    void AsyncStorage.getItem(FAVORITES_KEY).then((stored) => {
-      if (!stored) return;
-      const ids: unknown = JSON.parse(stored);
+    if (!authSessionLoaded) return undefined;
+    const userId = currentUser?.id;
+    let active = true;
+    void (async () => {
+      const metadataWishlist = currentUser?.user_metadata?.paz_shop_wishlist;
+      const cached = await AsyncStorage.getItem(favoritesKeyForUser(userId));
+      const stored = Array.isArray(metadataWishlist) ? metadataWishlist : cached;
+      if (!stored) {
+        if (active) setFavoriteIds(new Set());
+        return;
+      }
+      const ids: unknown = typeof stored === 'string' ? JSON.parse(stored) : stored;
       if (!Array.isArray(ids) || !ids.every((id) => typeof id === 'string')) {
         throw new Error('Saved favorites have an invalid format.');
       }
-      setFavoriteIds(new Set(ids));
-    }).catch((error) => {
+      const favorites = [...new Set(ids)];
+      await AsyncStorage.setItem(favoritesKeyForUser(userId), JSON.stringify(favorites));
+      if (active) setFavoriteIds(new Set(favorites));
+      if (userId && !Array.isArray(metadataWishlist)) {
+        try {
+          await updateShopUserMetadata({ paz_shop_wishlist: favorites });
+        } catch (error) {
+          console.warn('Could not sync PAZ shop favorites to your account:', error);
+          if (active) setNotice('Your saved favorites are available on this device but could not sync to your account.');
+        }
+      }
+    })().catch((error) => {
       console.warn('Could not load saved PAZ shop favorites:', error);
+      if (active) setNotice('Your saved favorites could not be loaded. Please try again.');
     });
-  }, []);
+    return () => { active = false; };
+  }, [authSessionLoaded, currentUser?.id, currentUser?.user_metadata?.paz_shop_wishlist]);
 
   useEffect(() => {
     if (cartLoaded) void AsyncStorage.setItem(CART_KEY, JSON.stringify(cart)).catch(() => {});
@@ -706,9 +767,15 @@ export default function App() {
     if (next.has(product.id)) next.delete(product.id);
     else next.add(product.id);
     setFavoriteIds(next);
-    void AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify([...next])).catch((error) => {
+    const favorites = [...next];
+    const userId = currentUser?.id;
+    void AsyncStorage.setItem(favoritesKeyForUser(userId), JSON.stringify(favorites)).then(async () => {
+      if (userId) await updateShopUserMetadata({ paz_shop_wishlist: favorites });
+    }).catch((error) => {
       console.warn('Could not save PAZ shop favorites:', error);
-      setNotice('Your favorite could not be saved on this device.');
+      setNotice(userId
+        ? 'Your favorites are saved on this device but could not sync to your account.'
+        : 'Your favorite could not be saved on this device.');
     });
   };
 
@@ -832,6 +899,16 @@ export default function App() {
           notifications_enabled: preferences.notificationsEnabled,
         });
         if (!profile) throw new Error('Your preferences were saved on this device but could not be synced to your PAZ profile.');
+        await updateShopUserMetadata({
+          paz_shop_settings: {
+            ...currentUser.user_metadata?.paz_shop_settings,
+            theme: themeName,
+            country_code: preferences.countryCode,
+            language: preferences.language,
+            currency: preferences.currency,
+            notifications_enabled: preferences.notificationsEnabled,
+          },
+        });
       }
       return true;
     } catch (error) {

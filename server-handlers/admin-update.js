@@ -278,13 +278,13 @@ export default async function handler(req, res) {
 
         let { data: product, error: productLookupError } = await supabase
           .from('store_products')
-          .select('id,title,status,name_verified,description_verified,cover_verified,attachment_verified,amount_verified,vendor_id,price,currency,description,file_url,cover')
+          .select('id,title,status,vendor_type,name_verified,description_verified,cover_verified,attachment_verified,amount_verified,vendor_id,price,currency,description,file_url,cover')
           .eq('id', reviewPayload.id)
           .maybeSingle()
         if (productLookupError && /amount_verified.*does not exist/i.test(productLookupError.message || '')) {
           const compatibleLookup = await supabase
             .from('store_products')
-            .select('id,title,status,name_verified,description_verified,cover_verified,attachment_verified,vendor_id,price,currency,description,file_url,cover')
+            .select('id,title,status,vendor_type,name_verified,description_verified,cover_verified,attachment_verified,vendor_id,price,currency,description,file_url,cover')
             .eq('id', reviewPayload.id)
             .maybeSingle()
           product = compatibleLookup.data
@@ -358,7 +358,8 @@ export default async function handler(req, res) {
             .limit(1)
           if (duplicateError) throw duplicateError
           if (duplicateProducts?.length) return jsonResponse(res, 409, { error: 'A product with this name is already published in the shop.' })
-          const verification = ['name_verified', 'description_verified', 'cover_verified', 'attachment_verified', 'amount_verified']
+          const verification = ['name_verified', 'description_verified', 'cover_verified', 'amount_verified']
+          if ((product.vendor_type || 'books') === 'books') verification.push('attachment_verified')
           const missingVerification = verification.find((field) => reviewPayload[field] !== true && product[field] !== true)
           if (missingVerification) return jsonResponse(res, 400, { error: `Verify the product ${missingVerification.replace('_verified', '')} before publishing it.` })
           updatePayload.published_at = new Date().toISOString()

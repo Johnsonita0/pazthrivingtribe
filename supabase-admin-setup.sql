@@ -113,11 +113,18 @@ create table if not exists store_products (
   cover text,
   file_url text,
   currency text default 'NGN',
+  vendor_type text not null default 'books' check (vendor_type in ('books', 'groceries', 'gadgets')),
   is_free boolean default false,
   rating numeric(3,2) default 0,
   reviews integer default 0,
   in_stock boolean default true,
   stock_count integer default 0,
+  stock_unit text,
+  expiry_date date,
+  brand text,
+  model text,
+  condition text,
+  warranty_period text,
   release_enabled boolean not null default false,
   release_at timestamptz,
   close_at timestamptz,
@@ -150,11 +157,20 @@ alter table if exists store_products add column if not exists category text;
 alter table if exists store_products add column if not exists cover text;
 alter table if exists store_products add column if not exists file_url text;
 alter table if exists store_products add column if not exists currency text default 'NGN';
+alter table if exists store_products add column if not exists vendor_type text not null default 'books';
+alter table if exists store_products drop constraint if exists store_products_vendor_type_check;
+alter table if exists store_products add constraint store_products_vendor_type_check check (vendor_type in ('books', 'groceries', 'gadgets'));
 alter table if exists store_products add column if not exists is_free boolean default false;
 alter table if exists store_products add column if not exists rating numeric(3,2) default 0;
 alter table if exists store_products add column if not exists reviews integer default 0;
 alter table if exists store_products add column if not exists in_stock boolean default true;
 alter table if exists store_products add column if not exists stock_count integer default 0;
+alter table if exists store_products add column if not exists stock_unit text;
+alter table if exists store_products add column if not exists expiry_date date;
+alter table if exists store_products add column if not exists brand text;
+alter table if exists store_products add column if not exists model text;
+alter table if exists store_products add column if not exists condition text;
+alter table if exists store_products add column if not exists warranty_period text;
 alter table if exists store_products add column if not exists release_enabled boolean not null default false;
 alter table if exists store_products add column if not exists release_at timestamptz;
 alter table if exists store_products add column if not exists close_at timestamptz;
@@ -335,6 +351,9 @@ create table if not exists vendor_profiles (
 
 alter table if exists vendor_profiles add column if not exists phone text;
 alter table if exists vendor_profiles add column if not exists username text;
+alter table if exists vendor_profiles add column if not exists vendor_type text not null default 'books';
+alter table if exists vendor_profiles drop constraint if exists vendor_profiles_vendor_type_check;
+alter table if exists vendor_profiles add constraint vendor_profiles_vendor_type_check check (vendor_type in ('books', 'groceries', 'gadgets'));
 alter table if exists vendor_profiles add column if not exists payout_accounts jsonb not null default '[]'::jsonb;
 alter table if exists vendor_profiles add column if not exists selected_payout_account_id text;
 alter table if exists vendor_profiles add column if not exists vendor_terms_version text;
