@@ -273,6 +273,14 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
+  useEffect(() => {
+    const openLegalPolicy = (event) => {
+      const policy = event.detail?.policy;
+      if (policy === 'terms' || policy === 'privacy') setActiveLegalPolicy(policy);
+    };
+    window.addEventListener('paz-open-legal-policy', openLegalPolicy);
+    return () => window.removeEventListener('paz-open-legal-policy', openLegalPolicy);
+  }, []);
   const isIndependencePreview = new URLSearchParams(location.search).get('independencePreview') === '1';
   const isIndependenceDay = (nigeriaDate.month === 10 && nigeriaDate.day === 1) || isIndependencePreview;
   const isOctoberLaunchWindow = isIndependenceDay

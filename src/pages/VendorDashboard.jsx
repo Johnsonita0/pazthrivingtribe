@@ -201,7 +201,7 @@ export default function VendorDashboard() {
   const [signupConfirmationEmail, setSignupConfirmationEmail] = useState("");
   const [signupPasswordConfirm, setSignupPasswordConfirm] = useState("");
   const [profileForm, setProfileForm] = useState({
-    vendorType: "books",
+    vendorType: "",
     username: "",
     companyName: "",
     phone: "",
@@ -338,6 +338,8 @@ export default function VendorDashboard() {
   const [vendorTermsOpen, setVendorTermsOpen] = useState(false);
   const [vendorTermsAccepted, setVendorTermsAccepted] = useState(false);
   const [vendorTermsRequired, setVendorTermsRequired] = useState(false);
+  const [systemTermsAccepted, setSystemTermsAccepted] = useState(false);
+  const [privacyPolicyAcknowledged, setPrivacyPolicyAcknowledged] = useState(false);
   const [usernameAvailability, setUsernameAvailability] = useState("unknown");
   const [usernameSuggestion, setUsernameSuggestion] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -1066,6 +1068,14 @@ export default function VendorDashboard() {
       setNotice({ type: "error", text: "The passwords do not match. Check both password fields and try again." });
       return;
     }
+    if (authMode === "sign-up" && !vendorTypeOptions.some((option) => option.value === profileForm.vendorType)) {
+      setNotice({ type: "error", text: "Choose what your business sells before creating your account." });
+      return;
+    }
+    if (authMode === "sign-up" && (!systemTermsAccepted || !privacyPolicyAcknowledged)) {
+      setNotice({ type: "error", text: "Accept the System Terms and acknowledge the Privacy Policy before creating your account." });
+      return;
+    }
     setSaving(true);
     try {
       const signInEmail = authForm.email.trim().toLowerCase();
@@ -1114,7 +1124,13 @@ export default function VendorDashboard() {
               supabase.auth.signUp({
                 email: authForm.email,
                 password: authForm.password,
-                options: { emailRedirectTo: `${appUrl}/vendor?confirmed=1` },
+                options: {
+                  emailRedirectTo: `${appUrl}/vendor?confirmed=1`,
+                  data: {
+                    system_terms_accepted_at: new Date().toISOString(),
+                    privacy_policy_acknowledged_at: new Date().toISOString(),
+                  },
+                },
               }),
               "Account creation is taking too long. Check your connection and try again.",
             );
@@ -1529,8 +1545,11 @@ export default function VendorDashboard() {
     authForm.email.trim()
     && authForm.password.length >= 8
     && profileForm.companyName.trim()
+    && vendorTypeOptions.some((option) => option.value === profileForm.vendorType)
     && normalizeUsername(profileForm.username).length >= 3
     && profileForm.phone.trim()
+    && systemTermsAccepted
+    && privacyPolicyAcknowledged
   );
   const entryPalette = vendorEntryPalettes[vendorTheme] || vendorEntryPalettes.light;
   const entryThemeStyle = {
@@ -1846,10 +1865,12 @@ export default function VendorDashboard() {
                 <label style={{ display: "grid", gap: "6px", color: "#334155", fontSize: ".82rem", fontWeight: 700 }}>
                   What do you sell?
                   <select
+                    required
                     value={profileForm.vendorType}
                     onChange={(event) => setProfileForm((current) => ({ ...current, vendorType: event.target.value }))}
                     style={fieldStyle}
                   >
+                    <option value="">Select a vendor type</option>
                     {vendorTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
                   </select>
                 </label>
@@ -1859,6 +1880,16 @@ export default function VendorDashboard() {
                   {usernameSuggestion && <button type="button" onClick={() => { setProfileForm({ ...profileForm, username: usernameSuggestion }); setUsernameSuggestion(""); setUsernameAvailability("unknown"); }} style={{ width: "fit-content", border: "1px solid #166534", borderRadius: "7px", padding: "5px 8px", background: "#f0fdf4", color: "#166534", fontWeight: 700, cursor: "pointer" }}>Use {usernameSuggestion}</button>}
                 </div>
                 <input required placeholder="Phone number" value={profileForm.phone} onChange={(event) => setProfileForm({ ...profileForm, phone: event.target.value })} style={fieldStyle} />
+                <div style={{ display: "grid", gap: "10px", padding: "12px", border: "1px solid var(--entry-border)", borderRadius: "9px", background: "var(--entry-soft)", color: "var(--entry-text)", fontSize: ".82rem", lineHeight: 1.5 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: "9px" }}>
+                    <input id="vendor-system-terms-consent" type="checkbox" required checked={systemTermsAccepted} onChange={(event) => setSystemTermsAccepted(event.target.checked)} style={{ marginTop: "3px", accentColor: "var(--entry-accent)" }} />
+                    <div><label htmlFor="vendor-system-terms-consent" style={{ cursor: "pointer" }}>I agree to the </label><button type="button" aria-haspopup="dialog" onClick={() => window.dispatchEvent(new CustomEvent("paz-open-legal-policy", { detail: { policy: "terms" } }))} style={{ padding: 0, border: 0, background: "none", color: "var(--entry-accent)", font: "inherit", fontWeight: 800, textDecoration: "underline", cursor: "pointer" }}>System Terms</button>.</div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: "9px" }}>
+                    <input id="vendor-privacy-consent" type="checkbox" required checked={privacyPolicyAcknowledged} onChange={(event) => setPrivacyPolicyAcknowledged(event.target.checked)} style={{ marginTop: "3px", accentColor: "var(--entry-accent)" }} />
+                    <div><label htmlFor="vendor-privacy-consent" style={{ cursor: "pointer" }}>I have read and acknowledge the </label><button type="button" aria-haspopup="dialog" onClick={() => window.dispatchEvent(new CustomEvent("paz-open-legal-policy", { detail: { policy: "privacy" } }))} style={{ padding: 0, border: 0, background: "none", color: "var(--entry-accent)", font: "inherit", fontWeight: 800, textDecoration: "underline", cursor: "pointer" }}>Privacy Policy</button>.</div>
+                  </div>
+                </div>
               </>
             )}
             <button
