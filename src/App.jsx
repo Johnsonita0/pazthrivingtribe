@@ -4835,13 +4835,22 @@ export default function App() {
         }
         @media (max-width: 620px) {
           .home-help-modal-backdrop { padding: 0.65rem; }
-          .home-help-modal { max-height: 94vh; padding: 1.1rem; border-radius: 22px; }
-          .home-help-modal-intro { grid-template-columns: 1fr; gap: 0.85rem; }
-          .home-help-robot-wrap { min-height: 125px; }
-          .home-help-robot { width: 125px; }
-          .home-help-services-grid { grid-template-columns: 1fr; gap: 0.55rem; }
-          .home-help-service-link { padding: 0.75rem; }
-          .home-help-service-action { font-size: 0.72rem; }
+          .home-help-modal { max-height: 78vh; max-height: 78dvh; padding: 0.85rem; border-radius: 20px; }
+          .home-help-modal-close { top: 0.65rem; right: 0.65rem; width: 36px; height: 36px; }
+          .home-help-modal-intro { grid-template-columns: 76px minmax(0, 1fr); gap: 0.7rem; margin-bottom: 0.65rem; }
+          .home-help-robot-wrap { min-height: 78px; border-radius: 15px; }
+          .home-help-robot { width: 72px; }
+          .home-help-eyebrow { font-size: 0.65rem; letter-spacing: 0.08em; }
+          .home-help-modal h2 { margin: 0.2rem 1.8rem 0.25rem 0; font-size: 1.25rem; }
+          .home-help-modal-intro p { font-size: 0.78rem; line-height: 1.35; }
+          .home-help-services-heading { margin: 0.6rem 0 0.45rem; font-size: 0.9rem; }
+          .home-help-services-grid { grid-template-columns: 1fr; gap: 0.4rem; max-height: 32vh; max-height: 32dvh; overflow-y: auto; padding: 0.1rem 0.2rem 0.1rem 0; }
+          .home-help-service-link { grid-template-columns: 34px minmax(0, 1fr) auto; gap: 0.55rem; padding: 0.55rem; border-radius: 12px; }
+          .home-help-service-icon { width: 34px; height: 34px; border-radius: 10px; font-size: 0.85rem; }
+          .home-help-service-copy strong { font-size: 0.8rem; }
+          .home-help-service-copy small { margin-top: 0.1rem; font-size: 0.68rem; line-height: 1.25; }
+          .home-help-service-action { font-size: 0.65rem; }
+          .home-help-modal-footer { margin: 0.55rem 0 0; font-size: 0.7rem; }
         }
         @media (prefers-reduced-motion: reduce) {
           .home-help-robot { animation: none; }
