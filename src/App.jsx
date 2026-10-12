@@ -1489,6 +1489,10 @@ export default function App() {
       subtotal: Number(order.subtotal ?? order.total ?? order.amount ?? 0),
       notes: order.notes || '',
       status: order.status || 'pending',
+      trackingStatus: order.tracking_status || 'order_placed',
+      trackingNumber: order.tracking_number || '',
+      estimatedDeliveryAt: order.estimated_delivery_at || '',
+      trackingUpdatedAt: order.tracking_updated_at || '',
       paymentMode: order.payment_mode || order.paymentMode || 'live',
       paymentProofPath: order.payment_proof_path || order.paymentProofPath || '',
       paymentProofUrl: order.payment_proof_url || order.paymentProofUrl || '',
@@ -5204,7 +5208,7 @@ export default function App() {
                     <img src="../image/pic1.jpeg" className="founder-img" alt="Paz Tribe CEO" />
                     <div className="founder-title-tag-overlay">
                       <h4>Roseline Iraoya </h4>
-                      <span>Lead Coach</span>
+                      <span>Certified Children and Teens Coach</span>
                       <span>Paz Thriving Tribe</span>
                     </div>
                   </div>
@@ -5228,7 +5232,7 @@ export default function App() {
                           <p className="speech-quote-text">
                             "The lead consultant at Paz Thriving Tribe Academy, a life coaching organization. A certified children's life coach and member of the Chartered Institute of Mentoring and Coaching in Nigeria."
                           </p>
-                          <div className="speech-signature">Coach Roseline Iraoya, <br /> Lead Coach, <br /> Paz Thriving Tribe</div>
+                          <div className="speech-signature">Coach Roseline Iraoya, <br /> Certified Children and Teens Coach, <br /> Paz Thriving Tribe</div>
                         </div>
                       )}
 

@@ -1,7 +1,7 @@
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { productAvailability, productImageUrl, Product, Rating } from './api';
-import { Button, Field, getTapPoint, palette, registerShopThemeStyles, Stars, TapPoint } from './ShopComponents';
+import { Button, Field, palette, registerShopThemeStyles, Stars } from './ShopComponents';
 
 export type ProductMetrics = { views?: number; completedOrders?: number; notified?: number; hasReleaseDate?: boolean };
 
@@ -20,8 +20,7 @@ type Props = {
   isFavorite: boolean;
   onBack: () => void;
   onCart: () => void;
-  onAdd: (point: TapPoint) => void;
-  onBuyNow: (point: TapPoint) => void;
+  onAskMentor: () => void;
   onShare: () => void;
   onToggleFavorite: () => void;
   onChat: () => void;
@@ -40,7 +39,7 @@ export function ProductDetailView(props: Props) {
     : product.rating;
   const cover = productImageUrl(product.cover, props.storageBaseUrl);
   const disabled = availability.reason === 'closed' || !product.inStock || product.stockCount <= 0;
-  const actionLabel = availability.reason === 'not-released' ? 'Notify me' : disabled ? 'Unavailable' : 'Add to Cart';
+  const actionLabel = availability.reason === 'not-released' ? 'Notify me' : disabled ? 'Unavailable' : 'Order with Mentor Charles';
   const hasDiscount = !product.isFree && product.originalPrice != null && product.originalPrice > product.price;
   const discountPercent = hasDiscount ? Math.round((1 - product.price / product.originalPrice!) * 100) : 0;
 
@@ -79,8 +78,7 @@ export function ProductDetailView(props: Props) {
           <View style={styles.deliveryMetaItem}><FontAwesome5 name="file-alt" size={11} color={palette.green} /><Text style={styles.deliveryMetaText}>{product.fileFormats.length ? product.fileFormats.join(', ') : 'Digital file'}</Text></View>
         </View>
         <View style={styles.purchaseActions}>
-          <Button title={actionLabel} disabled={disabled} onPress={(event) => props.onAdd(getTapPoint(event))} />
-          <Button title="Buy Now" secondary disabled={disabled} onPress={(event) => props.onBuyNow(getTapPoint(event))} />
+          <Button title={actionLabel} disabled={disabled} onPress={props.onAskMentor} />
         </View>
         {props.metrics ? <View style={styles.metricsRow}>
           <Metric label="Viewed" value={props.metrics.views || 0} />

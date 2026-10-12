@@ -6,6 +6,7 @@ import { apiRequest, DeliveryAddress } from './api';
 import { AccountUser } from './CustomerAccountFlow';
 import { supabase } from './supabaseClient';
 import { palette, registerShopThemeStyles, SHOP_THEMES, ShopThemeName } from './ShopComponents';
+import { WebView } from 'react-native-webview';
 
 type Props = {
   user: AccountUser;
@@ -44,8 +45,19 @@ type Order = {
   total: number | null;
   currency: string | null;
   status: string | null;
+  tracking_status: string | null;
+  tracking_number: string | null;
+  estimated_delivery_at: string | null;
+  tracking_updated_at: string | null;
   created_at: string;
   shop_order_items?: { title: string | null; quantity: number | null }[];
+};
+
+type TrackingEvent = {
+  id: string;
+  status: string;
+  note: string | null;
+  created_at: string;
 };
 
 type Conversation = {
@@ -79,10 +91,11 @@ type CustomerNotification = {
   read_at: string | null;
 };
 
-type ModalPage = 'orders' | 'chats' | 'notifications' | 'about' | 'address' | 'payments' | 'support' | 'preferences' | null;
+type ModalPage = 'orders' | 'chats' | 'notifications' | 'about' | 'address' | 'payments' | 'support' | 'preferences' | 'vendor' | null;
 
 const menuRows = [
   { key: 'orders', title: 'My Orders', subtitle: 'View your order history', icon: 'receipt' },
+  { key: 'vendor', title: 'Sell with PAZ', subtitle: 'Open your vendor dashboard with Mentor Charles', icon: 'store' },
   { key: 'wishlist', title: 'My Wishlist', subtitle: 'Your saved books and guides', icon: 'heart' },
   { key: 'chats', title: 'Messages', subtitle: 'Your conversations with PAZ', icon: 'comments' },
   { key: 'notices', title: 'In-app notifications', subtitle: 'Updates from PAZ', icon: 'bell' },
@@ -92,6 +105,16 @@ const menuRows = [
   { key: 'support', title: 'Help & Support', subtitle: 'Contact PAZ customer care', icon: 'question-circle' },
   { key: 'about', title: 'About PAZ', subtitle: 'PAZ Thriving Tribe', icon: 'info-circle' },
 ] as const;
+const trackingStages = [
+  ['order_placed', 'Order placed'],
+  ['processing', 'Processing'],
+  ['dispatched', 'Dispatched'],
+  ['out_for_delivery', 'Out for delivery'],
+  ['delivered', 'Delivered'],
+] as const;
+const trackingLabel = (status: string | null) =>
+  trackingStages.find(([value]) => value === status)?.[1]
+  || (status === 'cancelled' ? 'Cancelled' : 'Order placed');
 
 function Row({
   icon,
@@ -155,6 +178,10 @@ export function ProfileView({
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersBusy, setOrdersBusy] = useState(false);
   const [ordersError, setOrdersError] = useState('');
+  const [trackingOrder, setTrackingOrder] = useState<Order | null>(null);
+  const [trackingEvents, setTrackingEvents] = useState<TrackingEvent[]>([]);
+  const [trackingBusy, setTrackingBusy] = useState(false);
+  const [trackingError, setTrackingError] = useState('');
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [chatsBusy, setChatsBusy] = useState(false);
   const [chatsError, setChatsError] = useState('');
@@ -302,7 +329,7 @@ export function ProfileView({
     setOrdersError('');
     try {
       const queryOrders = () => supabase.from('shop_orders')
-        .select('id,order_number,total,currency,status,created_at,shop_order_items(title,quantity)')
+        .select('id,order_number,total,currency,status,tracking_status,tracking_number,estimated_delivery_at,tracking_updated_at,created_at,shop_order_items(title,quantity)')
         .order('created_at', { ascending: false })
         .limit(50);
       const [byCustomer, byEmail] = await Promise.all([
@@ -318,6 +345,25 @@ export function ProfileView({
       setOrdersBusy(false);
     }
   }, [user?.id]);
+
+  const loadTrackingEvents = async (orderId: string) => {
+    setTrackingBusy(true);
+    setTrackingError('');
+    setTrackingEvents([]);
+    try {
+      const result = await supabase.from('shop_order_tracking_events')
+        .select('id,status,note,created_at')
+        .eq('order_id', orderId)
+        .order('created_at', { ascending: true });
+      if (result.error) throw new Error(result.error.message);
+      setTrackingEvents((result.data || []) as TrackingEvent[]);
+    } catch (error: unknown) {
+      setTrackingError('Shipment updates could not be loaded. Please try again later.');
+      console.error('Could not load mobile order tracking events:', error);
+    } finally {
+      setTrackingBusy(false);
+    }
+  };
 
   const loadChats = useCallback(async () => {
     if (!user) {
@@ -699,6 +745,9 @@ export function ProfileView({
     if (key === 'orders') {
       setPage('orders');
       if (user) void loadOrders();
+    } else if (key === 'vendor') {
+      if (Platform.OS === 'web') void openContactLink('https://pazthrivingtribe.org/vendor?mentor=1');
+      else setPage('vendor');
     } else if (key === 'wishlist') onWishlist();
     else if (key === 'chats') setPage('chats');
     else if (key === 'notices') setPage('notifications');
@@ -709,7 +758,7 @@ export function ProfileView({
     else if (key === 'about') setPage('about');
   };
 
-  const pageTitle = activeChat ? activeChat.product_title : page === 'orders' ? 'My Orders' : page === 'chats' ? 'Messages' : page === 'notifications' ? 'PAZ Notifications' : page === 'about' ? 'About PAZ' : page === 'address' ? 'Digital delivery' : page === 'support' ? 'Contact Us' : page === 'preferences' ? 'Preferences' : 'Secure payments';
+  const pageTitle = activeChat ? activeChat.product_title : trackingOrder ? 'Track Order' : page === 'vendor' ? 'Mentor Charles · Vendor Setup' : page === 'orders' ? 'My Orders' : page === 'chats' ? 'Messages' : page === 'notifications' ? 'PAZ Notifications' : page === 'about' ? 'About PAZ' : page === 'address' ? 'Digital delivery' : page === 'support' ? 'Contact Us' : page === 'preferences' ? 'Preferences' : 'Secure payments';
   const chooseTheme = async (theme: ShopThemeName) => {
     if (theme === themeName || themeBusy) return;
     setThemeBusy(theme);
@@ -779,11 +828,11 @@ export function ProfileView({
       <Modal visible={Boolean(page)} animationType="slide" onRequestClose={() => { setPage(null); setActiveChat(null); }}>
         <View style={[styles.modalPage, { backgroundColor: palette.paper }]}>
           <View style={styles.modalHeader}>
-            <Pressable accessibilityRole="button" accessibilityLabel={activeChat ? 'Back to messages' : 'Close'} onPress={() => activeChat ? setActiveChat(null) : setPage(null)} style={styles.modalBack}>
-              <FontAwesome5 name={activeChat ? 'arrow-left' : 'times'} size={17} color={palette.ink} />
+            <Pressable accessibilityRole="button" accessibilityLabel={activeChat ? 'Back to messages' : trackingOrder ? 'Back to orders' : 'Close'} onPress={() => activeChat ? setActiveChat(null) : trackingOrder ? setTrackingOrder(null) : setPage(null)} style={styles.modalBack}>
+              <FontAwesome5 name={activeChat || trackingOrder ? 'arrow-left' : 'times'} size={17} color={palette.ink} />
             </Pressable>
             <Text numberOfLines={1} style={styles.modalTitle}>{pageTitle}</Text>
-            {page === 'orders' ? <Pressable accessibilityRole="button" accessibilityLabel="Refresh orders" disabled={ordersBusy} onPress={() => void loadOrders()}><FontAwesome5 name="sync-alt" size={15} color={palette.green} /></Pressable> : <View style={styles.headerSpacer} />}
+            {page === 'orders' && !trackingOrder ? <Pressable accessibilityRole="button" accessibilityLabel="Refresh orders" disabled={ordersBusy} onPress={() => void loadOrders()}><FontAwesome5 name="sync-alt" size={15} color={palette.green} /></Pressable> : <View style={styles.headerSpacer} />}
           </View>
 
           {page === 'preferences' ? <ScrollView contentContainerStyle={styles.modalContent}>
@@ -810,6 +859,13 @@ export function ProfileView({
             })}
             {themeError ? <Text accessibilityRole="alert" style={styles.error}>{themeError}</Text> : null}
           </ScrollView> : null}
+
+          {page === 'vendor' ? <WebView
+            source={{ uri: 'https://pazthrivingtribe.org/vendor?mentor=1' }}
+            startInLoadingState
+            renderLoading={() => <ActivityIndicator color={palette.green} style={styles.largeLoader} />}
+            style={{ flex: 1, backgroundColor: palette.paper }}
+          /> : null}
 
           {page === 'notifications' ? (
             <ScrollView contentContainerStyle={styles.modalContent}>
@@ -841,11 +897,41 @@ export function ProfileView({
               {ordersBusy ? <ActivityIndicator color={palette.green} style={styles.largeLoader} /> : null}
               {ordersError ? <Text accessibilityRole="alert" style={styles.error}>{ordersError}</Text> : null}
               {!ordersBusy && !ordersError && user && orders.length === 0 ? <Text style={styles.emptyText}>No orders yet. Your completed purchases will appear here.</Text> : null}
-              {orders.map((order) => <View key={order.id} style={styles.orderCard}>
+              {!trackingOrder ? orders.map((order) => <View key={order.id} style={styles.orderCard}>
                 <View style={styles.orderHeading}><Text style={styles.orderNumber}>{order.order_number}</Text><Text style={styles.orderStatus}>{order.status || 'processing'}</Text></View>
                 <Text style={styles.rowSubtitle}>{new Date(order.created_at).toLocaleDateString()} · {order.currency || 'NGN'} {Number(order.total || 0).toLocaleString()}</Text>
                 {order.shop_order_items?.map((item, index) => <Text key={`${order.id}-${index}`} style={styles.orderItem}>{item.title || 'PAZ product'} ×{item.quantity || 1}</Text>)}
-              </View>)}
+                <Text style={[styles.orderItem, { marginTop: 8, color: palette.green, fontWeight: '800' }]}>{trackingLabel(order.tracking_status || 'order_placed')}</Text>
+                <Pressable accessibilityRole="button" onPress={() => { setTrackingOrder(order); void loadTrackingEvents(order.id); }} style={[styles.primaryButton, { marginTop: 10 }]}>
+                  <Text style={styles.primaryButtonText}>Track shipment</Text>
+                </Pressable>
+              </View>) : (
+                <View style={styles.orderCard}>
+                  <Text style={styles.orderNumber}>Order {trackingOrder.order_number}</Text>
+                  <Text style={[styles.rowSubtitle, { marginTop: 5 }]}>Shipment status: {trackingLabel(trackingOrder.tracking_status || 'order_placed')}</Text>
+                  {trackingOrder.tracking_status === 'cancelled' ? <Text style={[styles.error, { marginTop: 10 }]}>This order was cancelled.</Text> : null}
+                  <View style={{ gap: 13, marginTop: 18 }}>
+                    {trackingStages.map(([stage, label], index) => {
+                      const currentStage = trackingStages.findIndex(([value]) => value === (trackingOrder.tracking_status || 'order_placed'));
+                      const reached = trackingOrder.tracking_status !== 'cancelled' && index <= Math.max(currentStage, 0);
+                      const event = [...trackingEvents].reverse().find((entry) => entry.status === stage);
+                      return <View key={stage} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 11 }}>
+                        <View style={{ width: 13, height: 13, marginTop: 3, borderRadius: 7, backgroundColor: reached ? palette.green : palette.line }} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: reached ? palette.green : palette.muted, fontWeight: '800' }}>{label}</Text>
+                          {event?.created_at ? <Text style={styles.rowSubtitle}>{new Date(event.created_at).toLocaleString()}</Text> : null}
+                        </View>
+                      </View>;
+                    })}
+                  </View>
+                  {trackingOrder.tracking_number ? <Text style={[styles.orderItem, { marginTop: 16 }]}><Text style={{ fontWeight: '800' }}>Tracking number: </Text>{trackingOrder.tracking_number}</Text> : null}
+                  {trackingOrder.estimated_delivery_at ? <Text style={[styles.orderItem, { marginTop: 7 }]}><Text style={{ fontWeight: '800' }}>Estimated delivery: </Text>{new Date(trackingOrder.estimated_delivery_at).toLocaleString()}</Text> : null}
+                  {trackingBusy ? <ActivityIndicator color={palette.green} style={{ marginTop: 14 }} /> : null}
+                  {trackingError ? <Text accessibilityRole="alert" style={[styles.error, { marginTop: 14 }]}>{trackingError}</Text> : null}
+                  {trackingEvents.filter((event) => event.note).map((event) => <Text key={event.id} style={[styles.orderItem, { marginTop: 12 }]}>{event.note}</Text>)}
+                  <Text style={[styles.rowSubtitle, { marginTop: 16 }]}>Live rider location is not available yet. PAZ staff update the shipment stages.</Text>
+                </View>
+              )}
             </ScrollView>
           ) : null}
 

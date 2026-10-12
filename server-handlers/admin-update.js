@@ -100,6 +100,27 @@ export default async function handler(req, res) {
     try {
       if (action === 'delete_test_shop_orders') {
         result = await supabase.from('shop_orders').delete().eq('payment_mode', 'test')
+      } else if (action === 'update_shop_order_tracking') {
+        const trackingStatuses = ['order_placed', 'processing', 'dispatched', 'out_for_delivery', 'delivered', 'cancelled']
+        if (!match?.id || !trackingStatuses.includes(payload?.tracking_status)) {
+          return jsonResponse(res, 400, { error: 'An order ID and valid tracking status are required' })
+        }
+        const estimatedDeliveryAt = payload?.estimated_delivery_at
+          ? new Date(payload.estimated_delivery_at)
+          : null
+        if (estimatedDeliveryAt && Number.isNaN(estimatedDeliveryAt.getTime())) {
+          return jsonResponse(res, 400, { error: 'Estimated delivery date is invalid' })
+        }
+        const { data, error } = await supabase.rpc('admin_update_shop_order_tracking', {
+          p_order_id: match.id,
+          p_status: payload.tracking_status,
+          p_note: String(payload.note || '').trim().slice(0, 500) || null,
+          p_tracking_number: String(payload.tracking_number || '').trim().slice(0, 120) || null,
+          p_estimated_delivery_at: estimatedDeliveryAt?.toISOString() || null,
+          p_updated_by: user.id,
+        })
+        if (error) throw error
+        return jsonResponse(res, 200, { data })
       } else if (action === 'signed_url') {
         if (bucket !== 'vendor-verification' || !path || !String(path).startsWith('vendors/')) return jsonResponse(res, 400, { error: 'Invalid vendor document path' })
         const signedUrlResult = await supabase.storage.from(bucket).createSignedUrl(path, Math.min(Number(expiresIn) || 3600, 3600))

@@ -214,6 +214,15 @@ export default function AdminDashboard(props) {
   } = props;
 
   const [serverCompletedShopOrderCount, setServerCompletedShopOrderCount] = useState(null);
+  const [trackingDraft, setTrackingDraft] = useState({
+    tracking_status: "order_placed",
+    tracking_number: "",
+    estimated_delivery_at: "",
+    note: "",
+  });
+  const [trackingSaveBusy, setTrackingSaveBusy] = useState(false);
+  const [trackingSaveError, setTrackingSaveError] = useState("");
+  const [trackingSaveNotice, setTrackingSaveNotice] = useState("");
 
   useEffect(() => {
     if (mode !== "dashboard" || !isAdmin) return undefined;
@@ -2955,6 +2964,69 @@ export default function AdminDashboard(props) {
   const showDashboardTable = tableDashboardViews.includes(activeDashboardView);
 
   const paymentProofPreview = getPaymentProofPreview(selectedOrder);
+  const openShopOrderReview = (order) => {
+    setSelectedOrder(order);
+    setTrackingDraft({
+      tracking_status: order.trackingStatus || "order_placed",
+      tracking_number: order.trackingNumber || "",
+      estimated_delivery_at: order.estimatedDeliveryAt
+        ? new Date(new Date(order.estimatedDeliveryAt).getTime() - new Date(order.estimatedDeliveryAt).getTimezoneOffset() * 60000).toISOString().slice(0, 16)
+        : "",
+      note: "",
+    });
+    setTrackingSaveError("");
+    setTrackingSaveNotice("");
+  };
+  const saveShopOrderTracking = async (event) => {
+    event.preventDefault();
+    if (!selectedOrder?.id) return;
+    const token = session?.access_token || session?.accessToken || "";
+    if (!token) {
+      setTrackingSaveError("Your admin session has expired. Sign in again before updating tracking.");
+      return;
+    }
+    setTrackingSaveBusy(true);
+    setTrackingSaveError("");
+    setTrackingSaveNotice("");
+    try {
+      const response = await fetch("/api/admin-update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          action: "update_shop_order_tracking",
+          match: { id: selectedOrder.id },
+          payload: {
+            tracking_status: trackingDraft.tracking_status,
+            tracking_number: trackingDraft.tracking_number,
+            estimated_delivery_at: trackingDraft.estimated_delivery_at
+              ? new Date(trackingDraft.estimated_delivery_at).toISOString()
+              : null,
+            note: trackingDraft.note,
+          },
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.data) throw new Error(result.error || "Could not save order tracking.");
+      const updatedOrder = {
+        ...selectedOrder,
+        trackingStatus: result.data.tracking_status,
+        trackingNumber: result.data.tracking_number || "",
+        estimatedDeliveryAt: result.data.estimated_delivery_at || "",
+        trackingUpdatedAt: result.data.tracking_updated_at || "",
+      };
+      setSelectedOrder(updatedOrder);
+      setShopOrders?.((orders) => orders.map((order) => order.id === updatedOrder.id ? { ...order, ...updatedOrder } : order));
+      setTrackingDraft((draft) => ({ ...draft, note: "" }));
+      setTrackingSaveNotice("Tracking update saved and added to the customer timeline.");
+    } catch (error) {
+      setTrackingSaveError(error instanceof Error ? error.message : "Could not save order tracking.");
+    } finally {
+      setTrackingSaveBusy(false);
+    }
+  };
   const paymentHistoryRows = [
     ...shopOrders.map((order) => ({
       ...order,
@@ -5418,7 +5490,7 @@ export default function AdminDashboard(props) {
                               shopOrders.map((order) => (
                                 <tr
                                   key={order.id || order.orderNumber}
-                                  onClick={() => setSelectedOrder(order)}
+                                  onClick={() => openShopOrderReview(order)}
                                   style={{
                                     borderBottom: "1px solid #e2e8f0",
                                     cursor: "pointer",
@@ -8168,6 +8240,43 @@ export default function AdminDashboard(props) {
                   </div>
                 </div>
               </div>
+
+              <form
+                onSubmit={saveShopOrderTracking}
+                style={{ display: "grid", gap: "12px", marginBottom: "20px", padding: "18px", border: "1px solid #dbe7df", borderRadius: "14px", background: "#f7fbf8" }}
+              >
+                <div>
+                  <h4 style={{ margin: 0, color: "#166534" }}>Shipment tracking</h4>
+                  <p style={{ margin: "5px 0 0", color: "#64748b", fontSize: ".88rem" }}>
+                    Staff updates appear in the customer order timeline. Live rider location will be added with the rider app.
+                  </p>
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "10px" }}>
+                  <label style={{ display: "grid", gap: "5px", color: "#334155", fontSize: ".82rem", fontWeight: 750 }}>
+                    Shipping stage
+                    <select value={trackingDraft.tracking_status} onChange={(event) => setTrackingDraft((draft) => ({ ...draft, tracking_status: event.target.value }))} style={{ minHeight: "42px", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: "8px", background: "#fff", color: "#0f172a" }}>
+                      {[["order_placed", "Order placed"], ["processing", "Processing"], ["dispatched", "Dispatched"], ["out_for_delivery", "Out for delivery"], ["delivered", "Delivered"], ["cancelled", "Cancelled"]].map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                    </select>
+                  </label>
+                  <label style={{ display: "grid", gap: "5px", color: "#334155", fontSize: ".82rem", fontWeight: 750 }}>
+                    Tracking number (optional)
+                    <input value={trackingDraft.tracking_number} onChange={(event) => setTrackingDraft((draft) => ({ ...draft, tracking_number: event.target.value }))} maxLength={120} style={{ minHeight: "42px", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: "8px" }} />
+                  </label>
+                  <label style={{ display: "grid", gap: "5px", color: "#334155", fontSize: ".82rem", fontWeight: 750 }}>
+                    Estimated delivery
+                    <input type="datetime-local" value={trackingDraft.estimated_delivery_at} onChange={(event) => setTrackingDraft((draft) => ({ ...draft, estimated_delivery_at: event.target.value }))} style={{ minHeight: "42px", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: "8px" }} />
+                  </label>
+                </div>
+                <label style={{ display: "grid", gap: "5px", color: "#334155", fontSize: ".82rem", fontWeight: 750 }}>
+                  Update note for the customer (optional)
+                  <input value={trackingDraft.note} onChange={(event) => setTrackingDraft((draft) => ({ ...draft, note: event.target.value }))} maxLength={500} placeholder="e.g. Package handed to the delivery partner" style={{ minHeight: "42px", padding: "8px 10px", border: "1px solid #cbd5e1", borderRadius: "8px" }} />
+                </label>
+                {trackingSaveError ? <p role="alert" style={{ margin: 0, color: "#b91c1c", fontWeight: 700 }}>{trackingSaveError}</p> : null}
+                {trackingSaveNotice ? <p role="status" style={{ margin: 0, color: "#166534", fontWeight: 700 }}>{trackingSaveNotice}</p> : null}
+                <button type="submit" disabled={trackingSaveBusy} style={{ justifySelf: "start", minHeight: "42px", padding: "0 16px", border: 0, borderRadius: "9px", background: trackingSaveBusy ? "#94a3b8" : "#166534", color: "#fff", fontWeight: 800, cursor: trackingSaveBusy ? "wait" : "pointer" }}>
+                  {trackingSaveBusy ? "Saving tracking…" : "Save shipment update"}
+                </button>
+              </form>
 
               <div
                 className="order-review-columns"

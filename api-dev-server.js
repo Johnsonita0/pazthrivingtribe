@@ -33,6 +33,7 @@ import vendorPinChangedEmailHandler from './server-handlers/vendor-pin-changed-e
 import activityNotificationHandler from './server-handlers/activity-notification.js';
 import testimonialSubmissionHandler from './server-handlers/testimonial-submission.js';
 import generateProductDescriptionHandler from './server-handlers/generate-product-description.js';
+import mentorShopOrderHandler from './server-handlers/mentor-shop-order.js';
 import productReleaseNotificationHandler from './server-handlers/product-release-notification.js';
 import productMetricsHandler from './server-handlers/product-metrics.js';
 import productRatingsHandler from './server-handlers/product-ratings.js';
@@ -188,6 +189,12 @@ const server = http.createServer((req, res) => {
       if (pathname === '/api/generate-product-description' && req.method === 'POST') {
         req.body = body ? JSON.parse(body) : {};
         await generateProductDescriptionHandler(req, res);
+        return;
+      }
+
+      if (pathname === '/api/mentor-shop-order' && req.method === 'POST') {
+        req.body = body ? JSON.parse(body) : {};
+        await mentorShopOrderHandler(req, res);
         return;
       }
 

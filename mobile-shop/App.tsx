@@ -14,6 +14,7 @@ import { CheckoutPaymentMethod, CheckoutView } from './src/CheckoutView';
 import { BooksListingView } from './src/BooksListingView';
 import { CategoriesView } from './src/CategoriesView';
 import { HomeView } from './src/HomeView';
+import { MentorOrderAssistant } from './src/MentorOrderAssistant';
 import { ProfileView } from './src/ProfileView';
 import { apiRequest, CartLine, categoryMatches, DeliveryAddress, formatPrice, normalizeProduct, Product, productAvailability, productImageUrl, productSlug, Rating, SITE_ROOT } from './src/api';
 import { ProductDetailView, ProductMetrics } from './src/ProductDetailView';
@@ -97,7 +98,7 @@ function LoadingBars() {
   );
 }
 
-function TabButton({ icon, label, active, badge, onPress }: { icon: 'home' | 'th-large' | 'shopping-cart' | 'user-circle' | 'heart'; label: string; active: boolean; badge?: number; onPress: () => void }) {
+function TabButton({ icon, label, active, badge, onPress }: { icon: 'home' | 'th-large' | 'shopping-cart' | 'user-circle' | 'heart' | 'robot'; label: string; active: boolean; badge?: number; onPress: () => void }) {
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={badge ? `${label}, ${badge} items` : label} accessibilityState={{ selected: active }} onPress={onPress} style={({ pressed }) => [styles.tabButton, pressed && styles.tabButtonPressed]}>
       <View style={[styles.tabIconWrap, active && styles.tabIconWrapActive]}>
@@ -114,6 +115,8 @@ export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [storageBaseUrl, setStorageBaseUrl] = useState('');
   const [screen, setScreen] = useState<Screen>('home');
+  const [mentorOrderVisible, setMentorOrderVisible] = useState(false);
+  const [mentorOrderInitialRequest, setMentorOrderInitialRequest] = useState('');
   const [splashElapsed, setSplashElapsed] = useState(false);
   const [onboardingStatus, setOnboardingStatus] = useState<'loading' | 'pending' | 'done'>('loading');
   const [themeName, setThemeName] = useState<ShopThemeName>('sage');
@@ -263,6 +266,74 @@ export default function App() {
     setCheckoutError('');
     setNotice('');
     setScreen('checkout');
+  };
+
+  const openMentorOrder = (product?: Product) => {
+    setMentorOrderInitialRequest(product ? `Please help me order ${product.title}.` : '');
+    setMentorOrderVisible(true);
+  };
+
+  const askMentorToOrder = async (
+    message: string,
+    history: { role: 'user' | 'assistant'; content: string }[],
+  ): Promise<{ message: string; recommendations: { productId: string; quantity: number }[] }> => {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) throw new Error(error.message);
+    if (!data.session?.access_token) throw new Error('Sign in to order with Mentor Charles.');
+    const catalogue = products.slice(0, 80).map((product) => {
+      const availability = productAvailability(product);
+      return {
+        id: product.id,
+        title: product.title,
+        category: product.category,
+        description: product.description.slice(0, 400),
+        price: product.price,
+        currency: product.currency,
+        isFree: product.isFree,
+        available: availability.available && product.inStock && product.stockCount > 0,
+        stockCount: product.stockCount,
+      };
+    });
+    const response = await apiRequest('/mentor-shop-order', 'POST', {
+      message,
+      history: history.slice(0, -1),
+      products: catalogue,
+    }, data.session.access_token);
+    if (typeof response.message !== 'string' || !Array.isArray(response.recommendations)) {
+      throw new Error('Mentor Charles returned an invalid response. Please try again.');
+    }
+    return {
+      message: response.message,
+      recommendations: response.recommendations.filter((recommendation: { productId?: unknown; quantity?: unknown }) =>
+        typeof recommendation.productId === 'string'
+        && typeof recommendation.quantity === 'number'
+        && products.some((product) => product.id === recommendation.productId)),
+    };
+  };
+
+  const addMentorRecommendationToCart = (product: Product, quantity: number) => {
+    const availability = productAvailability(product);
+    if (!availability.available || !product.inStock || product.stockCount <= 0) {
+      setNotice(availability.message || 'This product is currently out of stock.');
+      return false;
+    }
+    const existing = cart.find((line) => line.product.id === product.id);
+    if ((existing?.quantity || 0) + quantity > product.stockCount) {
+      setNotice(`Only ${product.stockCount} ${product.stockCount === 1 ? 'copy is' : 'copies are'} currently available.`);
+      return false;
+    }
+    const currencyConflict = cart.find((line) => !line.product.isFree && !product.isFree && line.product.currency !== product.currency);
+    if (currencyConflict) {
+      setNotice(`Your current order uses ${currencyConflict.product.currency}. Complete that order before adding ${product.currency} products.`);
+      return false;
+    }
+    setCart((current) => {
+      const currentLine = current.find((line) => line.product.id === product.id);
+      return currentLine
+        ? current.map((line) => line.product.id === product.id ? { ...line, quantity: line.quantity + quantity } : line)
+        : [...current, { product, quantity }];
+    });
+    return true;
   };
 
   const getCheckoutSession = async (): Promise<{ accessToken: string; user: SupabaseUser } | null> => {
@@ -1324,7 +1395,7 @@ export default function App() {
         <View style={styles.brandBlock}><Image source={require('./assets/paz-logo.png')} style={styles.brandLogo} resizeMode="contain" /><View><Text style={styles.brandEyebrow}>PAZ THRIVING TRIBE</Text><Text style={styles.brandTitle}>{screen === 'success' ? 'Order confirmed' : 'PAZ Shop'}</Text></View></View>
         {screen !== 'success' ? <View style={styles.headerActions}>
           <Pressable accessibilityRole="button" accessibilityLabel="Open account" onPress={() => openAccount()} style={styles.accountButton}><Text style={styles.accountButtonText}>{currentUser ? `Hi, ${accountLabel}` : 'Account'}</Text></Pressable>
-          <Pressable accessibilityRole="button" accessibilityLabel={`Open cart, ${cartCount} items`} onPress={openCheckout} style={styles.cartButton}><Text style={styles.cartText}>Cart</Text><View style={styles.cartCountBadge}><Text style={styles.cartCountText}>{cartCount}</Text></View></Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Order with Mentor Charles" onPress={() => openMentorOrder()} style={styles.cartButton}><FontAwesome5 name="robot" size={14} color={palette.green} /><Text style={styles.cartText}>Mentor</Text>{cartCount ? <View style={styles.cartCountBadge}><Text style={styles.cartCountText}>{cartCount}</Text></View> : null}</Pressable>
         </View> : null}
       </View> : null}
       {notice && screen !== 'success' ? <Pressable accessibilityRole="button" accessibilityLabel="Dismiss notification" onPress={() => setNotice('')} style={styles.notice}><Text style={styles.noticeText}>{notice}</Text><Text style={styles.noticeClose}>×</Text></Pressable> : null}
@@ -1343,18 +1414,18 @@ export default function App() {
         setInitialComingSoonCategory(null);
         setCategory(selectedCategory);
         setScreen('listing');
-      }} onMoreCategories={() => { setInitialComingSoonCategory(null); setScreen('categories'); }} onOpen={(product) => void openProduct(product)} onAddToCart={addToCart} /> : null}
-      {screen === 'listing' || screen === 'favorites' ? <BooksListingView products={products} loading={loading} error={pageError} storageBaseUrl={storageBaseUrl} category={category} favoriteIds={favoriteIds} favoritesOnly={screen === 'favorites'} onCategory={setCategory} onToggleFavorite={toggleFavorite} onBack={() => { setCategory('All'); setScreen('home'); }} onRefresh={() => void loadProducts()} onOpen={(product) => void openProduct(product)} onAddToCart={addToCart} /> : null}
+      }} onMoreCategories={() => { setInitialComingSoonCategory(null); setScreen('categories'); }} onOpen={(product) => void openProduct(product)} onOrderWithMentor={openMentorOrder} /> : null}
+      {screen === 'listing' || screen === 'favorites' ? <BooksListingView products={products} loading={loading} error={pageError} storageBaseUrl={storageBaseUrl} category={category} favoriteIds={favoriteIds} favoritesOnly={screen === 'favorites'} onCategory={setCategory} onToggleFavorite={toggleFavorite} onBack={() => { setCategory('All'); setScreen('home'); }} onRefresh={() => void loadProducts()} onOpen={(product) => void openProduct(product)} onOrderWithMentor={openMentorOrder} /> : null}
       {screen === 'categories' ? <CategoriesView products={products} loading={loading} initialComingSoonCategory={initialComingSoonCategory} onBack={() => { setInitialComingSoonCategory(null); setScreen('home'); }} onSelect={(selectedCategory) => { setInitialComingSoonCategory(null); setCategory(selectedCategory); setScreen('listing'); }} /> : null}
       {screen === 'profile' ? <ProfileView user={currentUser} notificationsEnabled={accountPreferences.notificationsEnabled} openChatsRequest={openChatsRequest} openNotificationsRequest={openNotificationsRequest} openAddressRequest={openAddressRequest} deliveryAddress={deliveryAddress} onUnreadChange={setUnreadChatCount} onNotificationUnreadChange={setUnreadCustomerNotificationCount} onDeliveryAddressChange={(address) => { setDeliveryAddress(address); if (address?.fullName) setCustomerName(address.fullName); }} onWishlist={() => setScreen('favorites')} onCheckout={openCheckout} onToggleNotifications={(enabled) => void toggleProfileNotifications(enabled)} onSignIn={() => openAccount('signIn')} onCreateAccount={() => openAccount('signUp')} onSignOut={() => void signOutAccount()} onAvatarChange={setProfileAvatarUrl} themeName={themeName} onThemeChange={saveThemePreference} /> : null}
-      {screen === 'detail' && selectedProduct ? <ProductDetailView product={selectedProduct} storageBaseUrl={storageBaseUrl} metrics={metrics} ratings={ratings} loading={detailLoading} ratingValue={ratingValue} ratingName={ratingName} ratingEmail={ratingEmail} ratingComment={ratingComment} ratingBusy={ratingBusy} cartCount={cartCount} isFavorite={favoriteIds.has(selectedProduct.id)} onBack={() => setScreen(previousScreenRef.current)} onCart={openCheckout} onAdd={(point) => addToCart(selectedProduct, point)} onBuyNow={(point) => buyNow(selectedProduct, point)} onShare={() => void shareProduct(selectedProduct)} onToggleFavorite={() => toggleFavorite(selectedProduct)} onChat={() => void openChat()} onRatingValue={setRatingValue} onRatingName={setRatingName} onRatingEmail={setRatingEmail} onRatingComment={setRatingComment} onSubmitRating={() => void submitRating()} /> : null}
+      {screen === 'detail' && selectedProduct ? <ProductDetailView product={selectedProduct} storageBaseUrl={storageBaseUrl} metrics={metrics} ratings={ratings} loading={detailLoading} ratingValue={ratingValue} ratingName={ratingName} ratingEmail={ratingEmail} ratingComment={ratingComment} ratingBusy={ratingBusy} cartCount={cartCount} isFavorite={favoriteIds.has(selectedProduct.id)} onBack={() => setScreen(previousScreenRef.current)} onCart={openCheckout} onAskMentor={() => openMentorOrder(selectedProduct)} onShare={() => void shareProduct(selectedProduct)} onToggleFavorite={() => toggleFavorite(selectedProduct)} onChat={() => void openChat()} onRatingValue={setRatingValue} onRatingName={setRatingName} onRatingEmail={setRatingEmail} onRatingComment={setRatingComment} onSubmitRating={() => void submitRating()} /> : null}
       {screen === 'checkout' ? <CheckoutView cart={cart} storageBaseUrl={storageBaseUrl} totalLabel={totalLabel} freeOrder={allFree} customerName={customerName} customerEmail={customerEmail} deliveryAddress={deliveryAddress} busy={checkoutBusy} error={checkoutError} pendingPayment={Boolean(pendingCheckout)} onName={setCustomerName} onEmail={setCustomerEmail} onManageAddress={() => { setOpenAddressRequest((request) => request + 1); setScreen('profile'); }} onQuantity={updateQuantity} onRemove={(id) => setCart((current) => current.filter((line) => line.product.id !== id))} onBack={() => setScreen(checkoutReturnScreenRef.current)} onPlaceOrder={(method) => void startPaidCheckout(method)} onRequestFreeProduct={() => void completeFreeOrder()} onConfirmPayment={confirmPayment} onContinueShopping={() => { setCategory('All'); setScreen('home'); }} /> : null}
       {screen === 'success' && completedOrder ? <View style={styles.success}><View style={styles.successMark}><Text style={styles.successMarkText}>✓</Text></View><Text style={styles.successKicker}>ORDER CONFIRMED</Text><Text style={styles.successTitle}>Your next chapter starts here.</Text><Text style={styles.successCopy}>We sent your product to {completedOrder.email}. Check your inbox for order {completedOrder.orderNumber}.</Text><Button title="Back to the shop" onPress={() => { setCompletedOrder(null); setCategory('All'); setScreen('home'); }} /></View> : null}
 
       {screen !== 'detail' && screen !== 'checkout' && screen !== 'success' ? <View style={[styles.tabBar, { backgroundColor: palette.white, borderColor: palette.line }]}>
         <TabButton icon="home" label="Home" active={screen === 'home'} onPress={() => { setCategory('All'); setScreen('home'); }} />
         <TabButton icon="th-large" label="Categories" active={screen === 'categories' || screen === 'listing'} onPress={() => setScreen('categories')} />
-        <TabButton icon="shopping-cart" label="Cart" active={false} badge={cartCount} onPress={openCheckout} />
+        <TabButton icon="robot" label="Mentor" active={mentorOrderVisible} badge={cartCount} onPress={() => openMentorOrder()} />
         <TabButton icon="heart" label="Favorites" active={screen === 'favorites'} onPress={() => { setCategory('All'); setScreen('favorites'); }} />
         <TabButton icon="user-circle" label="Profile" active={screen === 'profile'} onPress={() => setScreen('profile')} />
       </View> : null}
@@ -1362,6 +1433,27 @@ export default function App() {
       {flyingProduct && flightOrigin ? <Animated.View style={[styles.flightToken, { left: flightOrigin.x, top: flightOrigin.y, transform: [{ translateX: flightProgress.interpolate({ inputRange: [0, 1], outputRange: [0, windowWidth * 0.5 - 21 - flightOrigin.x] }) }, { translateY: flightProgress.interpolate({ inputRange: [0, 1], outputRange: [0, windowHeight - (NativeStatusBar.currentHeight || 0) - 58 - flightOrigin.y] }) }, { scale: flightProgress.interpolate({ inputRange: [0, 1], outputRange: [1, 0.34] }) }], opacity: flightProgress.interpolate({ inputRange: [0, 0.72, 1], outputRange: [1, 1, 0] }), pointerEvents: 'none' }]}>
         {productImageUrl(flyingProduct.cover, storageBaseUrl) ? <Image source={{ uri: productImageUrl(flyingProduct.cover, storageBaseUrl) }} style={styles.flightImage} resizeMode="cover" /> : <Text style={styles.flightLetter}>{flyingProduct.title.slice(0, 1)}</Text>}
       </Animated.View> : null}
+
+      <MentorOrderAssistant
+        key={mentorOrderVisible ? mentorOrderInitialRequest : 'closed'}
+        visible={mentorOrderVisible}
+        initialRequest={mentorOrderInitialRequest}
+        products={products}
+        storageBaseUrl={storageBaseUrl}
+        signedIn={Boolean(currentUser)}
+        cartCount={cartCount}
+        onClose={() => setMentorOrderVisible(false)}
+        onSignIn={() => {
+          setMentorOrderVisible(false);
+          openAccount('signIn');
+        }}
+        onAsk={askMentorToOrder}
+        onAddToOrder={addMentorRecommendationToCart}
+        onCheckout={() => {
+          setMentorOrderVisible(false);
+          openCheckout();
+        }}
+      />
 
       <CustomerAccountFlow
         visible={accountVisible && accountSetupLoaded}

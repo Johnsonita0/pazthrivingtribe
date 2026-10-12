@@ -2,7 +2,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { categoryMatches, formatPrice, Product, productAvailability, productImageUrl } from './api';
-import { getTapPoint, palette, registerShopThemeStyles, Stars, TapPoint } from './ShopComponents';
+import { palette, registerShopThemeStyles, Stars } from './ShopComponents';
 import { PromoBoard } from './PromoBoard';
 
 type Props = {
@@ -18,7 +18,7 @@ type Props = {
   onBack: () => void;
   onRefresh: () => void;
   onOpen: (product: Product) => void;
-  onAddToCart: (product: Product, point: TapPoint) => void;
+  onOrderWithMentor: (product: Product) => void;
 };
 
 function isBook(product: Product) {
@@ -42,7 +42,7 @@ export function BooksListingView({
   onBack,
   onRefresh,
   onOpen,
-  onAddToCart,
+  onOrderWithMentor,
 }: Props) {
   const [search, setSearch] = useState('');
   const searchRef = useRef<TextInput>(null);
@@ -202,12 +202,12 @@ export function BooksListingView({
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel={canAdd ? `Add ${product.title} to cart` : availability.message || 'Book unavailable'}
+                  accessibilityLabel={canAdd ? `Ask Mentor Charles to order ${product.title}` : availability.message || 'Book unavailable'}
                   disabled={!canAdd}
-                  onPress={(event) => onAddToCart(product, getTapPoint(event))}
+                  onPress={() => onOrderWithMentor(product)}
                   style={({ pressed }) => [styles.addButton, !canAdd && styles.addButtonDisabled, pressed && canAdd && styles.addButtonPressed]}
                 >
-                  <Text numberOfLines={1} style={[styles.addButtonText, !canAdd && styles.addButtonTextDisabled]}>{canAdd ? 'Add to Cart' : 'Unavailable'}</Text>
+                  <Text numberOfLines={1} style={[styles.addButtonText, !canAdd && styles.addButtonTextDisabled]}>{canAdd ? 'Ask Mentor' : 'Unavailable'}</Text>
                 </Pressable>
               </View>
             </View>

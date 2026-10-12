@@ -884,6 +884,16 @@ export default function VendorDashboard() {
 
   useEffect(() => {
     if (!session?.user?.id || !profile?.id || pinMode || loading) return;
+    const mentorRequested = new URLSearchParams(window.location.search).get("mentor") === "1";
+    if (mentorRequested) {
+      const nextUrl = new URL(window.location.href);
+      nextUrl.searchParams.delete("mentor");
+      window.history.replaceState({}, "", `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
+      setVendorTourStep(0);
+      setVendorTourOpen(true);
+      setSettingsOpen(true);
+      return;
+    }
     if (hasVendorSetupMilestone(profile)) {
       completeVendorTour();
       return;
@@ -2208,13 +2218,26 @@ export default function VendorDashboard() {
             </button>
           ))}
         </section>
+        <div style={{ marginTop: "18px" }}>
+          <button
+            type="button"
+            onClick={() => {
+              setVendorTourStep(0);
+              setVendorTourOpen(true);
+              runVendorTourAction("settings");
+            }}
+            style={{ display: "inline-flex", alignItems: "center", gap: "9px", border: "1px solid #bbf7d0", borderRadius: "999px", padding: "9px 14px", background: "#f0fdf4", color: "#166534", fontWeight: 850, cursor: "pointer" }}
+          >
+            <i className="fa-solid fa-robot" aria-hidden="true" /> Ask Mentor Charles for setup help
+          </button>
+        </div>
         {vendorTourOpen && (
           <section
             aria-labelledby="vendor-tour-title"
             style={{ marginTop: "22px", padding: "18px 20px", border: "1px solid #bbf7d0", borderLeft: "4px solid #166534", borderRadius: "14px", background: "#f0fdf4", boxShadow: "0 8px 20px rgba(15, 23, 42, .06)" }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
-              <p style={{ margin: 0, color: "#15803d", fontSize: ".7rem", fontWeight: 900, letterSpacing: ".15em" }}>{vendorTourSteps[vendorTourStep].eyebrow}</p>
+              <p style={{ display: "flex", alignItems: "center", gap: "8px", margin: 0, color: "#15803d", fontSize: ".7rem", fontWeight: 900, letterSpacing: ".12em" }}><i className="fa-solid fa-robot" aria-hidden="true" /> MENTOR CHARLES · {vendorTourSteps[vendorTourStep].eyebrow}</p>
               <span style={{ color: "#64748b", fontSize: ".78rem", fontWeight: 800 }}>{vendorTourStep + 1} of {vendorTourSteps.length}</span>
             </div>
             <h2 id="vendor-tour-title" style={{ margin: "8px 0 7px", color: "#102a20", fontSize: "1.25rem" }}>{vendorTourSteps[vendorTourStep].title}</h2>

@@ -26,12 +26,6 @@ const galleryItems = [
     image: '/image/pic3.png',
     // service: 'Schools',
   },
-  {
-    title: 'Corporate Team Building',
-    description: 'Organizations benefit from our tailored team coaching, fostering collaboration, emotional wellness, and a thriving workplace culture for employees at all levels.',
-    image: '/image/pic6.png',
-    // service: 'Corporations',
-  },
   // {
   //   title: 'Children\'s Character Development',
   //   description: 'Sunday school and church education programs enriched with values-based coaching that helps children ages 6-12 develop confidence, kindness, and strong character foundations.',
@@ -39,14 +33,8 @@ const galleryItems = [
   //   // service: 'Churches',
   // },
   {
-    title: 'Mental Wellness Seminars',
-    description: 'Professional seminars for schools, workplaces, and organizations on stress management, anxiety relief, and mental health awareness led by certified coaches.',
-    image: '/image/pic8.png',
-    // service: 'Organizations',
-  },
-  {
-    title: 'Community Empowerment Series',
-    description: 'Multi-week programs for community centers and NGOs fostering personal growth, resilience, and social impact through group coaching and peer mentorship.',
+    title: 'Organizational Coaching Session',
+    description: 'An interactive coaching session delivered for an organization, helping participants reflect, build confidence, and explore practical ways to grow.',
     image: '/image/pic9.jpeg',
     // service: 'Communities',
   },
@@ -69,8 +57,8 @@ const galleryItems = [
     // service: 'Communities',
   },
   {
-    title: 'Lead Coach - Roseline Iraoya',
-    description: 'Meet our Lead Coach, Roseline Iraoya, dedicated to transforming lives through personalized coaching, mentorship, and creating a thriving community of growth.',
+    title: 'Certified Children and Teens Coach - Roseline Iraoya',
+    description: 'Meet Roseline Iraoya, a Certified Children and Teens Coach who supports young people through coaching, mentorship, and personal development.',
     image: '/image/pic13.png',
     // service: 'Leadership',
   },

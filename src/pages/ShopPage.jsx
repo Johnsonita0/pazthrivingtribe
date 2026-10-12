@@ -21,6 +21,16 @@ const canonicalShopCategory = (category) => {
   if (/\b(gadgets?|electronics?|technology|devices?|accessories)\b/i.test(value)) return 'Gadgets';
   return value || 'Other';
 };
+const orderTrackingStages = [
+  ['order_placed', 'Order placed'],
+  ['processing', 'Processing'],
+  ['dispatched', 'Dispatched'],
+  ['out_for_delivery', 'Out for delivery'],
+  ['delivered', 'Delivered'],
+];
+const orderTrackingLabel = (status) =>
+  orderTrackingStages.find(([value]) => value === status)?.[1]
+  || (status === 'cancelled' ? 'Cancelled' : 'Order placed');
 
 const defaultBankAccount = {
   accountName: 'Paz Thriving Tribe',
@@ -682,6 +692,10 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const [shopAccountMenuOpen, setShopAccountMenuOpen] = useState(false);
   const [shopNotificationsOpen, setShopNotificationsOpen] = useState(false);
   const [shopOrders, setShopOrders] = useState([]);
+  const [trackedShopOrderId, setTrackedShopOrderId] = useState('');
+  const [shopOrderTrackingEvents, setShopOrderTrackingEvents] = useState([]);
+  const [shopOrderTrackingBusy, setShopOrderTrackingBusy] = useState(false);
+  const [shopOrderTrackingError, setShopOrderTrackingError] = useState('');
   const [shopConversations, setShopConversations] = useState([]);
   const [activeShopConversation, setActiveShopConversation] = useState(null);
   const [shopNotifications, setShopNotifications] = useState([]);
@@ -878,7 +892,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     const loadData = async () => {
       if (shopAccountPage === 'orders') {
         const queryOrders = () => supabase.from('shop_orders')
-          .select('id,order_number,total,currency,status,created_at,shop_order_items(title,quantity)')
+          .select('id,order_number,total,currency,status,tracking_status,tracking_number,estimated_delivery_at,tracking_updated_at,created_at,shop_order_items(title,quantity)')
           .order('created_at', { ascending: false })
           .limit(50);
         const [byCustomer, byEmail] = await Promise.all([
@@ -926,6 +940,25 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
       .finally(() => { if (active) setShopAccountDataBusy(false); });
     return () => { active = false; };
   }, [shopAccountPage, shopAuthSession?.user?.id]);
+
+  const loadShopOrderTracking = async (orderId) => {
+    setShopOrderTrackingBusy(true);
+    setShopOrderTrackingError('');
+    setShopOrderTrackingEvents([]);
+    try {
+      const { data, error } = await supabase.from('shop_order_tracking_events')
+        .select('id,status,note,created_at')
+        .eq('order_id', orderId)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      setShopOrderTrackingEvents(data || []);
+    } catch (error) {
+      setShopOrderTrackingError('Shipment updates could not be loaded. Please try again later.');
+      console.error('Could not load order tracking events:', error);
+    } finally {
+      setShopOrderTrackingBusy(false);
+    }
+  };
 
   useEffect(() => {
     const intervalId = window.setInterval(() => setAvailabilityNow(Date.now()), 15000);
@@ -2182,11 +2215,23 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
     }
   };
   const openShopAccountPage = (page) => {
+    if (page === 'vendor') {
+      navigate('/vendor?mentor=1');
+      return;
+    }
     setShopAccountPage(page);
     setShopAccountMenuOpen(false);
     window.clearTimeout(shopAccountMenuCloseTimer.current);
     setShopNotificationsOpen(false);
     setShopAddressNotice('');
+  };
+  const toggleShopOrderTracking = (orderId) => {
+    if (trackedShopOrderId === orderId) {
+      setTrackedShopOrderId('');
+      return;
+    }
+    setTrackedShopOrderId(orderId);
+    void loadShopOrderTracking(orderId);
   };
   const chooseShopTheme = async (theme) => {
     setShopAccountTheme(theme);
@@ -2307,6 +2352,7 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
   const shopProfileMenu = [
     ['account', 'My profile', 'user'],
     ['orders', 'My orders', 'receipt'],
+    ['vendor', 'Sell with PAZ', 'store'],
     ['wishlist', 'My wishlist', 'heart'],
     ['messages', 'Messages', 'comments'],
     ['notifications', 'Notifications', 'bell'],
@@ -2615,7 +2661,40 @@ export default function ShopPage({ onOrderSubmitted, paystackPublicKey = '', sto
                 ) : null}
 
                 {shopAccountPage === 'orders' ? (
-                  shopOrders.length ? <div style={{ display: 'grid', gap: '12px' }}>{shopOrders.map((order) => <article key={order.id} style={{ padding: '15px', border: `1px solid ${accountThemeColors.border}`, borderRadius: '10px' }}><div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}><strong>Order {order.order_number || order.id}</strong><span>{order.status || 'Processing'}</span></div><p style={{ margin: '8px 0', color: accountThemeColors.muted }}>{(order.shop_order_items || []).map((item) => `${item.title} × ${item.quantity}`).join(', ') || 'Order items'}</p><small style={{ color: accountThemeColors.muted }}>{order.created_at ? new Date(order.created_at).toLocaleDateString() : ''}</small><strong style={{ display: 'block', marginTop: '8px' }}>{order.currency || 'NGN'} {Number(order.total || 0).toLocaleString()}</strong></article>)}</div> : !shopAccountDataBusy && !shopAccountDataError ? <p style={{ color: accountThemeColors.muted }}>Your orders will appear here after you place an order.</p> : null
+                  shopOrders.length ? <div style={{ display: 'grid', gap: '12px' }}>{shopOrders.map((order) => {
+                    const status = order.tracking_status || 'order_placed';
+                    const activeStage = orderTrackingStages.findIndex(([value]) => value === status);
+                    const selectedForTracking = trackedShopOrderId === order.id;
+                    return <article key={order.id} style={{ padding: '15px', border: `1px solid ${accountThemeColors.border}`, borderRadius: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}><strong>Order {order.order_number || order.id}</strong><span>{order.status || 'Processing'} · {orderTrackingLabel(status)}</span></div>
+                      <p style={{ margin: '8px 0', color: accountThemeColors.muted }}>{(order.shop_order_items || []).map((item) => `${item.title} × ${item.quantity}`).join(', ') || 'Order items'}</p>
+                      <small style={{ color: accountThemeColors.muted }}>{order.created_at ? new Date(order.created_at).toLocaleDateString() : ''}</small>
+                      <strong style={{ display: 'block', marginTop: '8px' }}>{order.currency || 'NGN'} {Number(order.total || 0).toLocaleString()}</strong>
+                      <button type="button" onClick={() => toggleShopOrderTracking(order.id)} style={{ marginTop: '12px', minHeight: '38px', padding: '0 12px', border: `1px solid ${accountThemeColors.border}`, borderRadius: '8px', background: accountThemeColors.softAccent, color: accountThemeColors.accent, fontWeight: 800, cursor: 'pointer' }}>
+                        {selectedForTracking ? 'Hide tracking' : 'Track shipment'}
+                      </button>
+                      {selectedForTracking ? <div style={{ marginTop: '14px', padding: '14px', borderRadius: '10px', background: accountThemeColors.surface }}>
+                        <strong style={{ display: 'block', marginBottom: '12px' }}>Shipment progress</strong>
+                        {status === 'cancelled' ? <p style={{ margin: '0 0 12px', color: '#b91c1c', fontWeight: 800 }}>This order was cancelled.</p> : null}
+                        <div style={{ display: 'grid', gap: '10px' }}>
+                          {orderTrackingStages.map(([stage, label], index) => {
+                            const reached = status === 'cancelled' ? false : index <= Math.max(activeStage, 0);
+                            const event = [...shopOrderTrackingEvents].reverse().find((entry) => entry.status === stage);
+                            return <div key={stage} style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', color: reached ? accountThemeColors.accent : accountThemeColors.muted }}>
+                              <span aria-hidden="true" style={{ width: '12px', height: '12px', flex: '0 0 12px', marginTop: '3px', borderRadius: '50%', background: reached ? accountThemeColors.accent : accountThemeColors.border }} />
+                              <span><strong>{label}</strong>{event?.created_at ? <small style={{ display: 'block', marginTop: '2px' }}>{new Date(event.created_at).toLocaleString()}</small> : null}</span>
+                            </div>;
+                          })}
+                        </div>
+                        {order.tracking_number ? <p style={{ margin: '12px 0 0', color: accountThemeColors.text }}><strong>Tracking number:</strong> {order.tracking_number}</p> : null}
+                        {order.estimated_delivery_at ? <p style={{ margin: '6px 0 0', color: accountThemeColors.text }}><strong>Estimated delivery:</strong> {new Date(order.estimated_delivery_at).toLocaleString()}</p> : null}
+                        {shopOrderTrackingBusy ? <p role="status" style={{ margin: '12px 0 0', color: accountThemeColors.muted }}>Loading shipment updates…</p> : null}
+                        {shopOrderTrackingError ? <p role="alert" style={{ margin: '12px 0 0', color: '#b91c1c' }}>{shopOrderTrackingError}</p> : null}
+                        {shopOrderTrackingEvents.filter((entry) => entry.note).map((entry) => <p key={entry.id} style={{ margin: '10px 0 0', color: accountThemeColors.muted }}>{entry.note}</p>)}
+                        <p style={{ margin: '12px 0 0', color: accountThemeColors.muted, fontSize: '.85rem' }}>Live rider location is not available yet. Shipment stages are updated by PAZ staff.</p>
+                      </div> : null}
+                    </article>;
+                  })}</div> : !shopAccountDataBusy && !shopAccountDataError ? <p style={{ color: accountThemeColors.muted }}>Your orders will appear here after you place an order.</p> : null
                 ) : null}
 
                 {shopAccountPage === 'wishlist' ? (

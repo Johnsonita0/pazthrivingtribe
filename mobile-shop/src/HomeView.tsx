@@ -2,7 +2,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
 import { formatPrice, Product, productAvailability, productImageUrl } from './api';
-import { getTapPoint, palette, registerShopThemeStyles, Stars, TapPoint } from './ShopComponents';
+import { palette, registerShopThemeStyles, Stars } from './ShopComponents';
 import { PromoBoard } from './PromoBoard';
 
 type Props = {
@@ -21,7 +21,7 @@ type Props = {
   onCategory: (category: string) => void;
   onMoreCategories: () => void;
   onOpen: (product: Product) => void;
-  onAddToCart: (product: Product, point: TapPoint) => void;
+  onOrderWithMentor: (product: Product) => void;
 };
 
 const quickCategories = [
@@ -40,12 +40,12 @@ function HomeProductCard({
   product,
   storageBaseUrl,
   onOpen,
-  onAdd,
+  onOrder,
 }: {
   product: Product;
   storageBaseUrl: string;
   onOpen: () => void;
-  onAdd: (point: TapPoint) => void;
+  onOrder: () => void;
 }) {
   const cover = productImageUrl(product.cover, storageBaseUrl);
   const availability = productAvailability(product);
@@ -78,10 +78,10 @@ function HomeProductCard({
           accessibilityRole="button"
           accessibilityLabel={canAdd ? `Add ${product.title} to cart` : availability.message || 'Product unavailable'}
           disabled={!canAdd}
-          onPress={(event) => onAdd(getTapPoint(event))}
+          onPress={onOrder}
           style={({ pressed }) => [styles.addButton, !canAdd && styles.addButtonDisabled, pressed && canAdd && styles.pressed]}
         >
-          <Text style={[styles.addButtonText, !canAdd && styles.addButtonTextDisabled]}>{canAdd ? 'Add to Cart' : 'Unavailable'}</Text>
+          <Text style={[styles.addButtonText, !canAdd && styles.addButtonTextDisabled]}>{canAdd ? 'Ask Mentor to order' : 'Unavailable'}</Text>
         </Pressable>
       </View>
     </View>
@@ -104,7 +104,7 @@ export function HomeView({
   onCategory,
   onMoreCategories,
   onOpen,
-  onAddToCart,
+  onOrderWithMentor,
 }: Props) {
   const [search, setSearch] = useState('');
   const [profileImageError, setProfileImageError] = useState(false);
@@ -176,7 +176,7 @@ export function HomeView({
             product={item}
             storageBaseUrl={storageBaseUrl}
             onOpen={() => onOpen(item)}
-            onAdd={(point) => onAddToCart(item, point)}
+            onOrder={() => onOrderWithMentor(item)}
           />
         )}
         ListHeaderComponent={(

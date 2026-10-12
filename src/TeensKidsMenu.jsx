@@ -203,7 +203,7 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
               Coach Roseline Iraoya
             </p>
             <p style={{ fontSize: '0.9rem', lineHeight: '1.4', color: '#4a5568', marginBottom: '1rem', fontStyle: 'italic' }}>
-              Lead Coach, Thriving Pre-teen & Teens
+              Certified Children and Teens Coach, Thriving Pre-teen & Teens
             </p>
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
               <button
@@ -575,8 +575,8 @@ export default function TeensKidsMenu({ paystackPublicKey = 'pk_test_demo_key_up
           }}>
             <div style={{ fontSize: '3rem', marginBottom: '1rem' }}></div>
             <h4 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '0.5rem' }}>COACH ROSELINE IRAOYA</h4>
-            <p style={{ color: '#667eea', fontWeight: '600', marginBottom: '0.5rem' }}>Lead Coach</p>
-            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Certified Children and Teen Coach, passionate about helping children and teens build positive values.</p>
+            <p style={{ color: '#667eea', fontWeight: '600', marginBottom: '0.5rem' }}>Certified Children and Teens Coach</p>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Passionate about helping children and teens build positive values.</p>
           </div>
           <div style={{
             background: 'var(--bg-secondary)',

@@ -24,6 +24,7 @@ import vendorPinChangedEmailHandler from '../server-handlers/vendor-pin-changed-
 import activityNotificationHandler from '../server-handlers/activity-notification.js';
 import testimonialSubmissionHandler from '../server-handlers/testimonial-submission.js';
 import generateProductDescriptionHandler from '../server-handlers/generate-product-description.js';
+import mentorShopOrderHandler from '../server-handlers/mentor-shop-order.js';
 import productReleaseNotificationHandler from '../server-handlers/product-release-notification.js';
 import productMetricsHandler from '../server-handlers/product-metrics.js';
 import productRatingsHandler from '../server-handlers/product-ratings.js';
@@ -59,6 +60,7 @@ const handlers = {
   '/activity-notification': activityNotificationHandler,
   '/testimonial-submission': testimonialSubmissionHandler,
   '/generate-product-description': generateProductDescriptionHandler,
+  '/mentor-shop-order': mentorShopOrderHandler,
   '/currency-rates': currencyRatesHandler,
   '/fetch-meta': fetchMetaHandler,
   '/paystack-webhook': paystackWebhookHandler,
@@ -78,6 +80,7 @@ const mobileShopCorsRoutes = new Set([
   '/product-metrics',
   '/product-ratings',
   '/product-release-notification',
+  '/mentor-shop-order',
   '/store-products-public',
   '/track-visitor'
 ]);
