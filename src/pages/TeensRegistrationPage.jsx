@@ -37,7 +37,7 @@ const baseSteps = {
   children: { id: 'children', label: 'Children', title: 'Add your children', description: 'Add each child and complete their profile one by one.' },
   program: { id: 'program', label: 'Program Match', title: 'Program preferences', description: 'Choose the session and focus area for the selected child.' },
   review: { id: 'review', label: 'Review', title: 'Review and confirm', description: 'Check the full registration before continuing to payment.' },
-  payment: { id: 'payment', label: 'Payment', title: 'Complete payment', description: 'Pay the registration fee to submit your application.' }
+  payment: { id: 'payment', label: 'Payment', title: 'Complete payment', description: 'Pay the onboarding fee to submit your application.' }
 };
 
 function DateOfBirthPicker({ value, onChange }) {
@@ -124,6 +124,7 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
   const [formData, setFormData] = useState(initialForm);
   const [currentStep, setCurrentStep] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const [isKitModalOpen, setIsKitModalOpen] = useState(true);
   const [saving, setSaving] = useState(false);
   const [selectedChildIndex, setSelectedChildIndex] = useState(0);
   const [lastSubmittedEmail, setLastSubmittedEmail] = useState('');
@@ -131,6 +132,22 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
   const [formToast, setFormToast] = useState({ message: '', type: 'error' });
   const [paystackReady, setPaystackReady] = useState(false);
   const formCardRef = useRef(null);
+
+  useEffect(() => {
+    if (!isKitModalOpen) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setIsKitModalOpen(false);
+    };
+
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isKitModalOpen]);
 
   useEffect(() => {
     if (window.PaystackPop) {
@@ -518,7 +535,7 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
           }
 
           setLastSubmittedEmail(formData.email);
-          void notifyAdminActivity('Teens registration', 'New teens registration submitted', {
+          void notifyAdminActivity('PTTA Onboarding', 'New PTTA onboarding submitted', {
             name: formData.contactName,
             email: formData.email,
             registrationType: formData.registrationType,
@@ -578,10 +595,10 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
       const paymentHandler = window.PaystackPop.setup({
         key: paystackPublicKey,
         email: formData.email,
-        amount: 5000 * 100,
+        amount: 30000 * 100,
         currency: 'NGN',
         ref: `REG-${Date.now()}`,
-        metadata: { custom_fields: [{ display_name: 'Service', variable_name: 'service', value: 'Teens registration' }] },
+        metadata: { custom_fields: [{ display_name: 'Service', variable_name: 'service', value: 'PTTA Onboarding' }] },
         callback: (response) => {
           void persistRegistration(response.reference);
         },
@@ -838,8 +855,8 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
   const renderPaymentStep = () => (
     <div className="teens-registration-payment-step">
       <div className="teens-registration-payment-card">
-        <span className="teens-registration-payment-label">Registration fee</span>
-        <strong>NGN 5,000</strong>
+        <span className="teens-registration-payment-label">Onboarding fee</span>
+        <strong>NGN 30,000</strong>
         <p>Pay securely with Paystack. Your application will only be submitted after payment is verified.</p>
       </div>
     </div>
@@ -870,7 +887,7 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
 
       <div className="teens-registration-card" ref={formCardRef}>
         <div className="teens-registration-header">
-          <span className="teens-registration-badge">PTTA Registration</span>
+          <span className="teens-registration-badge">PTTA Onboarding</span>
           <h1>Paz Thriving Teens Academy</h1>
           <p>
             Raising Confident, Kind, and Purposeful Leaders through coaching, mentoring, life skills,
@@ -933,13 +950,55 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
                 </button>
               ) : (
                 <button type="submit" className="teens-registration-submit" disabled={saving}>
-                  {saving ? 'Processing payment...' : 'Pay NGN 5,000 and submit'}
+                  {saving ? 'Processing payment...' : 'Pay NGN 30,000 and submit'}
                 </button>
               )}
             </div>
           </form>
         )}
       </div>
+
+      {isKitModalOpen && (
+        <div className="teens-onboarding-modal-backdrop" role="presentation">
+          <section
+            className="teens-onboarding-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="teens-onboarding-modal-title"
+          >
+            <button
+              type="button"
+              className="teens-onboarding-modal-close"
+              onClick={() => setIsKitModalOpen(false)}
+              aria-label="Close onboarding kit information"
+            >
+              ×
+            </button>
+            <span className="teens-registration-badge">Welcome to PTTA</span>
+            <h2 id="teens-onboarding-modal-title">A welcome pack for your PTTA journey</h2>
+            <p>
+              After completing your onboarding registration, you will receive a customized PTTA kit
+              containing:
+            </p>
+            <ul className="teens-onboarding-kit-list">
+              <li>Customized polo</li>
+              <li>Customized facecap</li>
+              <li>Customized hand band</li>
+              <li>Customized jotter</li>
+              <li>Customized pen</li>
+              <li>Customized ID card</li>
+            </ul>
+            <button
+              type="button"
+              className="teens-registration-submit"
+              onClick={() => setIsKitModalOpen(false)}
+              autoFocus
+            >
+              Continue to onboarding
+            </button>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

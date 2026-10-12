@@ -3,7 +3,7 @@ import { sendResendEmail } from './lib/resend.js';
 import { buildPazEmailTemplate } from './lib/paz-email-template.js';
 
 const ADMIN_EMAIL = 'pazthrivingtribe@gmail.com';
-const SERVICE_PRICE_NGN = 5000;
+const SERVICE_PRICE_NGN = 30000;
 
 function sendJson(res, statusCode, payload) {
   if (typeof res.status === 'function') return res.status(statusCode).json(payload);
@@ -51,19 +51,19 @@ export default async function handler(req, res) {
     const verifyData = await verifyResponse.json().catch(() => ({}));
     const transaction = verifyData?.data;
     if (!verifyResponse.ok || verifyData?.status !== true || transaction?.status !== 'success') return sendJson(res, 402, { error: 'Paystack could not confirm this payment.' });
-    if (Number(transaction.amount) !== SERVICE_PRICE_NGN * 100 || transaction.currency !== 'NGN') return sendJson(res, 402, { error: 'The service payment amount must be exactly ₦5,000.' });
+    if (Number(transaction.amount) !== SERVICE_PRICE_NGN * 100 || transaction.currency !== 'NGN') return sendJson(res, 402, { error: 'The PTTA onboarding payment amount must be exactly ₦30,000.' });
 
     const details = getDetails(type, { ...(body.details || {}), email, payment_reference: reference });
     const supabase = createClient(supabaseUrl, serviceRoleKey);
     const { data: saved, error } = await supabase.from('tribe_applicants').insert(details).select('id').single();
     if (error) throw error;
 
-    const serviceName = 'Registration';
+    const serviceName = 'PTTA Onboarding';
     const name = details.parent_or_guardian_name || details.full_name || 'Customer';
-    const html = buildPazEmailTemplate({ title: `${serviceName} payment confirmed`, eyebrow: 'Payment confirmed', intro: `Hi ${name},`, accentText: `Your ${serviceName.toLowerCase()} payment of ₦5,000 was received successfully.`, bodyHtml: `<p>Your request has been submitted and our team will contact you with the next steps.</p><p><strong>Paystack reference:</strong> ${reference}</p><p><strong>Service:</strong> ${serviceName}</p>`, ctaLabel: 'Visit PAZ Thriving Tribe', ctaUrl: process.env.VITE_APP_URL || 'https://pazthrivingtribe.org', footerNote: 'Thank you for choosing PAZ Thriving Tribe.' });
-    const adminHtml = buildPazEmailTemplate({ title: `${serviceName} payment received`, eyebrow: 'New paid service request', intro: 'Hello PAZ team,', accentText: `A ${serviceName.toLowerCase()} request has been paid.`, bodyHtml: `<p><strong>Customer:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p><p><strong>Amount:</strong> ₦5,000</p><p><strong>Reference:</strong> ${reference}</p>`, ctaLabel: 'Open admin dashboard', ctaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/admin`, showSecondaryCta: true, secondaryCtaLabel: 'Payment history', secondaryCtaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/dashboard?view=payment-history&reference=${encodeURIComponent(reference)}`, footerNote: 'Internal notification for PAZ Thriving Tribe.' });
+    const html = buildPazEmailTemplate({ title: `${serviceName} payment confirmed`, eyebrow: 'Payment confirmed', intro: `Hi ${name},`, accentText: `Your ${serviceName.toLowerCase()} payment of ₦${SERVICE_PRICE_NGN.toLocaleString('en-NG')} was received successfully.`, bodyHtml: `<p>Your onboarding registration has been submitted and our team will contact you with the next steps.</p><p><strong>Paystack reference:</strong> ${reference}</p><p><strong>Service:</strong> ${serviceName}</p>`, ctaLabel: 'Visit PAZ Thriving Tribe', ctaUrl: process.env.VITE_APP_URL || 'https://pazthrivingtribe.org', footerNote: 'Thank you for choosing PAZ Thriving Tribe.' });
+    const adminHtml = buildPazEmailTemplate({ title: `${serviceName} payment received`, eyebrow: 'New paid service request', intro: 'Hello PAZ team,', accentText: `A ${serviceName.toLowerCase()} request has been paid.`, bodyHtml: `<p><strong>Customer:</strong> ${name}</p><p><strong>Email:</strong> ${email}</p><p><strong>Amount:</strong> ₦${SERVICE_PRICE_NGN.toLocaleString('en-NG')}</p><p><strong>Reference:</strong> ${reference}</p>`, ctaLabel: 'Open admin dashboard', ctaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/admin`, showSecondaryCta: true, secondaryCtaLabel: 'Payment history', secondaryCtaUrl: `${process.env.VITE_APP_URL || 'https://pazthrivingtribe.org'}/dashboard?view=payment-history&reference=${encodeURIComponent(reference)}`, footerNote: 'Internal notification for PAZ Thriving Tribe.' });
     await Promise.all([
-      sendResendEmail({ to: email, subject: `${serviceName} payment confirmed - PAZ Thriving Tribe`, html, text: `Your ${serviceName.toLowerCase()} payment of ₦5,000 was received. Reference: ${reference}` }),
+      sendResendEmail({ to: email, subject: `${serviceName} payment confirmed - PAZ Thriving Tribe`, html, text: `Your ${serviceName.toLowerCase()} payment of ₦${SERVICE_PRICE_NGN.toLocaleString('en-NG')} was received. Reference: ${reference}` }),
       sendResendEmail({ to: ADMIN_EMAIL, subject: `${serviceName} paid - ${name}`, html: adminHtml, text: `${serviceName} paid by ${name} (${email}). Reference: ${reference}` })
     ]);
     return sendJson(res, 200, { success: true, id: saved?.id, paymentReference: reference, amount: SERVICE_PRICE_NGN });

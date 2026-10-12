@@ -250,6 +250,105 @@ function AdminTabBar({ selectedTab, onChangeTab }) {
   );
 }
 
+function HomeHelpModal({ services }) {
+  const [isOpen, setIsOpen] = useState(true);
+  const localHour = Number(new Intl.DateTimeFormat(undefined, {
+    hour: '2-digit',
+    hourCycle: 'h23'
+  }).format(new Date()));
+  const timeGreeting = localHour >= 5 && localHour < 12
+    ? 'Good morning'
+    : localHour >= 12 && localHour < 17
+      ? 'Good afternoon'
+      : 'Good evening';
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setIsOpen(false);
+    };
+
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="home-help-modal-backdrop"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) setIsOpen(false);
+      }}
+    >
+      <section
+        className="home-help-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="home-help-modal-title"
+      >
+        <button
+          type="button"
+          className="home-help-modal-close"
+          aria-label="Close help menu"
+          onClick={() => setIsOpen(false)}
+        >
+          <i className="fa-solid fa-xmark" aria-hidden="true"></i>
+        </button>
+        <div className="home-help-modal-intro">
+          <div className="home-help-robot-wrap" aria-hidden="true">
+            <svg className="home-help-robot" viewBox="0 0 200 200" role="img">
+              <ellipse cx="100" cy="181" rx="55" ry="9" fill="#d5e9dd" />
+              <path d="M100 25v14" stroke="#348a67" strokeWidth="7" strokeLinecap="round" />
+              <circle cx="100" cy="19" r="9" fill="#ffb65f" />
+              <rect x="45" y="43" width="110" height="91" rx="30" fill="#fff" stroke="#7fb99a" strokeWidth="6" />
+              <rect x="58" y="58" width="84" height="52" rx="20" fill="#eaf8f0" />
+              <circle cx="82" cy="82" r="7" fill="#246d50" />
+              <circle cx="118" cy="82" r="7" fill="#246d50" />
+              <path d="M86 97q14 13 28 0" fill="none" stroke="#348a67" strokeWidth="5" strokeLinecap="round" />
+              <path d="M45 79H31M155 79h14" stroke="#7fb99a" strokeWidth="7" strokeLinecap="round" />
+              <rect x="62" y="140" width="76" height="35" rx="16" fill="#69b88b" />
+              <path d="M82 143v19M118 143v19" stroke="#fff" strokeWidth="5" strokeLinecap="round" opacity=".9" />
+              <path d="M69 172 60 184M131 172l9 12" stroke="#348a67" strokeWidth="8" strokeLinecap="round" />
+              <path d="M49 147 37 157M151 147l12 10" stroke="#7fb99a" strokeWidth="7" strokeLinecap="round" />
+              <circle cx="100" cy="130" r="5" fill="#ffb65f" />
+            </svg>
+          </div>
+          <div>
+            <span className="home-help-eyebrow">Your PAZ guide</span>
+            <h2 id="home-help-modal-title">What can we do for you today?</h2>
+            <p>{timeGreeting}! I’m Mentor Charles. Choose what you need and I’ll take you straight there.</p>
+          </div>
+        </div>
+        <h3 className="home-help-services-heading">How can we help?</h3>
+        <nav className="home-help-services-grid" aria-label="PAZ Thriving Tribe services">
+          {services.map((service) => (
+            <Link key={service.path} to={service.path} className="home-help-service-link">
+              <span className="home-help-service-icon" aria-hidden="true">
+                <i className={service.icon}></i>
+              </span>
+              <span className="home-help-service-copy">
+                <strong>{service.title}</strong>
+                <small>{service.description}</small>
+              </span>
+              <span className="home-help-service-action">
+                {service.action} <i className="fa-solid fa-arrow-right" aria-hidden="true"></i>
+              </span>
+            </Link>
+          ))}
+        </nav>
+        <p className="home-help-modal-footer">You can close this guide and explore the site at any time.</p>
+      </section>
+    </div>
+  );
+}
+
 // =========================================================================
 // MAIN UNIFIED APPLICATION WITH DEDICATED SERVICE PAGES & INTAKE FORMS
 // =========================================================================
@@ -283,9 +382,6 @@ export default function App() {
   }, []);
   const isIndependencePreview = new URLSearchParams(location.search).get('independencePreview') === '1';
   const isIndependenceDay = (nigeriaDate.month === 10 && nigeriaDate.day === 1) || isIndependencePreview;
-  const isOctoberLaunchWindow = isIndependenceDay
-    || (nigeriaDate.month === 9 && nigeriaDate.day >= 25)
-    || (nigeriaDate.month === 10 && nigeriaDate.day <= 14);
   const withIndependencePreview = (path) => isIndependencePreview
     ? `${path}${path.includes('?') ? '&' : '?'}independencePreview=1`
     : path;
@@ -732,20 +828,8 @@ export default function App() {
     independenceDay: true,
     hideAction: true
   };
-  const bookReleaseSlide = {
-    title: 'I Fainted! …But I Didn’t Quit!',
-    subtitle: 'A new book from PAZ Thriving Tribe. Launching 1 October 2026.',
-    eyebrow: 'BOOK RELEASE · 1 OCTOBER 2026',
-    image: 'https://pcprbkqpxntxgtseiyie.supabase.co/storage/v1/object/public/prof-upload/products/covers/1790535861008-ifainted-coveer--1-.png',
-    imageAlt: 'Cover of I Fainted! …But I Didn’t Quit!',
-    slideClassName: 'hero-slide-book-release',
-    actionLabel: 'Explore the book',
-    actionPath: '/shop/i-fainted-but-i-didn-t-quit',
-    actionIcon: 'fa-solid fa-book-open'
-  };
   const campaignHomeSlides = [
-    ...(isIndependenceDay ? [independenceCampaignSlide] : []),
-    ...(isOctoberLaunchWindow ? [bookReleaseSlide] : [])
+    ...(isIndependenceDay ? [independenceCampaignSlide] : [])
   ];
   const independenceHistorySlides = getIndependenceDaySlides(independenceAnniversary).map((slide) => ({
     title: slide.title,
@@ -2240,6 +2324,17 @@ export default function App() {
     setCmsSuccessMessage(null);
     await addApplicant(serviceApplicant);
   };
+
+  const homeHelpServices = [
+    { title: 'Register for PTTA Academy', description: 'Start the teens academy onboarding form.', path: '/teens_reg', icon: 'fa-solid fa-user-graduate', action: 'Register now' },
+    { title: 'Explore the Teens Academy', description: 'Discover programs for pre-teens and teenagers.', path: '/teens-kids-academy', icon: 'fa-solid fa-people-group', action: 'Explore academy' },
+    { title: 'Talk & Thrive', description: 'Get caring coaching and counselling support.', path: '/care-counseling', icon: 'fa-solid fa-hand-holding-heart', action: 'Get support' },
+    { title: 'Book a session', description: 'Tell us what support you are looking for.', path: '/book-session', icon: 'fa-solid fa-calendar-check', action: 'Book a session' },
+    { title: 'Shop', description: 'Browse products and resources from our store.', path: '/shop', icon: 'fa-solid fa-bag-shopping', action: 'Visit the shop' },
+    { title: 'Thriving Children', description: 'Find mentoring and growth support for children.', path: '/services/children', icon: 'fa-solid fa-child-reaching', action: 'Explore service' },
+    { title: 'Thriving Parents', description: 'Find practical guidance and support for parents.', path: '/services/family', icon: 'fa-solid fa-people-roof', action: 'Explore service' },
+    { title: 'Thriving Women', description: 'Explore mentoring and community for women.', path: '/services/marriage', icon: 'fa-solid fa-heart', action: 'Explore service' }
+  ];
 
   return (
     <>
@@ -4591,6 +4686,168 @@ export default function App() {
           .dashboard-tab-button { padding: 0.55rem 0.75rem; font-size: 0.75rem; }
         }
 
+        .home-help-modal-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 15000;
+          display: grid;
+          place-items: center;
+          overflow-y: auto;
+          padding: 1rem;
+          background: rgba(10, 26, 22, 0.72);
+          backdrop-filter: blur(5px);
+        }
+        .home-help-modal {
+          position: relative;
+          width: min(100%, 900px);
+          max-height: min(92vh, 850px);
+          overflow-y: auto;
+          box-sizing: border-box;
+          padding: clamp(1.25rem, 4vw, 2.5rem);
+          border: 1px solid #dcebe3;
+          border-radius: 28px;
+          background: linear-gradient(145deg, #ffffff 45%, #f1fbf5);
+          box-shadow: 0 30px 90px rgba(0, 0, 0, 0.3);
+        }
+        .home-help-modal-close {
+          position: absolute;
+          top: 1rem;
+          right: 1rem;
+          z-index: 1;
+          display: grid;
+          width: 42px;
+          height: 42px;
+          place-items: center;
+          border: 1px solid #dce8e1;
+          border-radius: 50%;
+          background: #fff;
+          color: #26483d;
+          font-size: 1.2rem;
+          cursor: pointer;
+        }
+        .home-help-modal-intro {
+          display: grid;
+          grid-template-columns: minmax(150px, 0.7fr) 1.3fr;
+          align-items: center;
+          gap: clamp(1rem, 4vw, 2.5rem);
+          margin-bottom: 1.5rem;
+        }
+        .home-help-robot-wrap {
+          display: grid;
+          min-height: 175px;
+          place-items: center;
+          border-radius: 24px;
+          background: radial-gradient(circle at 50% 40%, #e4f8ec, #f1f8ff);
+        }
+        .home-help-robot {
+          width: min(100%, 185px);
+          height: auto;
+          overflow: visible;
+          animation: home-help-robot-float 3s ease-in-out infinite;
+        }
+        @keyframes home-help-robot-float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-7px); }
+        }
+        .home-help-eyebrow {
+          color: #178052;
+          font-size: 0.78rem;
+          font-weight: 900;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+        }
+        .home-help-modal h2 {
+          margin: 0.45rem 2.5rem 0.55rem 0;
+          color: #143c30;
+          font-size: clamp(1.75rem, 4vw, 2.6rem);
+          line-height: 1.1;
+        }
+        .home-help-modal-intro p {
+          margin: 0;
+          color: #51645e;
+          font-size: 1rem;
+          line-height: 1.6;
+        }
+        .home-help-services-heading {
+          margin: 1.25rem 0 0.8rem;
+          color: #25483c;
+          font-size: 1rem;
+        }
+        .home-help-services-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 0.75rem;
+        }
+        .home-help-service-link {
+          display: grid;
+          grid-template-columns: 42px minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 0.8rem;
+          min-width: 0;
+          padding: 0.9rem;
+          border: 1px solid #dfebe4;
+          border-radius: 16px;
+          background: rgba(255, 255, 255, 0.92);
+          color: inherit;
+          text-decoration: none;
+          transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+        }
+        .home-help-service-link:hover,
+        .home-help-service-link:focus-visible {
+          transform: translateY(-2px);
+          border-color: #72c39b;
+          box-shadow: 0 10px 24px rgba(24, 111, 74, 0.12);
+        }
+        .home-help-service-icon {
+          display: grid;
+          width: 42px;
+          height: 42px;
+          place-items: center;
+          border-radius: 13px;
+          background: #e9f8ef;
+          color: #178052;
+          font-size: 1rem;
+        }
+        .home-help-service-copy { min-width: 0; }
+        .home-help-service-copy strong {
+          display: block;
+          color: #193e32;
+          font-size: 0.94rem;
+        }
+        .home-help-service-copy small {
+          display: block;
+          margin-top: 0.2rem;
+          color: #61716b;
+          font-size: 0.78rem;
+          line-height: 1.4;
+        }
+        .home-help-service-action {
+          color: #178052;
+          font-size: 0.78rem;
+          font-weight: 800;
+          white-space: nowrap;
+        }
+        .home-help-modal-footer {
+          margin-top: 1rem;
+          color: #64746e;
+          font-size: 0.82rem;
+          text-align: center;
+        }
+        @media (max-width: 620px) {
+          .home-help-modal-backdrop { padding: 0.65rem; }
+          .home-help-modal { max-height: 94vh; padding: 1.1rem; border-radius: 22px; }
+          .home-help-modal-intro { grid-template-columns: 1fr; gap: 0.85rem; }
+          .home-help-robot-wrap { min-height: 125px; }
+          .home-help-robot { width: 125px; }
+          .home-help-services-grid { grid-template-columns: 1fr; gap: 0.55rem; }
+          .home-help-service-link { padding: 0.75rem; }
+          .home-help-service-action { font-size: 0.72rem; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .home-help-robot { animation: none; }
+          .home-help-service-link { transition: none; }
+        }
+
       `}</style>
 
       {initialLoading && (
@@ -5478,6 +5735,10 @@ export default function App() {
 
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
+
+        {location.pathname === '/' && !initialLoading && (
+          <HomeHelpModal services={homeHelpServices} />
+        )}
 
         {!isAdminRoute && !isVendorRoute && !isStoreRoute && location.pathname !== '/' && <CustomerSupportChat />}
 
