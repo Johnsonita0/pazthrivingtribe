@@ -977,7 +977,7 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
             <span className="teens-registration-badge">Welcome to PTTA</span>
             <h2 id="teens-onboarding-modal-title">A welcome pack for your PTTA journey</h2>
             <p>
-              After your onboarding process, your pre-teen or teen will receive a customized PTTA kit
+              After your onboarding process, your Pre-teen / Teens will receive a customized PTTA kit
               containing:
             </p>
             <ul className="teens-onboarding-kit-list">
