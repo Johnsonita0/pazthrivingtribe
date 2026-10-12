@@ -981,12 +981,12 @@ export default function TeensRegistrationPage({ paystackPublicKey = '' }) {
               containing:
             </p>
             <ul className="teens-onboarding-kit-list">
-              <li>Customized polo</li>
-              <li>Customized facecap</li>
-              <li>Customized hand band</li>
-              <li>Customized jotter</li>
-              <li>Customized pen</li>
-              <li>Customized ID card</li>
+              <li>Customized Polo</li>
+              <li>Customized Face Cap</li>
+              <li>Customized Hand Band</li>
+              <li>Customized Jotter</li>
+              <li>Customized Pen</li>
+              <li>Customized ID Card</li>
             </ul>
             <button
               type="button"
