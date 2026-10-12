@@ -68,14 +68,18 @@ export default async function handler(req, res) {
       .replace(/^-|-$/g, '');
     const productPath = `/shop/${productSlug}`;
     const hasReleaseDate = Boolean(product.release_at && Number.isFinite(Date.parse(product.release_at)));
-    const [activity, completedOrderRows] = await Promise.all([
+    const [activity, completedOrderRows, productOrderItems] = await Promise.all([
       readAllRows(() => supabase
         .from('tribe_activity')
         .select('session_id,ip_address')
         .eq('path', productPath)),
       readAllRows(() => supabase
         .from('shop_orders')
-        .select('id,status,payment_mode'))
+        .select('id,status,payment_mode')),
+      readAllRows(() => supabase
+        .from('shop_order_items')
+        .select('order_id')
+        .eq('product_id', productId))
     ]);
     const uniqueViews = new Set(
       activity
@@ -95,7 +99,16 @@ export default async function handler(req, res) {
       notified = count || 0;
     }
 
-    const completedOrders = completedOrderRows.filter(isCompletedLiveOrder).length;
+    const completedOrderIds = new Set(
+      completedOrderRows
+        .filter(isCompletedLiveOrder)
+        .map((order) => order.id)
+    );
+    const completedOrders = new Set(
+      productOrderItems
+        .filter((item) => item.order_id && completedOrderIds.has(item.order_id))
+        .map((item) => item.order_id)
+    ).size;
 
     res.setHeader?.('Cache-Control', 'no-store');
     return sendJson(res, 200, {
