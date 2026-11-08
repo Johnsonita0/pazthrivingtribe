@@ -98,7 +98,46 @@ export default async function handler(req, res) {
 
     let result
     try {
-      if (action === 'delete_test_shop_orders') {
+      if (action === 'save_footer_settings') {
+        if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+          return jsonResponse(res, 400, { error: 'Footer settings are required' })
+        }
+
+        const fields = {
+          brandName: 100,
+          description: 1200,
+          contactEmail: 254,
+          contactPhone: 50,
+          location: 180,
+          copyright: 180,
+          emailFooterNote: 500,
+        }
+        const footerSettings = {}
+        for (const [field, maxLength] of Object.entries(fields)) {
+          const value = typeof payload[field] === 'string' ? payload[field].trim() : ''
+          if (!value || value.length > maxLength) {
+            return jsonResponse(res, 400, { error: `${field} must contain 1 to ${maxLength} characters` })
+          }
+          footerSettings[field] = value
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(footerSettings.contactEmail)) {
+          return jsonResponse(res, 400, { error: 'Contact email is invalid' })
+        }
+        if (typeof payload.enabled !== 'boolean') {
+          return jsonResponse(res, 400, { error: 'Footer visibility setting is invalid' })
+        }
+        footerSettings.enabled = payload.enabled
+
+        const { error } = await supabase
+          .from('tribe_site_settings')
+          .upsert({
+            setting_key: 'footer',
+            setting_value: footerSettings,
+            updated_at: new Date().toISOString(),
+          }, { onConflict: 'setting_key' })
+        if (error) throw error
+        return jsonResponse(res, 200, { data: footerSettings })
+      } else if (action === 'delete_test_shop_orders') {
         result = await supabase.from('shop_orders').delete().eq('payment_mode', 'test')
       } else if (action === 'update_shop_order_tracking') {
         const trackingStatuses = ['order_placed', 'processing', 'dispatched', 'out_for_delivery', 'delivered', 'cancelled']

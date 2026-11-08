@@ -40,6 +40,10 @@ Alternate fix: if Vercel does not expose `SUPABASE_SERVICE_ROLE_KEY` to the func
 
 The admin endpoint is available at `/api/admin-update`.
 
+### Public and email footer settings
+
+Run `supabase-footer-settings.sql` in the Supabase SQL Editor for the project used by the frontend. The public site reads footer settings from `tribe_site_settings`; updates are restricted to the authenticated admin API. In the admin dashboard, open the **Website Footer** card to edit the public footer and the shared branded-email footer note and contact details. Email changes may take up to 30 seconds to appear because the backend briefly caches the settings.
+
 ### Scheduled product release notifications
 
 Run the `product_release_notifications` table, RLS, and index statements from `supabase-admin-setup.sql` in the Supabase SQL Editor. This table is only accessible to the server-side service role.

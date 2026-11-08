@@ -4,6 +4,7 @@ import './index.css'
 import './App.css'
 import './css/global.css'
 import './css/main-page.css'
+import './responsive-foundation.css'
 import App from './App.jsx'
 import { BrowserRouter as Router } from 'react-router-dom'
 

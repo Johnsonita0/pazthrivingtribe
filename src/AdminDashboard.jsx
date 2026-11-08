@@ -5,6 +5,7 @@ import ProductCover, { resolveProductCover } from './components/ProductCover';
 import CustomDropdown from "./components/CustomDropdown";
 import DateTimePicker from "./components/DateTimePicker";
 import ProductDescriptionAssist from "./components/ProductDescriptionAssist";
+import FooterSettingsPanel from "./components/FooterSettingsPanel";
 import { toDateTimeLocalValue, toIsoDateTime } from "./utils/productAvailability";
 
 const formatName = (value) =>
@@ -211,6 +212,10 @@ export default function AdminDashboard(props) {
     setStoreBankAccount,
     shopOrders = [],
     setShopOrders,
+    footerSettings,
+    setFooterSettings,
+    onSaveFooterSettings,
+    footerSettingsSaving = false,
   } = props;
 
   const [serverCompletedShopOrderCount, setServerCompletedShopOrderCount] = useState(null);
@@ -2191,6 +2196,7 @@ export default function AdminDashboard(props) {
       privacyContent: props.privacyContent,
       termsContent: props.termsContent,
       faqContent: props.faqContent,
+      footerSettings: props.footerSettings,
       testimonialAuthor: props.testimonialAuthor,
       testimonialOrigin: props.testimonialOrigin,
       testimonialText: props.testimonialText,
@@ -2245,6 +2251,7 @@ export default function AdminDashboard(props) {
         restoreValue(app, "privacyContent", props.setPrivacyContent);
         restoreValue(app, "termsContent", props.setTermsContent);
         restoreValue(app, "faqContent", props.setFaqContent);
+        restoreValue(app, "footerSettings", props.setFooterSettings);
         restoreValue(app, "testimonialAuthor", props.setTestimonialAuthor);
         restoreValue(app, "testimonialOrigin", props.setTestimonialOrigin);
         restoreValue(app, "testimonialText", props.setTestimonialText);
@@ -2663,6 +2670,12 @@ export default function AdminDashboard(props) {
       label: "YouTube",
       color: "#dc2626",
       value: socialNewsFeed.filter((item) => item.platform === "YouTube").length,
+    },
+    {
+      id: "footer",
+      label: "Website Footer",
+      color: "#155e75",
+      value: "Edit",
     },
   ];
 
@@ -7420,6 +7433,13 @@ export default function AdminDashboard(props) {
                   )}
                 </div>
               </div>
+            ) : activeDashboardView === "footer" ? (
+              <FooterSettingsPanel
+                settings={footerSettings}
+                setSettings={setFooterSettings}
+                onSave={onSaveFooterSettings}
+                saving={footerSettingsSaving}
+              />
             ) : (
               <>
                 <h2

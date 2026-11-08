@@ -15,8 +15,10 @@ import VendorDashboard from './pages/VendorDashboard';
 import CustomerSupportChat from './components/CustomerSupportChat';
 import PaystackCallbackPage from './pages/PaystackCallbackPage';
 import CustomDropdown from './components/CustomDropdown';
+import SiteFooter from './components/SiteFooter';
 import { notifyAdminActivity } from './utils/notifyAdminActivity';
 import { getIndependenceDaySlides } from './utils/independenceDaySlides';
+import { DEFAULT_FOOTER_SETTINGS, normalizeFooterSettings } from './utils/footerSettings';
 import confetti from 'canvas-confetti';
 
 const getNigeriaDateInfo = () => {
@@ -1091,6 +1093,8 @@ export default function App() {
   const [privacyContent, setPrivacyContent] = useState('');
   const [termsContent, setTermsContent] = useState('');
   const [faqContent, setFaqContent] = useState(faqItems.map((item) => ({ ...item, linkLabel: '', linkTo: '' })));
+  const [footerSettings, setFooterSettings] = useState({ ...DEFAULT_FOOTER_SETTINGS });
+  const [footerSettingsSaving, setFooterSettingsSaving] = useState(false);
   const [clientActivityLog, setClientActivityLog] = useState([]);
   const [clientActivityLoading, setClientActivityLoading] = useState(false);
   const [refreshingDashboard, setRefreshingDashboard] = useState(false);
@@ -1825,6 +1829,52 @@ export default function App() {
     setCmsSuccessMessage(message)
     setCmsErrorMessage(null)
   }
+
+  useEffect(() => {
+    let active = true;
+    supabase
+      .from('tribe_site_settings')
+      .select('setting_value')
+      .eq('setting_key', 'footer')
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('Failed to load public footer settings:', error);
+          return;
+        }
+        if (active && data?.setting_value) setFooterSettings(normalizeFooterSettings(data.setting_value));
+      })
+      .catch((error) => console.error('Failed to load public footer settings:', error));
+
+    return () => { active = false; };
+  }, []);
+
+  const handleSaveFooterSettings = async (event) => {
+    event.preventDefault();
+    const token = session?.access_token || session?.accessToken || '';
+    if (!token) {
+      setCmsStatus('Your admin session has expired. Sign in again before saving footer settings.', true);
+      return;
+    }
+
+    setFooterSettingsSaving(true);
+    try {
+      const response = await fetch('/api/admin-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: 'save_footer_settings', payload: normalizeFooterSettings(footerSettings) })
+      });
+      const result = await parseAdminResponse(response);
+      if (!response.ok) throw new Error(result?.error || 'Could not save footer settings.');
+      setFooterSettings(normalizeFooterSettings(result.data));
+      setCmsStatus('Website and email footer settings saved.');
+    } catch (error) {
+      console.error('Failed to save footer settings:', error);
+      setCmsStatus(`Footer settings were not saved: ${error?.message || error}`, true);
+    } finally {
+      setFooterSettingsSaving(false);
+    }
+  };
 
   useEffect(() => {
     if (!toastMessage) return;
@@ -5553,6 +5603,10 @@ export default function App() {
                 handleSignOut={handleSignOut}
                 selectedAdminTab={selectedAdminTab}
                 setSelectedAdminTab={setSelectedAdminTab}
+                footerSettings={footerSettings}
+                setFooterSettings={setFooterSettings}
+                onSaveFooterSettings={handleSaveFooterSettings}
+                footerSettingsSaving={footerSettingsSaving}
                 dashboardMessage={dashboardMessage}
                 cmsErrorMessage={cmsErrorMessage}
                 cmsSuccessMessage={cmsSuccessMessage}
@@ -5658,6 +5712,10 @@ export default function App() {
                 handleSignOut={handleSignOut}
                 selectedAdminTab={selectedAdminTab}
                 setSelectedAdminTab={setSelectedAdminTab}
+                footerSettings={footerSettings}
+                setFooterSettings={setFooterSettings}
+                onSaveFooterSettings={handleSaveFooterSettings}
+                footerSettingsSaving={footerSettingsSaving}
                 dashboardMessage={dashboardMessage}
                 cmsErrorMessage={cmsErrorMessage}
                 cmsSuccessMessage={cmsSuccessMessage}
@@ -5857,72 +5915,11 @@ export default function App() {
         </section>
         )}
 
-        {/* Global Multi-Column Footer Component */}
-        {!isAdminRoute && !isVendorRoute && !isFeedbackRoute && !isStoreRoute && (
-          <footer className="workspace-fluid-footer">
-            <div className="footer-columns-container">
-              <div className="footer-brand-column">
-                <Link to="/" className="footer-brand-logo-row" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                  <div className="footer-vector-badge"><img src="/logo/logomain.png" alt="PTT logo" className="nav-logo-img" /></div>
-                  <span className="footer-brand-headline">Paz Thriving Tribe</span>
-                </Link>
-                <p>Paz Thriving Tribe Coaching, Mentoring and Counselling Organisation is committed to
-                  impacting individuals, families, transforming teenagers, positively influencing women,
-                  and helping children and young people develop the values, character, and healthy
-                  habits they need to thrive and become purposeful leaders.</p>
-                <div className="footer-social-links">
-                  <a href="https://facebook.com/pazthrivingtribe" target="_blank" rel="noopener noreferrer" className="footer-social-icon" aria-label="Facebook">
-                    <i className="fa-brands fa-facebook-f"></i>
-                  </a>
-                <a href="https://instagram.com/pazthrivingtribe" target="_blank" rel="noopener noreferrer" className="footer-social-icon" aria-label="Instagram">
-                  <i className="fa-brands fa-instagram"></i>
-                </a>
-                <a href="https://twitter.com/pazthrivingtribe" target="_blank" rel="noopener noreferrer" className="footer-social-icon" aria-label="Twitter">
-                  <i className="fa-brands fa-twitter"></i>
-                </a>
-                <a href="https://youtube.com/@pazthrivingtribe" target="_blank" rel="noopener noreferrer" className="footer-social-icon" aria-label="YouTube">
-                  <i className="fa-brands fa-youtube"></i>
-                </a>
-                <a href="https://linkedin.com/company/pazthrivingtribe" target="_blank" rel="noopener noreferrer" className="footer-social-icon" aria-label="LinkedIn">
-                  <i className="fa-brands fa-linkedin-in"></i>
-                </a>
-              </div>
-            </div>
-
-            <div className="footer-links-column">
-              <h4>What we offer</h4>
-              <div className="footer-interactive-links">
-                <Link to="/care-counseling" className="footer-nav-anchor">Talk & Thrive</Link>
-                <Link to="/services/children" className="footer-nav-anchor">Thriving Pre-teens & Teens</Link>
-                <Link to="/services/family" className="footer-nav-anchor">Thriving Parents</Link>
-                <Link to="/services/marriage" className="footer-nav-anchor">Thriving Women</Link>
-              </div>
-            </div>
-
-            <div className="footer-links-column">
-              <h4>Portals</h4>
-              <div className="footer-interactive-links">
-                <Link to="https://pazthrivingtribe.schoolsfocus.net/signin" className="footer-nav-anchor">Academy Portal</Link>
-              </div>
-            </div>
-
-            <div className="footer-links-column">
-              <h4>Inquiries</h4>
-              <div className="footer-interactive-links">
-                <span style={{ fontSize: '0.95rem', color: 'var(--text-muted)' }}><i className="fa-solid fa-location-dot" style={{ marginRight: '5px' }}></i> Lagos Main Campus, Nigeria</span>
-                <span style={{ fontSize: '0.95rem', color: 'var(--text-muted)' }}><i className="fa-solid fa-envelope" style={{ marginRight: '5px' }}></i> pazthrivingtribe@gmail.com</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="footer-bottom-copyright-strip">
-            <p>&copy; 2026 Paz Thriving Tribe.</p>
-            <div className="footer-regulatory-tags">
-              <button type="button" className="footer-nav-anchor" onClick={() => setActiveLegalPolicy('privacy')}>Privacy</button>
-              <button type="button" className="footer-nav-anchor" onClick={() => setActiveLegalPolicy('terms')}>System Terms</button>
-            </div>
-          </div>
-        </footer>
+        {!isAdminRoute && (
+          <SiteFooter
+            settings={footerSettings}
+            onOpenLegalPolicy={setActiveLegalPolicy}
+          />
         )}
         {activeLegalPolicy && (
           <LegalDocumentModal policy={legalDocuments[activeLegalPolicy]} onClose={setActiveLegalPolicy} />
