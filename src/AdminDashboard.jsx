@@ -7,6 +7,7 @@ import DateTimePicker from "./components/DateTimePicker";
 import ProductDescriptionAssist from "./components/ProductDescriptionAssist";
 import FooterSettingsPanel from "./components/FooterSettingsPanel";
 import { toDateTimeLocalValue, toIsoDateTime } from "./utils/productAvailability";
+import "./components/masterclass-admin.css";
 
 const formatName = (value) =>
   typeof value === "string"
@@ -78,6 +79,125 @@ function AdminTabBar({ selectedTab, onChangeTab }) {
         ))}
       </div>
     </div>
+  );
+}
+
+function getMasterclassWhatsappNumber(phone) {
+  const digits = String(phone || "").replace(/\D/g, "");
+  const international = digits.startsWith("0") ? `234${digits.slice(1)}` : digits;
+  return international.length >= 10 && international.length <= 15 ? international : "";
+}
+
+function escapeMasterclassCsvCell(value) {
+  const text = String(value ?? "");
+  const safeText = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  return `"${safeText.replace(/"/g, '""')}"`;
+}
+
+function MasterclassRegistrantsPanel({ registrants, loading, error, onRefresh }) {
+  const [search, setSearch] = useState("");
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredRegistrants = registrants.filter((registrant) =>
+    [registrant.registrant_name, registrant.email, registrant.phone]
+      .some((value) => String(value || "").toLowerCase().includes(normalizedSearch)),
+  );
+
+  const exportRegistrants = () => {
+    const columns = ["Name", "Email", "Phone", "Event", "Registered at"];
+    const rows = filteredRegistrants.map((registrant) => [
+      registrant.registrant_name,
+      registrant.email,
+      registrant.phone,
+      registrant.event_key,
+      registrant.created_at,
+    ]);
+    const csv = [columns, ...rows]
+      .map((row) => row.map(escapeMasterclassCsvCell).join(","))
+      .join("\r\n");
+    const downloadUrl = URL.createObjectURL(new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = "masterclass-registrants.csv";
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
+  };
+
+  return (
+    <section className="masterclass-admin-panel" aria-labelledby="masterclass-admin-title">
+      <div className="masterclass-admin-heading">
+        <div>
+          <span>PAZ Thriving Teens Academy</span>
+          <h2 id="masterclass-admin-title">Parent Masterclass Registrants</h2>
+          <p>Contact people who registered for “Getting Your Teenager to Speak to You.”</p>
+        </div>
+        <div className="masterclass-admin-actions">
+          <button type="button" onClick={exportRegistrants} disabled={filteredRegistrants.length === 0}>
+            <i className="fa-solid fa-download" aria-hidden="true"></i>
+            Export CSV
+          </button>
+          <button type="button" onClick={onRefresh} disabled={loading}>
+            <i className={`fa-solid ${loading ? "fa-spinner fa-spin" : "fa-rotate"}`} aria-hidden="true"></i>
+            {loading ? "Loading…" : "Refresh"}
+          </button>
+        </div>
+      </div>
+      {error && <p className="masterclass-admin-error" role="alert">{error}</p>}
+      <div className="masterclass-admin-toolbar">
+        <label htmlFor="masterclass-registrant-search">Search registrants</label>
+        <input
+          id="masterclass-registrant-search"
+          type="search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Name, email, or phone"
+        />
+        <span aria-live="polite">
+          {normalizedSearch
+            ? `${filteredRegistrants.length} of ${registrants.length} registrants`
+            : `${registrants.length} registrants`}
+        </span>
+      </div>
+      {loading && registrants.length === 0 ? (
+        <p className="masterclass-admin-empty" role="status">Loading registrations…</p>
+      ) : registrants.length === 0 ? (
+        <p className="masterclass-admin-empty">No masterclass registrations yet.</p>
+      ) : filteredRegistrants.length === 0 ? (
+        <p className="masterclass-admin-empty">No registrants match your search.</p>
+      ) : (
+        <div className="masterclass-registrant-list">
+          {filteredRegistrants.map((registrant) => {
+            const whatsappNumber = getMasterclassWhatsappNumber(registrant.phone);
+            const message = `Hello ${registrant.registrant_name}, thank you for registering for the PAZ Parent Masterclass “Getting Your Teenager to Speak to You.” Please let us know if you need help with payment or joining the online session.`;
+            const whatsappLink = whatsappNumber
+              ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`
+              : "";
+            return (
+              <article className="masterclass-registrant-card" key={registrant.id}>
+                <div className="masterclass-registrant-details">
+                  <h3>{registrant.registrant_name}</h3>
+                  <a href={`mailto:${registrant.email}`}>{registrant.email}</a>
+                  <a href={`tel:${registrant.phone}`}>{registrant.phone}</a>
+                  <span>
+                    Registered {registrant.created_at
+                      ? new Date(registrant.created_at).toLocaleString()
+                      : "date unavailable"}
+                  </span>
+                </div>
+                {whatsappLink ? (
+                  <a className="masterclass-registrant-whatsapp" href={whatsappLink} target="_blank" rel="noopener noreferrer">
+                    <i className="fa-brands fa-whatsapp" aria-hidden="true"></i>
+                    WhatsApp
+                  </a>
+                ) : (
+                  <span className="masterclass-registrant-invalid-phone">Phone number unavailable</span>
+                )}
+              </article>
+            );
+          })}
+        </div>
+      )}
+      <p className="masterclass-admin-note">WhatsApp opens a prefilled message for the selected registrant. Review it and press Send in WhatsApp.</p>
+    </section>
   );
 }
 
@@ -271,6 +391,49 @@ export default function AdminDashboard(props) {
   const [coverFileDragActive, setCoverFileDragActive] = useState(false);
 
   const [activeDashboardView, setActiveDashboardView] = useState("visitors");
+  const [masterclassRegistrants, setMasterclassRegistrants] = useState([]);
+  const [masterclassRegistrantsError, setMasterclassRegistrantsError] = useState("");
+  const [masterclassRegistrantsRefreshKey, setMasterclassRegistrantsRefreshKey] = useState(0);
+  const [masterclassRegistrantsLoadedFor, setMasterclassRegistrantsLoadedFor] = useState(null);
+  const masterclassSessionToken = session?.access_token || session?.accessToken || "";
+  const masterclassRequestKey = `${masterclassRegistrantsRefreshKey}:${masterclassSessionToken}`;
+  const masterclassRegistrantsLoading = Boolean(masterclassSessionToken)
+    && mode === "dashboard"
+    && isAdmin
+    && activeDashboardView === "masterclass"
+    && masterclassRegistrantsLoadedFor !== masterclassRequestKey;
+  useEffect(() => {
+    if (mode !== "dashboard" || !isAdmin || activeDashboardView !== "masterclass") return undefined;
+    let active = true;
+    if (!masterclassSessionToken) return undefined;
+    const requestKey = masterclassRequestKey;
+    fetch("/api/admin-update", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${masterclassSessionToken}`,
+      },
+      body: JSON.stringify({ action: "list_masterclass_registrations" }),
+    })
+      .then(async (response) => {
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || "Could not load masterclass registrations.");
+        if (!Array.isArray(result.data)) throw new Error("The registrations response was invalid.");
+        if (active) {
+          setMasterclassRegistrants(result.data);
+          setMasterclassRegistrantsError("");
+          setMasterclassRegistrantsLoadedFor(requestKey);
+        }
+      })
+      .catch((error) => {
+        if (active) {
+          setMasterclassRegistrantsError(error?.message || "Could not load masterclass registrations.");
+          setMasterclassRegistrantsLoadedFor(requestKey);
+        }
+      });
+
+    return () => { active = false; };
+  }, [activeDashboardView, isAdmin, mode, masterclassRequestKey, masterclassSessionToken]);
   const [customerProfiles, setCustomerProfiles] = useState([]);
   const [customerCount, setCustomerCount] = useState(null);
   const [customerLoading, setCustomerLoading] = useState(false);
@@ -2670,6 +2833,12 @@ export default function AdminDashboard(props) {
       label: "YouTube",
       color: "#dc2626",
       value: socialNewsFeed.filter((item) => item.platform === "YouTube").length,
+    },
+    {
+      id: "masterclass",
+      label: "Masterclass Registrants",
+      color: "#79158d",
+      value: masterclassRegistrants.length,
     },
     {
       id: "footer",
@@ -7433,6 +7602,15 @@ export default function AdminDashboard(props) {
                   )}
                 </div>
               </div>
+            ) : activeDashboardView === "masterclass" ? (
+              <MasterclassRegistrantsPanel
+                registrants={masterclassRegistrants}
+                loading={masterclassRegistrantsLoading}
+                error={masterclassSessionToken
+                  ? masterclassRegistrantsError
+                  : "Your admin session has expired. Sign in again to view registrations."}
+                onRefresh={() => setMasterclassRegistrantsRefreshKey((key) => key + 1)}
+              />
             ) : activeDashboardView === "footer" ? (
               <FooterSettingsPanel
                 settings={footerSettings}

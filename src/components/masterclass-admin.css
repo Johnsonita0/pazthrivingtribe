@@ -1,0 +1,232 @@
+.masterclass-admin-panel {
+  display: grid;
+  gap: 18px;
+  padding: clamp(16px, 3vw, 26px);
+  border: 1px solid #e7d8ed;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #fff 0%, #fdfaff 100%);
+  box-shadow: 0 12px 32px rgb(52 24 72 / 7%);
+}
+
+.masterclass-admin-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.masterclass-admin-heading > div > span {
+  color: #79158d;
+  font-size: .73rem;
+  font-weight: 850;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.masterclass-admin-heading h2 {
+  margin: 6px 0;
+  color: #241147;
+  font-size: clamp(1.3rem, 3vw, 1.8rem);
+}
+
+.masterclass-admin-heading p,
+.masterclass-admin-note {
+  margin: 0;
+  color: #667085;
+  line-height: 1.5;
+}
+
+.masterclass-admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.masterclass-admin-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 9px 14px;
+  border: 1px solid #d5c1de;
+  border-radius: 999px;
+  background: #faf6fc;
+  color: #641479;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color .18s ease, border-color .18s ease, transform .18s ease;
+}
+
+.masterclass-admin-actions button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  border-color: #b99bc8;
+  background: #f3eafa;
+}
+
+.masterclass-admin-actions button:focus-visible,
+.masterclass-registrant-whatsapp:focus-visible {
+  outline: 3px solid #d5b9e2;
+  outline-offset: 2px;
+}
+
+.masterclass-admin-actions button:disabled {
+  cursor: wait;
+  opacity: .7;
+}
+
+.masterclass-admin-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #667085;
+  font-size: .9rem;
+}
+
+.masterclass-admin-toolbar label {
+  color: #3d3150;
+  font-weight: 700;
+}
+
+.masterclass-admin-toolbar span:last-child {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border: 1px solid #eee4f2;
+  border-radius: 999px;
+  background: #faf6fc;
+  color: #641479;
+  font-size: .82rem;
+  font-weight: 750;
+}
+
+.masterclass-admin-toolbar input {
+  flex: 1;
+  min-width: 180px;
+  min-height: 42px;
+  padding: 9px 12px;
+  border: 1px solid #d5c1de;
+  border-radius: 9px;
+  color: #241147;
+  font: inherit;
+}
+
+.masterclass-admin-toolbar input:focus-visible {
+  outline: 3px solid #e7d8ed;
+  outline-offset: 1px;
+}
+
+.masterclass-registrant-list {
+  display: grid;
+  gap: 10px;
+}
+
+.masterclass-registrant-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid #ece6f0;
+  border-radius: 12px;
+  background: #fdfcff;
+  transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.masterclass-registrant-card:hover {
+  transform: translateY(-1px);
+  border-color: #d7c1e0;
+  box-shadow: 0 8px 20px rgb(52 24 72 / 6%);
+}
+
+.masterclass-registrant-details {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.masterclass-registrant-details h3 {
+  margin: 0 0 2px;
+  color: #241147;
+  font-size: 1rem;
+}
+
+.masterclass-registrant-details a {
+  color: #3d3150;
+  overflow-wrap: anywhere;
+}
+
+.masterclass-registrant-details span {
+  margin-top: 3px;
+  color: #777181;
+  font-size: .82rem;
+}
+
+.masterclass-registrant-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 42px;
+  padding: 9px 14px;
+  border-radius: 999px;
+  background: #128c4a;
+  color: #fff;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color .18s ease, transform .18s ease;
+}
+
+.masterclass-registrant-whatsapp:hover {
+  transform: translateY(-1px);
+  background: #0e773f;
+}
+
+.masterclass-registrant-invalid-phone,
+.masterclass-admin-error {
+  color: #b42318;
+}
+
+.masterclass-admin-empty {
+  margin: 0;
+  padding: 18px;
+  border: 1px dashed #d7cadf;
+  border-radius: 12px;
+  color: #667085;
+  text-align: center;
+}
+
+.masterclass-admin-note {
+  font-size: .84rem;
+}
+
+@media (max-width: 600px) {
+  .masterclass-admin-heading,
+  .masterclass-registrant-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .masterclass-admin-actions {
+    width: 100%;
+  }
+
+  .masterclass-admin-actions button,
+  .masterclass-registrant-whatsapp {
+    width: 100%;
+  }
+
+  .masterclass-admin-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .masterclass-registrant-card {
+    gap: 12px;
+  }
+}
