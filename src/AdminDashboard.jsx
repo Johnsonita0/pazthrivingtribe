@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState, useMemo } from "react";
-import { Link, Navigate, useLocation } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Navigate, useLocation } from "react-router-dom";
 import { supabase } from "./supabaseClient";
 import ProductCover, { resolveProductCover } from './components/ProductCover';
 import CustomDropdown from "./components/CustomDropdown";
@@ -54,33 +54,6 @@ const productCategories = [
   "Audio",
   "Bundle",
 ];
-
-function AdminTabBar({ selectedTab, onChangeTab }) {
-  const adminTabs = [
-    { id: "content", label: "Page Content" },
-    { id: "social", label: "Social Preview" },
-    { id: "programs", label: "Programs" },
-    { id: "clients", label: "Client Activity Log" },
-    { id: "applicants", label: "Applicants" },
-    { id: "payments", label: "Payment Settings" },
-  ];
-
-  return (
-    <div className="dashboard-tab-navigation">
-      <div className="dashboard-tab-buttons">
-        {adminTabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => onChangeTab(tab.id)}
-            className={`dashboard-tab-button ${selectedTab === tab.id ? "active" : ""}`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function getMasterclassWhatsappNumber(phone) {
   const digits = String(phone || "").replace(/\D/g, "");
@@ -207,10 +180,8 @@ export default function AdminDashboard(props) {
   const productEditorRef = useRef(null);
   const dashboardContentRef = useRef(null);
   const vendorCardRefs = useRef({});
-  const [isMobileView, setIsMobileView] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [approvedVendorSales, setApprovedVendorSales] = useState({});
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [workspaceDraftLoadedFor, setWorkspaceDraftLoadedFor] = useState("");
 
   const focusDashboardView = (setter, value) => {
@@ -220,18 +191,6 @@ export default function AdminDashboard(props) {
     });
   };
 
-  useEffect(() => {
-    const updateViewport = () => {
-      const mobile = window.innerWidth <= 768;
-      setIsMobileView(mobile);
-      if (!mobile) setMobileMenuOpen(false);
-    };
-
-    updateViewport();
-    window.addEventListener("resize", updateViewport);
-    return () => window.removeEventListener("resize", updateViewport);
-  }, []);
-
   const {
     mode = "login",
     session,
@@ -239,97 +198,39 @@ export default function AdminDashboard(props) {
     adminAccessLoading = false,
     loading = false,
     authError,
-    cmsErrorMessage,
     email,
     password,
     setEmail,
     setPassword,
     handleSignIn,
-    handleSignOut,
-    selectedAdminTab,
-    setSelectedAdminTab,
-    dashboardMessage,
-    privacyContent,
-    setPrivacyContent,
-    termsContent,
-    setTermsContent,
-    faqContent,
-    setFaqContent,
-    updateFaqItem,
-    handleSaveLegalAndFaqContent,
-    cmsSuccessMessage,
-    handleUpdateContentCMS,
-    editTarget,
-    setEditTarget,
-    formTitle,
-    setFormTitle,
-    formSubtitle,
-    setFormSubtitle,
-    formDesc,
-    setFormDesc,
-    formMetric,
-    setFormMetric,
     promoSlides,
     setPromoSlides,
     testimonialCount = null,
-    testimonialAuthor,
-    setTestimonialAuthor,
-    testimonialOrigin,
-    setTestimonialOrigin,
-    testimonialText,
-    setTestimonialText,
-    testimonialEditIndex,
-    handleAddTestimonial,
-    handleStartEditTestimonial,
-    handleCancelEditTestimonial,
-    handleDeleteTestimonial,
+    testimonials = [],
+    setTestimonials,
     socialNewsFeed = [],
-    socialEditTarget,
     setSocialEditTarget,
     socialPreviewTitle,
     setSocialPreviewTitle,
     socialPreviewSummary,
     setSocialPreviewSummary,
-    socialPreviewBadgeText,
-    setSocialPreviewBadgeText,
-    socialPreviewTimestamp,
-    setSocialPreviewTimestamp,
     socialPreviewUrl,
     setSocialPreviewUrl,
-    socialPreviewEmbedUrl,
-    setSocialPreviewEmbedUrl,
     socialMetadataLoading,
     fetchSocialUrlMetadata,
-    handleUpdateSocialPreview,
     saveYoutubeVideo,
     setYoutubeVideoPublished,
     deleteYoutubeVideo,
     clientActivityLog = [],
-    clientActivityLoading = false,
     contactMessages = [],
     bookings = [],
     parentFeedback = [],
     setParentFeedback,
-    programForm,
-    setProgramForm,
-    programs,
-    handleCreateProgram,
-    handleRemoveProgram,
     applicants,
-    paystackPublicKey,
-    teensKidsMonthlyFee,
-    tempPaystackKey,
-    setTempPaystackKey,
-    tempMonthlyFee,
-    setTempMonthlyFee,
-    setPaystackPublicKey,
-    setTeensKidsMonthlyFee,
     refreshAdminData,
     refreshLoading = false,
     storeProducts = [],
     setStoreProducts,
-    storeBankAccount = {},
-    setStoreBankAccount,
     shopOrders = [],
     setShopOrders,
     footerSettings,
@@ -569,6 +470,8 @@ export default function AdminDashboard(props) {
         image: "/logo/logomain.png",
         imageType: "logo",
       };
+      const isExistingSubmission =
+        activeDashboardView === "testimonials" && viewingRow.id;
 
       const token = session?.access_token || session?.accessToken || "";
       const response = await fetch("/api/admin-update", {
@@ -578,20 +481,23 @@ export default function AdminDashboard(props) {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          action: "insert",
+          action: isExistingSubmission ? "update" : "insert",
           table: "tribe_testimonials",
-          payload: [
-            {
-              author: newSlide.title,
-              origin:
-                activeDashboardView === "feedback"
-                  ? "Parent Feedback"
-                  : newSlide.origin,
-              text: newSlide.text,
-              status: "published",
-              image_type: "logo",
-            },
-          ],
+          payload: isExistingSubmission
+            ? { status: "published" }
+            : [
+                {
+                  author: newSlide.title,
+                  origin:
+                    activeDashboardView === "feedback"
+                      ? "Parent Feedback"
+                      : newSlide.origin,
+                  text: newSlide.text,
+                  status: "published",
+                  image_type: "logo",
+                },
+              ],
+          ...(isExistingSubmission ? { match: { id: viewingRow.id } } : {}),
         }),
       });
       if (!response.ok) {
@@ -603,24 +509,39 @@ export default function AdminDashboard(props) {
           throw new Error(
             "The testimonial could not be saved to the home slider.",
           );
-        const { error: directInsertError } = await supabase
-          .from("tribe_testimonials")
-          .insert([
-            {
-              author: newSlide.title,
-              origin:
-                activeDashboardView === "feedback"
-                  ? "Parent Feedback"
-                  : newSlide.origin,
-              text: newSlide.text,
-              image_type: "logo",
-            },
-          ]);
-        if (directInsertError) throw directInsertError;
+        const { error: directWriteError } = isExistingSubmission
+          ? await supabase
+              .from("tribe_testimonials")
+              .update({ status: "published" })
+              .eq("id", viewingRow.id)
+          : await supabase.from("tribe_testimonials").insert([
+              {
+                author: newSlide.title,
+                origin:
+                  activeDashboardView === "feedback"
+                    ? "Parent Feedback"
+                    : newSlide.origin,
+                text: newSlide.text,
+                image_type: "logo",
+              },
+            ]);
+        if (directWriteError) throw directWriteError;
       }
 
       if (typeof setPromoSlides === "function") {
-        setPromoSlides((prev) => [newSlide, ...prev]);
+        setPromoSlides((prev) => [
+          newSlide,
+          ...prev.filter((slide) => slide.id !== newSlide.id),
+        ]);
+      }
+      if (isExistingSubmission && typeof setTestimonials === "function") {
+        setTestimonials((prev) =>
+          prev.map((testimonial) =>
+            testimonial.id === viewingRow.id
+              ? { ...testimonial, status: "published" }
+              : testimonial,
+          ),
+        );
       }
 
       showAdminToast(
@@ -1205,7 +1126,7 @@ export default function AdminDashboard(props) {
           }),
         }),
       ]);
-    } catch (error) {
+    } catch {
       setSelectedVendor(null);
       showAdminToast(
         "error",
@@ -1550,7 +1471,7 @@ export default function AdminDashboard(props) {
           try {
             const json = await resp.json();
             errMsg = json?.error || errMsg;
-          } catch (parseErr) {
+          } catch {
             errMsg = `${resp.status} ${resp.statusText}`;
           }
           console.error("Delete failed", errMsg);
@@ -1570,7 +1491,7 @@ export default function AdminDashboard(props) {
         }
         try {
           await resp.json();
-        } catch (parseErr) {
+        } catch {
           // Some endpoints return empty 200 responses; that's okay
           console.warn("Could not parse response JSON, but delete succeeded");
         }
@@ -2313,7 +2234,7 @@ export default function AdminDashboard(props) {
       if (hostname === "youtube.com" || hostname === "m.youtube.com") {
         return parsed.searchParams.get("v") || parsed.pathname.match(/\/(?:shorts|embed)\/([^/]+)/)?.[1] || "";
       }
-    } catch (error) {
+    } catch {
       return "";
     }
     return "";
@@ -2872,7 +2793,7 @@ export default function AdminDashboard(props) {
       "Format",
       "Notes",
     ],
-    testimonials: ["Name", "Origin", "Testimonial", "Source"],
+    testimonials: ["Name", "Origin", "Testimonial", "Source", "Status"],
     slider: ["Name", "Origin", "Testimonial", "Source"],
     feedback: [
       "Parent",
@@ -2979,7 +2900,7 @@ export default function AdminDashboard(props) {
               });
               return;
             }
-          } catch (err) {
+          } catch {
             // fall back to single-row below
           }
         }
@@ -3033,7 +2954,7 @@ export default function AdminDashboard(props) {
         b.notes || b.note || "N/A",
       ],
     })),
-    testimonials: promoSlides.map((testimonial) => ({
+    testimonials: testimonials.map((testimonial) => ({
       id:
         testimonial.id ||
         `${testimonial.title || "testimonial"}-${testimonial.createdAt || Date.now()}`,
@@ -3042,6 +2963,7 @@ export default function AdminDashboard(props) {
         testimonial.origin || "Parent",
         testimonial.text || "No testimonial added",
         testimonial.imageType || "Website",
+        testimonial.status || "published",
       ],
     })),
     slider: promoSlides.map((testimonial) => ({
@@ -8955,7 +8877,7 @@ export default function AdminDashboard(props) {
                   } else if (typeof value === "object" && value !== null) {
                     try {
                       displayValue = JSON.stringify(value, null, 2);
-                    } catch (e) {
+                    } catch {
                       displayValue = String(value);
                     }
                   }
@@ -9057,7 +8979,12 @@ export default function AdminDashboard(props) {
                   <button
                     type="button"
                     onClick={openTestimonialConfirmation}
-                    disabled={postingToSlider}
+                    disabled={
+                      postingToSlider ||
+                      (activeDashboardView === "testimonials" &&
+                        String(viewingRow.Status || "").toLowerCase() ===
+                          "published")
+                    }
                     title="Publish this testimonial to the home page testimonial slider"
                     aria-label="Publish this testimonial to the home page testimonial slider"
                     data-tooltip="Posts only this testimonial to the Testimonial section on the home page."
@@ -9072,7 +8999,13 @@ export default function AdminDashboard(props) {
                       opacity: postingToSlider ? 0.7 : 1,
                     }}
                   >
-                    {postingToSlider ? "Posting..." : "Post testimonial"}
+                    {postingToSlider
+                      ? "Posting..."
+                      : activeDashboardView === "testimonials" &&
+                          String(viewingRow.Status || "").toLowerCase() ===
+                            "published"
+                        ? "Already published"
+                        : "Post testimonial"}
                   </button>
                 )}
               <button

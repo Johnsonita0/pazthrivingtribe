@@ -744,6 +744,7 @@ export default function App() {
   const [expandedFaqIndex, setExpandedFaqIndex] = useState(0);
   const [promoSlideAutoPlay, setPromoSlideAutoPlay] = useState(true);
   const [testimonialCount, setTestimonialCount] = useState(null);
+  const [adminTestimonials, setAdminTestimonials] = useState([]);
   const [promoSlides, setPromoSlides] = useState([
     {
       title: 'Jojo’s Mom',
@@ -1753,25 +1754,32 @@ export default function App() {
 
   const fetchTestimonials = async () => {
     try {
-      const [publishedResult, countResult] = await Promise.all([
-        supabase.from('tribe_testimonials').select('*').eq('status', 'published').order('created_at', { ascending: false }),
+      const [testimonialsResult, countResult] = await Promise.all([
+        supabase.from('tribe_testimonials').select('*').order('created_at', { ascending: false }),
         supabase.from('tribe_testimonials').select('id', { count: 'exact', head: true }),
       ]);
-      if (publishedResult.error) throw publishedResult.error;
+      if (testimonialsResult.error) throw testimonialsResult.error;
       if (countResult.error) throw countResult.error;
       setTestimonialCount(countResult.count ?? 0);
-      if (Array.isArray(publishedResult.data)) {
-        setPromoSlides(publishedResult.data.map((item) => ({
+      if (Array.isArray(testimonialsResult.data)) {
+        const allTestimonials = testimonialsResult.data.map((item) => ({
           id: item.id,
           title: item.author || item.title || 'Anonymous',
           text: item.text || '',
           origin: item.origin || '',
           image: item.image || '/logo/logomain.png',
-          imageType: item.imageType || 'logo'
-        })));
+          imageType: item.image_type || item.imageType || 'logo',
+          status: item.status || 'published',
+          createdAt: item.created_at || item.createdAt || null,
+        }));
+        setAdminTestimonials(allTestimonials);
+        setPromoSlides(allTestimonials.filter((item) => item.status === 'published'));
       }
     } catch (err) {
       console.log('Failed to fetch testimonials:', err);
+      setAdminTestimonials((current) =>
+        current.length ? current : promoSlides,
+      );
     }
   };
 
@@ -5659,6 +5667,8 @@ export default function App() {
                 setFormMetric={setFormMetric}
                 promoSlides={promoSlides}
                 testimonialCount={testimonialCount}
+                testimonials={adminTestimonials}
+                setTestimonials={setAdminTestimonials}
                 testimonialAuthor={testimonialAuthor}
                 setTestimonialAuthor={setTestimonialAuthor}
                 testimonialOrigin={testimonialOrigin}
@@ -5770,6 +5780,8 @@ export default function App() {
                 setFormMetric={setFormMetric}
                 promoSlides={promoSlides}
                 testimonialCount={testimonialCount}
+                testimonials={adminTestimonials}
+                setTestimonials={setAdminTestimonials}
                 testimonialAuthor={testimonialAuthor}
                 setTestimonialAuthor={setTestimonialAuthor}
                 testimonialOrigin={testimonialOrigin}
