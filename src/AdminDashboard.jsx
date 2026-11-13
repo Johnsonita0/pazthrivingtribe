@@ -71,6 +71,28 @@ function MasterclassRegistrantsPanel({ registrants, loading, error, onRefresh, o
   const [search, setSearch] = useState("");
   const [deletingRegistrantId, setDeletingRegistrantId] = useState("");
   const [deleteError, setDeleteError] = useState("");
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const deleteTriggerRef = useRef(null);
+  const deletePanelRef = useRef(null);
+  const deleteModalRef = useRef(null);
+  const deleteCancelButtonRef = useRef(null);
+  useEffect(() => {
+    if (!pendingDelete) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    deleteCancelButtonRef.current?.focus();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [pendingDelete]);
+  const dismissDeleteModal = () => {
+    if (deletingRegistrantId) return;
+    setPendingDelete(null);
+    window.requestAnimationFrame(() => {
+      if (deleteTriggerRef.current?.isConnected) deleteTriggerRef.current.focus();
+      else deletePanelRef.current?.focus();
+    });
+  };
   const normalizedSearch = search.trim().toLowerCase();
   const filteredRegistrants = registrants.filter((registrant) =>
     [registrant.registrant_name, registrant.email, registrant.phone]
@@ -97,9 +119,9 @@ function MasterclassRegistrantsPanel({ registrants, loading, error, onRefresh, o
     window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
   };
 
-  const deleteRegistrant = async (registrant) => {
-    const name = String(registrant.registrant_name || "this participant").trim();
-    if (!window.confirm(`Delete ${name}'s masterclass registration? This cannot be undone.`)) return;
+  const deleteRegistrant = async () => {
+    const registrant = pendingDelete;
+    if (!registrant || deletingRegistrantId) return;
     const token = session?.access_token || session?.accessToken || "";
     if (!token) {
       setDeleteError("Your admin session has expired. Sign in again before deleting a participant.");
@@ -123,6 +145,8 @@ function MasterclassRegistrantsPanel({ registrants, loading, error, onRefresh, o
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || "Could not delete this participant.");
       onDelete(registrant.id);
+      setPendingDelete(null);
+      window.requestAnimationFrame(() => deletePanelRef.current?.focus());
     } catch (deleteError) {
       setDeleteError(deleteError?.message || "Could not delete this participant.");
     } finally {
@@ -131,7 +155,7 @@ function MasterclassRegistrantsPanel({ registrants, loading, error, onRefresh, o
   };
 
   return (
-    <section className="masterclass-admin-panel" aria-labelledby="masterclass-admin-title">
+    <section ref={deletePanelRef} className="masterclass-admin-panel" tabIndex={-1} aria-labelledby="masterclass-admin-title">
       <div className="masterclass-admin-heading">
         <div>
           <span>PAZ Thriving Teens Academy</span>
@@ -149,7 +173,7 @@ function MasterclassRegistrantsPanel({ registrants, loading, error, onRefresh, o
           </button>
         </div>
       </div>
-      {(error || deleteError) && <p className="masterclass-admin-error" role="alert">{deleteError || error}</p>}
+      {error && <p className="masterclass-admin-error" role="alert">{error}</p>}
       <div className="masterclass-admin-toolbar">
         <label htmlFor="masterclass-registrant-search">Search registrants</label>
         <input
@@ -191,30 +215,109 @@ function MasterclassRegistrantsPanel({ registrants, loading, error, onRefresh, o
                       : "date unavailable"}
                   </span>
                 </div>
-                {whatsappLink ? (
-                  <a className="masterclass-registrant-whatsapp" href={whatsappLink} target="_blank" rel="noopener noreferrer">
-                    <i className="fa-brands fa-whatsapp" aria-hidden="true"></i>
-                    WhatsApp
-                  </a>
-                ) : (
-                  <span className="masterclass-registrant-invalid-phone">Phone number unavailable</span>
-                )}
-                <button
-                  className="masterclass-registrant-delete"
-                  type="button"
-                  onClick={() => deleteRegistrant(registrant)}
-                  disabled={Boolean(deletingRegistrantId)}
-                  aria-label={`Delete ${registrant.registrant_name || "participant"}`}
-                >
-                  <i className={`fa-solid ${deletingRegistrantId === registrant.id ? "fa-spinner fa-spin" : "fa-trash"}`} aria-hidden="true"></i>
-                  {deletingRegistrantId === registrant.id ? "Deleting…" : "Delete"}
-                </button>
+                <div className="masterclass-registrant-actions">
+                  {whatsappLink ? (
+                    <a
+                      className="masterclass-registrant-whatsapp"
+                      href={whatsappLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Message ${registrant.registrant_name || "participant"} on WhatsApp`}
+                      title="Message on WhatsApp"
+                    >
+                      <i className="fa-brands fa-whatsapp" aria-hidden="true"></i>
+                      <span className="masterclass-registrant-action-label">WhatsApp</span>
+                    </a>
+                  ) : (
+                    <span className="masterclass-registrant-invalid-phone">Phone number unavailable</span>
+                  )}
+                  <button
+                    className="masterclass-registrant-delete"
+                    type="button"
+                    onClick={(event) => {
+                      deleteTriggerRef.current = event.currentTarget;
+                      setDeleteError("");
+                      setPendingDelete(registrant);
+                    }}
+                    disabled={Boolean(deletingRegistrantId)}
+                    aria-label={`Delete ${registrant.registrant_name || "participant"}`}
+                    title="Delete participant"
+                  >
+                    <i className={`fa-solid ${deletingRegistrantId === registrant.id ? "fa-spinner fa-spin" : "fa-trash"}`} aria-hidden="true"></i>
+                    <span className="masterclass-registrant-action-label">
+                      {deletingRegistrantId === registrant.id ? "Deleting…" : "Delete"}
+                    </span>
+                  </button>
+                </div>
               </article>
             );
           })}
         </div>
       )}
       <p className="masterclass-admin-note">WhatsApp opens a prefilled message for the selected registrant. Review it and press Send in WhatsApp.</p>
+      {pendingDelete && (
+        <div
+          className="masterclass-delete-modal-backdrop"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) dismissDeleteModal();
+          }}
+        >
+          <div
+            ref={deleteModalRef}
+            className="masterclass-delete-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="masterclass-delete-title"
+            aria-describedby="masterclass-delete-description"
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && !deletingRegistrantId) {
+                dismissDeleteModal();
+                return;
+              }
+              if (event.key !== "Tab") return;
+              const buttons = Array.from(deleteModalRef.current?.querySelectorAll("button:not(:disabled)") || []);
+              const firstButton = buttons[0];
+              const lastButton = buttons[buttons.length - 1];
+              if (event.shiftKey && event.target === firstButton) {
+                event.preventDefault();
+                lastButton?.focus();
+              } else if (!event.shiftKey && event.target === lastButton) {
+                event.preventDefault();
+                firstButton?.focus();
+              }
+            }}
+          >
+            <div className="masterclass-delete-modal-icon" aria-hidden="true">
+              <i className="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 id="masterclass-delete-title">Delete participant?</h3>
+            <p id="masterclass-delete-description">
+              Delete {String(pendingDelete.registrant_name || "this participant").trim()}'s masterclass registration? This cannot be undone.
+            </p>
+            {deleteError && <p className="masterclass-admin-error" role="alert">{deleteError}</p>}
+            <div className="masterclass-delete-modal-actions">
+              <button
+                ref={deleteCancelButtonRef}
+                className="masterclass-delete-modal-cancel"
+                type="button"
+                onClick={dismissDeleteModal}
+                disabled={Boolean(deletingRegistrantId)}
+              >
+                Cancel
+              </button>
+              <button
+                className="masterclass-delete-modal-confirm"
+                type="button"
+                onClick={deleteRegistrant}
+                disabled={Boolean(deletingRegistrantId)}
+              >
+                <i className={`fa-solid ${deletingRegistrantId ? "fa-spinner fa-spin" : "fa-trash"}`} aria-hidden="true"></i>
+                {deletingRegistrantId ? "Deleting…" : "Delete participant"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

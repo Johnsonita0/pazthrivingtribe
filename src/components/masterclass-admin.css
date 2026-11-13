@@ -186,6 +186,13 @@
   background: #0e773f;
 }
 
+.masterclass-registrant-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .masterclass-registrant-delete {
   display: inline-flex;
   align-items: center;
@@ -206,6 +213,100 @@
 .masterclass-registrant-delete:disabled {
   cursor: wait;
   opacity: .65;
+}
+
+.masterclass-registrant-action-label {
+  display: inline;
+}
+
+.masterclass-delete-modal-backdrop {
+  position: fixed;
+  z-index: 1200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(17 24 39 / 62%);
+}
+
+.masterclass-delete-modal {
+  width: min(440px, 100%);
+  box-sizing: border-box;
+  padding: 26px;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 28px 80px rgb(15 23 42 / 30%);
+}
+
+.masterclass-delete-modal-icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  margin-bottom: 14px;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff1f2;
+  color: #b42318;
+  font-size: 1.15rem;
+}
+
+.masterclass-delete-modal h3 {
+  margin: 0 0 8px;
+  color: #111827;
+  font-size: 1.25rem;
+}
+
+.masterclass-delete-modal p {
+  margin: 0;
+  color: #4b5563;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.masterclass-delete-modal .masterclass-admin-error {
+  margin-top: 12px;
+}
+
+.masterclass-delete-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.masterclass-delete-modal-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 9px;
+  font: inherit;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.masterclass-delete-modal-actions button:focus-visible {
+  outline: 3px solid #d5b9e2;
+  outline-offset: 2px;
+}
+
+.masterclass-delete-modal-actions button:disabled {
+  cursor: wait;
+  opacity: .65;
+}
+
+.masterclass-delete-modal-cancel {
+  background: #eef2f7;
+  color: #374151;
+}
+
+.masterclass-delete-modal-confirm {
+  background: #b42318;
+  color: #fff;
 }
 
 .masterclass-registrant-invalid-phone,
@@ -237,10 +338,25 @@
     width: 100%;
   }
 
-  .masterclass-admin-actions button,
+  .masterclass-admin-actions button {
+    width: 100%;
+  }
+
+  .masterclass-registrant-actions {
+    justify-content: flex-start;
+  }
+
   .masterclass-registrant-whatsapp,
   .masterclass-registrant-delete {
-    width: 100%;
+    width: 48px;
+    min-width: 48px;
+    min-height: 48px;
+    padding: 0;
+    gap: 0;
+  }
+
+  .masterclass-registrant-action-label {
+    display: none;
   }
 
   .masterclass-admin-toolbar {
