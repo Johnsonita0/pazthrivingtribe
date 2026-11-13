@@ -67,8 +67,10 @@ function escapeMasterclassCsvCell(value) {
   return `"${safeText.replace(/"/g, '""')}"`;
 }
 
-function MasterclassRegistrantsPanel({ registrants, loading, error, onRefresh }) {
+function MasterclassRegistrantsPanel({ registrants, loading, error, onRefresh, onDelete, session }) {
   const [search, setSearch] = useState("");
+  const [deletingRegistrantId, setDeletingRegistrantId] = useState("");
+  const [deleteError, setDeleteError] = useState("");
   const normalizedSearch = search.trim().toLowerCase();
   const filteredRegistrants = registrants.filter((registrant) =>
     [registrant.registrant_name, registrant.email, registrant.phone]
@@ -95,12 +97,45 @@ function MasterclassRegistrantsPanel({ registrants, loading, error, onRefresh })
     window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 0);
   };
 
+  const deleteRegistrant = async (registrant) => {
+    const name = String(registrant.registrant_name || "this participant").trim();
+    if (!window.confirm(`Delete ${name}'s masterclass registration? This cannot be undone.`)) return;
+    const token = session?.access_token || session?.accessToken || "";
+    if (!token) {
+      setDeleteError("Your admin session has expired. Sign in again before deleting a participant.");
+      return;
+    }
+
+    setDeletingRegistrantId(registrant.id);
+    setDeleteError("");
+    try {
+      const response = await fetch("/api/admin-update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          action: "delete_masterclass_registration",
+          registrationId: registrant.id,
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || "Could not delete this participant.");
+      onDelete(registrant.id);
+    } catch (deleteError) {
+      setDeleteError(deleteError?.message || "Could not delete this participant.");
+    } finally {
+      setDeletingRegistrantId("");
+    }
+  };
+
   return (
     <section className="masterclass-admin-panel" aria-labelledby="masterclass-admin-title">
       <div className="masterclass-admin-heading">
         <div>
           <span>PAZ Thriving Teens Academy</span>
-          <h2 id="masterclass-admin-title">Parent Masterclass Registrants</h2>
+          <h2 id="masterclass-admin-title">Parent Masterclass Participants</h2>
           <p>Contact people who registered for “Getting Your Teenager to Speak to You.”</p>
         </div>
         <div className="masterclass-admin-actions">
@@ -114,7 +149,7 @@ function MasterclassRegistrantsPanel({ registrants, loading, error, onRefresh })
           </button>
         </div>
       </div>
-      {error && <p className="masterclass-admin-error" role="alert">{error}</p>}
+      {(error || deleteError) && <p className="masterclass-admin-error" role="alert">{deleteError || error}</p>}
       <div className="masterclass-admin-toolbar">
         <label htmlFor="masterclass-registrant-search">Search registrants</label>
         <input
@@ -164,6 +199,16 @@ function MasterclassRegistrantsPanel({ registrants, loading, error, onRefresh })
                 ) : (
                   <span className="masterclass-registrant-invalid-phone">Phone number unavailable</span>
                 )}
+                <button
+                  className="masterclass-registrant-delete"
+                  type="button"
+                  onClick={() => deleteRegistrant(registrant)}
+                  disabled={Boolean(deletingRegistrantId)}
+                  aria-label={`Delete ${registrant.registrant_name || "participant"}`}
+                >
+                  <i className={`fa-solid ${deletingRegistrantId === registrant.id ? "fa-spinner fa-spin" : "fa-trash"}`} aria-hidden="true"></i>
+                  {deletingRegistrantId === registrant.id ? "Deleting…" : "Delete"}
+                </button>
               </article>
             );
           })}
@@ -7527,11 +7572,13 @@ export default function AdminDashboard(props) {
             ) : activeDashboardView === "masterclass" ? (
               <MasterclassRegistrantsPanel
                 registrants={masterclassRegistrants}
+                session={session}
                 loading={masterclassRegistrantsLoading}
                 error={masterclassSessionToken
                   ? masterclassRegistrantsError
                   : "Your admin session has expired. Sign in again to view registrations."}
                 onRefresh={() => setMasterclassRegistrantsRefreshKey((key) => key + 1)}
+                onDelete={(id) => setMasterclassRegistrants((current) => current.filter((registrant) => registrant.id !== id))}
               />
             ) : activeDashboardView === "footer" ? (
               <FooterSettingsPanel

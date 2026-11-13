@@ -34,6 +34,23 @@ const escapeHtml = (value) => String(value || '')
   .replace(/"/g, '&quot;')
   .replace(/'/g, '&#39;')
 
+async function getMasterclassRegistrations(supabase) {
+  const pageSize = 500
+  const registrations = []
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await supabase
+      .from('masterclass_registrations')
+      .select('id,registrant_name,email,phone,event_key,created_at')
+      .eq('event_key', 'parent-communication-2026-11-21')
+      .order('created_at', { ascending: false })
+      .range(offset, offset + pageSize - 1)
+    if (error) throw error
+    const page = data || []
+    registrations.push(...page)
+    if (page.length < pageSize) return registrations
+  }
+}
+
 export default async function handler(req, res) {
   const { supabaseUrl, serviceRoleKey, adminEmails, adminUserIds } = getEnv()
   if (req.method !== 'POST') return jsonResponse(res, 405, { error: 'Method not allowed' })
@@ -98,7 +115,25 @@ export default async function handler(req, res) {
 
     let result
     try {
-      if (action === 'save_footer_settings') {
+      if (action === 'list_masterclass_registrations') {
+        const data = await getMasterclassRegistrations(supabase)
+        return jsonResponse(res, 200, { data })
+      } else if (action === 'delete_masterclass_registration') {
+        const registrationId = String(requestBody?.registrationId || '').trim()
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(registrationId)) {
+          return jsonResponse(res, 400, { error: 'A valid participant ID is required.' })
+        }
+        const { data: deletedRegistration, error: deleteError } = await supabase
+          .from('masterclass_registrations')
+          .delete()
+          .eq('id', registrationId)
+          .eq('event_key', 'parent-communication-2026-11-21')
+          .select('id')
+          .maybeSingle()
+        if (deleteError) throw deleteError
+        if (!deletedRegistration) return jsonResponse(res, 404, { error: 'This participant was not found or has already been deleted.' })
+        return jsonResponse(res, 200, { deletedId: deletedRegistration.id })
+      } else if (action === 'save_footer_settings') {
         if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
           return jsonResponse(res, 400, { error: 'Footer settings are required' })
         }
